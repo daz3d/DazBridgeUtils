@@ -1,0 +1,278 @@
+// DAZ Studio version 4.16.0.3 filetype DAZ Script
+
+// DzBridge Script Documentation and Examples
+var oBridge = new DzBridgeScriptableAction();
+var oBridge = new DzBridgeUnityAction();
+var oBridge = new DzUnrealAction();
+
+/////////////////////////////////////
+//
+// Properties
+//
+/////////////////////////////////////
+
+// NOTE: Each property also has get/set methods for better error checking.
+
+// (integer) nNonInteractiveMode
+// 0 == interactive mode (default)
+// 1 == noninteractive mode (script)
+oBridge.nNonInteractiveMode;
+oBridge.getNonInteractiveMode();
+oBridge.setNonInteractiveMode(0);
+
+// (QString) sAssetType
+// "SkeletalMesh" == rigged mesh, figure
+// "StaticMesh" == unrigged mesh, prop
+// "Animation" == animation sequence(s)
+// "Pose" == single frame
+// "Environment" == one or more instances of props
+oBridge.sAssetType;
+oBridge.getAssetType();
+oBridge.setAssetType("SkeletalMesh");
+
+// (QString) sExportFilename
+// Filename stem to be used for DTU file
+// Default value is the Daz Scene Label string for selected node
+oBridge.sExportFilename;
+oBridge.getExportFilename();
+oBridge.setExportFilename("");
+
+// (QString) sRootFolder
+// Destination root folder for export
+// For Unreal, Blender bridges, this is an intermediate folder before the final import routine
+// For Unity bridge, this is the final destination within the Unity Project's Asset Folder
+oBridge.sRootFolder;
+oBridge.getRootFolder();
+oBridge.setRootFolder("");
+
+// (QString) sProductName 
+// metadata which is used in batch conversion mode to export the Daz Store Product name
+// not used in interactive mode
+oBridge.sProductName;
+oBridge.getProductName();
+oBridge.setProductName("");
+
+// (QString) sProductComponentName 
+// metadata which is used in batch conversion mode to export the Daz Store Product name
+// not used in interactive mode
+oBridge.sProductComponentName;
+oBridge.getProductComponentName();
+oBridge.setProductComponentName("");
+
+// (QStringList) aMorphList 
+// List of morphs to be exported
+// these are internal morph names and not the friendly labels
+oBridge.aMorphList;
+oBridge.getMorphList();
+oBridge.setMorphList([]);
+
+// (boolean) bUseRelativePaths 
+// false == export DTU file with absolute file paths to Daz Asset Library files (default)
+// true == export DTU file with file paths relative to the root of the Daz Asset Library
+// Enable this option to make DTU files which are independent of installation paths.
+// Must be used in combination with Localize-Jobpool.dsa script to convert back to absolute
+// paths for Target Software.
+oBridge.bUseRelativePaths;
+oBridge.getUseRelativePaths();
+oBridge.setUseRelativePaths(false);
+
+// (boolean) bUndoNormalMaps 
+// true == undo changes to materials, aka remove generated normal maps, after export (default)
+// false == keep changes to materials, added normal maps
+oBridge.bUndoNormalMaps;
+oBridge.getUndoNormalMaps();
+oBridge.setUndoNormalMaps(true);
+
+// (QString) sExportFbx 
+// Override filename for exported FBX
+// If empty/blank string, defaults to sExportFilename
+oBridge.sExportFbx;
+oBridge.getExportFbx();
+oBridge.setExportFbx("");
+
+// (DzBasicDialog) wBridgeDialog 
+// widget to main Bridge Dialog window
+// NOTE: returned object is type DzBasicDialog and not type DzBridgeDialog, so member
+// functions of DzBridgeDialog will not be accessible.
+oBridge.wBridgeDialog;
+oBridge.getBridgeDialog();
+oBridge.setBridgeDialog(null);
+
+// (DzBasicDialog) wSubdivisionDialog 
+// widget to Subdivision Dialog window
+// NOTE: returned object is type DzBasicDialog and not type DzBridgeSubdivisionDialog,
+// so member functions of DzBridgeSubdivisionDialog will not be accessible.
+oBridge.wSubdivisionDialog;
+oBridge.getSubdivisionDialog();
+oBridge.setSubdivisionDialog(null);
+
+// (DzBasicDialog) wMorphSelectionDialog 
+// widget to Morph Selection Dialog window
+// NOTE: returned object is type DzBasicDialog and not type DzBridgeMorphSelectionDialog,
+// so member functions of DzBridgeMorphSelectionDialog will not be accessible.
+oBridge.wMorphSelectionDialog;
+oBridge.getMorphSelectionDialog();
+oBridge.setMorphSelectionDialog(null);
+
+/////////////////////////////////////
+//
+// Methods   
+//
+/////////////////////////////////////
+
+// (void) readGui(DzBridgeDialog arg)
+// Transfer UI data from a Bridge Dialog window to internal Bridge member variables.
+// Use prior to calling export operation.
+oBridge.readGui(null);
+
+// (void) exportHD(DzProgress arg = null)
+// Starts export process, including pre-processing Scene data and exporting FBX and
+// DTU files. Will also produce high-definition (HD) fbx with baked subdivision and
+// automatically fixes missing bone weights in HD fbx file.
+oBridge.exportHD();
+
+// (void) resetToDefaults()
+// Reset bridge options to default values.  No arguments or return value.
+oBridge.resetToDefaults();
+
+// (QString) cleanString(QString arg)
+// Returns a copy of <arg> with only alphanumeric characters and underscore ("_").
+// In other words, all non alphanumeric characters except underscore are removed,
+// including space and hyphen.
+// Safe for filesystem names and most programming language identifier names.
+oBridge.cleanString("");
+
+// (QString) getMD5(QString arg)
+// Returns string result of MD5 hash function applied to contents of a file specific
+// by filepath<arg>.
+oBridge.getMD5("c:/temp/tempfile.txt");
+
+// (QStringList) getAvailableMorphs(DzNode arg)
+// Returns a list of all morphs which can be applied to <arg>.
+// The returned values can be used to export morphs via oBridge.aMorphList
+oBridge.getAvailableMorphs(null);
+
+// (QStringList) getActiveMorphs(DzNode arg)
+// Returns a list of all active morphs for <arg> (morph strength > zero).
+// The returned values can be used to export morphs via oBridge.aMorphList
+oBridge.getActiveMorphs(null);
+
+// (QImage) makeNormalMapFromHeightMap(QString heightMapFilename, double normalStrength)
+// Return a new QImage with a normalmap texture generated from the heightmap passed in
+// <heightMapFileName> and modulated by normalStrength.
+oBridge.makeNormalMapFromHeightMap("", 1.0);
+
+/////////////////////////////////////
+//
+// Dialog Classes   
+//
+/////////////////////////////////////
+
+// class DzBridgeDialog
+var oBridgeDialog = new DzBridgeDialog();
+dzwidget = oBridgeDialog.wAssetNameEdit;
+dzwidget = oBridgeDialog.wAssetTypeCombo
+dzwidget = oBridgeDialog.wMorphsEnabledCheckBox;
+dzwidget = oBridgeDialog.wSubdivisionEnabledCheckBox;
+dzwidget = oBridgeDialog.wAdvancedSettingsGroupBox;
+oBridgeDialog.resetToDefaults();
+oBridge.setBridgeDialog(oBridgeDialog);
+
+// NOTE: the following classes MUST have a Scene node selected, otherwise they will crash
+if (Scene.getPrimarySelection())
+{
+	// class DzBridgeMorphSelectionDialog
+	// DzBridgeMorphSelectionDialog.Get(QWidget parent)
+	// retrieves or instantiates a singleton widget for this class
+	var oMorphDialog = new DzBridgeMorphSelectionDialog().Get(oBridgeDialog);
+	// (void) DzBridgeMorphSelectionDialog.PrepareDialog()
+	// Populates morph selection widgets
+	oMorphDialog.PrepareDialog();
+	// (QString) DzBridgeMorphSelectionDialog.GetMorphString()
+	// returns selection string to be used with FbxExporter
+	sMorphString = oMorphDialog.GetMorphString();
+	// (QString) DzBridgeMorphSelectionDialog.GetMorphCSVString()
+	// returns CSV version of morph selection string
+	sCsvString = oMorphDialog.GetMorphCSVString();
+	// (boolean) DzBridgeMorphSelectionDialog.IsAutoJCMEnabled()
+	// returns true if AutoJCM checkbox is enabled
+	bEnableJCM = oMorphDialog.IsAutoJCMEnabled();	
+	// (QString) DzBridgeMorphSelectionDialog.GetMorphLabelFromName(QString arg)
+	// returns friendly label when passed internal morph name via <arg>
+	oMorphDialog.GetMorphLabelFromName("");
+	oBridge.setMorphSelectionDialog(oMorphDialog);
+
+	// class DzBridgeSubdivisionDialog
+	// DzBridgeSubdivisionDialog.Get(QWidget parent)
+	// retrieves or instantiates a singleton widget for this class
+	var oSubdivisionDialog = new DzBridgeSubdivisionDialog().Get(oBridgeDialog);
+	// (void) DzBridgeSubdivisionDialog.PrepareDialog()
+	// Populates subdivision level widgets
+	oSubdivisionDialog.PrepareDialog();
+	// (void) DzBridgeSubdivisionDialog.LockSubdivisionProperties(bool bSubdivisionEnabled)
+	// Locks subdivision properties, used during exportHD() method to control
+	// mesh definition level.
+	// If bSubdivisionEnabled is true, then all models are locked at their current
+	// subdivision level.
+	// If bSubdivisionEnabled is false, then all models are locked at subdivision level zero.
+	oSubdivisionDialog.LockSubdivisionProperties(false);
+	// (void) oSubdivisionDialog.UnlockSubdivisionProperties()
+	// Unlocks subdivision properties, returning them to settings prior to calling
+	// LockSubdivisionProperties()
+	oSubdivisionDialog.UnlockSubdivisionProperties();
+	// (DzNode) oSubdivisionDialog.FindObject(DzNode parentNode, QString name)
+	// Recursively searches for a child node within <parentNode> that has name == <name>
+	// Returns null if no match is found.
+	oSubdivisionDialog.FindObject(Scene.getPrimarySelection(), "");
+	// (bool) setSubdivisionLevelByNode(DzNode node, int level)
+	// Recursively searches for child nodes with the same name as <node> using the
+	// primary scene selection as a root node.  Then sets that child node's subdivision
+	// level to <level>.
+	// Returns true if successful.  Returns false if no match is found or if <level> is
+	// greater than the maximum level available in the Subdivision Level dropdown.
+	oSubdivisionDialog.setSubdivisionLevelByNode(DzNode(), 0); 
+	oBridge.setSubdivisionDialog(oSubdivisionDialog);
+
+}
+
+
+/////////////////////////////////////
+//
+// Currently not accessible from default Daz Script Interpreter
+//
+/////////////////////////////////////
+
+// (bool) copyFile(QFile file, QString dst, bool bReplace = true, bool bCompareFiles = true)
+// Copies a file to a destination filepath.  
+// If bReplace is true, then destination file is removed prior to performing copy.
+// Note: on most platforms, the copy operation will fail if destination file exists.
+// If bCompare is also true, then destination file is removed only if MD5 comparison of
+// the source and destination files are different.
+// Returns true if copy operation is performed and false if any copy fails or if any ot the
+// optional copy conditions is not met.
+// NOTE: currently not practical for scripting because QFile is not registered in default
+// DazScript interpreter
+
+// (void) upgradeToHD(QString baseFilePath, QString hdFilePath, QString outFilePath, std::map<std::string, int>* pLookupTable)
+// Performs insertion of missing bone weight data for baked subdivision fbx files.
+// NOTE: currently not practical for scripting due to std::map<std::string, int> argument.
+//oBridge.upgradeToHD("", "", "", null);
+
+// NOTE: Following methods are currently not usable due to DzJsonWriter not registered
+// (void) writeDTUHeader(DzJsonWriter writer)
+// (void) writeAllMaterials(DzNode* Node, DzJsonWriter& Writer, QTextStream* CVSStream = nullptr, bool bRecursive = false)
+// (void) startMaterialBlock(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCVSStream, DzMaterial* Material)
+// (void) finishMaterialBlock(DzJsonWriter& Writer)
+// (void) writeAllMorphs(DzJsonWriter& Writer)
+// (void) writeMorphProperties(DzJsonWriter& writer, const QString& key, const QString& value)
+// (void) writeMorphJointLinkInfo(DzJsonWriter& writer, const JointLinkInfo& linkInfo)
+// (void) writeAllSubdivisions(DzJsonWriter& Writer)
+// (void) writeSubdivisionProperties(DzJsonWriter& writer, const QString& Name, int targetValue)
+// (void) writeAllDforceInfo(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCVSStream = nullptr, bool bRecursive = false)
+// (void) writeDforceMaterialProperties(DzJsonWriter& Writer, DzMaterial* Material, DzShape* Shape)
+// (void) writeDforceModifiers(const QList<DzModifier*>& dforceModifierList, DzJsonWriter& Writer, DzShape* Shape)
+// (void) writeEnvironment(DzJsonWriter& writer);
+// (void) writeInstances(DzNode* Node, DzJsonWriter& Writer, QMap<QString, DzMatrix3>& WritenInstances, QList<DzGeometry*>& ExportedGeometry, QUuid ParentID = QUuid())
+// (void) writeInstance(DzNode* Node, DzJsonWriter& Writer, QUuid ParentID)
+// (void) writeAllPoses(DzJsonWriter& writer)
+// (void) writeWeightMaps(DzNode Node, DzJsonWriter Stream)

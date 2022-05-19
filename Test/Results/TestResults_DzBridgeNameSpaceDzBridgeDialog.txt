@@ -1,0 +1,35 @@
+======= UnitTest Details =======
+
+[12] Accepted:
+Accepted is Qt framework GUI method. Skipping UnitTest...
+
+
+======= UnitTest Summary =======
+
+Class Name: DzBridgeNameSpace::DzBridgeDialog
+Number of UnitTests: 22
+
+[ 0] getAssetNameEdit:..............................[ PASSED ]
+[ 1] getAssetTypeCombo:.............................[ PASSED ]
+[ 2] getMorphsEnabledCheckBox:......................[ PASSED ]
+[ 3] getSubdivisionEnabledCheckBox:.................[ PASSED ]
+[ 4] getAdvancedSettingsGroupBox:...................[ PASSED ]
+[ 5] getFbxVersionCombo:............................[ PASSED ]
+[ 6] getShowFbxDialogCheckBox:......................[ PASSED ]
+[ 7] _DzBridgeDialog:...............................[ PASSED ]
+[ 8] GetMorphString:................................[ PASSED ]
+[ 9] GetMorphMapping:...............................[ PASSED ]
+[10] resetToDefaults:...............................[ PASSED ]
+[11] loadSavedSettings:.............................[ PASSED ]
+[12] Accepted:......................................[ PASSED ]
+[13] handleSceneSelectionChanged:...................[ PASSED ]
+[14] HandleChooseMorphsButton:......................[ PASSED ]
+[15] HandleMorphsCheckBoxChange:....................[ PASSED ]
+[16] HandleChooseSubdivisionsButton:................[ PASSED ]
+[17] HandleFBXVersionChange:........................[ PASSED ]
+[18] HandleShowFbxDialogCheckBoxChange:.............[ PASSED ]
+[19] HandleExportMaterialPropertyCSVCheckBoxChange:.[ PASSED ]
+[20] HandleShowAdvancedSettingsCheckBoxChange:......[ PASSED ]
+[21] refreshAsset:..................................[ PASSED ]
+
+End of Report.

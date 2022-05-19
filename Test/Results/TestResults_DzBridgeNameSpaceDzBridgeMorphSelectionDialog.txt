@@ -1,0 +1,30 @@
+======= UnitTest Details =======
+
+
+======= UnitTest Summary =======
+
+Class Name: DzBridgeNameSpace::DzBridgeMorphSelectionDialog
+Number of UnitTests: 20
+
+[ 0] _DzBridgeMorphSelectionDialog:....[ PASSED ]
+[ 1] PrepareDialog:....................[ PASSED ]
+[ 2] GetMorphString:...................[ PASSED ]
+[ 3] GetMorphCSVString:................[ PASSED ]
+[ 4] GetMorphRenaming:.................[ PASSED ]
+[ 5] IsAutoJCMEnabled:.................[ PASSED ]
+[ 6] GetActiveJointControlledMorphs:...[ PASSED ]
+[ 7] GetMorphLabelFromName:............[ PASSED ]
+[ 8] FilterChanged:....................[ PASSED ]
+[ 9] ItemSelectionChanged:.............[ PASSED ]
+[10] HandleAddMorphsButton:............[ PASSED ]
+[11] HandleRemoveMorphsButton:.........[ PASSED ]
+[12] HandleSavePreset:.................[ PASSED ]
+[13] HandlePresetChanged:..............[ PASSED ]
+[14] HandleArmJCMMorphsButton:.........[ PASSED ]
+[15] HandleLegJCMMorphsButton:.........[ PASSED ]
+[16] HandleTorsoJCMMorphsButton:.......[ PASSED ]
+[17] HandleARKitGenesis81MorphsButton:.[ PASSED ]
+[18] HandleFaceFXGenesis8Button:.......[ PASSED ]
+[19] HandleAutoJCMCheckBoxChange:......[ PASSED ]
+
+End of Report.

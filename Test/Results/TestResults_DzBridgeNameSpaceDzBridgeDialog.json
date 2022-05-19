@@ -1,0 +1,139 @@
+{
+	"UnitTest Results Version" : 1,
+	"Class Name" : "DzBridgeNameSpace::DzBridgeDialog",
+	"Number of UnitTests" : 22,
+	"Detailed Test Results" : [
+		{
+			"UnitTest ID" : 0,
+			"Method Name" : "getAssetNameEdit",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 1,
+			"Method Name" : "getAssetTypeCombo",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 2,
+			"Method Name" : "getMorphsEnabledCheckBox",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 3,
+			"Method Name" : "getSubdivisionEnabledCheckBox",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 4,
+			"Method Name" : "getAdvancedSettingsGroupBox",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 5,
+			"Method Name" : "getFbxVersionCombo",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 6,
+			"Method Name" : "getShowFbxDialogCheckBox",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 7,
+			"Method Name" : "_DzBridgeDialog",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 8,
+			"Method Name" : "GetMorphString",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 9,
+			"Method Name" : "GetMorphMapping",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 10,
+			"Method Name" : "resetToDefaults",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 11,
+			"Method Name" : "loadSavedSettings",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 12,
+			"Method Name" : "Accepted",
+			"Test Result" : true,
+			"Test Log" : "Accepted is Qt framework GUI method. Skipping UnitTest..."
+		},
+		{
+			"UnitTest ID" : 13,
+			"Method Name" : "handleSceneSelectionChanged",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 14,
+			"Method Name" : "HandleChooseMorphsButton",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 15,
+			"Method Name" : "HandleMorphsCheckBoxChange",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 16,
+			"Method Name" : "HandleChooseSubdivisionsButton",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 17,
+			"Method Name" : "HandleFBXVersionChange",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 18,
+			"Method Name" : "HandleShowFbxDialogCheckBoxChange",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 19,
+			"Method Name" : "HandleExportMaterialPropertyCSVCheckBoxChange",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 20,
+			"Method Name" : "HandleShowAdvancedSettingsCheckBoxChange",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 21,
+			"Method Name" : "refreshAsset",
+			"Test Result" : true,
+			"Test Log" : ""
+		}
+	]
+}

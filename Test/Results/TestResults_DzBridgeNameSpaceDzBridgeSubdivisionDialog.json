@@ -1,0 +1,67 @@
+{
+	"UnitTest Results Version" : 1,
+	"Class Name" : "DzBridgeNameSpace::DzBridgeSubdivisionDialog",
+	"Number of UnitTests" : 10,
+	"Detailed Test Results" : [
+		{
+			"UnitTest ID" : 0,
+			"Method Name" : "_DzBridgeSubdivisionDialog",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 1,
+			"Method Name" : "getSubdivisionCombos",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 2,
+			"Method Name" : "PrepareDialog",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 3,
+			"Method Name" : "LockSubdivisionProperties",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 4,
+			"Method Name" : "WriteSubdivisions",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 5,
+			"Method Name" : "FindObject",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 6,
+			"Method Name" : "setSubdivisionLevelByNode",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 7,
+			"Method Name" : "UnlockSubdivisionProperties",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 8,
+			"Method Name" : "GetLookupTable",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 9,
+			"Method Name" : "HandleSubdivisionLevelChanged",
+			"Test Result" : true,
+			"Test Log" : ""
+		}
+	]
+}
