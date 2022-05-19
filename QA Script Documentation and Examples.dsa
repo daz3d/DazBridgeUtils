@@ -2,6 +2,16 @@
 
 // QA Script Documentation and Examples
 
+// NOTE: Please read the top section in "How To Use QA Test Scripts.md".  You will
+// notice that QA Reports in the "/Test/Results" folder do not use timestampes,
+// usernames, or absolute filepaths.  This is to remove all changes in the QA
+// Report files from test to test unless the result changes from PASS to FAIL.
+// The benefit is that github can then track the history of test result changes
+// with source-code changes and will easily identify when and where a test fails.
+// However, if there is a test failure, it's recommended that as much details as
+// needed are written into the JSON reports to help debug the failure.
+
+
 // 1. define "Global_sOutputPath" to a folder for test results.
 Global_sOutputPath = "C:/MyProject/Test/Results/";
 
@@ -36,7 +46,7 @@ bReturnValue_of_TestCase01_Function = logToJson("TestCase01", TestCase01_Functio
 var sJsonFile = sOutputPath + "/" + "TestCase_Results.json"
 
 
-// (bool) Run_Exporter(sExportFilename, sAssetType, sRootFolder, sExportFolder, 
+// (bool) Run_Exporter(sExportFilename, sAssetType, sRootFolder, sExportFolder,
 //	                   sProductName, sComponentName, arrayMorphList)
 // Convenience function that creates a DzBridge object, configures it, and exports the
 // currently selected scene node.
@@ -49,7 +59,7 @@ var sJsonFile = sOutputPath + "/" + "TestCase_Results.json"
 // <sExportFolder> destination subfolder within the root folder.  If empty, the bridge
 //    will default to using <sExportFilename> as the subfolder name.
 // <sProductName> optional metadata for Daz Store Product Name, ex: "Kent Hair"
-// <sComponentName> optional metadata for name of component within the product, 
+// <sComponentName> optional metadata for name of component within the product,
 //    ex: "Light Brown Texture"
 // <arrayMorphList> list of morph names to be exported with FBX file.  These are internal
 //    names and not the friendly labels.  If empty, then no morphs will be exported.
@@ -67,23 +77,23 @@ Run_Exporter2(oBridge, "", "", "C:/Root/", "", "", "", []);
 // Validation Convenience Functions
 ///////////////////////////////////////
 
-// (bool) Validate_DTU_file(sDTUFilename) 
-// Validate that the contents of <sDTUFilename> are in valid JSON file format.  
+// (bool) Validate_DTU_file(sDTUFilename)
+// Validate that the contents of <sDTUFilename> are in valid JSON file format.
 // Returns true if valid.
 bReturnVal = Validate_DTU_file("exportpath/exported.dtu");
 
 // (bool) Validate_FBX_file(sFbxFilename)
-// Validates that the contents of <sFbxFilename> are in valid FBX file format.  
+// Validates that the contents of <sFbxFilename> are in valid FBX file format.
 // Returns true if valid.
 bReturnVal = Validate_FBX_file("exportpath/exported.fbx");
 
-// (bool) Validate_Image_Format(sImageFilename) 
+// (bool) Validate_Image_Format(sImageFilename)
 // Validates that the contents of <sImageFilename> are in a valid image file format
 // using QImage.
 // Returns true if valid.
 bReturnVal = Validate_Image_Format("exportpath/exported.png");
 
-// (bool) Validate_NormalMaps(arrNormalMapList, sDTUpath) 
+// (bool) Validate_NormalMaps(arrNormalMapList, sDTUpath)
 // Validates a list of images in <sDTUpath>/ExportTextures/ are valid.
 // <arrNormalMapList> should be filenames without paths
 // <sDTUpath> is the main export folder. The function will check for inside
@@ -106,5 +116,3 @@ bReturnVal = Validate_NormalMaps(aNormalMapList, "pathToDTU");
 // conditions do not match, the function returns false.
 // NOTE: see TC10.dsa for an example
 bReturnVal = Validate_LIE_Textures(5, "d*.png", "pathToDTU");
-
-
