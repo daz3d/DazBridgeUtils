@@ -1,8 +1,8 @@
 // DAZ Studio version 4.16.0.3 filetype DAZ Script
 var includeDir_oFILE = new DzFile( getScriptFileName() );
 //var sIncludePath = includeDir_oFILE.path();
-var sIncludePath = "C:/GitHub/dzBridge-common/Test/UnitTests/"
-var sOutputPath = "C:/GitHub/dzBridge-common/Test/Results/"
+var sIncludePath = "C:/GitHub/DazBridgeUtils-daz3d/Test/UnitTests/"
+var sOutputPath = "C:/GitHub/DazBridgeUtils-daz3d/Test/Results/"
 
 obj = new UnitTest_DzBridgeAction();
 result = false;

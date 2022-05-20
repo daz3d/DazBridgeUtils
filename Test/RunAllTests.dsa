@@ -7,7 +7,7 @@ var commonDir_oFILE = new DzFile( getScriptFileName() );
 var sCommonPath = commonDir_oFILE.path();
 if (sCommonPath == "" || DzDir(sCommonPath).exists() == false)
 {
-	sCommonPath = "C:/GitHub/dzBridge-common/Test"
+	sCommonPath = "C:/GitHub/DazBridgeUtils-daz3d/Test"
 }
 print("DEBUG: Common sIncludePath=[" + sCommonPath + "]");
 Global_sOutputPath = sCommonPath + "/Results/";
@@ -25,14 +25,14 @@ include(sCommonPath + "UnitTests/RunUnitTests.dsa");
 ///////////////////////////
 // Run Unreal UnitTests
 //////////////////////////
-Global_sUnrealPath = sCommonPath.lower().replace("/dzbridge-common/", "/dzbridge-unreal/") + "UnitTests/";
+Global_sUnrealPath = sCommonPath.lower().replace("/dazbridgeutils-daz3d/", "/DazToUnreal-daz3d/") + "UnitTests/";
 print("DEBUG: Unreal sIncludePath=[" + Global_sUnrealPath + "]");
 include(Global_sUnrealPath + "RunUnitTests.dsa");
 
 ///////////////////////////
 // Run Unity UnitTests
 //////////////////////////
-Global_sUnityPath = sCommonPath.lower().replace("/dzbridge-common/", "/dzbridge-unity/") + "UnitTests/";
+Global_sUnityPath = sCommonPath.lower().replace("/dazbridgeutils-daz3d/", "/DazToUnity-daz3d/") + "UnitTests/";
 print("DEBUG: Unity sIncludePath=[" + Global_sUnityPath + "]");
 include(Global_sUnityPath + "RunUnitTests.dsa");
 
@@ -40,14 +40,14 @@ include(Global_sUnityPath + "RunUnitTests.dsa");
 ///////////////////////////
 // Run Unity TestCases
 //////////////////////////
-Global_sUnityPath = sCommonPath.lower().replace("/dzbridge-common/", "/dzbridge-unity/") + "TestCases/";
+Global_sUnityPath = sCommonPath.lower().replace("/dazbridgeutils-daz3d/", "/DazToUnity-daz3d/") + "TestCases/";
 print("DEBUG: Unity sIncludePath=[" + Global_sUnityPath + "]");
 include(Global_sUnityPath + "test_runner.dsa")
 
 ///////////////////////////
 // Run Unreal UnitTests
 //////////////////////////
-Global_sUnrealPath = sCommonPath.lower().replace("/dzbridge-common/", "/dzbridge-unreal/") + "TestCases/";
+Global_sUnrealPath = sCommonPath.lower().replace("/DazBridgeUtils-daz3d/", "/DazToUnreal-daz3d/") + "TestCases/";
 print("DEBUG: Unreal sIncludePath=[" + Global_sUnrealPath + "]");
 include(Global_sUnrealPath + "test_runner.dsa")
 
