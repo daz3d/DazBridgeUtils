@@ -62,9 +62,9 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	int revision = COMMON_REV % 1000;
 	QString workingTitle;
 	if (windowTitle != "")
-		workingTitle = windowTitle + QString(tr(" v%1.%2 Pre-Release Build %3.%4")).arg(COMMON_MAJOR).arg(COMMON_MINOR).arg(revision).arg(COMMON_BUILD);
+		workingTitle = windowTitle + QString(tr(" v%1.%2 Build %3.%4")).arg(COMMON_MAJOR).arg(COMMON_MINOR).arg(revision).arg(COMMON_BUILD);
 	else
-		workingTitle = QString(tr("DazBridge v%1.%2 Pre-Release Build %3.%4").arg(COMMON_MAJOR).arg(COMMON_MINOR).arg(revision).arg(COMMON_BUILD));
+		workingTitle = QString(tr("DazBridge v%1.%2 Build %3.%4").arg(COMMON_MAJOR).arg(COMMON_MINOR).arg(revision).arg(COMMON_BUILD));
 	setWindowTitle(workingTitle);
 	layout()->setSizeConstraint(QLayout::SetFixedSize);
 	mainLayout = new QFormLayout();
