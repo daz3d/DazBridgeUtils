@@ -39,6 +39,9 @@
 #include "dzfacegroup.h"
 #include "dzmaterial.h"
 
+#include "dzgroupnode.h"
+#include "dzinstancenode.h"
+
 #include <QtCore/qdir.h>
 #include <QtGui/qlineedit.h>
 #include <QtNetwork/qudpsocket.h>
@@ -1906,10 +1909,22 @@ void DzBridgeAction::writeInstances(DzNode* Node, DzJsonWriter& Writer, QMap<QSt
 	DzShape* Shape = Object ? Object->getCurrentShape() : NULL;
 	DzGeometry* Geometry = Shape ? Shape->getGeometry() : NULL;
 	DzBone* Bone = qobject_cast<DzBone*>(Node);
+	DzGroupNode* GroupNode = qobject_cast<DzGroupNode*>(Node);
+	DzInstanceNode* InstanceNode = qobject_cast<DzInstanceNode*>(Node);
 
 	if (Bone == nullptr && Geometry)
 	{
 		ExportedGeometry.append(Geometry);
+		ParentID = writeInstance(Node, Writer, ParentID);
+	}
+
+	if (GroupNode)
+	{
+		ParentID = writeInstance(Node, Writer, ParentID);
+	}
+
+	if (InstanceNode)
+	{
 		ParentID = writeInstance(Node, Writer, ParentID);
 	}
 
@@ -1931,12 +1946,24 @@ QUuid DzBridgeAction::writeInstance(DzNode* Node, DzJsonWriter& Writer, QUuid Pa
 
 	QString Path = Node->getAssetFileInfo().getUri().getFilePath();
 	QFile File(Path);
-	QString FileName = File.fileName();
-	QStringList Items = FileName.split("/");
-	QStringList Parts = Items[Items.count() - 1].split(".");
 	QString AssetID = Node->getAssetUri().getId();
 	QString Name = AssetID.remove(QRegExp("[^A-Za-z0-9_]"));
 	QUuid Uid = QUuid::createUuid();
+
+	// Group Node needs an empty InstanceAsset
+	DzGroupNode* GroupNode = qobject_cast<DzGroupNode*>(Node);
+	if (GroupNode)
+	{
+		Name = "";
+	}
+
+	// Instance Node needs an InstanceAsset
+	DzInstanceNode* InstanceNode = qobject_cast<DzInstanceNode*>(Node);
+	if (InstanceNode)
+	{
+		AssetID = InstanceNode->getTarget()->getAssetUri().getId();
+		Name = AssetID.remove(QRegExp("[^A-Za-z0-9_]"));
+	}
 
 	Writer.startObject(true);
 	Writer.addMember("Version", 1);
