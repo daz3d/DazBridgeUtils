@@ -1,0 +1,505 @@
+{
+	"UnitTest Results Version" : 1,
+	"Class Name" : "DzBridgeAction",
+	"Number of UnitTests" : 83,
+	"Detailed Test Results" : [
+		{
+			"UnitTest ID" : 0,
+			"Method Name" : "_DzBridgeAction",
+			"Test Result" : true,
+			"Test Log" : "DzBridgeAction is an abstract class.  Can not test constructor."
+		},
+		{
+			"UnitTest ID" : 1,
+			"Method Name" : "resetToDefaults",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 2,
+			"Method Name" : "cleanString",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 3,
+			"Method Name" : "getAvailableMorphs",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 4,
+			"Method Name" : "getActiveMorphs",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 5,
+			"Method Name" : "makeNormalMapFromHeightMap",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 6,
+			"Method Name" : "preProcessScene",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 7,
+			"Method Name" : "renameDuplicateMaterial",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 8,
+			"Method Name" : "undoRenameDuplicateMaterials",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 9,
+			"Method Name" : "generateMissingNormalMap",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 10,
+			"Method Name" : "undoGenerateMissingNormalMaps",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 11,
+			"Method Name" : "getActionGroup",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 12,
+			"Method Name" : "getDefaultMenuPath",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 13,
+			"Method Name" : "exportAsset",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 14,
+			"Method Name" : "exportNode",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 15,
+			"Method Name" : "writeConfiguration",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 16,
+			"Method Name" : "setExportOptions",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 17,
+			"Method Name" : "readGuiRootFolder",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 18,
+			"Method Name" : "writeDtuHeader",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 19,
+			"Method Name" : "startMaterialBlock",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 20,
+			"Method Name" : "finishMaterialBlock",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 21,
+			"Method Name" : "writeAllMaterials",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 22,
+			"Method Name" : "writeMaterialProperty",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 23,
+			"Method Name" : "writeAllMorphs",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 24,
+			"Method Name" : "writeMorphProperties",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 25,
+			"Method Name" : "writeMorphJointLinkInfo",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 26,
+			"Method Name" : "writeAllSubdivisions",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 27,
+			"Method Name" : "writeSubdivisionProperties",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 28,
+			"Method Name" : "writeAllDforceInfo",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 29,
+			"Method Name" : "writeDforceMaterialProperties",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 30,
+			"Method Name" : "writeDforceModifiers",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 31,
+			"Method Name" : "writeEnvironment",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 32,
+			"Method Name" : "writeInstances",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 33,
+			"Method Name" : "writeInstance",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 34,
+			"Method Name" : "writeAllPoses",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 35,
+			"Method Name" : "renameDuplicateMaterials2",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 36,
+			"Method Name" : "undoRenameDuplicateMaterials2",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 37,
+			"Method Name" : "getScenePropList",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 38,
+			"Method Name" : "disconnectNode",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 39,
+			"Method Name" : "reconnectNodes",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 40,
+			"Method Name" : "disconnectOverrideControllers",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 41,
+			"Method Name" : "reconnectOverrideControllers",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 42,
+			"Method Name" : "checkIfPoseExportIsDestructive",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 43,
+			"Method Name" : "unlockTransform",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 44,
+			"Method Name" : "getBridgeDialog",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 45,
+			"Method Name" : "setBridgeDialog",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 46,
+			"Method Name" : "getSubdivisionDialog",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 47,
+			"Method Name" : "setSubdivisionDialog",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 48,
+			"Method Name" : "getMorphSelectionDialog",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 49,
+			"Method Name" : "setMorphSelectionDialog",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 50,
+			"Method Name" : "getAssetType",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 51,
+			"Method Name" : "setAssetType",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 52,
+			"Method Name" : "getExportFilename",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 53,
+			"Method Name" : "setExportFilename",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 54,
+			"Method Name" : "getExportFolder",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 55,
+			"Method Name" : "setExportFolder",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 56,
+			"Method Name" : "getRootFolder",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 57,
+			"Method Name" : "setRootFolder",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 58,
+			"Method Name" : "getProductName",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 59,
+			"Method Name" : "setProductName",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 60,
+			"Method Name" : "getProductComponentName",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 61,
+			"Method Name" : "setProductComponentName",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 62,
+			"Method Name" : "getMorphList",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 63,
+			"Method Name" : "setMorphList",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 64,
+			"Method Name" : "getUseRelativePaths",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 65,
+			"Method Name" : "setUseRelativePaths",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 66,
+			"Method Name" : "isTemporaryFile",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 67,
+			"Method Name" : "exportAssetWithDtu",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 68,
+			"Method Name" : "writePropertyTexture",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 69,
+			"Method Name" : "makeUniqueFilename",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 70,
+			"Method Name" : "getUndoNormalMaps",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 71,
+			"Method Name" : "setUndoNormalMaps",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 72,
+			"Method Name" : "getNonInteractiveMode",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 73,
+			"Method Name" : "setNonInteractiveMode",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 74,
+			"Method Name" : "getExportFbx",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 75,
+			"Method Name" : "setExportFbx",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 76,
+			"Method Name" : "readGui",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 77,
+			"Method Name" : "exportHD",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 78,
+			"Method Name" : "upgradeToHD",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 79,
+			"Method Name" : "writeWeightMaps",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 80,
+			"Method Name" : "metaInvokeMethod",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 81,
+			"Method Name" : "copyFile",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 82,
+			"Method Name" : "getMD5",
+			"Test Result" : true,
+			"Test Log" : ""
+		}
+	]
+}

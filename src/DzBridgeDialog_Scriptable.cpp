@@ -1,0 +1,9 @@
+
+#include "DzBridgeDialog_Scriptable.h"
+
+/*****************************
+Local definitions
+*****************************/
+#define DAZ_BRIDGE_LIBRARY_NAME "Daz Bridge"
+
+#include "moc_DzBridgeDialog_Scriptable.cpp"

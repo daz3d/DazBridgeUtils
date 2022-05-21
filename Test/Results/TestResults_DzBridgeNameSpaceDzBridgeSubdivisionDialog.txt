@@ -1,0 +1,20 @@
+======= UnitTest Details =======
+
+
+======= UnitTest Summary =======
+
+Class Name: DzBridgeNameSpace::DzBridgeSubdivisionDialog
+Number of UnitTests: 10
+
+[ 0] _DzBridgeSubdivisionDialog:....[ PASSED ]
+[ 1] getSubdivisionCombos:..........[ PASSED ]
+[ 2] PrepareDialog:.................[ PASSED ]
+[ 3] LockSubdivisionProperties:.....[ PASSED ]
+[ 4] WriteSubdivisions:.............[ PASSED ]
+[ 5] FindObject:....................[ PASSED ]
+[ 6] setSubdivisionLevelByNode:.....[ PASSED ]
+[ 7] UnlockSubdivisionProperties:...[ PASSED ]
+[ 8] GetLookupTable:................[ PASSED ]
+[ 9] HandleSubdivisionLevelChanged:.[ PASSED ]
+
+End of Report.

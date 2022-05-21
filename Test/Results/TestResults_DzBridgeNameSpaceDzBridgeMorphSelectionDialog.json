@@ -1,0 +1,127 @@
+{
+	"UnitTest Results Version" : 1,
+	"Class Name" : "DzBridgeNameSpace::DzBridgeMorphSelectionDialog",
+	"Number of UnitTests" : 20,
+	"Detailed Test Results" : [
+		{
+			"UnitTest ID" : 0,
+			"Method Name" : "_DzBridgeMorphSelectionDialog",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 1,
+			"Method Name" : "PrepareDialog",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 2,
+			"Method Name" : "GetMorphString",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 3,
+			"Method Name" : "GetMorphCSVString",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 4,
+			"Method Name" : "GetMorphRenaming",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 5,
+			"Method Name" : "IsAutoJCMEnabled",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 6,
+			"Method Name" : "GetActiveJointControlledMorphs",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 7,
+			"Method Name" : "GetMorphLabelFromName",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 8,
+			"Method Name" : "FilterChanged",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 9,
+			"Method Name" : "ItemSelectionChanged",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 10,
+			"Method Name" : "HandleAddMorphsButton",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 11,
+			"Method Name" : "HandleRemoveMorphsButton",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 12,
+			"Method Name" : "HandleSavePreset",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 13,
+			"Method Name" : "HandlePresetChanged",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 14,
+			"Method Name" : "HandleArmJCMMorphsButton",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 15,
+			"Method Name" : "HandleLegJCMMorphsButton",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 16,
+			"Method Name" : "HandleTorsoJCMMorphsButton",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 17,
+			"Method Name" : "HandleARKitGenesis81MorphsButton",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 18,
+			"Method Name" : "HandleFaceFXGenesis8Button",
+			"Test Result" : true,
+			"Test Log" : ""
+		},
+		{
+			"UnitTest ID" : 19,
+			"Method Name" : "HandleAutoJCMCheckBoxChange",
+			"Test Result" : true,
+			"Test Log" : ""
+		}
+	]
+}

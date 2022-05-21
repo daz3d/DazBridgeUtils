@@ -1,0 +1,118 @@
+// DAZ Studio version 4.16.0.3 filetype DAZ Script
+
+// QA Script Documentation and Examples
+
+// NOTE: Please read the top section in "How To Use QA Test Scripts.md".  You will
+// notice that QA Reports in the "/Test/Results" folder do not use timestampes,
+// usernames, or absolute filepaths.  This is to remove all changes in the QA
+// Report files from test to test unless the result changes from PASS to FAIL.
+// The benefit is that github can then track the history of test result changes
+// with source-code changes and will easily identify when and where a test fails.
+// However, if there is a test failure, it's recommended that as much details as
+// needed are written into the JSON reports to help debug the failure.
+
+
+// 1. define "Global_sOutputPath" to a folder for test results.
+Global_sOutputPath = "C:/MyProject/Test/Results/";
+
+// 2. Include the "Test/TestCases/QA_Utility_Functions.dsa"
+include("C:/GitHub/dzbridge-common/Test/TestCases/QA_Utility_Functions.dsa");
+
+// 3. Use clearLog() to initialize the temporary log file so it is ready to
+// receive output from printToLog().
+clearLog();
+
+// 4. Use printToLog(string) instead of print(string) for all output intended to
+// be written to the QA test log file under the current test.
+// NOTE: Like print(), each call to printToLog() will automatically add a new line ("\n").
+printToLog("Starting TestCase01...");
+printToLog("TestCase01, part 1: file format OK");
+printToLog("TestCase01, part 2: file format OK");
+printToLog("TestCase01 completed successfully.");
+
+
+// 5. Use logToJson(sTestName, bResult) to create a new JSON entry in the JSON Test
+// results file.  Calling logToJson() will automatically clear the log file via clearLog().
+// NOTE: Instead of bResult, you can pass a function call or expression.  The return value
+// of that function will be logged in the JSON test entry and also passed back as the return
+// value of logToJson().
+function TestCase01_Function(args) { return true; }
+args = "test_data";
+bReturnValue_of_TestCase01_Function = logToJson("TestCase01", TestCase01_Function(args));
+
+// NOTE: The filename for the JSON Test Results file is stored in the
+// QA_Utility_Functions.dsa, as sJsonFile.
+// Line 5 of QA_Utility_Functioins.dsa:
+var sJsonFile = sOutputPath + "/" + "TestCase_Results.json"
+
+
+// (bool) Run_Exporter(sExportFilename, sAssetType, sRootFolder, sExportFolder,
+//	                   sProductName, sComponentName, arrayMorphList)
+// Convenience function that creates a DzBridge object, configures it, and exports the
+// currently selected scene node.
+// <sExportFilename> filename stem to use for DTU file
+//     this can be left empty, and the bridge will automatically use the name of the
+//     filename of the loaded scene file, or the label of the selected scene node.
+// <sAssetType> "SkeletalMesh", "StaticMesh", "Animation", "Pose", "Environment"
+//     this can be left empty and the bridge will automatically choose a compatible type.
+// <sRootFolder> destination root folder
+// <sExportFolder> destination subfolder within the root folder.  If empty, the bridge
+//    will default to using <sExportFilename> as the subfolder name.
+// <sProductName> optional metadata for Daz Store Product Name, ex: "Kent Hair"
+// <sComponentName> optional metadata for name of component within the product,
+//    ex: "Light Brown Texture"
+// <arrayMorphList> list of morph names to be exported with FBX file.  These are internal
+//    names and not the friendly labels.  If empty, then no morphs will be exported.
+// NOTE: see TC06.dsa for example of morph export.
+Run_Exporter("victoria8", "", "C:/MyDocs/DestinationRoot/", "", "", "", []);
+
+// (bool) Run_Exporter2(oBridge, sExportFilename, sAssetType, sRootFolder,
+//	                    sExportFolder, sProductName, sComponentName, arrayMorphList)
+// Like Run_Exporter(), but you can pass in your own pre-configured DazBridge object.
+// NOTE: See TC07.dsa for an example with custom-configured bridge and subdivision dialogs.
+oBridge = new DzBridgeScriptableAction();
+Run_Exporter2(oBridge, "", "", "C:/Root/", "", "", "", []);
+
+///////////////////////////////////////
+// Validation Convenience Functions
+///////////////////////////////////////
+
+// (bool) Validate_DTU_file(sDTUFilename)
+// Validate that the contents of <sDTUFilename> are in valid JSON file format.
+// Returns true if valid.
+bReturnVal = Validate_DTU_file("exportpath/exported.dtu");
+
+// (bool) Validate_FBX_file(sFbxFilename)
+// Validates that the contents of <sFbxFilename> are in valid FBX file format.
+// Returns true if valid.
+bReturnVal = Validate_FBX_file("exportpath/exported.fbx");
+
+// (bool) Validate_Image_Format(sImageFilename)
+// Validates that the contents of <sImageFilename> are in a valid image file format
+// using QImage.
+// Returns true if valid.
+bReturnVal = Validate_Image_Format("exportpath/exported.png");
+
+// (bool) Validate_NormalMaps(arrNormalMapList, sDTUpath)
+// Validates a list of images in <sDTUpath>/ExportTextures/ are valid.
+// <arrNormalMapList> should be filenames without paths
+// <sDTUpath> is the main export folder. The function will check for inside
+// "<sDTUPath>/ExportTextures/" for the each filename in <arrNormalMapList>
+// NOTE: <sDTUPath>/ExportTextures/ must contain the exact files that are listed
+// in <arrNormalMapList> and all files must end with "_nm.png".  If there are missing
+// files or extra files, then the Validate_NormalMaps() function will return false.
+// If any files are not valid QImage files, the function will return false.
+aNormalMapList = ["image1_nm.png", "image2_nm.png", "image3_nm.png"];
+bReturnVal = Validate_NormalMaps(aNormalMapList, "pathToDTU");
+
+// (bool) Validate_LIE_Textures(nNumLIETextures, sNameFilters, sDTUpath)
+// Validate a number of images in the ExportTextures folder.
+// <nNumLIETextures> is the number of images in the <sDTUPath>/ExportTextures folder
+// <sNameFilters> is a filename search expression, example: "d*.png" or "*.jpg"
+// <sDTUpath> is the export folder which contains an "ExportTextures" subfolder.
+// NOTE: <sDTUPath>/ExportTextures/ must contain a set of image files which match
+// the <sNameFilters> search string that has a count of <nNumLIETextures>.
+// Each image file in the match set must also be valid QImage files.  If any of these
+// conditions do not match, the function returns false.
+// NOTE: see TC10.dsa for an example
+bReturnVal = Validate_LIE_Textures(5, "d*.png", "pathToDTU");

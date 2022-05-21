@@ -1,0 +1,54 @@
+// DAZ Studio version 4.16.0.3 filetype DAZ Script
+print("RunAllTests.dsa started at " + Date());
+
+Global_RunAllTests = true;
+
+var commonDir_oFILE = new DzFile( getScriptFileName() );
+var sCommonPath = commonDir_oFILE.path();
+if (sCommonPath == "" || DzDir(sCommonPath).exists() == false)
+{
+	sCommonPath = "C:/GitHub/DazBridgeUtils-daz3d/Test"
+}
+print("DEBUG: Common sIncludePath=[" + sCommonPath + "]");
+Global_sOutputPath = sCommonPath + "/Results/";
+print("DEBUG: Global_sOutputPath=[" + Global_sOutputPath + "]");
+sCommonPath = sCommonPath + "/";
+
+include(sCommonPath + "TestCases/QA_Utility_Functions.dsa");
+
+///////////////////////////
+// Run Common Tests (UnitTests only)
+//////////////////////////
+print("DEBUG: Common sIncludePath=[" + sCommonPath + "]");
+include(sCommonPath + "UnitTests/RunUnitTests.dsa");
+
+///////////////////////////
+// Run Unreal UnitTests
+//////////////////////////
+Global_sUnrealPath = sCommonPath.lower().replace("/dazbridgeutils-daz3d/", "/DazToUnreal-daz3d/") + "UnitTests/";
+print("DEBUG: Unreal sIncludePath=[" + Global_sUnrealPath + "]");
+include(Global_sUnrealPath + "RunUnitTests.dsa");
+
+///////////////////////////
+// Run Unity UnitTests
+//////////////////////////
+Global_sUnityPath = sCommonPath.lower().replace("/dazbridgeutils-daz3d/", "/DazToUnity-daz3d/") + "UnitTests/";
+print("DEBUG: Unity sIncludePath=[" + Global_sUnityPath + "]");
+include(Global_sUnityPath + "RunUnitTests.dsa");
+
+
+///////////////////////////
+// Run Unity TestCases
+//////////////////////////
+Global_sUnityPath = sCommonPath.lower().replace("/dazbridgeutils-daz3d/", "/DazToUnity-daz3d/") + "TestCases/";
+print("DEBUG: Unity sIncludePath=[" + Global_sUnityPath + "]");
+include(Global_sUnityPath + "test_runner.dsa")
+
+///////////////////////////
+// Run Unreal UnitTests
+//////////////////////////
+Global_sUnrealPath = sCommonPath.lower().replace("/DazBridgeUtils-daz3d/", "/DazToUnreal-daz3d/") + "TestCases/";
+print("DEBUG: Unreal sIncludePath=[" + Global_sUnrealPath + "]");
+include(Global_sUnrealPath + "test_runner.dsa")
+
+print("RunAllTests.dsa completed at " + Date());
