@@ -22,6 +22,12 @@ set(OSDI_SOURCES
 	../include/OpenSubdivInterface.h
 )
 
+set(MINI_LIBZIP_SOURCES
+	miniz.h
+	../include/zip.h
+	zip.c
+)
+
 set(LIB_SRCS
 	${LIB_HEADERS}
 	DzBridgeAction.cpp
@@ -37,6 +43,7 @@ add_library(dzbridge-static
 	${OS_SOURCES}
 	${OFBXI_SOURCES}
 	${OSDI_SOURCES}
+	${MINI_LIBZIP_SOURCES}
 )
 
 target_include_directories(dzbridge-static

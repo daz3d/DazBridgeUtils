@@ -15,6 +15,8 @@
 #include <QtGui/qlistwidget.h>
 #include <QtGui/qgroupbox.h>
 
+#include "qmessagebox.h"
+
 #include "dzapp.h"
 #include "dzscene.h"
 #include "dzstyle.h"
@@ -29,6 +31,8 @@
 #include "DzBridgeSubdivisionDialog.h"
 #include "common_version.h"
 
+#include "zip.h"
+
 /*****************************
 Local definitions
 *****************************/
@@ -39,19 +43,20 @@ using namespace DzBridgeNameSpace;
 DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	DzBasicDialog(parent, DAZ_BRIDGE_LIBRARY_NAME)
 {
-	 assetNameEdit = NULL;
-//	 projectEdit = NULL;
-//	 projectButton = NULL;
-	 assetTypeCombo = NULL;
-	 morphsButton = NULL;
-	 morphsEnabledCheckBox = NULL;
-	 subdivisionButton = NULL;
-	 subdivisionEnabledCheckBox = NULL;
-	 advancedSettingsGroupBox = NULL;
-	 fbxVersionCombo = NULL;
-	 showFbxDialogCheckBox = NULL;
+	 assetNameEdit = nullptr;
+//	 projectEdit = nullptr;
+//	 projectButton = nullptr;
+	 assetTypeCombo = nullptr;
+	 morphsButton = nullptr;
+	 morphsEnabledCheckBox = nullptr;
+	 subdivisionButton = nullptr;
+	 subdivisionEnabledCheckBox = nullptr;
+	 advancedSettingsGroupBox = nullptr;
+	 fbxVersionCombo = nullptr;
+	 showFbxDialogCheckBox = nullptr;
 
 	 settings = nullptr;
+	 m_wTargetPluginInstaller = nullptr;
 
 	// Declarations
 	int margin = style()->pixelMetric(DZ_PM_GeneralMargin);
@@ -131,14 +136,33 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	enableNormalMapGenerationCheckBox = new QCheckBox("", this);
 	connect(enableNormalMapGenerationCheckBox, SIGNAL(stateChanged(int)), this, SLOT(HandleEnableNormalMapGenerationCheckBoxChange(int)));
 
+	// Export Material Property CSV option
+	exportMaterialPropertyCSVCheckBox = new QCheckBox("", this);
+	connect(exportMaterialPropertyCSVCheckBox, SIGNAL(stateChanged(int)), this, SLOT(HandleExportMaterialPropertyCSVCheckBoxChange(int)));
+
+	// Install Destination Software Bridge
+	m_wTargetPluginInstaller = new QWidget();
+	QHBoxLayout* targetPluginInstallerLayout = new QHBoxLayout();
+	m_TargetSoftwareVersionCombo = new QComboBox(m_wTargetPluginInstaller);
+	m_TargetSoftwareVersionCombo->addItem("Software Version");
+	m_TargetPluginInstallerButton = new QPushButton("Install Plugin", m_wTargetPluginInstaller);
+	connect(m_TargetPluginInstallerButton, SIGNAL(clicked(bool)), this, SLOT(HandleTargetPluginInstallerButton()));
+	targetPluginInstallerLayout->addWidget(m_TargetSoftwareVersionCombo, 2);
+	targetPluginInstallerLayout->addWidget(m_TargetPluginInstallerButton, 1);
+	m_wTargetPluginInstaller->setLayout(targetPluginInstallerLayout);
+
 	// Add the widget to the basic dialog
 	mainLayout->addRow("Asset Name", assetNameEdit);
 	mainLayout->addRow("Asset Type", assetTypeCombo);
 	mainLayout->addRow("Enable Morphs", morphsLayout);
 	mainLayout->addRow("Enable Subdivision", subdivisionLayout);
+	// Advanced Settings Layout
+	advancedLayout->addRow("Destination Plugin Installer", m_wTargetPluginInstaller);
+	showTargetPluginInstaller(false);
 	advancedLayout->addRow("FBX Version", fbxVersionCombo);
 	advancedLayout->addRow("Show FBX Dialog", showFbxDialogCheckBox);
 	advancedLayout->addRow("Enable Normal Map Generation", enableNormalMapGenerationCheckBox);
+	advancedLayout->addRow("Export Material CSV", exportMaterialPropertyCSVCheckBox);
 
 	addLayout(mainLayout);
 
@@ -153,16 +177,59 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	connect(advancedSettingsGroupBox, SIGNAL(clicked(bool)), this, SLOT(HandleShowAdvancedSettingsCheckBoxChange(bool)));
 
 	// Help
-	assetNameEdit->setWhatsThis("This is the name the asset will use in Unreal.");
+	assetNameEdit->setWhatsThis("This is the name the asset will use in the destination software.");
 	assetTypeCombo->setWhatsThis("Skeletal Mesh for something with moving parts, like a character\nStatic Mesh for things like props\nAnimation for a character animation.");
+	subdivisionButton->setWhatsThis("Select Subdivision Detail Level to Bake into each exported mesh.");
+	morphsButton->setWhatsThis("Select Morphs to export with asset.");
 	fbxVersionCombo->setWhatsThis("The version of FBX to use when exporting assets.");
 	showFbxDialogCheckBox->setWhatsThis("Checking this will show the FBX Dialog for adjustments before export.");
+	exportMaterialPropertyCSVCheckBox->setWhatsThis("Checking this will write out a CSV of all the material properties.  Useful for reference when changing materials.");
+	enableNormalMapGenerationCheckBox->setWhatsThis("Checking this will enable generation of Normal Maps for any surfaces that only have Bump Height Maps.");
+	m_wTargetPluginInstaller->setWhatsThis("Install a plugin to use Daz Bridge with the destination software.");
 
+	// detect scene change
 	connect(dzScene, SIGNAL(nodeSelectionListChanged()), this, SLOT(handleSceneSelectionChanged()));
 
 	// Set Defaults
 	resetToDefaults();
 
+}
+
+void DzBridgeDialog::renameTargetPluginInstaller(QString sNewLabelName)
+{
+	if (m_wTargetPluginInstaller == nullptr)
+		return;
+
+	auto wTargetPluginInstallerLabel = advancedLayout->labelForField(m_wTargetPluginInstaller);
+	QLabel* rowLabel = qobject_cast<QLabel*>(wTargetPluginInstallerLabel);
+	if (rowLabel != nullptr)
+	{
+		rowLabel->setText(sNewLabelName);
+	}
+
+	return;
+}
+
+void DzBridgeDialog::showTargetPluginInstaller(bool bShowWidget)
+{
+	if (m_wTargetPluginInstaller == nullptr)
+		return;
+
+	if (bShowWidget)
+	{
+		m_wTargetPluginInstaller->setVisible(true);
+		auto targetPluginInstallerLabel = advancedLayout->labelForField(m_wTargetPluginInstaller);
+		targetPluginInstallerLabel->setVisible(true);
+		this->advancedLayout->update();
+	}
+	else
+	{
+		m_wTargetPluginInstaller->setVisible(false);
+		auto targetPluginInstallerLabel = advancedLayout->labelForField(m_wTargetPluginInstaller);
+		targetPluginInstallerLabel->setVisible(false);
+		this->advancedLayout->update();
+	}
+	return;
 }
 
 bool DzBridgeDialog::loadSavedSettings()
@@ -201,6 +268,10 @@ bool DzBridgeDialog::loadSavedSettings()
 	{
 		enableNormalMapGenerationCheckBox->setChecked(settings->value("EnableNormalMapGeneration").toBool());
 	}
+	if (!settings->value("ExportMaterialPropertyCSV").isNull())
+	{
+		exportMaterialPropertyCSVCheckBox->setChecked(settings->value("ExportMaterialPropertyCSV").toBool());
+	}
 
 	return true;
 }
@@ -231,13 +302,15 @@ void DzBridgeDialog::refreshAsset()
 
 void DzBridgeDialog::resetToDefaults()
 {
+	m_DontSaveSettings = true;
 	// Set Defaults
 	refreshAsset();
 
 	subdivisionEnabledCheckBox->setChecked(false);
 	morphsEnabledCheckBox->setChecked(false);
 	showFbxDialogCheckBox->setChecked(false);
-
+	exportMaterialPropertyCSVCheckBox->setChecked(false);
+	m_DontSaveSettings = false;
 }
 
 void DzBridgeDialog::handleSceneSelectionChanged()
@@ -267,29 +340,29 @@ QString DzBridgeDialog::GetMorphString()
 
 void DzBridgeDialog::HandleMorphsCheckBoxChange(int state)
 {
-	if (settings == nullptr) return;
+	if (settings == nullptr || m_DontSaveSettings) return;
 	settings->setValue("MorphsEnabled", state == Qt::Checked);
 }
 
 void DzBridgeDialog::HandleSubdivisionCheckBoxChange(int state)
 {
-	if (settings == nullptr) return;
+	if (settings == nullptr || m_DontSaveSettings) return;
 	settings->setValue("SubdivisionEnabled", state == Qt::Checked);
 }
 
 void DzBridgeDialog::HandleFBXVersionChange(const QString& fbxVersion)
 {
-	if (settings == nullptr) return;
+	if (settings == nullptr || m_DontSaveSettings) return;
 	settings->setValue("FBXExportVersion", fbxVersion);
 }
 void DzBridgeDialog::HandleShowFbxDialogCheckBoxChange(int state)
 {
-	if (settings == nullptr) return;
+	if (settings == nullptr || m_DontSaveSettings) return;
 	settings->setValue("ShowFBXDialog", state == Qt::Checked);
 }
 void DzBridgeDialog::HandleExportMaterialPropertyCSVCheckBoxChange(int state)
 {
-	if (settings == nullptr) return;
+	if (settings == nullptr || m_DontSaveSettings) return;
 	settings->setValue("ExportMaterialPropertyCSV", state == Qt::Checked);
 }
 
@@ -297,13 +370,146 @@ void DzBridgeDialog::HandleShowAdvancedSettingsCheckBoxChange(bool checked)
 {
 	advancedWidget->setHidden(!checked);
 
-	if (settings == nullptr) return;
+	if (settings == nullptr || m_DontSaveSettings) return;
 	settings->setValue("ShowAdvancedSettings", checked);
 }
 void DzBridgeDialog::HandleEnableNormalMapGenerationCheckBoxChange(int state)
 {
-	if (settings == nullptr) return;
+	if (settings == nullptr || m_DontSaveSettings) return;
 	settings->setValue("EnableNormalMapGeneration", state == Qt::Checked);
+}
+
+void DzBridgeDialog::HandleTargetPluginInstallerButton()
+{
+	if (m_wTargetPluginInstaller == nullptr) return;
+
+	// Validate software version and set resource zip files to extract
+	QString softwareVersion = m_TargetSoftwareVersionCombo->currentText();
+	if (softwareVersion == "" || softwareVersion.contains("select"))
+	{
+		// Warning, not a valid plugins folder path
+		QMessageBox::information(0, "Daz Bridge",
+			tr("Please select a software version."));
+		return;
+	}
+	QString sPluginZipFilename = "/ThisIsExampleFilenameOnlyAndWillNotWork.zip"; // Example 
+	QString sEmbeddedPath = ":/DazBridge";
+	QString sPluginZipPath = sEmbeddedPath + sPluginZipFilename;
+
+	// For first run, display help / explanation popup dialog...
+	// TODO
+
+	// Get Destination Folder
+	QString directoryName = QFileDialog::getExistingDirectory(this,
+		tr("Choose the correct path to install plugins for your target software"),
+		"/home",
+		QFileDialog::ShowDirsOnly
+		| QFileDialog::DontResolveSymlinks);
+
+	if (directoryName == NULL)
+	{
+		// User hit cancel: return without addition popups
+		return;
+	}
+
+	// fix path separators
+	directoryName = directoryName.replace("\\", "/");
+
+	// Validate selected Folder is valid for plugin
+	bool bIsValidPluginPath = false;
+	QString sPluginsPath = directoryName;
+
+	if (bIsValidPluginPath == false)
+	{
+		// Warning, not a valid plugins folder path
+		auto userChoice = QMessageBox::warning(0, "Daz Bridge",
+			tr("The selected folder is not a valid plugins folder.  Please select a \
+valid plugins folder for your sofware.\n\nYou can choose to Abort and select a new folder, \
+or Ignore this error and install the plugin anyway."),
+QMessageBox::Ignore | QMessageBox::Abort,
+QMessageBox::Abort);
+		if (userChoice == QMessageBox::StandardButton::Abort)
+			return;
+	}
+
+	// create plugins folder if does not exist
+	if (QDir(sPluginsPath).exists() == false)
+	{
+		QDir().mkdir(sPluginsPath);
+	}
+
+	bool bInstallSuccessful = false;
+	bInstallSuccessful = installEmbeddedArchive(sPluginZipFilename, directoryName);
+
+	// verify successful plugin extraction/installation
+	if (bInstallSuccessful)
+	{
+		QMessageBox::information(0, "Daz Bridge",
+			tr("Plugin successfully installed to: ") + sPluginsPath +
+			tr("\n\nIf the target software is open, please quit and restart it to continue \
+Bridge Export process."));
+	}
+	else
+	{
+		QMessageBox::warning(0, "Daz Bridge",
+			tr("Sorry, an unknown error occured. Unable to install \
+target software Plugin to: ") + sPluginsPath);
+		return;
+	}
+
+	return;
+}
+
+bool DzBridgeDialog::installEmbeddedArchive(QString sArchiveFilename, QString sDestinationPath)
+{
+	bool bInstallSuccessful = false;
+
+	QString sEmbeddedArchivePath = m_sEmbeddedFilesPath + sArchiveFilename;
+
+	// copy zip plugin to temp
+	bool replace = true;
+	QFile srcFile(sEmbeddedArchivePath);
+	QString tempPathArchive = dzApp->getTempPath() + sArchiveFilename;
+	DzBridgeAction::copyFile(&srcFile, &tempPathArchive, replace);
+	srcFile.close();
+
+	// extract to destionation
+	::zip_extract(tempPathArchive.toAscii().data(), sDestinationPath.toAscii().data(), nullptr, nullptr);
+
+	// verify extraction was successfull
+	// 1. get filename from archive
+	// 2. test to see if destination path contains filename
+	QStringList archiveFileNames;
+	struct zip_t* zip = zip_open(tempPathArchive.toAscii().data(), 0, 'r');
+	int i, n = zip_entries_total(zip);
+	for (i = 0; i < n; ++i) {
+		zip_entry_openbyindex(zip, i);
+		{
+			const char* name = zip_entry_name(zip);
+			archiveFileNames.append(QString(name));
+			int isdir = zip_entry_isdir(zip);
+			unsigned long long size = zip_entry_size(zip);
+			unsigned int crc32 = zip_entry_crc32(zip);
+		}
+		zip_entry_close(zip);
+	}
+	zip_close(zip);
+	bInstallSuccessful = true;
+	for (QString filename : archiveFileNames)
+	{
+		QString filePath = sDestinationPath + "/" + filename;
+		if (QFile(filePath).exists() == false)
+		{
+			bInstallSuccessful = false;
+			break;
+		}
+	}
+
+	// remove if succcessful, else leave intermediate files for debugging
+	if (bInstallSuccessful)
+		QFile(tempPathArchive).remove();
+
+	return bInstallSuccessful;
 }
 
 

@@ -73,6 +73,9 @@ namespace DzBridgeNameSpace
 		bool generateMissingNormalMap(DzMaterial* material);
 		bool undoGenerateMissingNormalMaps();
 
+		Q_INVOKABLE static bool copyFile(QFile* file, QString* dst, bool replace = true, bool compareFiles = true);
+		Q_INVOKABLE static QString getMD5(const QString& path);
+
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo
@@ -216,8 +219,6 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE void writeWeightMaps(DzNode* Node, DzJsonWriter& Stream);
 
 		Q_INVOKABLE bool metaInvokeMethod(QObject* object, const char* methodSig, void** returnPtr);
-		Q_INVOKABLE bool copyFile(QFile* file, QString* dst, bool replace = true, bool compareFiles = true);
-		Q_INVOKABLE QString getMD5(const QString& path);
 
 	private:
 		class MaterialGroupExportOrderMetaData
