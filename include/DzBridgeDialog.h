@@ -99,6 +99,7 @@ namespace DzBridgeNameSpace
 		QComboBox* m_TargetSoftwareVersionCombo;
 
 		QString m_sEmbeddedFilesPath = ":/DazBridge";
+		bool m_DontSaveSettings = false;
 
 #ifdef UNITTEST_DZBRIDGE
 		friend class ::UnitTest_DzBridgeDialog;

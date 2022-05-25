@@ -302,6 +302,7 @@ void DzBridgeDialog::refreshAsset()
 
 void DzBridgeDialog::resetToDefaults()
 {
+	m_DontSaveSettings = true;
 	// Set Defaults
 	refreshAsset();
 
@@ -309,7 +310,7 @@ void DzBridgeDialog::resetToDefaults()
 	morphsEnabledCheckBox->setChecked(false);
 	showFbxDialogCheckBox->setChecked(false);
 	exportMaterialPropertyCSVCheckBox->setChecked(false);
-
+	m_DontSaveSettings = false;
 }
 
 void DzBridgeDialog::handleSceneSelectionChanged()
@@ -339,29 +340,29 @@ QString DzBridgeDialog::GetMorphString()
 
 void DzBridgeDialog::HandleMorphsCheckBoxChange(int state)
 {
-	if (settings == nullptr) return;
+	if (settings == nullptr || m_DontSaveSettings) return;
 	settings->setValue("MorphsEnabled", state == Qt::Checked);
 }
 
 void DzBridgeDialog::HandleSubdivisionCheckBoxChange(int state)
 {
-	if (settings == nullptr) return;
+	if (settings == nullptr || m_DontSaveSettings) return;
 	settings->setValue("SubdivisionEnabled", state == Qt::Checked);
 }
 
 void DzBridgeDialog::HandleFBXVersionChange(const QString& fbxVersion)
 {
-	if (settings == nullptr) return;
+	if (settings == nullptr || m_DontSaveSettings) return;
 	settings->setValue("FBXExportVersion", fbxVersion);
 }
 void DzBridgeDialog::HandleShowFbxDialogCheckBoxChange(int state)
 {
-	if (settings == nullptr) return;
+	if (settings == nullptr || m_DontSaveSettings) return;
 	settings->setValue("ShowFBXDialog", state == Qt::Checked);
 }
 void DzBridgeDialog::HandleExportMaterialPropertyCSVCheckBoxChange(int state)
 {
-	if (settings == nullptr) return;
+	if (settings == nullptr || m_DontSaveSettings) return;
 	settings->setValue("ExportMaterialPropertyCSV", state == Qt::Checked);
 }
 
@@ -369,12 +370,12 @@ void DzBridgeDialog::HandleShowAdvancedSettingsCheckBoxChange(bool checked)
 {
 	advancedWidget->setHidden(!checked);
 
-	if (settings == nullptr) return;
+	if (settings == nullptr || m_DontSaveSettings) return;
 	settings->setValue("ShowAdvancedSettings", checked);
 }
 void DzBridgeDialog::HandleEnableNormalMapGenerationCheckBoxChange(int state)
 {
-	if (settings == nullptr) return;
+	if (settings == nullptr || m_DontSaveSettings) return;
 	settings->setValue("EnableNormalMapGeneration", state == Qt::Checked);
 }
 
