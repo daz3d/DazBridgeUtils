@@ -1,10 +1,12 @@
 // DAZ Studio version 4.16.0.3 filetype DAZ Script
 var includeDir_oFILE = new DzFile( getScriptFileName() );
 //var sIncludePath = includeDir_oFILE.path();
-var sIncludePath = "C:/GitHub/dzBridge-common/Test/TestCases/"
+var sIncludePath = "C:/GitHub/DazBridgeUtils-daz3d/Test/TestCases/"
 
-Global_sOutputPath = "C:/GitHub/dzBridge-common/Test/Results/";
+Global_sOutputPath = "C:/GitHub/DazBridgeUtils-daz3d/Test/Results/";
 
+include(sIncludePath + "_TC1001.dsa")
+/*
 include(sIncludePath + "TC01.dsa")
 include(sIncludePath + "TC02.dsa")
 include(sIncludePath + "TC03.dsa")
@@ -25,15 +27,20 @@ include(sIncludePath + "TC17.dsa")
 include(sIncludePath + "TC18.dsa")
 include(sIncludePath + "TC19b.dsa")
 include(sIncludePath + "TC20.dsa")
+*/
 
 include(sIncludePath + "QA_Utility_Functions.dsa")
 
 function main()
 {
-	var aTCResults = new Array(20);
+	var aTCResults = new Array(1);
 
 	clearLog();
+	clearJson();
 	var i=0;
+	aTCResults[i] = logToJson("TC1001", Run_TestCase_1001("/people/genesis 8 female/genesis 8.1 basic female.duf"));
+	i++;
+/*
 	aTCResults[i] = logToJson("TC01", Run_TestCase_01("/people/genesis 8 female/genesis 8 basic female.duf"));
 	i++;
 	aTCResults[i] = logToJson("TC02", Run_TestCase_02("/people/genesis 8 female/genesis 8.1 basic female.duf"));
@@ -74,7 +81,9 @@ function main()
 	aTCResults[i] = logToJson("TC19", Run_TestCase_19());
 	i++;
 	aTCResults[i] = logToJson("TC20", Run_TestCase_20());
+*/
 
+	clearLog();
 	printToLog("\n");
 	printToLog("=======================");
 	printToLog("Automated Test Results:");
@@ -91,6 +100,8 @@ function main()
 			printToLog("Test Case " + (i+1) + ": **FAILED**");
 		}
 	}
+	writeLogToReport();
+	clearLog();
 
 }
 
