@@ -73,6 +73,9 @@ namespace DzBridgeNameSpace
 		bool generateMissingNormalMap(DzMaterial* material);
 		bool undoGenerateMissingNormalMaps();
 
+		Q_INVOKABLE static bool copyFile(QFile* file, QString* dst, bool replace = true, bool compareFiles = true);
+		Q_INVOKABLE static QString getMD5(const QString& path);
+
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo
