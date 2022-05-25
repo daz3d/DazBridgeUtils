@@ -55,19 +55,26 @@ function readLogText()
 
 function logToJson(testCase, result)
 {
-		var TestCase = testCase;
-        var file = new DzFile(sJsonFile);
-        file.open( DzFile.Append);
-        file.write(
-        	JSON.stringify({
-        	"TestCase ID": TestCase,
-        	"Test Result": result,
-        	"Time": Date(),
-        	"Test Log":readLogText()
-        	}, null, "\t"));
-        file.write("\n");
-        file.close();
-		clearLog();
+	var TestCase = testCase;
+	var file = new DzFile(sJsonFile);
+	var sDateString = "";
+	var sLogString = "";
+	if (result == false)
+	{
+		sDateString = Date();
+		sLogString = readLogText()
+	}
+	file.open( DzFile.Append);
+	file.write(
+		JSON.stringify({
+		"TestCase ID": TestCase,
+		"Test Result": result,
+		"Time": sDateString,
+		"Test Log": sLogString
+		}, null, "\t"));
+	file.write("\n");
+	file.close();
+	clearLog();
 
         return result;
 }
