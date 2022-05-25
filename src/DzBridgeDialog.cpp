@@ -29,6 +29,8 @@
 #include "DzBridgeSubdivisionDialog.h"
 #include "common_version.h"
 
+#include "zip.h"
+
 /*****************************
 Local definitions
 *****************************/
