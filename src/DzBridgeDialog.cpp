@@ -480,20 +480,20 @@ bool DzBridgeDialog::installEmbeddedArchive(QString sArchiveFilename, QString sD
 	// 1. get filename from archive
 	// 2. test to see if destination path contains filename
 	QStringList archiveFileNames;
-	struct zip_t* zip = zip_open(tempPathArchive.toAscii().data(), 0, 'r');
-	int i, n = zip_entries_total(zip);
+	struct zip_t* zip = ::zip_open(tempPathArchive.toAscii().data(), 0, 'r');
+	int i, n = ::zip_entries_total(zip);
 	for (i = 0; i < n; ++i) {
-		zip_entry_openbyindex(zip, i);
+		::zip_entry_openbyindex(zip, i);
 		{
-			const char* name = zip_entry_name(zip);
+			const char* name = ::zip_entry_name(zip);
 			archiveFileNames.append(QString(name));
-			int isdir = zip_entry_isdir(zip);
-			unsigned long long size = zip_entry_size(zip);
-			unsigned int crc32 = zip_entry_crc32(zip);
+			//int isdir = ::zip_entry_isdir(zip);
+			//unsigned long long size = ::zip_entry_size(zip);
+			//unsigned int crc32 = ::zip_entry_crc32(zip);
 		}
-		zip_entry_close(zip);
+		::zip_entry_close(zip);
 	}
-	zip_close(zip);
+	::zip_close(zip);
 	bInstallSuccessful = true;
 	for (QString filename : archiveFileNames)
 	{
