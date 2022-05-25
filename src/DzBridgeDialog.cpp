@@ -408,6 +408,7 @@ void DzBridgeDialog::HandleTargetPluginInstallerButton()
 
 	if (directoryName == NULL)
 	{
+		// User hit cancel: return without addition popups
 		return;
 	}
 
