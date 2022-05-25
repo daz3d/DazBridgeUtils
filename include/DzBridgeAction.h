@@ -46,6 +46,7 @@ namespace DzBridgeNameSpace
 		Q_PROPERTY(QString sProductComponentName READ getProductComponentName WRITE setProductComponentName)
 		Q_PROPERTY(QStringList aMorphList READ getMorphList WRITE setMorphList)
 		Q_PROPERTY(bool bUseRelativePaths READ getUseRelativePaths WRITE setUseRelativePaths)
+		Q_PROPERTY(bool bGenerateNormalMaps READ getGenerateNormalMaps WRITE setGenerateNormalMaps)
 		Q_PROPERTY(bool bUndoNormalMaps READ getUndoNormalMaps WRITE setUndoNormalMaps)
 		Q_PROPERTY(QString sExportFbx READ getExportFbx WRITE setExportFbx)
 		Q_PROPERTY(DzBasicDialog* wBridgeDialog READ getBridgeDialog WRITE setBridgeDialog)
@@ -72,6 +73,9 @@ namespace DzBridgeNameSpace
 		bool undoRenameDuplicateMaterials();
 		bool generateMissingNormalMap(DzMaterial* material);
 		bool undoGenerateMissingNormalMaps();
+
+		Q_INVOKABLE static bool copyFile(QFile* file, QString* dst, bool replace = true, bool compareFiles = true);
+		Q_INVOKABLE static QString getMD5(const QString& path);
 
 	protected:
 		// Struct to remember attachment info
@@ -201,6 +205,9 @@ namespace DzBridgeNameSpace
 		void writePropertyTexture(DzJsonWriter& Writer, QString sName, double dValue, QString sType, QString sTexture);
 		QString makeUniqueFilename(QString sFilename);
 
+		Q_INVOKABLE bool getGenerateNormalMaps() { return this->m_bGenerateNormalMaps; };
+		Q_INVOKABLE void setGenerateNormalMaps(bool arg_GenerateNormalMaps) { this->m_bGenerateNormalMaps = arg_GenerateNormalMaps; };
+
 		Q_INVOKABLE bool getUndoNormalMaps() { return this->m_bUndoNormalMaps; };
 		Q_INVOKABLE void setUndoNormalMaps(bool arg_UndoNormalMaps) { this->m_bUndoNormalMaps = arg_UndoNormalMaps; };
 
@@ -216,8 +223,6 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE void writeWeightMaps(DzNode* Node, DzJsonWriter& Stream);
 
 		Q_INVOKABLE bool metaInvokeMethod(QObject* object, const char* methodSig, void** returnPtr);
-		Q_INVOKABLE bool copyFile(QFile* file, QString* dst, bool replace = true, bool compareFiles = true);
-		Q_INVOKABLE QString getMD5(const QString& path);
 
 	private:
 		class MaterialGroupExportOrderMetaData

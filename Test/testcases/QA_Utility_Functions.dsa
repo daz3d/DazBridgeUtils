@@ -57,13 +57,20 @@ function logToJson(testCase, result)
 {
 		var TestCase = testCase;
         var file = new DzFile(sJsonFile);
+		var sDateString = "";
+		var sLogString = "";
+		if (result == false)
+		{
+			sDateString = Date();
+			sLogString = readLogText()
+		}
         file.open( DzFile.Append);
         file.write(
         	JSON.stringify({
         	"TestCase ID": TestCase,
         	"Test Result": result,
-        	"Time": Date(),
-        	"Test Log":readLogText()
+        	"Time": sDateString,
+        	"Test Log": sLogString
         	}, null, "\t"));
         file.write("\n");
         file.close();
@@ -352,6 +359,8 @@ function Run_Exporter2(oBridge, sExportFilename, sAssetType, sRootFolder, sExpor
 	{
 		obj.setMorphList(arrayMorphList);
 	}
+
+	obj.setGenerateNormalMaps(true);
 
 	obj.executeAction()
 

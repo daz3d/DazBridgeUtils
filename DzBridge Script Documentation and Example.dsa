@@ -1,7 +1,7 @@
 // DAZ Studio version 4.16.0.3 filetype DAZ Script
 
 // DzBridge Script Documentation and Examples
-var oBridge = new DzBridgeScriptableAction();
+var oBridge = new DzBridgeAction();
 var oBridge = new DzBridgeUnityAction();
 var oBridge = new DzUnrealAction();
 
@@ -45,28 +45,28 @@ oBridge.sRootFolder;
 oBridge.getRootFolder();
 oBridge.setRootFolder("");
 
-// (QString) sProductName 
+// (QString) sProductName
 // metadata which is used in batch conversion mode to export the Daz Store Product name
 // not used in interactive mode
 oBridge.sProductName;
 oBridge.getProductName();
 oBridge.setProductName("");
 
-// (QString) sProductComponentName 
+// (QString) sProductComponentName
 // metadata which is used in batch conversion mode to export the Daz Store Product name
 // not used in interactive mode
 oBridge.sProductComponentName;
 oBridge.getProductComponentName();
 oBridge.setProductComponentName("");
 
-// (QStringList) aMorphList 
+// (QStringList) aMorphList
 // List of morphs to be exported
 // these are internal morph names and not the friendly labels
 oBridge.aMorphList;
 oBridge.getMorphList();
 oBridge.setMorphList([]);
 
-// (boolean) bUseRelativePaths 
+// (boolean) bUseRelativePaths
 // false == export DTU file with absolute file paths to Daz Asset Library files (default)
 // true == export DTU file with file paths relative to the root of the Daz Asset Library
 // Enable this option to make DTU files which are independent of installation paths.
@@ -76,21 +76,21 @@ oBridge.bUseRelativePaths;
 oBridge.getUseRelativePaths();
 oBridge.setUseRelativePaths(false);
 
-// (boolean) bUndoNormalMaps 
+// (boolean) bUndoNormalMaps
 // true == undo changes to materials, aka remove generated normal maps, after export (default)
 // false == keep changes to materials, added normal maps
 oBridge.bUndoNormalMaps;
 oBridge.getUndoNormalMaps();
 oBridge.setUndoNormalMaps(true);
 
-// (QString) sExportFbx 
+// (QString) sExportFbx
 // Override filename for exported FBX
 // If empty/blank string, defaults to sExportFilename
 oBridge.sExportFbx;
 oBridge.getExportFbx();
 oBridge.setExportFbx("");
 
-// (DzBasicDialog) wBridgeDialog 
+// (DzBasicDialog) wBridgeDialog
 // widget to main Bridge Dialog window
 // NOTE: returned object is type DzBasicDialog and not type DzBridgeDialog, so member
 // functions of DzBridgeDialog will not be accessible.
@@ -98,7 +98,7 @@ oBridge.wBridgeDialog;
 oBridge.getBridgeDialog();
 oBridge.setBridgeDialog(null);
 
-// (DzBasicDialog) wSubdivisionDialog 
+// (DzBasicDialog) wSubdivisionDialog
 // widget to Subdivision Dialog window
 // NOTE: returned object is type DzBasicDialog and not type DzBridgeSubdivisionDialog,
 // so member functions of DzBridgeSubdivisionDialog will not be accessible.
@@ -106,7 +106,7 @@ oBridge.wSubdivisionDialog;
 oBridge.getSubdivisionDialog();
 oBridge.setSubdivisionDialog(null);
 
-// (DzBasicDialog) wMorphSelectionDialog 
+// (DzBasicDialog) wMorphSelectionDialog
 // widget to Morph Selection Dialog window
 // NOTE: returned object is type DzBasicDialog and not type DzBridgeMorphSelectionDialog,
 // so member functions of DzBridgeMorphSelectionDialog will not be accessible.
@@ -114,9 +114,18 @@ oBridge.wMorphSelectionDialog;
 oBridge.getMorphSelectionDialog();
 oBridge.setMorphSelectionDialog(null);
 
+// (boolean) bGenerateNormalMaps
+// true == Enable Generation of Normal Maps for materials with only Bump Maps
+// false == Do not generate normal maps (default)
+oBridge.bGenerateNormalMaps;
+oBridge.getGenerateNormalMaps();
+oBridge.setGenerateNormalMaps(true);
+
+
+
 /////////////////////////////////////
 //
-// Methods   
+// Methods
 //
 /////////////////////////////////////
 
@@ -164,7 +173,7 @@ oBridge.makeNormalMapFromHeightMap("", 1.0);
 
 /////////////////////////////////////
 //
-// Dialog Classes   
+// Dialog Classes
 //
 /////////////////////////////////////
 
@@ -175,7 +184,36 @@ dzwidget = oBridgeDialog.wAssetTypeCombo
 dzwidget = oBridgeDialog.wMorphsEnabledCheckBox;
 dzwidget = oBridgeDialog.wSubdivisionEnabledCheckBox;
 dzwidget = oBridgeDialog.wAdvancedSettingsGroupBox;
+dzwidget = oBridgeDialog.wFbxVersionCombo
+dzwidget = oBridgeDialog.wShowFbxDialogCheckBox
+dzwidget = oBridgeDialog.wEnableNormalMapGenerationCheckBox
+dzwidget = oBridgeDialog.wExportMaterialPropertyCSVCheckBox
+dzwidget = oBridgeDialog.wTargetPluginInstallerButton
+dzwidget = oBridgeDialog.wTargetSoftwareVersionCombo
 oBridgeDialog.resetToDefaults();
+oBridgeDialog.loadSavedSettings();
+
+// DzBridgeDialog.showTargetPluginInstaller(bool)
+// Shows the UI to Install Target Software Plugins inside the Advanced Settings Box
+// The UI consist of a dropdown combobox to select software version and a button
+// to install the plugin.  To retrieve the widgets, please use above propreties:
+// oBridgeDialog.wTargetPluginInstallerButton
+// oBridgeDialog.wTargetSoftwareVersionCombo
+oBridgeDialog.showTargetPluginInstaller(true)
+// DzBridgeDialog.renameTargetPluginInstaller(QString)
+// Rename the Dialog Label for the Target Plugin Installer widgets
+oBridgeDialog.renameTargetPluginInstaller("New Label Name");
+// DzBridgeDialog.installEmbeddedArchive(QString, QString)
+// Used by the Target Plugin Installer UI to install a specified Zip file which
+// is embedded into the Plugin to the specified destination path.
+// It then does validation of each file to make sure it extracted and exists on disk.
+// Return Values:
+// True == Installation success
+// False == Installation failed
+oBridgeDialog.installEmbeddedArchive("Archive Name", "Destination Path");
+
+// DzBridgeAction.setBridgeDialog(oBridgeDialog)
+// Assign the Dialog Widget to be used with the BridgeAction Object.
 oBridge.setBridgeDialog(oBridgeDialog);
 
 // NOTE: the following classes MUST have a Scene node selected, otherwise they will crash
@@ -196,7 +234,7 @@ if (Scene.getPrimarySelection())
 	sCsvString = oMorphDialog.GetMorphCSVString();
 	// (boolean) DzBridgeMorphSelectionDialog.IsAutoJCMEnabled()
 	// returns true if AutoJCM checkbox is enabled
-	bEnableJCM = oMorphDialog.IsAutoJCMEnabled();	
+	bEnableJCM = oMorphDialog.IsAutoJCMEnabled();
 	// (QString) DzBridgeMorphSelectionDialog.GetMorphLabelFromName(QString arg)
 	// returns friendly label when passed internal morph name via <arg>
 	oMorphDialog.GetMorphLabelFromName("");
@@ -230,7 +268,7 @@ if (Scene.getPrimarySelection())
 	// level to <level>.
 	// Returns true if successful.  Returns false if no match is found or if <level> is
 	// greater than the maximum level available in the Subdivision Level dropdown.
-	oSubdivisionDialog.setSubdivisionLevelByNode(DzNode(), 0); 
+	oSubdivisionDialog.setSubdivisionLevelByNode(DzNode(), 0);
 	oBridge.setSubdivisionDialog(oSubdivisionDialog);
 
 }
@@ -243,7 +281,7 @@ if (Scene.getPrimarySelection())
 /////////////////////////////////////
 
 // (bool) copyFile(QFile file, QString dst, bool bReplace = true, bool bCompareFiles = true)
-// Copies a file to a destination filepath.  
+// Copies a file to a destination filepath.
 // If bReplace is true, then destination file is removed prior to performing copy.
 // Note: on most platforms, the copy operation will fail if destination file exists.
 // If bCompare is also true, then destination file is removed only if MD5 comparison of

@@ -1,4 +1,5 @@
 set(CMAKE_AUTOMOC ON)
+set(CMAKE_AUTORCC ON)
 set(CMAKE_INCLUDE_CURRENT_DIR ON)
 
 set(COMMON_LIB_INCLUDE_DIR ${COMMON_LIB_INCLUDE_DIR} ${CMAKE_CURRENT_SOURCE_DIR})
@@ -22,6 +23,12 @@ set(OSDI_SOURCES
 	../include/OpenSubdivInterface.h
 )
 
+set(MINI_LIBZIP_SOURCES
+	miniz.h
+	../include/zip.h
+	zip.c
+)
+
 set(LIB_SRCS
 	${LIB_HEADERS}
 	DzBridgeAction.cpp
@@ -37,6 +44,7 @@ add_library(dzbridge-static
 	${OS_SOURCES}
 	${OFBXI_SOURCES}
 	${OSDI_SOURCES}
+	${MINI_LIBZIP_SOURCES}
 )
 
 target_include_directories(dzbridge-static
@@ -68,6 +76,7 @@ add_library(dzbridge-shared
 	${OS_SOURCES}
 	${OFBXI_SOURCES}
 	${OSDI_SOURCES}
+	${MINI_LIBZIP_SOURCES}
 	pluginmain.cpp
 	DzBridgeAction_Scriptable.h
 	DzBridgeAction_Scriptable.cpp

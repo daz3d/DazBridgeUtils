@@ -26,6 +26,9 @@ namespace DzBridgeNameSpace
 		Q_PROPERTY(QWidget* wFbxVersionCombo READ getFbxVersionCombo)
 		Q_PROPERTY(QWidget* wShowFbxDialogCheckBox READ getShowFbxDialogCheckBox)
 		Q_PROPERTY(QWidget* wEnableNormalMapGenerationCheckBox READ getEnableNormalMapGenerationCheckBox)
+		Q_PROPERTY(QWidget* wExportMaterialPropertyCSVCheckBox READ getExportMaterialPropertyCSVCheckBox)
+		Q_PROPERTY(QWidget* wTargetPluginInstallerButton READ getTargetPluginInstallerButton)
+		Q_PROPERTY(QWidget* wTargetSoftwareVersionCombo READ getTargetSoftwareVersionCombo)
 	public:
 		Q_INVOKABLE QLineEdit* getAssetNameEdit() { return assetNameEdit; }
 		Q_INVOKABLE QComboBox* getAssetTypeCombo() { return assetTypeCombo; }
@@ -35,6 +38,9 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE QComboBox* getFbxVersionCombo() { return fbxVersionCombo; }
 		Q_INVOKABLE QCheckBox* getShowFbxDialogCheckBox() { return showFbxDialogCheckBox; }
 		Q_INVOKABLE QCheckBox* getEnableNormalMapGenerationCheckBox() { return enableNormalMapGenerationCheckBox; }
+		Q_INVOKABLE QCheckBox* getExportMaterialPropertyCSVCheckBox() { return exportMaterialPropertyCSVCheckBox; }
+		Q_INVOKABLE QPushButton* getTargetPluginInstallerButton() { return m_TargetPluginInstallerButton; }
+		Q_INVOKABLE QComboBox* getTargetSoftwareVersionCombo() { return m_TargetSoftwareVersionCombo; }
 
 		/** Constructor **/
 		DzBridgeDialog(QWidget* parent = nullptr, const QString& windowTitle = "");
@@ -48,20 +54,24 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE QMap<QString, QString> GetMorphMapping() { return morphMapping; }
 		Q_INVOKABLE virtual void resetToDefaults();
 		Q_INVOKABLE virtual bool loadSavedSettings();
-
 		void Accepted();
 
+		Q_INVOKABLE virtual void showTargetPluginInstaller(bool bShowWidget = true);
+		Q_INVOKABLE virtual void renameTargetPluginInstaller(QString sNewLabelName);
+		Q_INVOKABLE bool installEmbeddedArchive(QString sArchiveFilename, QString sDestinationPath);
+
 	protected slots:
-		void handleSceneSelectionChanged();
-		void HandleChooseMorphsButton();
-		void HandleMorphsCheckBoxChange(int state);
-		void HandleChooseSubdivisionsButton();
-		void HandleSubdivisionCheckBoxChange(int state);
-		void HandleFBXVersionChange(const QString& fbxVersion);
-		void HandleShowFbxDialogCheckBoxChange(int state);
-		void HandleExportMaterialPropertyCSVCheckBoxChange(int state);
-		void HandleShowAdvancedSettingsCheckBoxChange(bool checked);
-		void HandleEnableNormalMapGenerationCheckBoxChange(int state);
+		virtual void handleSceneSelectionChanged();
+		virtual void HandleChooseMorphsButton();
+		virtual void HandleMorphsCheckBoxChange(int state);
+		virtual void HandleChooseSubdivisionsButton();
+		virtual void HandleSubdivisionCheckBoxChange(int state);
+		virtual void HandleFBXVersionChange(const QString& fbxVersion);
+		virtual void HandleShowFbxDialogCheckBoxChange(int state);
+		virtual void HandleExportMaterialPropertyCSVCheckBoxChange(int state);
+		virtual void HandleShowAdvancedSettingsCheckBoxChange(bool checked);
+		virtual void HandleEnableNormalMapGenerationCheckBoxChange(int state);
+		virtual void HandleTargetPluginInstallerButton();
 
 	protected:
 		QSettings* settings;
@@ -87,6 +97,13 @@ namespace DzBridgeNameSpace
 		QComboBox* fbxVersionCombo;
 		QCheckBox* showFbxDialogCheckBox;
 		QCheckBox* enableNormalMapGenerationCheckBox;
+		QCheckBox* exportMaterialPropertyCSVCheckBox;
+		QWidget* m_wTargetPluginInstaller;
+		QPushButton* m_TargetPluginInstallerButton;
+		QComboBox* m_TargetSoftwareVersionCombo;
+
+		QString m_sEmbeddedFilesPath = ":/DazBridge";
+		bool m_DontSaveSettings = false;
 
 #ifdef UNITTEST_DZBRIDGE
 		friend class ::UnitTest_DzBridgeDialog;
