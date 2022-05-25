@@ -16,11 +16,17 @@ DZ_PLUGIN_AUTHOR("Daz 3D, Inc");
 
 DZ_PLUGIN_VERSION(COMMON_MAJOR, COMMON_MINOR, COMMON_REV, COMMON_BUILD);
 
+#ifdef _DEBUG
 DZ_PLUGIN_DESCRIPTION(QString(
 "<b>Pre-Release Daz Bridge Library v%1.%2.%3.%4 </b><br>\
-Bridge Collaboration Project<br><br>\
-<a href = \"https://github.com/danielbui78-bridge-collab/DazToRuntime/tree/dzbridge-library-main\">Github</a><br><br>"
+<a href = \"https://github.com/daz3d/DazBridgeUtils\">Github</a><br><br>"
 ).arg(COMMON_MAJOR).arg(COMMON_MINOR).arg(COMMON_REV).arg(COMMON_BUILD));
+#else
+DZ_PLUGIN_DESCRIPTION(QString(
+"This plugin provides the ability to access Daz Bridge functions from Daz Script. \
+Documentation and source code are available on <a href = \"https://github.com/daz3d/DazBridgeUtils\">Github</a><br><br>"
+));
+#endif
 
 NEW_PLUGIN_CUSTOM_CLASS_GUID(DzBridgeDialog, c0830510-cea8-419a-b17b-49b3353e3d07);
 NEW_PLUGIN_CUSTOM_CLASS_GUID(DzBridgeMorphSelectionDialog, 321916ba-0bcc-45d9-8c7e-ebbe80dea51c);
