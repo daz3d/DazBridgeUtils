@@ -1030,6 +1030,7 @@ void DzBridgeAction::exportNode(DzNode* Node)
 		  {
 			  QString CharacterBaseFBX = this->m_sDestinationFBX;
 			  CharacterBaseFBX.replace(".fbx", "_base.fbx");
+			  ExportOptions.setIntValue("RunSilent", true);
 			  Exporter->writeFile(CharacterBaseFBX, &ExportOptions);
 		  }
 		  else
