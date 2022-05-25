@@ -90,6 +90,7 @@ void DzBridgeAction::resetToDefaults()
 	m_bEnableMorphs = false;
 	m_EnableSubdivisions = false;
 	m_bShowFbxOptions = false;
+	m_bExportMaterialPropertiesCSV = false;
 	m_ControllersToDisconnect.clear();
 	m_ControllersToDisconnect.append("facs_bs_MouthClose_div2");
 
