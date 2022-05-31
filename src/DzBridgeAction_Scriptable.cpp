@@ -50,7 +50,7 @@ void DzBridgeAction::executeAction()
 	 DzMainWindow* mw = dzApp->getInterface();
 	 if (!mw)
 	 {
-         if (m_nNonInteractiveMode == 0) 
+         if (m_nNonInteractiveMode == 0)
 		 {
              QMessageBox::warning(0, tr("Error"),
                  tr("The main window has not been created yet."), QMessageBox::Ok);
@@ -63,7 +63,7 @@ void DzBridgeAction::executeAction()
 	 // input from the user.
     if (dzScene->getNumSelectedNodes() != 1)
     {
-        if (m_nNonInteractiveMode == 0) 
+        if (m_nNonInteractiveMode == 0)
 		{
             QMessageBox::warning(0, tr("Error"),
                 tr("Please select one Character or Prop to send."), QMessageBox::Ok);
@@ -118,6 +118,13 @@ void DzBridgeAction::executeAction()
 		// Read in Common GUI values
 		readGui(m_bridgeDialog);
 
+#if __OLDBLENDER__
+		m_sExportFbx = "B_FIG";
+		m_sAssetName = "FIG";
+		m_sDestinationPath = m_sRootFolder + "/";
+		m_sDestinationFBX = m_sDestinationPath + m_sExportFbx + ".fbx";
+#endif
+
 		exportHD();
     }
 }
@@ -145,6 +152,20 @@ void DzBridgeAction::writeConfiguration()
 		 }
 		 writeAllMaterials(m_pSelectedNode, writer, pCVSStream);
 		 writeAllMorphs(writer);
+
+		 writer.startMemberObject("MorphLinks");
+		 writer.finishObject();
+		 writer.startMemberArray("MorphNames");
+		 writer.finishArray();
+
+		 DzBoneList aBoneList = getAllBones(m_pSelectedNode);
+
+		 writeSkeletonData(m_pSelectedNode, writer);
+		 writeHeadTailData(m_pSelectedNode, writer);
+
+		 writeJointOrientation(aBoneList, writer);
+		 writeLimitData(aBoneList, writer);
+		 writePoseData(m_pSelectedNode, writer, true);
 		 writeAllSubdivisions(writer);
 		 writeAllDforceInfo(m_pSelectedNode, writer);
 	 }
@@ -201,6 +222,10 @@ void DzBridgeAction::resetToDefaults()
 QString DzBridgeAction::readGuiRootFolder()
 {
 	QString rootFolder = QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation) + QDir::separator() + "DazBridge";
+#if __OLDBLENDER__
+	rootFolder = QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation) + "/DAZ 3D/Bridges/Daz To Blender/Exports/FIG/FIG0";
+#endif
+	rootFolder = rootFolder.replace("\\","/");
 
 	if (m_bridgeDialog)
 	{

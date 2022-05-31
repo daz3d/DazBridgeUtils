@@ -38,9 +38,15 @@
 #include "dzfacetmesh.h"
 #include "dzfacegroup.h"
 #include "dzmaterial.h"
+#include <dzvec3.h>
+#include <dzskinbinding.h>
+#include <dzbonebinding.h>
+#include <dzerclink.h>
+#include <dzpropertygroup.h>
 
 #include "dzgroupnode.h"
 #include "dzinstancenode.h"
+
 
 #include <QtCore/qdir.h>
 #include <QtGui/qlineedit.h>
@@ -1019,6 +1025,35 @@ void DzBridgeAction::exportNode(DzNode* Node)
 			  }
 		  }
 
+		  //// TODO: REMOVE OVERRIDE WHEN WORKING
+		  //// DEBUG: Override
+		  ExportOptions.setBoolValue("doSelected", false);
+		  ExportOptions.setBoolValue("doVisible", true);
+		  ExportOptions.setBoolValue("doFigures", true);
+		  ExportOptions.setBoolValue("doProps", false);
+		  ExportOptions.setBoolValue("doLights", false);
+		  ExportOptions.setBoolValue("doCameras", false);
+		  ExportOptions.setBoolValue("doAnims", false);
+		  ExportOptions.setBoolValue("doMorphs", true);
+		  ExportOptions.setBoolValue("doFps", true);
+		  ExportOptions.setStringValue("rules", m_sMorphSelectionRule);
+		  ExportOptions.setStringValue("format", "FBX 2014 -- Binary");
+		  ExportOptions.setIntValue("RunSilent", true);
+		  ExportOptions.setBoolValue("doEmbed", false);
+		  ExportOptions.setBoolValue("doCopyTextures", false);
+		  ExportOptions.setBoolValue("doDiffuseOpacity", false);
+		  ExportOptions.setBoolValue("doMergeClothing", true);
+		  ExportOptions.setBoolValue("doStaticClothing", false);
+		  ExportOptions.setBoolValue("degradedSkinning", false);
+		  ExportOptions.setBoolValue("degradedScaling", false);
+		  ExportOptions.setBoolValue("doSubD", false);
+		  //ExportOptions.setBoolValue("doCollapseUVTiles", false);
+		  ExportOptions.setBoolValue("doLocks", false);
+		  ExportOptions.setBoolValue("doLimits", false);
+		  ExportOptions.setBoolValue("doBaseFigurePoseOnly", false);
+		  ExportOptions.setBoolValue("doHelperScriptScripts", false);
+		  ExportOptions.setBoolValue("doMentalRayMaterials", false);
+		  //// DEBUG: Override
 		  preProcessScene(Parent);
 
 		  QDir dir;
@@ -1030,6 +1065,7 @@ void DzBridgeAction::exportNode(DzNode* Node)
 		  {
 			  QString CharacterBaseFBX = this->m_sDestinationFBX;
 			  CharacterBaseFBX.replace(".fbx", "_base.fbx");
+			  // Bugfix for double fbx options dialog
 			  ExportOptions.setIntValue("RunSilent", true);
 			  Exporter->writeFile(CharacterBaseFBX, &ExportOptions);
 		  }
@@ -1402,10 +1438,11 @@ QString DzBridgeAction::makeUniqueFilename(QString sFilename)
 
 }
 
-void DzBridgeAction::writePropertyTexture(DzJsonWriter& Writer, QString sName, QString sValue, QString sType, QString sTexture)
+void DzBridgeAction::writePropertyTexture(DzJsonWriter& Writer, QString sName, QString sLabel, QString sValue, QString sType, QString sTexture)
 {
 	Writer.startObject(true);
 	Writer.addMember("Name", sName);
+	Writer.addMember("Label", sLabel);
 	Writer.addMember("Value", sValue);
 	Writer.addMember("Data Type", sType);
 	Writer.addMember("Texture", sTexture);
@@ -1413,10 +1450,11 @@ void DzBridgeAction::writePropertyTexture(DzJsonWriter& Writer, QString sName, Q
 
 }
 
-void DzBridgeAction::writePropertyTexture(DzJsonWriter& Writer, QString sName, double dValue, QString sType, QString sTexture)
+void DzBridgeAction::writePropertyTexture(DzJsonWriter& Writer, QString sName, QString sLabel, double dValue, QString sType, QString sTexture)
 {
 	Writer.startObject(true);
 	Writer.addMember("Name", sName);
+	Writer.addMember("Label", sLabel);
 	Writer.addMember("Value", dValue);
 	Writer.addMember("Data Type", sType);
 	Writer.addMember("Texture", sTexture);
@@ -1427,16 +1465,26 @@ void DzBridgeAction::writePropertyTexture(DzJsonWriter& Writer, QString sName, d
 void DzBridgeAction::writeDTUHeader(DzJsonWriter& writer)
 {
 	QString sAssetId = "";
+	QString sContentType = QString("Unknown");
+	QString sImportName = "";
 
 	if (m_pSelectedNode)
 	{
 		sAssetId = m_pSelectedNode->getAssetId();
+		sImportName = m_pSelectedNode->getName();
+		DzPresentation* presentation = m_pSelectedNode->getPresentation();
+		if (presentation)
+		{
+			sContentType = presentation->getType();
+		}
 	}
 
-	writer.addMember("DTU Version", 3);
+	writer.addMember("DTU Version", 4);
 	writer.addMember("Asset Name", m_sAssetName);
+	writer.addMember("Import Name", sImportName); // Blender Compatibility
 	writer.addMember("Asset Type", m_sAssetType);
-	writer.addMember("Asset Id", sAssetId);
+	writer.addMember("Asset Id", sAssetId); // Unity Compatibility
+	writer.addMember("Content Type", sContentType);
 	writer.addMember("FBX File", m_sDestinationFBX);
 	QString CharacterBaseFBX = m_sDestinationFBX;
 	CharacterBaseFBX.replace(".fbx", "_base.fbx");
@@ -1498,8 +1546,10 @@ void DzBridgeAction::startMaterialBlock(DzNode* Node, DzJsonWriter& Writer, QTex
 		return;
 
 	Writer.startObject(true);
-	Writer.addMember("Version", 3);
-	Writer.addMember("Asset Name", Node->getLabel());
+	Writer.addMember("Version", 4);
+//	Writer.addMember("Asset Name", Node->getLabel());
+	Writer.addMember("Asset Name", Node->getName());
+	Writer.addMember("Asset Label", Node->getLabel());
 	Writer.addMember("Material Name", Material->getName());
 	Writer.addMember("Material Type", Material->getMaterialName());
 
@@ -1521,6 +1571,7 @@ void DzBridgeAction::startMaterialBlock(DzNode* Node, DzJsonWriter& Writer, QTex
 		const QString presentationType = presentation->getType();
 		Writer.startObject(true);
 		Writer.addMember("Name", QString("Asset Type"));
+		Writer.addMember("Label", QString("Asset Type"));
 		Writer.addMember("Value", presentationType);
 		Writer.addMember("Data Type", QString("String"));
 		Writer.addMember("Texture", QString(""));
@@ -1547,6 +1598,7 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 		return;
 
 	QString Name = Property->getName();
+	QString sLabel = Property->getLabel();
 	QString TextureName = "";
 	QString dtuPropType = "";
 	QString dtuPropValue = "";
@@ -1612,9 +1664,9 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 		}
 	}
 	if (bUseNumeric)
-		writePropertyTexture(Writer, Name, dtuPropNumericValue, dtuPropType, dtuTextureName);
+		writePropertyTexture(Writer, Name, sLabel, dtuPropNumericValue, dtuPropType, dtuTextureName);
 	else
-		writePropertyTexture(Writer, Name, dtuPropValue, dtuPropType, dtuTextureName);
+		writePropertyTexture(Writer, Name, sLabel, dtuPropValue, dtuPropType, dtuTextureName);
 
 	if (m_bExportMaterialPropertiesCSV && pCVSStream)
 	{
@@ -2766,6 +2818,566 @@ bool DzBridgeAction::copyFile(QFile* file, QString* dst, bool replace, bool comp
 	}
 
 	return result;
+}
+
+void DzBridgeAction::writeSkeletonData(DzNode* Node, DzJsonWriter& writer)
+{
+	if (Node == nullptr)
+		return;
+
+	DzObject* Object = Node->getObject();
+	DzShape* Shape = Object ? Object->getCurrentShape() : nullptr;
+
+	writer.startMemberObject("SkeletonData");
+
+	writer.startMemberArray("skeletonScale", true);
+	writer.addItem(QString("skeletonScale"));
+	writer.addItem(double(1.0));
+	writer.finishArray();
+
+	writer.startMemberArray("offset", true);
+	writer.addItem(QString("offset"));
+	writer.addItem(double(0.0));
+	writer.finishArray();
+
+	writer.finishObject();
+
+	return;
+}
+
+DzVec3 calculatePrimaryAxis(DzBone* pBone, DzVec3 &vecEndVector, double nBoneLength)
+{
+	DzVec3 vecFirstAxis(0.0f, 0.0f, 0.0f);
+	double nNodeScale = pBone->getScaleControl()->getValue();
+	int nSign = 1;
+	double nAxisScale = 1.0;
+	switch (pBone->getRotationOrder()[0])
+	{
+	case 0:
+		nSign = (vecEndVector.m_x >= 0) ? 1 : -1;
+		nAxisScale = pBone->getXScaleControl()->getValue();
+		vecFirstAxis.m_x = nBoneLength * nSign * nAxisScale * nNodeScale;
+		break;
+	case 1:
+		nSign = (vecEndVector.m_y >= 0) ? 1 : -1;
+		nAxisScale = pBone->getYScaleControl()->getValue();
+		vecFirstAxis.m_y = nBoneLength * nSign * nAxisScale * nNodeScale;
+		break;
+	case 2:
+		nSign = (vecEndVector.m_z >= 0) ? 1 : -1;
+		nAxisScale = pBone->getZScaleControl()->getValue();
+		vecFirstAxis.m_z = nBoneLength * nSign * nAxisScale * nNodeScale;
+		break;
+	}
+	DzQuat quatOrientation = pBone->getOrientation();
+	DzVec3 vecPrimaryAxis = quatOrientation.multVec(vecFirstAxis);
+
+	return vecPrimaryAxis;
+}
+
+DzVec3 calculateSecondaryAxis(DzBone* pBone, DzVec3& vecEndVector)
+{
+	DzVec3 vecSecondAxis(0.0f, 0.0f, 0.0f);
+	int nSign = 1;
+	switch (pBone->getRotationOrder()[0])
+	{
+	case 0:
+		nSign = (vecEndVector.m_x >= 0) ? 1 : -1;
+		break;
+	case 1:
+		nSign = (vecEndVector.m_y >= 0) ? 1 : -1;
+		break;
+	case 2:
+		nSign = (vecEndVector.m_z >= 0) ? 1 : -1;
+		break;
+	}
+	switch (pBone->getRotationOrder()[1])
+	{
+	case 0:
+		vecSecondAxis.m_x = nSign;
+		break;
+	case 1:
+		vecSecondAxis.m_y = nSign;
+		break;
+	case 2:
+		vecSecondAxis.m_z = nSign;
+		break;
+	}
+
+	DzQuat quatOrientation = pBone->getOrientation();
+	vecSecondAxis = quatOrientation.multVec(vecSecondAxis);
+
+	return vecSecondAxis;
+}
+
+DzVec3 calculateBoneOffset(DzBone* pBone)
+{
+	DzVec3 vecBoneOffset(0.0f, 0.0f, 0.0f);
+	for (auto pObject : pBone->getPropertyList())
+	{
+		DzProperty* property = qobject_cast<DzProperty*>(pObject);
+		if (property && property->getName() == "YTranslate")
+		{
+			DzControllerListIterator controlIterator = property->controllerListIterator();
+			while (controlIterator.hasNext())
+			{
+				DzController* pObject2 = controlIterator.next();
+				DzERCLink* pERCLink = qobject_cast<DzERCLink*>(pObject2);
+				if (pERCLink)
+				{
+					auto controlerProperty = pERCLink->getProperty();
+					if (controlerProperty->getDoubleValue() != 0)
+					{
+						vecBoneOffset.m_y += pERCLink->getScalar() * controlerProperty->getDoubleValue();
+					}
+				}
+			}
+		}
+
+	}
+
+	return vecBoneOffset;
+}
+
+DzPropertyList getAllProperties(DzBone* pBone)
+{
+	DzPropertyList aPropertyList;
+
+	DzPropertyGroupList aPropertyGroup_ToDoList;
+	DzPropertyGroupTree* pGroupTree = pBone->getPropertyGroups();
+	if (pGroupTree)
+	{
+		DzPropertyGroup* propertyGroup = pGroupTree->getFirstChild();
+		if (propertyGroup)
+			aPropertyGroup_ToDoList.append(propertyGroup);
+	}
+	// Iterative stack-based algorithm to traverse GroupTree breadth-first
+	while (aPropertyGroup_ToDoList.isEmpty() == false)
+	{
+		DzPropertyGroup* propertyGroup = aPropertyGroup_ToDoList.takeFirst();
+		if (propertyGroup)
+		{
+			// get all properties on this node
+			DzPropertyListIterator propertyListIterator = propertyGroup->getProperties();
+			while (propertyListIterator.hasNext())
+			{
+				DzProperty* pProperty = propertyListIterator.next();
+				if (pProperty)
+				{
+					if (!aPropertyList.contains(pProperty))
+						aPropertyList.append(pProperty);
+				}
+			}
+
+			// add all sibling nodes to todo-list
+			DzPropertyGroup* firstChild = nullptr;
+			DzPropertyGroup* parentGroup = propertyGroup->getParent();
+			if (parentGroup)
+			{
+				firstChild = parentGroup->getFirstChild();
+			}
+			else
+			{
+				firstChild = pGroupTree->getFirstChild();
+			}
+			if (firstChild == propertyGroup)
+			{
+				DzPropertyGroup* siblingGroup = propertyGroup->getNextSibling();
+				while (siblingGroup)
+				{
+					if (!aPropertyGroup_ToDoList.contains(siblingGroup))
+						aPropertyGroup_ToDoList.append(siblingGroup);
+					siblingGroup = siblingGroup->getNextSibling();
+				}
+			}
+			// add all child nodes to todo-list
+			DzPropertyGroup* childGroup = propertyGroup->getFirstChild();
+			while (childGroup)
+			{
+				if (!aPropertyGroup_ToDoList.contains(childGroup))
+					aPropertyGroup_ToDoList.append(childGroup);
+				childGroup = childGroup->getNextSibling();
+			}
+		}
+	}
+
+	return aPropertyList;
+}
+
+void DzBridgeAction::writeHeadTailData(DzNode* Node, DzJsonWriter& writer)
+{
+	if (Node == nullptr)
+		return;
+
+	Node->update();
+	Node->finalize();
+
+	// get skeleton and initial bone list
+	DzSkeleton* pSkeleton = Node->getSkeleton();
+	QObjectList aBoneList = pSkeleton->getAllBones();
+	// Create boneName Lookup
+	QMap<QString, bool> aBoneNameLookup;
+	for (auto item : aBoneList)
+	{
+		DzBone* boneItem = qobject_cast<DzBone*>(item);
+		if (boneItem)
+		{
+			QString sKey = boneItem->getName();
+			aBoneNameLookup.insert(sKey, false);
+		}
+	}
+	// add additional follower bones if any
+	// 1. Walk through entire scene
+	for (auto node : dzScene->getNodeList())
+	{
+		if (!node)
+			continue;
+
+		// 2. if inherits Skeleton, Check to see if it follows pSkeleton
+		DzSkeleton* skeletonNode = qobject_cast<DzSkeleton*>(node);
+		if (node->inherits("DzSkeleton") && skeletonNode)
+		{
+			// 3. if 2, Compare bones to pSkeleton to see if it is not in pSkeleton
+			DzSkeleton* followTarget = skeletonNode->getFollowTarget();
+			if (followTarget == pSkeleton)
+			{
+				// 4. If 3, Add any bones that are not already in aBoneNameLookup
+				for (auto oFollowerBone : skeletonNode->getAllBones())
+				{
+					DzBone* boneFollowerBone = qobject_cast<DzBone*>(oFollowerBone);
+					if (boneFollowerBone)
+					{
+						QString sFollowerBoneName = boneFollowerBone->getName();
+						if (!aBoneNameLookup.contains(sFollowerBoneName))
+						{
+							aBoneList.append(boneFollowerBone);
+							aBoneNameLookup.insert(sFollowerBoneName, false);
+						}
+					}
+				}
+			}
+		}
+
+	}
+
+	// Calculate Bone Offset
+	DzVec3 vecBoneOffset = calculateBoneOffset(qobject_cast<DzBone*>(aBoneList[0]));
+
+	double nSkeletonScale = pSkeleton->getScaleControl()->getValue();
+
+	writer.startMemberObject("HeadTailData", true);
+
+	for (auto pObject : aBoneList)
+	{
+		DzBone* pBone = qobject_cast<DzBone*>(pObject);
+		if (pBone)
+		{
+			//// Calculate Bone Offset
+			//DzVec3 vecBoneOffset = calculateBoneOffset(pBone);
+
+
+			// Assign Head
+			DzVec3 vecHead = pBone->getOrigin(false);
+			if (Node->className() == "DzFigure")
+			{
+				DzFigure* figure = qobject_cast<DzFigure*>(pSkeleton);
+				DzSkinBinding* skinBinding = figure->getSkinBinding();
+				if (skinBinding)
+				{
+					DzBoneBinding* boneBinding = skinBinding->findBoneBinding(pBone);
+					if (boneBinding) {
+						vecHead = boneBinding->getScaledOrigin();
+					}
+				}
+			}
+			// Calculate Bone Length
+			DzVec3 vecEndVector = pBone->getEndPoint() - pBone->getOrigin(false);
+			double nBoneLength = vecEndVector.length();
+			// Calculate Primary Axis
+			DzVec3 vecPrimaryAxis = calculatePrimaryAxis(pBone, vecEndVector, nBoneLength);
+			// Calculate Secondary Axis
+			DzVec3 vecSecondAxis = calculateSecondaryAxis(pBone, vecEndVector);
+			// Calculate Tail
+			DzVec3 vecTail = vecHead + vecPrimaryAxis;
+
+			QString sBoneName = pBone->getName();
+			writer.startMemberArray(sBoneName, true);
+			for (int axis = 0; axis <= 2; axis++) {
+				writer.addItem((vecHead[axis] + vecBoneOffset[axis]) * nSkeletonScale);
+			}
+			for (int axis = 0; axis <= 2; axis++) {
+				writer.addItem((vecTail[axis] + vecBoneOffset[axis]) * nSkeletonScale);
+			}
+			for (int axis = 0; axis <= 2; axis++) {
+				writer.addItem(vecSecondAxis[axis]);
+			}
+
+			// Bone Transform Values
+			DzVec3 vecBonePosition(0.0f, 0.0f, 0.0f);
+			DzVec3 vecBoneRotation(0.0f, 0.0f, 0.0f);
+			DzVec3 vecBoneScale(0.0f, 0.0f, 0.0f);
+			// get properties list
+			DzPropertyList aPropertyList;
+			aPropertyList = getAllProperties(pBone);
+
+			for (auto propertyItem : aPropertyList)
+			{
+				auto pOwner = propertyItem->getOwner();
+				if (!pOwner->inherits("DzBone"))
+					continue;
+
+				QStringList aAxisString;
+				aAxisString.append("X");
+				aAxisString.append("Y");
+				aAxisString.append("Z");
+
+				// Position
+				for (int i = 0; i < 3; i++)
+				{
+					QString searchLabel = QString(aAxisString[i] + QString("Translate"));
+					if (propertyItem->getName() == searchLabel && propertyItem->isHidden() == false) {
+						vecBonePosition[i] = 1;
+					}
+				}
+				// Rotation
+				for (int i = 0; i < 3; i++)
+				{
+					QString searchLabel = QString(aAxisString[i] + QString("Rotate"));
+					if (propertyItem->getName() == searchLabel && propertyItem->isHidden() == false) {
+						vecBoneRotation[i] = 1;
+					}
+				}
+				// Scale
+			}
+			for (int i = 0; i < 3; i++) {
+				writer.addItem(vecBonePosition[i]);
+			}
+			for (int i = 0; i < 3; i++) {
+				writer.addItem(vecBoneRotation[i]);
+			}
+			for (int i = 0; i < 3; i++) {
+				writer.addItem(vecBoneScale[i]);
+			}
+			writer.finishArray();
+		}
+	}
+
+	writer.finishObject();
+
+	return;
+}
+
+void DzBridgeAction::writeJointOrientation(DzBoneList& aBoneList, DzJsonWriter& writer)
+{
+	writer.startMemberObject("JointOrientation", true);
+
+	for (DzBone* pBone : aBoneList)
+	{
+		QString sBoneName = pBone->getName();
+		QString sRotationOrder = pBone->getRotationOrder().toString();
+		double nXOrientation = pBone->getOrientXControl()->getValue();
+		double nYOrientation = pBone->getOrientYControl()->getValue();
+		double nZOrientation = pBone->getOrientZControl()->getValue();
+		DzQuat quatOrientation = pBone->getOrientation();
+
+		writer.startMemberArray(sBoneName, true);
+		writer.addItem(sRotationOrder);
+		writer.addItem(nXOrientation);
+		writer.addItem(nYOrientation);
+		writer.addItem(nZOrientation);
+		writer.addItem(quatOrientation.m_w);
+		writer.addItem(quatOrientation.m_x);
+		writer.addItem(quatOrientation.m_y);
+		writer.addItem(quatOrientation.m_z);
+		writer.finishArray();
+	}
+
+	writer.finishObject();
+
+	return;
+}
+
+DzBoneList DzBridgeAction::getAllBones(DzNode* Node)
+{
+	DzBoneList aBoneList;
+
+	if (Node == nullptr)
+		return aBoneList;
+
+	// get skeleton and initial bone list
+	DzSkeleton* pSkeleton = Node->getSkeleton();
+	QObjectList oBoneList = pSkeleton->getAllBones();
+	// Create boneName Lookup
+	QMap<QString, bool> aBoneNameLookup;
+	for (auto item : oBoneList)
+	{
+		DzBone* boneItem = qobject_cast<DzBone*>(item);
+		if (boneItem)
+		{
+			QString sKey = boneItem->getName();
+			aBoneNameLookup.insert(sKey, false);
+			aBoneList.append(boneItem);
+		}
+	}
+	// add additional follower bones if any
+	// 1. Walk through entire scene
+	for (auto node : dzScene->getNodeList())
+	{
+		if (!node)
+			continue;
+
+		// 2. if inherits Skeleton, Check to see if it follows pSkeleton
+		DzSkeleton* skeletonNode = qobject_cast<DzSkeleton*>(node);
+		if (node->inherits("DzSkeleton") && skeletonNode)
+		{
+			// 3. if 2, Compare bones to pSkeleton to see if it is not in pSkeleton
+			DzSkeleton* followTarget = skeletonNode->getFollowTarget();
+			if (followTarget == pSkeleton)
+			{
+				// 4. If 3, Add any bones that are not already in aBoneNameLookup
+				for (auto oFollowerBone : skeletonNode->getAllBones())
+				{
+					DzBone* boneFollowerBone = qobject_cast<DzBone*>(oFollowerBone);
+					if (boneFollowerBone)
+					{
+						QString sFollowerBoneName = boneFollowerBone->getName();
+						if (!aBoneNameLookup.contains(sFollowerBoneName))
+						{
+							aBoneList.append(boneFollowerBone);
+							aBoneNameLookup.insert(sFollowerBoneName, false);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return aBoneList;
+}
+
+void DzBridgeAction::writeLimitData(DzBoneList& aBoneList, DzJsonWriter& writer)
+{
+	writer.startMemberObject("LimitData");
+
+	for (DzBone* pBone : aBoneList)
+	{
+		QString sBoneName = pBone->getName();
+		QString sRotationOrder = pBone->getRotationOrder().toString();
+		double nXRotationMin = pBone->getXRotControl()->getMin();
+		double nXRotationMax = pBone->getXRotControl()->getMax();
+		double nYRotationMin = pBone->getYRotControl()->getMin();
+		double nYRotationMax = pBone->getYRotControl()->getMax();
+		double nZRotationMin = pBone->getZRotControl()->getMin();
+		double nZRotationMax = pBone->getZRotControl()->getMax();
+
+		writer.startMemberArray(sBoneName, true);
+		writer.addItem(sBoneName);
+		writer.addItem(sRotationOrder);
+
+		writer.addItem(nXRotationMin);
+		writer.addItem(nXRotationMax);
+
+		writer.addItem(nYRotationMin);
+		writer.addItem(nYRotationMax);
+
+		writer.addItem(nZRotationMin);
+		writer.addItem(nZRotationMax);
+		writer.finishArray();
+	}
+
+	writer.finishObject();
+
+	return;
+}
+
+QString getObjectTypeAsString(DzNode* Node)
+{
+	if (Node == nullptr)
+		return QString("EMPTY");
+
+	if (Node->inherits("DzBone"))
+		return QString("BONE");
+
+	if (Node->inherits("DzLight"))
+		return QString("LIGHT");
+
+	if (Node->inherits("DzCamera"))
+		return QString("CAMERA");
+
+	DzObject* oObject = Node->getObject();
+	if (!oObject)
+		return QString("EMPTY");
+
+	DzShape* oShape = oObject->getCurrentShape();
+	if (!oShape)
+		return QString("EMPTY");
+
+	DzGeometry* oMesh = oShape->getGeometry();
+	if (!oMesh)
+		return QString("EMPTY");
+
+	return QString("MESH");
+}
+
+void DzBridgeAction::writePoseData(DzNode* Node, DzJsonWriter& writer, bool bIsFigure)
+{
+	if (Node == nullptr)
+		return;
+
+	// Create Node List
+	DzNodeList aNodeList;
+
+	aNodeList.append(Node);
+	for (auto item : Node->getNodeChildren(true))
+	{
+		DzNode* nodeItem = qobject_cast<DzNode*>(item);
+		aNodeList.append(nodeItem);
+	}
+
+	writer.startMemberObject("PoseData");
+
+	// iterate through each node in Node list
+	for (DzNode* node : aNodeList)
+	{
+		QString sNodeName = node->getName();
+		QString sLabel = node->getLabel();
+		QString sObjectType = getObjectTypeAsString(node);
+		QString sObjectName = "EMPTY";
+		if (sObjectType == "MESH")
+			sObjectName = node->getObject()->getName();
+		DzVec3 vecPosition = node->getLocalPos();
+		DzMatrix3 matrixScale = node->getLocalScale();
+
+		writer.startMemberObject(sNodeName);
+		writer.addMember("Name", sNodeName);
+		writer.addMember("Label", sLabel);
+		writer.addMember("Object Type", sObjectType);
+		writer.addMember("Object", sObjectName);
+
+		writer.startMemberArray("Position", true);
+		writer.addItem(vecPosition.m_x);
+		writer.addItem(vecPosition.m_y);
+		writer.addItem(vecPosition.m_z);
+		writer.finishArray();
+
+		writer.startMemberArray("Rotation", true);
+		writer.addItem(node->getXRotControl()->getLocalValue());
+		writer.addItem(node->getYRotControl()->getLocalValue());
+		writer.addItem(node->getZRotControl()->getLocalValue());
+		writer.finishArray();
+
+		writer.startMemberArray("Scale", true);
+		writer.addItem(matrixScale[0][0]);
+		writer.addItem(matrixScale[1][1]);
+		writer.addItem(matrixScale[2][2]);
+		writer.finishArray();
+
+		writer.finishObject();
+	}
+
+	writer.finishObject();
+
+	return;
 }
 
 

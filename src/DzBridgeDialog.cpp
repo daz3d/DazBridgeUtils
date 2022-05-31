@@ -392,7 +392,7 @@ void DzBridgeDialog::HandleTargetPluginInstallerButton()
 			tr("Please select a software version."));
 		return;
 	}
-	QString sPluginZipFilename = "/ThisIsExampleFilenameOnlyAndWillNotWork.zip"; // Example 
+	QString sPluginZipFilename = "/ThisIsExampleFilenameOnlyAndWillNotWork.zip"; // Example
 	QString sEmbeddedPath = ":/DazBridge";
 	QString sPluginZipPath = sEmbeddedPath + sPluginZipFilename;
 
