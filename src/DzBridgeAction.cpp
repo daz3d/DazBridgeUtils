@@ -1025,6 +1025,7 @@ void DzBridgeAction::exportNode(DzNode* Node)
 			  }
 		  }
 
+/*
 		  //// TODO: REMOVE OVERRIDE WHEN WORKING
 		  //// DEBUG: Override
 		  ExportOptions.setBoolValue("doSelected", false);
@@ -1054,6 +1055,8 @@ void DzBridgeAction::exportNode(DzNode* Node)
 		  ExportOptions.setBoolValue("doHelperScriptScripts", false);
 		  ExportOptions.setBoolValue("doMentalRayMaterials", false);
 		  //// DEBUG: Override
+*/
+
 		  preProcessScene(Parent);
 
 		  QDir dir;
@@ -3541,6 +3544,123 @@ void DzBridgeAction::writePoseData(DzNode* Node, DzJsonWriter& writer, bool bIsF
 	writer.finishObject();
 
 	return;
+}
+
+//// Utility Functions translated from Blender.dsa
+void DzBridgeAction::reparentFigure(DzNode* figure)
+{
+	QMap<DzNode*, DzNode*> reparentMapChildToParent;
+	if (reparentMapChildToParent.contains(figure))
+	{
+		auto parent = reparentMapChildToParent[figure];
+		parent->addNodeChild(figure, true);
+	}
+
+}
+
+DzNodeList DzBridgeAction::findRootNodes(DzNode* pNode)
+{
+	DzNodeList figureList;
+	DzNodeList propList;
+
+	QString sClassName = pNode->className();
+	QString sContentType = dzApp->getAssetMgr()->getTypeForNode(pNode);
+	if (sClassName == "DzFigure" || sClassName == "DzLegacyFigure")
+	{
+		if (sContentType == "Actor/Character" || sContentType == "Actor")
+		{
+			figureList.append(pNode);
+			return figureList + propList;
+		}
+		else
+		{
+			propList.append(pNode);
+			return figureList + propList;
+		}
+	}
+	else if (sClassName == "DzGroupNode")
+	{
+		DzNodeList childFigureList;
+
+		auto children = pNode->getNodeChildren(true);
+		foreach (auto childrenElement, children)
+		{
+			DzNode* child = qobject_cast<DzNode*>(childrenElement);
+			if (child)
+			{
+				QString sChildType = dzApp->getAssetMgr()->getTypeForNode(pNode);
+				if (sChildType == "Actor/Character" || sChildType == "Actor")
+				{
+					childFigureList.append(child);
+				}
+			}
+		}
+		foreach(auto child, childFigureList)
+		{
+			figureList.append(child);
+			DzNode *parent = child->getNodeParent();
+			if (parent == pNode)
+			{
+				pNode->removeNodeChild( child, true);
+			}
+			else
+			{
+				DzNode* origParent = parent;
+				while (parent != nullptr)
+				{
+					parent->removeNodeChild(child, true);
+					parent = child->getNodeParent();
+				}
+				parent = origParent;
+			}
+			QMap<DzNode*, DzNode*> reparentMapChildToParent;
+			reparentMapChildToParent.insert(child, parent);
+		}
+		if (childFigureList.length() == 0)
+		{
+			propList.append(pNode);
+			return figureList + propList;
+		}
+	}
+	else
+	{
+		propList.append(pNode);
+		return figureList + propList;
+	}
+
+	return figureList + propList;
+}
+
+DzNodeList DzBridgeAction::buildRootNodeList()
+{
+	DzNodeList rootNodeList;
+
+	QObjectList nodeList = dzScene->getNodeList();
+	foreach(auto nodeListElement, nodeList)
+	{
+		DzNode* node = qobject_cast<DzNode*>(nodeListElement);
+		if (node)
+		{
+			if (!node->isVisible() && node->isRootNode())
+			{
+				node->setVisible(true);
+				auto children = node->getNodeChildren(true);
+				foreach(auto childrenElement, children)
+				{
+					DzNode* child = qobject_cast<DzNode*>(childrenElement);
+					child->setVisible(true);
+				}
+			}
+
+			if (node->isVisible() && node->isRootNode())
+			{
+				rootNodeList += findRootNodes( node );
+			}
+
+		}
+	}
+
+	return rootNodeList;
 }
 
 

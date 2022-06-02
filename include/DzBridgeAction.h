@@ -236,6 +236,10 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE QStringList checkForBoneInChild(DzNode* pNode, QString sBoneName, QStringList& controlledMeshList);
 		Q_INVOKABLE QStringList checkForBoneInAlias(DzNode* pNode, DzProperty* pMorphProperty, QStringList& controlledMeshList);
 
+		Q_INVOKABLE DzNodeList buildRootNodeList();
+		Q_INVOKABLE DzNodeList findRootNodes(DzNode* pNode);
+		Q_INVOKABLE void reparentFigure(DzNode* figure);
+
 	private:
 		class MaterialGroupExportOrderMetaData
 		{
