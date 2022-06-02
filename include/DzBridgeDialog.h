@@ -48,9 +48,9 @@ namespace DzBridgeNameSpace
 		/** Destructor **/
 		virtual ~DzBridgeDialog() {}
 
-		// Pass so the DazTRoUnrealAction can access it from the morph dialog
+		// Pass so the DazToUnrealAction can access it from the morph dialog
 		Q_INVOKABLE QString GetMorphString();
-		// Pass so the DazTRoUnrealAction can access it from the morph dialog
+		// Pass so the DazToUnrealAction can access it from the morph dialog
 		Q_INVOKABLE QMap<QString, QString> GetMorphMapping() { return morphMapping; }
 		Q_INVOKABLE virtual void resetToDefaults();
 		Q_INVOKABLE virtual bool loadSavedSettings();

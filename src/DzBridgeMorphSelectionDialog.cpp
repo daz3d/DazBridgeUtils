@@ -290,6 +290,7 @@ QStringList DzBridgeMorphSelectionDialog::GetAvailableMorphs(DzNode* Node)
 			morphInfo.Label = propLabel;
 			morphInfo.Path = Node->getLabel() + "/" + property->getPath();
 			morphInfo.Type = presentation->getType();
+			morphInfo.Property = property;
 			if (!morphs.contains(morphInfo.Name))
 			{
 				morphs.insert(morphInfo.Name, morphInfo);
@@ -339,6 +340,7 @@ QStringList DzBridgeMorphSelectionDialog::GetAvailableMorphs(DzNode* Node)
 						morphInfoProp.Label = propLabel;
 						morphInfoProp.Path = Node->getLabel() + "/" + property->getPath();
 						morphInfoProp.Type = presentation->getType();
+						morphInfoProp.Property = property;
 						if (!morphs.contains(morphInfoProp.Name))
 						{
 							morphs.insert(morphInfoProp.Name, morphInfoProp);
@@ -972,7 +974,7 @@ void DzBridgeMorphSelectionDialog::HandlePresetChanged(const QString& presetName
 	file.close();
 }
 
-// Get the morph string in the format for the Daz FBX Export
+// Get the morph string (aka morphsToExport) in the format for the Daz FBX Export
 QString DzBridgeMorphSelectionDialog::GetMorphString()
 {
 	GetActiveJointControlledMorphs();
@@ -991,7 +993,7 @@ QString DzBridgeMorphSelectionDialog::GetMorphString()
 	return morphString;
 }
 
-// Get the morph string in the format used for presets
+// Get the morph string (aka morphsToExport) in the format used for presets
 QString DzBridgeMorphSelectionDialog::GetMorphCSVString()
 {
 	morphList.clear();
@@ -1006,10 +1008,11 @@ QString DzBridgeMorphSelectionDialog::GetMorphCSVString()
 	return morphString;
 }
 
-// Get the morph string in an internal name = friendly name format
+// Get the morph string (aka morphsToExport) in an internal name = friendly name format
 // Used to rename them to the friendly name in Unreal
 QMap<QString,QString> DzBridgeMorphSelectionDialog::GetMorphRenaming()
 {
+	// NOTE: morphNameMapping is alternatively populated with ALL morphs by GetAvailableMorphs()
 	morphNameMapping.clear();
 	foreach(MorphInfo exportMorph, morphsToExport)
 	{
@@ -1019,6 +1022,8 @@ QMap<QString,QString> DzBridgeMorphSelectionDialog::GetMorphRenaming()
 	return morphNameMapping;
 }
 
+// Retrieve label based on morph name
+// DB Dec-21-2021, Created for scripting.
 QString DzBridgeMorphSelectionDialog::GetMorphLabelFromName(QString morphName)
 {
 	if (morphs.isEmpty()) return QString();
@@ -1031,6 +1036,24 @@ QString DzBridgeMorphSelectionDialog::GetMorphLabelFromName(QString morphName)
 	else
 	{
 		return QString();
+	}
+
+}
+
+// Get MorphInfo from morph name
+// DB June-01-2022, Created for MorphLinks Generation for Blender Bridge Morphs Support
+MorphInfo DzBridgeMorphSelectionDialog::GetMorphInfoFromName(QString morphName)
+{
+	if (morphs.isEmpty()) return MorphInfo();
+
+	if (morphs.contains(morphName))
+	{
+		MorphInfo morph = morphs[morphName];
+		return morph;
+	}
+	else
+	{
+		return MorphInfo();
 	}
 
 }

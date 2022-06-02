@@ -97,7 +97,7 @@ namespace DzBridgeNameSpace
 		QString m_sAssetType; // Asset Types: "SkeletalMesh", "StaticMesh", "Animation", "Pose", "Environment"
 		QString m_sMorphSelectionRule; // Selection Rule used by FbxExporter to choose morphs to export
 		QString m_sFbxVersion; // FBX file format version to export
-		QMap<QString, QString> m_mMorphNameToLabel; // Internal name to Friendly label
+		QMap<QString, QString> m_mMorphNameToLabel; // Internal name to Friendly label (from MorphSelectionDialog->morphsToExport)
 		QList<QString> m_aPoseList; // Control Pose names
 		QMap<DzImageProperty*, double> m_imgPropertyTable_NormalMapStrength; // Image Property to Normal Map Strength
 
@@ -229,6 +229,13 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE void writeJointOrientation(DzBoneList& aBoneList, DzJsonWriter& writer);
 		Q_INVOKABLE void writeLimitData(DzBoneList& aBoneList, DzJsonWriter& writer);
 		Q_INVOKABLE void writePoseData(DzNode* Node, DzJsonWriter& writer, bool bIsFigure);
+
+		Q_INVOKABLE virtual void writeMorphLinks(DzJsonWriter& writer);
+		Q_INVOKABLE virtual void writeMorphNames(DzJsonWriter& writer);
+		Q_INVOKABLE QStringList checkMorphControlsChildren(DzNode* pNode, DzProperty* pProperty);
+		Q_INVOKABLE QStringList checkForBoneInChild(DzNode* pNode, QString sBoneName, QStringList& controlledMeshList);
+		Q_INVOKABLE QStringList checkForBoneInAlias(DzNode* pNode, DzProperty* pMorphProperty, QStringList& controlledMeshList);
+
 	private:
 		class MaterialGroupExportOrderMetaData
 		{

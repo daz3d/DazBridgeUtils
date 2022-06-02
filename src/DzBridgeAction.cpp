@@ -1679,6 +1679,161 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 
 }
 
+
+QStringList DzBridgeAction::checkForBoneInChild(DzNode* pNode, QString sBoneName, QStringList &controlledMeshList)
+{
+	
+	for (auto childIter = pNode->nodeChildrenIterator(); childIter.hasNext(); )
+	{
+		DzFigure *childFigure = qobject_cast<DzFigure*>(childIter.next());
+		if (childFigure)
+		{
+			DzSkeleton *childSkeleton = childFigure->getSkeleton();
+			DzBone *childBone = childSkeleton->findBone( sBoneName );
+			if (childBone == nullptr)
+				continue;
+
+			DzSkinBinding *skinBinding = DzSkinBinding::findSkin(childFigure);
+			if (skinBinding)
+			{
+				DzBoneBinding *boneBinding = skinBinding->findBoneBinding( sBoneName );
+				if (boneBinding)
+				{
+					QString meshName = childFigure->getName() + ".Shape";
+					if (controlledMeshList.contains(meshName) == false)
+					{
+						controlledMeshList.append(meshName);
+					}
+				}
+			}
+		}
+	}
+	return controlledMeshList;
+}
+
+QStringList DzBridgeAction::checkForBoneInAlias(DzNode* pNode, DzProperty* pMorphProperty, QStringList& controlledMeshList)
+{
+	for (int i = 0; i < pMorphProperty->getNumAliases(); i++)
+	{
+		DzProperty* propertyAlias = pMorphProperty->getAlias(i);
+		DzBone* boneAlias = qobject_cast<DzBone*>(propertyAlias->getOwner());
+		QString sBoneName;
+		if (boneAlias)
+		{
+			sBoneName = boneAlias->getName();
+			controlledMeshList = checkForBoneInChild(pNode, sBoneName, controlledMeshList);
+		}
+	}
+	return controlledMeshList;
+}
+
+QStringList DzBridgeAction::checkMorphControlsChildren(DzNode* pNode, DzProperty* pMorphProperty)
+{
+	QString sBoneName;
+	QStringList controlledMeshList;
+
+	if (pMorphProperty == nullptr) return controlledMeshList;
+
+	controlledMeshList.append(pNode->getName() + ".Shape");
+	//int numSlaveControllers = pMorphProperty->getNumSlaveControllers();
+	for(auto iter = pMorphProperty->slaveControllerListIterator(); iter.hasNext(); )
+	{
+		DzController *slaveController = iter.next();
+		if (slaveController)
+		{
+			DzProperty *ownerProperty = slaveController->getOwner();
+			if (ownerProperty)
+			{
+				DzElement* ownerElement = ownerProperty->getOwner();
+				if (ownerElement->inherits("DzBone"))
+				{
+					sBoneName = ownerElement->getName();
+					controlledMeshList = checkForBoneInChild( pNode, sBoneName, controlledMeshList );
+					break;
+				}
+			}
+		}
+	}
+	if (sBoneName.isEmpty())
+	{
+		controlledMeshList = checkForBoneInAlias( pNode, pMorphProperty, controlledMeshList );
+	}
+
+	return controlledMeshList;
+}
+
+void DzBridgeAction::writeMorphLinks(DzJsonWriter& writer)
+{
+	writer.startMemberObject("MorphLinks");
+
+	if (m_bEnableMorphs)
+	{
+		// iterate through each exported morph
+		for (QMap<QString, QString>::iterator morphNameToLabel = m_mMorphNameToLabel.begin(); morphNameToLabel != m_mMorphNameToLabel.end(); ++morphNameToLabel)
+		{
+			QString sMorphName = morphNameToLabel.key();
+			QString sMorphLabel = morphNameToLabel.value();
+			MorphInfo morphInfo = m_morphSelectionDialog->GetMorphInfoFromName(sMorphName);
+			DzProperty *morphProperty = morphInfo.Property;
+			QStringList controlledMeshList = checkMorphControlsChildren(m_pSelectedNode, morphProperty);
+
+			writer.startMemberObject(sMorphName);
+
+			writer.addMember("Label", sMorphLabel);
+			writer.startMemberArray("Links");
+			// Links: Bone
+			// Links: Property
+			// Links: Type
+			// Links: Scalar
+			// Links: Addend
+			writer.finishArray();
+			writer.startMemberArray("SubLinks");
+			// Sublinks: Bone
+			// Sublinks: Property
+			// Sublinks: Type
+			// Sublinks: Scalar
+			// Sublinks: Addend
+			writer.finishArray();
+			double minVal = 0.0;
+			double maxVal = 1.0;
+			writer.addMember("Minimum", minVal);
+			writer.addMember("Maximum", maxVal);
+			bool bIsHidden = false;
+			writer.addMember("isHidden", bIsHidden);
+			QString sMorphPath = morphInfo.Path;
+			writer.addMember("Path", sMorphPath);
+			writer.startMemberArray("Controlled Meshes");
+			// foreach mesh name
+			foreach(QString meshname, controlledMeshList)
+			{
+				writer.addItem(meshname);
+			}
+			writer.finishArray();
+			
+			writer.finishObject();
+		}
+
+	}
+
+	writer.finishObject();
+}
+
+void DzBridgeAction::writeMorphNames(DzJsonWriter& writer)
+{
+	writer.startMemberArray("MorphNames");
+	if (m_bEnableMorphs)
+	{
+		// iterate through each exported morph
+		for (QMap<QString, QString>::iterator morphNameToLabel = m_mMorphNameToLabel.begin(); morphNameToLabel != m_mMorphNameToLabel.end(); ++morphNameToLabel)
+		{
+			QString sMorphName = morphNameToLabel.key();
+			writer.addItem(sMorphName);
+		}
+
+	}
+	writer.finishArray();
+}
+
 void DzBridgeAction::writeAllMorphs(DzJsonWriter& writer)
 {
 	writer.startMemberArray("Morphs", true);
