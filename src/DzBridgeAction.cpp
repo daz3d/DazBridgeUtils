@@ -677,7 +677,9 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 		}
 
 		std::map<std::string, int>* pLookupTable = m_subdivisionDialog->GetLookupTable();
-		QString BaseCharacterFBX = m_sDestinationPath + m_sAssetName + "_base.fbx";
+		// DB 2022-06-02: Fixed Upgrade HD bug with Bridges using __LEGACY_PATHS__ mode
+		QString BaseCharacterFBX = this->m_sDestinationFBX;
+		BaseCharacterFBX.replace(".fbx", "_base.fbx");
 		// DB 2021-10-02: Upgrade HD
 		if (upgradeToHD(BaseCharacterFBX, m_sDestinationFBX, m_sDestinationFBX, pLookupTable) == false)
 		{
