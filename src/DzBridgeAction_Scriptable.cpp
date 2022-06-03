@@ -63,12 +63,20 @@ void DzBridgeAction::executeAction()
 	 // input from the user.
     if (dzScene->getNumSelectedNodes() != 1)
     {
-        if (m_nNonInteractiveMode == 0)
+		DzNodeList rootNodes = buildRootNodeList();
+		if (rootNodes.length() == 1)
 		{
-            QMessageBox::warning(0, tr("Error"),
-                tr("Please select one Character or Prop to send."), QMessageBox::Ok);
-        }
-        return;
+			dzScene->setPrimarySelection(rootNodes[0]);
+		}
+		else
+		{
+			if (m_nNonInteractiveMode == 0)
+			{
+				QMessageBox::warning(0, tr("Error"),
+					tr("Please select one Character or Prop to send."), QMessageBox::Ok);
+			}
+			return;
+		}
     }
 
     // Create the dialog
@@ -117,13 +125,6 @@ void DzBridgeAction::executeAction()
     {
 		// Read in Common GUI values
 		readGui(m_bridgeDialog);
-
-#if __OLDBLENDER__
-		m_sExportFbx = "B_FIG";
-		m_sAssetName = "FIG";
-		m_sDestinationPath = m_sRootFolder + "/";
-		m_sDestinationFBX = m_sDestinationPath + m_sExportFbx + ".fbx";
-#endif
 
 		exportHD();
     }
@@ -222,9 +223,6 @@ void DzBridgeAction::resetToDefaults()
 QString DzBridgeAction::readGuiRootFolder()
 {
 	QString rootFolder = QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation) + QDir::separator() + "DazBridge";
-#if __OLDBLENDER__
-	rootFolder = QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation) + "/DAZ 3D/Bridges/Daz To Blender/Exports/FIG/FIG0";
-#endif
 	rootFolder = rootFolder.replace("\\","/");
 
 	if (m_bridgeDialog)

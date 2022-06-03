@@ -3548,7 +3548,9 @@ void DzBridgeAction::writePoseData(DzNode* Node, DzJsonWriter& writer, bool bIsF
 	return;
 }
 
-//// Utility Functions translated from Blender.dsa
+////////////////////////////////////////
+//// Additional Utility Functions translated from Blender.dsa
+////////////////////////////////////////
 void DzBridgeAction::reparentFigure(DzNode* figure)
 {
 	QMap<DzNode*, DzNode*> reparentMapChildToParent;
@@ -3597,6 +3599,7 @@ DzNodeList DzBridgeAction::findRootNodes(DzNode* pNode)
 				}
 			}
 		}
+/*
 		foreach(auto child, childFigureList)
 		{
 			figureList.append(child);
@@ -3618,11 +3621,13 @@ DzNodeList DzBridgeAction::findRootNodes(DzNode* pNode)
 			QMap<DzNode*, DzNode*> reparentMapChildToParent;
 			reparentMapChildToParent.insert(child, parent);
 		}
+*/
 		if (childFigureList.length() == 0)
 		{
 			propList.append(pNode);
 			return figureList + propList;
 		}
+		figureList += childFigureList;
 	}
 	else
 	{
