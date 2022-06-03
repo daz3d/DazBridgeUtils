@@ -59,22 +59,39 @@ DzBridgeSubdivisionDialog::DzBridgeSubdivisionDialog(QWidget *parent) :
 	 subdivisionItemsGrid = NULL;
 	//settings = new QSettings("Code Wizards", "DazToUnreal");
 
-
-
 	// Set the dialog title 
-	setWindowTitle(tr("Choose Subdivision Levels"));
+	setWindowTitle(tr("Bake Subdivision Levels"));
 
 	// Setup folder
-	presetsFolder = QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation) + QDir::separator() + "DazToUnreal" + QDir::separator() + "Presets";
-
+	presetsFolder = QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation) + QDir::separator() + "DazBridge" + QDir::separator() + "Presets";
 
 	QVBoxLayout* mainLayout = new QVBoxLayout();
-	mainLayout->addWidget(new QLabel("Subdivision can greatly increase transfer time."));
+	mainLayout->setMargin(5);
+
+	// Bake Subdivision Levels Explanation
+	QLabel* helpBox = new QLabel();
+	helpBox->setTextFormat(Qt::RichText);
+	helpBox->setWordWrap(true);
+	helpBox->setText(
+		tr("<div>Daz Studio uses Catmull-Clark Subdivision Surface technology which is a mathematical way to describe an infinitely smooth surface in a very \
+efficient manner. Similar to how an infinitely smooth circle can be described with just the equation: <i>Radius R=x</i>, the base resolution mesh of a \
+Daz Figure is actually the mathematical data in an equation to describe an infinitely smooth surface.<br></div>") + \
+tr("<div>For Software which supports Catmull-Clark Subdivision and subdivision surface-based morphs (also known as HD Morphs), there is no loss in quality \
+or detail by exporting the base resolution mesh (subdivision level 0).<br></div>") + \
+tr("<div>For Software which does not fully support Catmull-Clark Subdivision or HD Morphs, we can \"Bake\" additional subdivision detail levels into the mesh to \
+more closely approximate the detail of the original surface. However, baking each additional subdivision level requires exponentially more CPU time, memory, \
+and storage space.<br></div>") + \
+tr("<div><h3><i>Only</i> bake subdivision levels when the destination software does not support Catmull-Clark Subdivision Surface technology. \
+Due to this exponentially increasing resource requirement, it is not recommended to bake more than two subdivision levels.</h3></div>") + \
+	"<p>"
+);
+	mainLayout->addWidget(helpBox);
 
 	subdivisionItemsGrid = new QGridLayout();
 	subdivisionItemsGrid->addWidget(new QLabel("Object Name"), 0, 0);
 	subdivisionItemsGrid->addWidget(new QLabel("Subdivision Level"), 0, 1);
 	subdivisionItemsGrid->addWidget(new QLabel("Base Vert Count"), 0, 2);
+	subdivisionItemsGrid->addWidget(new QLabel("Estimated Subdivided Vert Count"), 0, 3);
 	mainLayout->addLayout(subdivisionItemsGrid);
 	mainLayout->addStretch();
 
@@ -124,6 +141,7 @@ void DzBridgeSubdivisionDialog::PrepareDialog()
 	subdivisionItemsGrid->addWidget(new QLabel("Object Name"), 0, 0);
 	subdivisionItemsGrid->addWidget(new QLabel("Subdivision Level"), 0, 1);
 	subdivisionItemsGrid->addWidget(new QLabel("Base Vert Count"), 0, 2);
+	subdivisionItemsGrid->addWidget(new QLabel("Estimated Subdivided Vert Count"), 0, 3);
 	//mainLayout->addLayout(subdivisionItemsGrid);
 	//mainLayout->addStretch();
 
@@ -165,7 +183,18 @@ void DzBridgeSubdivisionDialog::CreateList(DzNode* Node)
 		if (Geo)
 		{
 			int VertCount = Geo->getNumVertices();
-			subdivisionItemsGrid->addWidget(new QLabel(QString::number(VertCount)), row, 2);
+			QLabel *baseVertCountLabel = new QLabel(QString::number(VertCount));
+			baseVertCountLabel->setAlignment(Qt::AlignCenter);
+			subdivisionItemsGrid->addWidget(baseVertCountLabel, row, 2);
+
+			// estimated subdivided vert count
+			int currentSubDLevel = subdivisionLevelCombo->currentText().toInt();
+			int subdVertCount = VertCount;
+			for (int i = 0; i < currentSubDLevel; i++) subdVertCount = subdVertCount * 4;
+			float scale = subdVertCount / VertCount;
+			QLabel* subdVertCountLabel = new QLabel(QString::number(subdVertCount) + " (" + QString::number(scale) + "x)");
+			subdVertCountLabel->setAlignment(Qt::AlignCenter);
+			subdivisionItemsGrid->addWidget(subdVertCountLabel, row, 3);
 
 			/*for (int index = 0; index < Shape->getNumProperties(); index++)
 			{
@@ -192,6 +221,41 @@ void DzBridgeSubdivisionDialog::HandleSubdivisionLevelChanged(const QString& tex
 		int targetValue = combo->currentText().toInt();
 		SubdivisionLevels[name] = targetValue;
 	}
+
+	// update estimated subdivided vert counts
+	for (int row=0; row < subdivisionItemsGrid->rowCount(); row++)
+	{
+		auto item1 = subdivisionItemsGrid->itemAtPosition(row, 1);
+		if (item1 == nullptr) continue;
+		auto subdCombo = qobject_cast<QComboBox*>(item1->widget());
+		if (subdCombo)
+		{
+			QString name = subdCombo->property("Object").toString();
+			int currentSubDLevel = subdCombo->currentText().toInt();
+			SubdivisionLevels[name] = currentSubDLevel;
+
+			auto item2 = subdivisionItemsGrid->itemAtPosition(row, 2);
+			if (item2 == nullptr) continue;
+			auto vertCountLabel = qobject_cast<QLabel*>(item2->widget());
+			if (vertCountLabel)
+			{
+				int vertCount = vertCountLabel->text().toInt();
+				int subdVertCount = vertCount;
+				for (int i = 0; i < currentSubDLevel; i++) subdVertCount = subdVertCount * 4;
+
+				float scale = subdVertCount / vertCount;
+
+				auto item3 = subdivisionItemsGrid->itemAtPosition(row, 3);
+				if (item3 == nullptr) continue;
+				auto subdVertLabel = qobject_cast<QLabel*>(item3->widget());
+				subdVertLabel->setText(QString::number(subdVertCount) + " (" + QString::number(scale)+ "x)");
+
+			}
+
+		}
+		
+	}
+
 }
 
 DzNode* DzBridgeSubdivisionDialog::FindObject(DzNode* Node, QString Name)

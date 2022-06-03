@@ -22,6 +22,7 @@ namespace DzBridgeNameSpace
 		QString Label;
 		QString Type;
 		QString Path;
+		DzProperty *Property;
 
 		inline bool operator==(MorphInfo other)
 		{
@@ -38,6 +39,7 @@ namespace DzBridgeNameSpace
 			Label = QString();
 			Type = QString();
 			Path = QString();
+			Property = nullptr;
 		}
 	};
 
@@ -81,13 +83,13 @@ namespace DzBridgeNameSpace
 			return singleton;
 		}
 
-		// Get the morph string in the format for the Daz FBX Export
+		// Get the morph string (aka morphsToExport) in the format for the Daz FBX Export
 		Q_INVOKABLE QString GetMorphString();
 
-		// Get the morph string in the format used for presets
+		// Get the morph string (aka morphsToExport) in the format used for presets
 		Q_INVOKABLE QString GetMorphCSVString();
 
-		// Get the morph string in an internal name = friendly name format
+		// Get the morph string (aka morphsToExport) in an internal name = friendly name format
 		// Used to rename them to the friendly name in Unreal
 		Q_INVOKABLE QMap<QString, QString> GetMorphRenaming();
 
@@ -99,6 +101,10 @@ namespace DzBridgeNameSpace
 		// Retrieve label based on morph name
 		// DB Dec-21-2021, Created for scripting.
 		Q_INVOKABLE QString GetMorphLabelFromName(QString morphName);
+
+		// Get MorphInfo from morph name
+		// DB June-01-2022, Created for MorphLinks Generation for Blender Bridge Morphs Support
+		MorphInfo GetMorphInfoFromName(QString morphName);
 
 	public slots:
 		void FilterChanged(const QString& filter);

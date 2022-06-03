@@ -73,6 +73,7 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	setWindowTitle(workingTitle);
 	layout()->setSizeConstraint(QLayout::SetFixedSize);
 	mainLayout = new QFormLayout();
+	mainLayout->setMargin(5);
 
 	advancedWidget = new QWidget();
 	QHBoxLayout* advancedLayoutOuter = new QHBoxLayout();
@@ -104,7 +105,7 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 
 	// Subdivision
 	QHBoxLayout* subdivisionLayout = new QHBoxLayout();
-	subdivisionButton = new QPushButton("Choose Subdivisions", this);
+	subdivisionButton = new QPushButton(tr("Bake Subdivision Levels"), this);
 	connect(subdivisionButton, SIGNAL(released()), this, SLOT(HandleChooseSubdivisionsButton()));
 	subdivisionEnabledCheckBox = new QCheckBox("", this);
 	subdivisionEnabledCheckBox->setMaximumWidth(25);
@@ -154,14 +155,14 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	// Add the widget to the basic dialog
 	mainLayout->addRow("Asset Name", assetNameEdit);
 	mainLayout->addRow("Asset Type", assetTypeCombo);
-	mainLayout->addRow("Enable Morphs", morphsLayout);
-	mainLayout->addRow("Enable Subdivision", subdivisionLayout);
+	mainLayout->addRow("Export Morphs", morphsLayout);
+	mainLayout->addRow("Bake Subdivision", subdivisionLayout);
 	// Advanced Settings Layout
-	advancedLayout->addRow("Destination Plugin Installer", m_wTargetPluginInstaller);
+	advancedLayout->addRow("Install Destination Plugin", m_wTargetPluginInstaller);
 	showTargetPluginInstaller(false);
 	advancedLayout->addRow("FBX Version", fbxVersionCombo);
 	advancedLayout->addRow("Show FBX Dialog", showFbxDialogCheckBox);
-	advancedLayout->addRow("Enable Normal Map Generation", enableNormalMapGenerationCheckBox);
+	advancedLayout->addRow("Generate Normal Maps", enableNormalMapGenerationCheckBox);
 	advancedLayout->addRow("Export Material CSV", exportMaterialPropertyCSVCheckBox);
 
 	addLayout(mainLayout);
@@ -392,7 +393,7 @@ void DzBridgeDialog::HandleTargetPluginInstallerButton()
 			tr("Please select a software version."));
 		return;
 	}
-	QString sPluginZipFilename = "/ThisIsExampleFilenameOnlyAndWillNotWork.zip"; // Example 
+	QString sPluginZipFilename = "/ThisIsExampleFilenameOnlyAndWillNotWork.zip"; // Example
 	QString sEmbeddedPath = ":/DazBridge";
 	QString sPluginZipPath = sEmbeddedPath + sPluginZipFilename;
 

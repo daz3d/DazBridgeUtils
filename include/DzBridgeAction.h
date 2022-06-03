@@ -25,14 +25,14 @@ namespace DzBridgeNameSpace
 	/// <summary>
 	/// Abstract base class that manages exporting of assets to Target Software via FBX/DTU
 	/// intermediate files.  Manages destination filepaths, morphs, subdivisions, animations, etc.
-	/// 
-	/// Usage: 
+	///
+	/// Usage:
 	/// Subclass and implement executeAction() to open m_bridgeDialog. Implement readGuiRootFolder()
 	/// to read and return any custom UI widget containing destination root folder. Implement
 	/// writeConfiguration() to manage DTU file generation.  Implement setExportOptions() to override
-	/// FBX generation options.  
-	/// 
-	/// See also: 
+	/// FBX generation options.
+	///
+	/// See also:
 	/// DzBridgeScriptableAction.h for Daz Script usage.
 	/// </summary>
 	class CPP_Export DzBridgeAction : public DzAction {
@@ -97,7 +97,7 @@ namespace DzBridgeNameSpace
 		QString m_sAssetType; // Asset Types: "SkeletalMesh", "StaticMesh", "Animation", "Pose", "Environment"
 		QString m_sMorphSelectionRule; // Selection Rule used by FbxExporter to choose morphs to export
 		QString m_sFbxVersion; // FBX file format version to export
-		QMap<QString, QString> m_mMorphNameToLabel; // Internal name to Friendly label
+		QMap<QString, QString> m_mMorphNameToLabel; // Internal name to Friendly label (from MorphSelectionDialog->morphsToExport)
 		QList<QString> m_aPoseList; // Control Pose names
 		QMap<DzImageProperty*, double> m_imgPropertyTable_NormalMapStrength; // Image Property to Normal Map Strength
 
@@ -201,8 +201,8 @@ namespace DzBridgeNameSpace
 
 		bool isTemporaryFile(QString sFilename);
 		QString exportAssetWithDtu(QString sFilename, QString sAssetMaterialName = "");
-		void writePropertyTexture(DzJsonWriter& Writer, QString sName, QString sValue, QString sType, QString sTexture);
-		void writePropertyTexture(DzJsonWriter& Writer, QString sName, double dValue, QString sType, QString sTexture);
+		void writePropertyTexture(DzJsonWriter& Writer, QString sName, QString sLabel, QString sValue, QString sType, QString sTexture);
+		void writePropertyTexture(DzJsonWriter& Writer, QString sName, QString sLabel, double dValue, QString sType, QString sTexture);
 		QString makeUniqueFilename(QString sFilename);
 
 		Q_INVOKABLE bool getGenerateNormalMaps() { return this->m_bGenerateNormalMaps; };
@@ -223,6 +223,22 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE void writeWeightMaps(DzNode* Node, DzJsonWriter& Stream);
 
 		Q_INVOKABLE bool metaInvokeMethod(QObject* object, const char* methodSig, void** returnPtr);
+		Q_INVOKABLE void writeSkeletonData(DzNode* Node, DzJsonWriter& writer);
+		Q_INVOKABLE void writeHeadTailData(DzNode* Node, DzJsonWriter& writer);
+		Q_INVOKABLE DzBoneList getAllBones(DzNode* Node);
+		Q_INVOKABLE void writeJointOrientation(DzBoneList& aBoneList, DzJsonWriter& writer);
+		Q_INVOKABLE void writeLimitData(DzBoneList& aBoneList, DzJsonWriter& writer);
+		Q_INVOKABLE void writePoseData(DzNode* Node, DzJsonWriter& writer, bool bIsFigure);
+
+		Q_INVOKABLE virtual void writeMorphLinks(DzJsonWriter& writer);
+		Q_INVOKABLE virtual void writeMorphNames(DzJsonWriter& writer);
+		Q_INVOKABLE QStringList checkMorphControlsChildren(DzNode* pNode, DzProperty* pProperty);
+		Q_INVOKABLE QStringList checkForBoneInChild(DzNode* pNode, QString sBoneName, QStringList& controlledMeshList);
+		Q_INVOKABLE QStringList checkForBoneInAlias(DzNode* pNode, DzProperty* pMorphProperty, QStringList& controlledMeshList);
+
+		Q_INVOKABLE DzNodeList buildRootNodeList();
+		Q_INVOKABLE DzNodeList findRootNodes(DzNode* pNode);
+		Q_INVOKABLE void reparentFigure(DzNode* figure);
 
 	private:
 		class MaterialGroupExportOrderMetaData

@@ -719,7 +719,7 @@ bool UnitTest_DzBridgeAction::writePropertyTexture(UnitTest::TestResult* testRes
 {
 	bool bResult = true;
 	DzJsonWriter arg(nullptr);
-	TRY_METHODCALL(qobject_cast<DzBridgeNameSpace::DzBridgeAction*>(m_testObject)->writePropertyTexture(arg,"",0,"",""));
+	TRY_METHODCALL(qobject_cast<DzBridgeNameSpace::DzBridgeAction*>(m_testObject)->writePropertyTexture(arg,"",0,"","",""));
 
 	return bResult;
 }
