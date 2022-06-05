@@ -88,7 +88,7 @@ endif(WIN32)
 
 if(NOT USE_DZBRIDGE_SUBMODULE)
 
-option(INSTALL_QA_PLUGIN "Build QA-Test Plugin (INSTALL_QA_PLUGIN)" OFF)
+option(INSTALL_SCRIPTABLE_PLUGIN "Install Scriptable Plugin to Daz Studio (INSTALL_SCRIPTABLE_PLUGIN)" OFF)
 
 set(DAZ_SDK_DIR_DEFAULT "")
 set(DAZ_SDK_CORE_RELATIVE_PATH "lib/${DZ_MIXED_PLATFORM}/${DZ_LIB_PREFIX}dzcore${DZ_LIB_SUFFIX}")
@@ -258,9 +258,10 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 
 
 # if building a plugin and you want the compiled result placed in the Daz Studio ./plugins directory
-if(INSTALL_QA_PLUGIN)
+if(INSTALL_SCRIPTABLE_PLUGIN)
 	if(DAZ_STUDIO_EXE_DIR)
 		set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${DAZ_STUDIO_EXE_DIR}/plugins)
+		set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${DAZ_STUDIO_EXE_DIR}/plugins)
 	endif()
 endif()
 
