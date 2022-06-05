@@ -21,19 +21,52 @@
 
 OpenFBXInterface* OpenFBXInterface::singleton = nullptr;
 
+#ifdef __APPLE__
+QList<void*> crashfix_reallocTable;
+int leakCounter = 0;
+void* crashfix_realloc(void* oPtr, size_t memsize)
+{
+    void* newPtr;
+    
+    if (oPtr != NULL && crashfix_reallocTable.contains(oPtr)==false)
+    {
+        leakCounter++;
+        newPtr = malloc(memsize);
+    }
+    else
+    {
+        newPtr = realloc(oPtr, memsize);
+    }
+
+    if (crashfix_reallocTable.contains(newPtr)==false)
+        crashfix_reallocTable.append(newPtr);
+    
+    return newPtr;
+}
+#endif
+
 // Constructor
 OpenFBXInterface::OpenFBXInterface()
 {
 	// Create FbxManager
-	m_fbxManager = FbxManager::Create();
-	if (!m_fbxManager)
+    m_fbxManager = FbxManager::Create();
+	if (m_fbxManager == nullptr)
 	{
 		throw (std::runtime_error("OpenFBXInterface: could not create FbxManager"));
 	}
 
-	// Create FbxIOSettings
-	m_fbxIOSettings = FbxIOSettings::Create(m_fbxManager, IOSROOT);
-	m_fbxManager->SetIOSettings(m_fbxIOSettings);
+#ifdef __APPLE__
+    FbxReallocProc origProc = FbxGetReallocHandler();
+    FbxSetReallocHandler(crashfix_realloc);
+#endif
+    // Create FbxIOSettings
+    m_fbxIOSettings = FbxIOSettings::Create(m_fbxManager, IOSROOT);
+#ifdef __APPLE__
+    FbxSetReallocHandler(origProc);
+    crashfix_reallocTable.clear();
+#endif
+    
+    m_fbxManager->SetIOSettings(m_fbxIOSettings);
 
 	// Initialize Fbx Plugin folder
 	FbxString appPath = FbxGetApplicationDirectory();
@@ -48,9 +81,9 @@ OpenFBXInterface::OpenFBXInterface()
 // Destructor
 OpenFBXInterface::~OpenFBXInterface()
 {
-	if (m_fbxManager) m_fbxManager->Destroy();
-	if (m_fbxIOSettings) m_fbxIOSettings->Destroy();
 	if (m_DefaultScene) m_DefaultScene->Destroy();
+    if (m_fbxIOSettings) m_fbxIOSettings->Destroy();
+    if (m_fbxManager) m_fbxManager->Destroy();
 }
 
 bool OpenFBXInterface::SaveScene(FbxScene* pScene, QString sFilename, int nFileFormat, bool bEmbedMedia)
