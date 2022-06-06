@@ -1785,25 +1785,96 @@ void DzBridgeAction::writeMorphLinks(DzJsonWriter& writer)
 			writer.startMemberObject(sMorphName);
 
 			writer.addMember("Label", sMorphLabel);
+
+			// DB 2022-June-6: Blender JCM, Morph Controllers support
 			writer.startMemberArray("Links");
-			// Links: Bone
-			// Links: Property
-			// Links: Type
-			// Links: Scalar
-			// Links: Addend
+			for (auto iterator = morphProperty->controllerListIterator(); iterator.hasNext(); )
+			{
+				DzERCLink *ercLink = qobject_cast<DzERCLink*>(iterator.next());
+				if (ercLink == nullptr)
+					continue;
+				auto controllerProperty = ercLink->getProperty();
+				auto controllerOwner = controllerProperty->getOwner();
+				QString sLinkBone = "None";
+				QString sLinkProperty = controllerProperty->getName();
+				int iLinkType = ercLink->getType();
+				double fLinkScalar = ercLink->getScalar();
+				double fLinkAddend = ercLink->getAddend();
+				if (controllerOwner->inherits("DzBone"))
+				{
+					sLinkBone = controllerOwner->getName();
+					controlledMeshList = checkForBoneInChild(m_pSelectedNode, sLinkBone, controlledMeshList);
+				}
+				if (controllerOwner->inherits("DzMorph"))
+				{
+					sLinkProperty = controllerOwner->getName();
+				}
+				writer.startObject();
+				writer.addMember("Bone", sLinkBone);
+				writer.addMember("Property", sLinkProperty);
+				writer.addMember("Type", iLinkType);
+				writer.addMember("Scalar", fLinkScalar);
+				writer.addMember("Addend", fLinkAddend);
+				if (iLinkType == 6)
+				{
+					// Keys
+					int iKeyType = ercLink->getKeyInterpolation();
+					writer.addMember("Key Type", iKeyType);
+					writer.startMemberObject("Keys");
+					for (int key_index = 0; key_index < ercLink->getNumKeyValues(); key_index++)
+					{
+						QString sKeyDataLabel = QString("Key %1").arg(key_index);
+						double fKeyDataRotate = ercLink->getKey(key_index);
+						double fKeyDataValue = ercLink->getKeyValue(key_index);
+						writer.startMemberObject(sKeyDataLabel);
+						writer.addMember("Rotate", fKeyDataRotate);
+						writer.addMember("Value", fKeyDataValue);
+						writer.finishObject();
+					}
+					writer.finishObject();
+				}
+				writer.finishObject();
+			}
 			writer.finishArray();
+
 			writer.startMemberArray("SubLinks");
-			// Sublinks: Bone
-			// Sublinks: Property
-			// Sublinks: Type
-			// Sublinks: Scalar
-			// Sublinks: Addend
+			for (auto iterator = morphProperty->slaveControllerListIterator(); iterator.hasNext(); )
+			{
+				DzERCLink *ercLink = qobject_cast<DzERCLink*>(iterator.next());
+				if (ercLink == nullptr)
+					continue;
+				auto ercOwnerNode = ercLink->getOwner();
+				if (ercOwnerNode == nullptr)
+					continue;
+				auto ercBoneNode = ercOwnerNode->getOwner();
+				if (ercBoneNode && ercBoneNode->inherits("DzBone"))
+				{
+					QString sLinkBone = ercBoneNode->getName();
+					QString sLinkProperty = ercOwnerNode->getName();
+					int iLinkType = ercLink->getType();
+					double fLinkScalar = ercLink->getScalar();
+					double fLinkAddend = ercLink->getAddend();
+					writer.startObject();
+					writer.addMember("Bone", sLinkBone);
+					writer.addMember("Property", sLinkProperty);
+					writer.addMember("Type", iLinkType);
+					writer.addMember("Scalar", fLinkScalar);
+					writer.addMember("Addend", fLinkAddend);
+					writer.finishObject();
+				}
+			}
 			writer.finishArray();
+
 			double minVal = 0.0;
 			double maxVal = 1.0;
+			if (morphProperty->inherits("DzFloatProperty"))
+			{
+				minVal = qobject_cast<DzFloatProperty*>(morphProperty)->getMin();
+				maxVal = qobject_cast<DzFloatProperty*>(morphProperty)->getMax();
+			}
 			writer.addMember("Minimum", minVal);
 			writer.addMember("Maximum", maxVal);
-			bool bIsHidden = false;
+			bool bIsHidden = morphProperty->isHidden();
 			writer.addMember("isHidden", bIsHidden);
 			QString sMorphPath = morphInfo.Path;
 			writer.addMember("Path", sMorphPath);
