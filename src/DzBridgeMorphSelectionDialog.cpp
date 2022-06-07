@@ -37,12 +37,14 @@
 #include "dznumericnodeproperty.h"
 #include "dzerclink.h"
 #include "dzbone.h"
-#include "DzBridgeMorphSelectionDialog.h"
 
 #include "QtGui/qlayout.h"
 #include "QtGui/qlineedit.h"
 
 #include <QtCore/QDebug.h>
+
+#include "DzBridgeMorphSelectionDialog.h"
+#include "DzBridgeAction.h"
 
 /*****************************
 Local definitions
@@ -134,21 +136,29 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	JCMGroupBox->setLayout(new QGridLayout());
 	QGroupBox* FaceGroupBox = new QGroupBox("Add Expressions", this);
 	FaceGroupBox->setLayout(new QGridLayout());
+
 	QPushButton* ArmsJCMButton = new QPushButton("Arms");
 	QPushButton* LegsJCMButton = new QPushButton("Legs");
 	QPushButton* TorsoJCMButton = new QPushButton("Torso");
 	QPushButton* ARKit81Button = new QPushButton("ARKit (Genesis8.1)");
 	QPushButton* FaceFX8Button = new QPushButton("FaceFX (Genesis8)");
+
 	autoJCMCheckBox = new QCheckBox("Auto JCM");
 	autoJCMCheckBox->setChecked(false);
+	autoJCMCheckBox->setVisible(false);
+
+	QPushButton* AddConnectedMorphsButton = new QPushButton("Add Connected Morphs");
+
 	((QGridLayout*)JCMGroupBox->layout())->addWidget(ArmsJCMButton, 0, 0);
 	((QGridLayout*)JCMGroupBox->layout())->addWidget(LegsJCMButton, 0, 1);
 	((QGridLayout*)JCMGroupBox->layout())->addWidget(TorsoJCMButton, 0, 2);
 	((QGridLayout*)FaceGroupBox->layout())->addWidget(ARKit81Button, 0, 1);
 	((QGridLayout*)FaceGroupBox->layout())->addWidget(FaceFX8Button, 0, 2);
+
 	MorphGroupBox->layout()->addWidget(JCMGroupBox);
 	MorphGroupBox->layout()->addWidget(FaceGroupBox);
 	MorphGroupBox->layout()->addWidget(autoJCMCheckBox);
+	MorphGroupBox->layout()->addWidget(AddConnectedMorphsButton);
 
 	if (!settings->value("AutoJCMEnabled").isNull())
 	{
@@ -161,10 +171,10 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	connect(ARKit81Button, SIGNAL(released()), this, SLOT(HandleARKitGenesis81MorphsButton()));
 	connect(FaceFX8Button, SIGNAL(released()), this, SLOT(HandleFaceFXGenesis8Button()));
 	connect(autoJCMCheckBox, SIGNAL(clicked(bool)), this, SLOT(HandleAutoJCMCheckBoxChange(bool)));
+	connect(AddConnectedMorphsButton, SIGNAL(clicked(bool)), this, SLOT(HandleAddConnectedMorphs()));
 	
 	treeLayout->addWidget(MorphGroupBox);
 	morphsLayout->addLayout(treeLayout);
-
 
 	// Center List of morphs based on tree selection
 	QVBoxLayout* morphListLayout = new QVBoxLayout();
@@ -194,7 +204,7 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	mainLayout->addLayout(morphsLayout);
 
 	this->addLayout(mainLayout);
-	resize(QSize(800, 800));//.expandedTo(minimumSizeHint()));
+	resize(QSize(800, 750));//.expandedTo(minimumSizeHint()));
 	setFixedWidth(width());
 	setFixedHeight(height());
 	RefreshPresetsCombo();
@@ -291,6 +301,7 @@ QStringList DzBridgeMorphSelectionDialog::GetAvailableMorphs(DzNode* Node)
 			morphInfo.Path = Node->getLabel() + "/" + property->getPath();
 			morphInfo.Type = presentation->getType();
 			morphInfo.Property = property;
+			morphInfo.Node = Node;
 			if (!morphs.contains(morphInfo.Name))
 			{
 				morphs.insert(morphInfo.Name, morphInfo);
@@ -341,6 +352,7 @@ QStringList DzBridgeMorphSelectionDialog::GetAvailableMorphs(DzNode* Node)
 						morphInfoProp.Path = Node->getLabel() + "/" + property->getPath();
 						morphInfoProp.Type = presentation->getType();
 						morphInfoProp.Property = property;
+						morphInfoProp.Node = Node;
 						if (!morphs.contains(morphInfoProp.Name))
 						{
 							morphs.insert(morphInfoProp.Name, morphInfoProp);
@@ -1056,6 +1068,126 @@ MorphInfo DzBridgeMorphSelectionDialog::GetMorphInfoFromName(QString morphName)
 		return MorphInfo();
 	}
 
+}
+
+QString DzBridgeMorphSelectionDialog::getMorphPropertyName(DzProperty* pMorphProperty)
+{
+	if (pMorphProperty == nullptr)
+	{
+		// issue error message or alternatively: throw exception 
+		printf("ERROR: DazBridge: DzBridgeMorphSelectionDialog.cpp, getPropertyName(): nullptr passed as argument.");
+		return "";
+	}
+	QString sPropertyName = pMorphProperty->getName();
+	auto owner = pMorphProperty->getOwner();
+	if (owner && owner->inherits("DzMorph"))
+	{
+		sPropertyName = owner->getName();
+	}
+	return sPropertyName;
+}
+
+bool DzBridgeMorphSelectionDialog::isValidMorph(DzProperty* pMorphProperty)
+{
+	if (pMorphProperty == nullptr)
+	{
+		// issue error message or alternatively: throw exception 
+		printf("ERROR: DazBridge: DzBridgeMorphSelectionDialog.cpp, isValidMorph(): nullptr passed as argument.");
+		return false;
+	}
+	QString sMorphName = getMorphPropertyName(pMorphProperty);
+	QStringList ignoreConditionList;
+	ignoreConditionList += "x"; ignoreConditionList += "y"; ignoreConditionList += "z";
+	for (auto ignoreCondition : ignoreConditionList)
+	{
+		if (sMorphName.toLower()[0] == ignoreCondition[0])
+			return false;
+	}
+	for (auto iterator = pMorphProperty->controllerListIterator(); iterator.hasNext(); )
+	{
+		DzERCLink* ercLink = qobject_cast<DzERCLink*>(iterator.next());
+		if (ercLink == nullptr)
+			continue;
+		if (ercLink->getType() == 3) // Multiply
+		{
+			auto controllerProperty = ercLink->getProperty();
+			if (controllerProperty && controllerProperty->getDoubleValue() == 0)
+				return false;
+		}
+	}
+	return true;
+}
+
+// Load morphs controlling the morphs in the export list
+void DzBridgeMorphSelectionDialog::HandleAddConnectedMorphs()
+{
+	// sanity check
+	if (morphsToExport.length() == 0)
+	{
+		return;
+	}
+	foreach (MorphInfo exportMorph, morphsToExport)
+	{
+		DzProperty *morphProperty = exportMorph.Property;
+		if (morphProperty == nullptr)
+		{
+			// log unexpected error
+			continue;
+		}
+		for (auto slaveControllerIterator = morphProperty->slaveControllerListIterator(); slaveControllerIterator.hasNext(); )
+		{
+			DzProperty *controllerProperty = slaveControllerIterator.next()->getOwner();
+			if (isValidMorph(controllerProperty)==false)
+				continue;
+			QString sMorphName = getMorphPropertyName(controllerProperty);
+
+			// Add the list for export
+			if (morphs.contains(sMorphName) && !morphsToExport.contains(morphs[sMorphName]))
+			{
+				morphsToExport.append(morphs[sMorphName]);
+			}
+
+		}
+	}
+	RefreshExportMorphList();
+}
+// Disable Morph if the morph has a controller that is also being exported
+QList<QString> DzBridgeMorphSelectionDialog::getMorphNamesToDisconnectList()
+{
+	QList<QString> morphsToDisconnect;
+
+	foreach (MorphInfo exportMorph, morphsToExport)
+	{
+		DzProperty* morphProperty = exportMorph.Property;
+		// DB, 2022-June-07: NOTE: using iterator may be more efficient due to potentially large number of controllers
+		for (auto iterator = morphProperty->controllerListIterator(); iterator.hasNext(); )
+		{
+			DzERCLink* ercLink = qobject_cast<DzERCLink*>(iterator.next());
+			if (ercLink == nullptr)
+				continue;
+			auto controllerProperty = ercLink->getProperty();
+			QString sControllerName = getMorphPropertyName(controllerProperty);
+			// iterate through each exported morph
+			foreach (MorphInfo compareMorph, morphsToExport)
+			{
+				if (compareMorph.Name == sControllerName)
+				{
+					morphsToDisconnect.append(exportMorph.Name);
+					break;
+				}
+			}
+		}
+	}
+
+	return morphsToDisconnect;
+}
+
+void DzBridgeMorphSelectionDialog::SetAutoJCMVisible(bool bVisible)
+{
+	if (autoJCMCheckBox==nullptr)
+		return;
+	autoJCMCheckBox->setVisible(bVisible);
+	update();
 }
 
 #include "moc_DzBridgeMorphSelectionDialog.cpp"

@@ -97,8 +97,7 @@ void DzBridgeAction::resetToDefaults()
 	m_EnableSubdivisions = false;
 	m_bShowFbxOptions = false;
 	m_bExportMaterialPropertiesCSV = false;
-	m_ControllersToDisconnect.clear();
-	m_ControllersToDisconnect.append("facs_bs_MouthClose_div2");
+	resetArray_ControllersToDisconnect();
 
 	// Reset all dialog settings and script-exposed properties to Hardcoded Defaults
 	// Ignore saved settings, QSettings, etc.
@@ -109,16 +108,16 @@ void DzBridgeAction::resetToDefaults()
 		if (dzScene->getFilename().length() > 0)
 		{
 			QFileInfo fileInfo = QFileInfo(dzScene->getFilename());
-			m_sAssetName = fileInfo.baseName().remove(QRegExp("[^A-Za-z0-9_]"));
+			m_sExportFilename = fileInfo.baseName().remove(QRegExp("[^A-Za-z0-9_]"));
 		}
 		else
 		{
-			m_sAssetName = this->cleanString(selection->getLabel());
+			m_sExportFilename = this->cleanString(selection->getLabel());
 		}
 	}
 	else
 	{
-		m_sAssetName = "";
+		m_sExportFilename = "";
 	}
 	if (figure)
 	{
@@ -129,6 +128,7 @@ void DzBridgeAction::resetToDefaults()
 		m_sAssetType = "StaticMesh";
 	}
 
+	m_sAssetName = m_sExportFilename;
 	m_sProductName = "";
 	m_sProductComponentName = "";
 	m_aMorphListOverride.clear();
@@ -739,6 +739,7 @@ void DzBridgeAction::exportAsset()
 	if (m_sAssetType == "Environment")
 	{
 		// Store off the original export information
+		QString OriginalFileName = m_sExportFilename;
 		QString OriginalCharacterName = m_sAssetName;
 		DzNode* OriginalSelection = m_pSelectedNode;
 
@@ -749,10 +750,11 @@ void DzBridgeAction::exportAsset()
 		{
 			// Override the export info for exporting this prop
 			m_sAssetType = "StaticMesh";
-			m_sAssetName = iter.key();
-			m_sAssetName = m_sAssetName.remove(QRegExp("[^A-Za-z0-9_]"));
-			m_sDestinationPath = m_sRootFolder + "/" + m_sAssetName + "/";
-			m_sDestinationFBX = m_sDestinationPath + m_sAssetName + ".fbx";
+			m_sExportFilename = iter.key();
+			m_sExportFilename = m_sExportFilename.remove(QRegExp("[^A-Za-z0-9_]"));
+			m_sAssetName = m_sExportFilename;
+			m_sDestinationPath = m_sRootFolder + "/" + m_sExportFilename + "/";
+			m_sDestinationFBX = m_sDestinationPath + m_sExportFilename + ".fbx";
 			DzNode* Node = iter.value();
 
 			// If this is a figure, send it as a skeletal mesh
@@ -793,10 +795,11 @@ void DzBridgeAction::exportAsset()
 		}
 
 		// After the props have been exported, export the environment
+		m_sExportFilename = OriginalFileName;
 		m_sAssetName = OriginalCharacterName;
 		m_sDestinationPath = m_sRootFolder + "/" + m_sExportSubfolder + "/";
 		// use original export fbx filestem, if exists
-		if (m_sExportFbx == "") m_sExportFbx = m_sAssetName;
+		if (m_sExportFbx == "") m_sExportFbx = m_sExportFilename;
 		m_sDestinationFBX = m_sDestinationPath + m_sExportFbx + ".fbx";
 		m_pSelectedNode = OriginalSelection;
 		m_sAssetType = "Environment";
@@ -1188,13 +1191,17 @@ QList<QString> DzBridgeAction::disconnectOverrideControllers()
 	{
 		DzProperty* property = Selection->getProperty(index);
 		DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
-		QString propName = property->getName();
 		if (numericProperty && !numericProperty->isOverridingControllers())
 		{
 			QString propName = property->getName();
 			if (m_mMorphNameToLabel.contains(propName) && m_ControllersToDisconnect.contains(propName))
 			{
 				numericProperty->setOverrideControllers(true);
+
+				double propValue = numericProperty->getDoubleValue();
+				m_undoTable_ControllersToDisconnect.insert(propName, propValue);
+				numericProperty->setDoubleValue(numericProperty->getDoubleDefaultValue());
+
 				ModifiedList.append(propName);
 			}
 		}
@@ -1212,15 +1219,18 @@ QList<QString> DzBridgeAction::disconnectOverrideControllers()
 				for (int propindex = 0; propindex < modifier->getNumProperties(); propindex++)
 				{
 					DzProperty* property = modifier->getProperty(propindex);
-					QString propName = property->getName();
-					QString propLabel = property->getLabel();
 					DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
 					if (numericProperty && !numericProperty->isOverridingControllers())
 					{
-						QString propName = property->getName();
+						QString propName = DzBridgeMorphSelectionDialog::getMorphPropertyName(property);
 						if (m_mMorphNameToLabel.contains(modifier->getName()) && m_ControllersToDisconnect.contains(modifier->getName()))
 						{
 							numericProperty->setOverrideControllers(true);
+
+							double propValue = numericProperty->getDoubleValue();
+							m_undoTable_ControllersToDisconnect.insert(propName, propValue);
+							numericProperty->setDoubleValue(numericProperty->getDoubleDefaultValue());
+
 							ModifiedList.append(modifier->getName());
 						}
 					}
@@ -1240,9 +1250,9 @@ void DzBridgeAction::reconnectOverrideControllers(QList<QString>& DisconnetedCon
 	if (Selection == nullptr)
 		return;
 
-	int poseIndex = 0;
-	DzNumericProperty* previousProperty = nullptr;
+	// DB, 2022-06-13: Must reconnect in REVERSE ORDER, since items are inter-connected
 	for (int index = 0; index < Selection->getNumProperties(); index++)
+//	for (int index = Selection->getNumProperties() - 1; index >= 0; index--)
 	{
 		DzProperty* property = Selection->getProperty(index);
 		DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
@@ -1252,6 +1262,9 @@ void DzBridgeAction::reconnectOverrideControllers(QList<QString>& DisconnetedCon
 			QString propName = property->getName();
 			if (DisconnetedControllers.contains(propName))
 			{
+				double propValue = m_undoTable_ControllersToDisconnect.value(propName);
+				numericProperty->setDoubleValue(1.0);
+
 				numericProperty->setOverrideControllers(false);
 			}
 		}
@@ -1261,6 +1274,7 @@ void DzBridgeAction::reconnectOverrideControllers(QList<QString>& DisconnetedCon
 	if (Object)
 	{
 		for (int index = 0; index < Object->getNumModifiers(); index++)
+//		for (int index = Object->getNumModifiers(); index >= 0; index--)
 		{
 			DzModifier* modifier = Object->getModifier(index);
 			DzMorph* mod = qobject_cast<DzMorph*>(modifier);
@@ -1269,14 +1283,15 @@ void DzBridgeAction::reconnectOverrideControllers(QList<QString>& DisconnetedCon
 				for (int propindex = 0; propindex < modifier->getNumProperties(); propindex++)
 				{
 					DzProperty* property = modifier->getProperty(propindex);
-					QString propName = property->getName();
-					QString propLabel = property->getLabel();
 					DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
 					if (numericProperty && numericProperty->isOverridingControllers())
 					{
-						QString propName = property->getName();
+						QString propName = DzBridgeMorphSelectionDialog::getMorphPropertyName(property);
 						if (DisconnetedControllers.contains(modifier->getName()))
 						{
+							double propValue = m_undoTable_ControllersToDisconnect.value(propName);
+							numericProperty->setDoubleValue(propValue);
+
 							numericProperty->setOverrideControllers(false);
 						}
 					}
@@ -1286,6 +1301,10 @@ void DzBridgeAction::reconnectOverrideControllers(QList<QString>& DisconnetedCon
 
 		}
 	}
+
+	// reset undo table
+	m_undoTable_ControllersToDisconnect.clear();
+
 }
 
 bool DzBridgeAction::checkIfPoseExportIsDestructive()
@@ -1684,10 +1703,31 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 
 }
 
+QStringList DzBridgeAction::checkForMorphOnChild(DzNode* pNode, QString sMorphName, QStringList& controlledMeshList)
+{
+	for (auto childIter = pNode->nodeChildrenIterator(); childIter.hasNext(); )
+	{
+		DzFigure* childFigure = qobject_cast<DzFigure*>(childIter.next());
+		if (childFigure != nullptr)
+		{
+			DzObject *oObject = childFigure->getObject();
+			if (oObject != nullptr)
+			{
+				DzModifier *oModifier = oObject->findModifier( sMorphName );
+				if (oModifier != nullptr)
+				{
+					QString meshName = childFigure->getName() + ".Shape";
+					if (controlledMeshList.contains(meshName) == false)
+						controlledMeshList.append(meshName);
+				}
+			}
+		}
+	}
+	return controlledMeshList;
+}
 
 QStringList DzBridgeAction::checkForBoneInChild(DzNode* pNode, QString sBoneName, QStringList &controlledMeshList)
 {
-	
 	for (auto childIter = pNode->nodeChildrenIterator(); childIter.hasNext(); )
 	{
 		DzFigure *childFigure = qobject_cast<DzFigure*>(childIter.next());
@@ -1706,9 +1746,7 @@ QStringList DzBridgeAction::checkForBoneInChild(DzNode* pNode, QString sBoneName
 				{
 					QString meshName = childFigure->getName() + ".Shape";
 					if (controlledMeshList.contains(meshName) == false)
-					{
 						controlledMeshList.append(meshName);
-					}
 				}
 			}
 		}
@@ -1781,6 +1819,13 @@ void DzBridgeAction::writeMorphLinks(DzJsonWriter& writer)
 			MorphInfo morphInfo = m_morphSelectionDialog->GetMorphInfoFromName(sMorphName);
 			DzProperty *morphProperty = morphInfo.Property;
 			QStringList controlledMeshList = checkMorphControlsChildren(m_pSelectedNode, morphProperty);
+			if (morphInfo.Node != nullptr)
+			{
+				QString meshName = morphInfo.Node->getName() + ".Shape";
+				if (controlledMeshList.contains(meshName) == false)
+					controlledMeshList.push_back(meshName);
+			}
+			controlledMeshList = checkForMorphOnChild(m_pSelectedNode, morphInfo.Name, controlledMeshList);
 
 			writer.startMemberObject(sMorphName);
 
@@ -2282,26 +2327,6 @@ void DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 	if (BridgeDialog == nullptr)
 		return;
 
-	// Collect the values from the dialog fields
-	if (m_sAssetName == "" || m_nNonInteractiveMode == 0) m_sAssetName = BridgeDialog->getAssetNameEdit()->text();
-	if (m_sRootFolder == "" || m_nNonInteractiveMode == 0) m_sRootFolder = readGuiRootFolder();
-	if (m_sExportSubfolder == "" || m_nNonInteractiveMode == 0) m_sExportSubfolder = m_sAssetName;
-	m_sDestinationPath = m_sRootFolder + "/" + m_sExportSubfolder + "/";
-	if (m_sExportFbx == "" || m_nNonInteractiveMode == 0) m_sExportFbx = m_sAssetName;
-	m_sDestinationFBX = m_sDestinationPath + m_sExportFbx + ".fbx";
-
-	if (m_nNonInteractiveMode == 0)
-	{
-		// TODO: consider removing once findData( ) method above is completely implemented
-		m_sAssetType = cleanString(BridgeDialog->getAssetTypeCombo()->currentText());
-
-		m_sMorphSelectionRule = BridgeDialog->GetMorphString();
-		m_mMorphNameToLabel = BridgeDialog->GetMorphMapping();
-		m_bEnableMorphs = BridgeDialog->getMorphsEnabledCheckBox()->isChecked();
-	}
-
-	m_EnableSubdivisions = BridgeDialog->getSubdivisionEnabledCheckBox()->isChecked();
-	m_bShowFbxOptions = BridgeDialog->getShowFbxDialogCheckBox()->isChecked();
 	if (m_subdivisionDialog == nullptr)
 	{
 		m_subdivisionDialog = DzBridgeSubdivisionDialog::Get(BridgeDialog);
@@ -2310,6 +2335,30 @@ void DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 	{
 		m_morphSelectionDialog = DzBridgeMorphSelectionDialog::Get(BridgeDialog);
 	}
+
+	// Collect the values from the dialog fields
+	if (m_sAssetName == "" || m_nNonInteractiveMode == 0) m_sAssetName = BridgeDialog->getAssetNameEdit()->text();
+	m_sExportFilename = m_sAssetName;
+	if (m_sRootFolder == "" || m_nNonInteractiveMode == 0) m_sRootFolder = readGuiRootFolder();
+	if (m_sExportSubfolder == "" || m_nNonInteractiveMode == 0) m_sExportSubfolder = m_sExportFilename;
+	m_sDestinationPath = m_sRootFolder + "/" + m_sExportSubfolder + "/";
+	if (m_sExportFbx == "" || m_nNonInteractiveMode == 0) m_sExportFbx = m_sExportFilename;
+	m_sDestinationFBX = m_sDestinationPath + m_sExportFbx + ".fbx";
+
+	if (m_nNonInteractiveMode == 0)
+	{
+		// TODO: consider removing once findData( ) method above is completely implemented
+		m_sAssetType = cleanString(BridgeDialog->getAssetTypeCombo()->currentText());
+
+		m_sMorphSelectionRule = BridgeDialog->GetMorphString();
+		resetArray_ControllersToDisconnect();
+		m_ControllersToDisconnect.append(m_morphSelectionDialog->getMorphNamesToDisconnectList());
+		m_mMorphNameToLabel = BridgeDialog->GetMorphMapping();
+		m_bEnableMorphs = BridgeDialog->getMorphsEnabledCheckBox()->isChecked();
+	}
+
+	m_EnableSubdivisions = BridgeDialog->getSubdivisionEnabledCheckBox()->isChecked();
+	m_bShowFbxOptions = BridgeDialog->getShowFbxDialogCheckBox()->isChecked();
 	m_sFbxVersion = BridgeDialog->getFbxVersionCombo()->currentText();
 	m_bGenerateNormalMaps = BridgeDialog->getEnableNormalMapGenerationCheckBox()->isChecked();
 
@@ -3741,5 +3790,11 @@ DzNodeList DzBridgeAction::buildRootNodeList()
 	return rootNodeList;
 }
 
+void DzBlenderNS::DzBridgeAction::resetArray_ControllersToDisconnect()
+{
+	m_ControllersToDisconnect.clear();
+	m_ControllersToDisconnect.append("facs_bs_MouthClose_div2");
+	m_undoTable_ControllersToDisconnect.clear();
+}
 
 #include "moc_DzBridgeAction.cpp"

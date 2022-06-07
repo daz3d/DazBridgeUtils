@@ -90,9 +90,10 @@ namespace DzBridgeNameSpace
 		DzBridgeMorphSelectionDialog* m_morphSelectionDialog;
 
 		int m_nNonInteractiveMode;
-		QString m_sAssetName; // Exported filename without extension
+		QString m_sAssetName; // Exported Asset Name, may be separate from export filename
+		QString m_sExportFilename; // Exported filename without extension
 		QString m_sRootFolder; // The destination Root Folder
-		QString m_sDestinationPath; // Path to destination files: <m_sRootFolder> + "/" + <m_sAssetName (folder)> + "/"
+		QString m_sDestinationPath; // Path to destination files: <m_sRootFolder> + "/" + <m_sExportFilename (folder)> + "/"
 		QString m_sDestinationFBX; // Path to destination fbx file: <m_sDestinationPath> + <m_sExportFbx> + ".fbx";
 		QString m_sAssetType; // Asset Types: "SkeletalMesh", "StaticMesh", "Animation", "Pose", "Environment"
 		QString m_sMorphSelectionRule; // Selection Rule used by FbxExporter to choose morphs to export
@@ -102,7 +103,7 @@ namespace DzBridgeNameSpace
 		QMap<DzImageProperty*, double> m_imgPropertyTable_NormalMapStrength; // Image Property to Normal Map Strength
 
 		// Used only by script system
-		QString m_sExportSubfolder; // Destination subfolder within Root Folder for exporting. [Default is <m_sAssetName>]
+		QString m_sExportSubfolder; // Destination subfolder within Root Folder for exporting. [Default is <m_sExportFilename>]
 		QString m_sProductName; // Daz Store Product Name, can contain spaces and special characters
 		QString m_sProductComponentName; // Friendly name of Component of Daz Store Product, can contain spaces and special characters
 		QStringList m_aMorphListOverride; // overrides Morph Selection Dialog
@@ -163,6 +164,7 @@ namespace DzBridgeNameSpace
 		QList<QString> disconnectOverrideControllers();
 		void reconnectOverrideControllers(QList<QString>& DisconnetedControllers);
 		QList<QString> m_ControllersToDisconnect;
+		QMap<QString, double> m_undoTable_ControllersToDisconnect;
 
 		// For Pose exports check if writing to the timeline will alter existing keys
 		bool checkIfPoseExportIsDestructive();
@@ -180,8 +182,8 @@ namespace DzBridgeNameSpace
 
 		Q_INVOKABLE QString getAssetType() { return this->m_sAssetType; };
 		Q_INVOKABLE void setAssetType(QString arg_AssetType) { this->m_sAssetType = arg_AssetType; };
-		Q_INVOKABLE QString getExportFilename() { return this->m_sAssetName; };
-		Q_INVOKABLE void setExportFilename(QString arg_Filename) { this->m_sAssetName = arg_Filename; };
+		Q_INVOKABLE QString getExportFilename() { return this->m_sExportFilename; };
+		Q_INVOKABLE void setExportFilename(QString arg_Filename) { this->m_sExportFilename = arg_Filename; };
 
 		Q_INVOKABLE QString getExportFolder() { return this->m_sExportSubfolder; };
 		Q_INVOKABLE void setExportFolder(QString arg_Folder) { this->m_sExportSubfolder = arg_Folder; };
@@ -235,10 +237,13 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE QStringList checkMorphControlsChildren(DzNode* pNode, DzProperty* pProperty);
 		Q_INVOKABLE QStringList checkForBoneInChild(DzNode* pNode, QString sBoneName, QStringList& controlledMeshList);
 		Q_INVOKABLE QStringList checkForBoneInAlias(DzNode* pNode, DzProperty* pMorphProperty, QStringList& controlledMeshList);
+		Q_INVOKABLE QStringList checkForMorphOnChild(DzNode* pNode, QString sBoneName, QStringList& controlledMeshList);
 
 		Q_INVOKABLE DzNodeList buildRootNodeList();
 		Q_INVOKABLE DzNodeList findRootNodes(DzNode* pNode);
 		Q_INVOKABLE void reparentFigure(DzNode* figure);
+
+		virtual void resetArray_ControllersToDisconnect();
 
 	private:
 		class MaterialGroupExportOrderMetaData
