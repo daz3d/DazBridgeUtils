@@ -3790,7 +3790,7 @@ DzNodeList DzBridgeAction::buildRootNodeList()
 	return rootNodeList;
 }
 
-void DzBlenderNS::DzBridgeAction::resetArray_ControllersToDisconnect()
+void DzBridgeAction::resetArray_ControllersToDisconnect()
 {
 	m_ControllersToDisconnect.clear();
 	m_ControllersToDisconnect.append("facs_bs_MouthClose_div2");

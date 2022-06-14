@@ -43,6 +43,11 @@ using namespace DzBridgeNameSpace;
 DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	DzBasicDialog(parent, DAZ_BRIDGE_LIBRARY_NAME)
 {
+	if (dzScene->getPrimarySelection() == nullptr)
+	{
+		m_bSetupMode = true;
+	}
+
 	 assetNameEdit = nullptr;
 //	 projectEdit = nullptr;
 //	 projectButton = nullptr;
@@ -74,6 +79,20 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	layout()->setSizeConstraint(QLayout::SetFixedSize);
 	mainLayout = new QFormLayout();
 	mainLayout->setMargin(5);
+
+	QString sSetupModeString = tr("<h4>\
+If this is your first time using this bridge, please be sure to read or watch \
+any provided tutorials or videos to fully install and configure the bridge.<br><br>\
+Once configured, please add a Character or Prop to the Scene to transfer assets using the Daz Bridge.</h4><br>\
+To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-bridges\">https://www.daz3d.com/daz-bridges</a><br>\
+");
+	m_WelcomeLabel = new QLabel();
+	m_WelcomeLabel->setTextFormat(Qt::RichText);
+	m_WelcomeLabel->setWordWrap(true);
+	m_WelcomeLabel->setText(sSetupModeString);
+	m_WelcomeLabel->setOpenExternalLinks(true);
+	m_WelcomeLabel->setHidden(true);
+	mainLayout->addRow(m_WelcomeLabel);
 
 	advancedWidget = new QWidget();
 	QHBoxLayout* advancedLayoutOuter = new QHBoxLayout();
@@ -152,13 +171,23 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	targetPluginInstallerLayout->addWidget(m_TargetPluginInstallerButton, 1);
 	m_wTargetPluginInstaller->setLayout(targetPluginInstallerLayout);
 
+	// Bridge Software Version Label
+	QString sBridgeVersionString = QString(tr("Daz Bridge Library v%1.%2  revision %3.%4")).arg(COMMON_MAJOR).arg(COMMON_MINOR).arg(revision).arg(COMMON_BUILD);
+	m_BridgeVersionLabel = new QLabel(sBridgeVersionString);
+
+	// Go To Intermediate Folder
+	m_OpenIntermediateFolderButton = new QPushButton(tr("Open Intermediate Folder"));
+	connect(m_OpenIntermediateFolderButton, SIGNAL(clicked(bool)), this, SLOT(HandleOpenIntermediateFolderButton()));
+
 	// Add the widget to the basic dialog
 	mainLayout->addRow("Asset Name", assetNameEdit);
 	mainLayout->addRow("Asset Type", assetTypeCombo);
 	mainLayout->addRow("Export Morphs", morphsLayout);
 	mainLayout->addRow("Bake Subdivision", subdivisionLayout);
 	// Advanced Settings Layout
+	advancedLayout->addRow("", m_BridgeVersionLabel);
 	advancedLayout->addRow("Install Destination Plugin", m_wTargetPluginInstaller);
+	advancedLayout->addRow("", m_OpenIntermediateFolderButton);
 	showTargetPluginInstaller(false);
 	advancedLayout->addRow("FBX Version", fbxVersionCombo);
 	advancedLayout->addRow("Show FBX Dialog", showFbxDialogCheckBox);
@@ -193,6 +222,11 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 
 	// Set Defaults
 	resetToDefaults();
+
+	if (m_bSetupMode)
+	{
+		setDisabled(true);
+	}
 
 }
 
@@ -252,10 +286,15 @@ bool DzBridgeDialog::loadSavedSettings()
 	{
 		showFbxDialogCheckBox->setChecked(settings->value("ShowFBXDialog").toBool());
 	}
-	if (!settings->value("ShowAdvancedSettings").isNull())
+	if (!m_bSetupMode && !settings->value("ShowAdvancedSettings").isNull())
 	{
 		advancedSettingsGroupBox->setChecked(settings->value("ShowAdvancedSettings").toBool());
 		advancedWidget->setHidden(!advancedSettingsGroupBox->isChecked());
+	}
+	else
+	{
+		advancedSettingsGroupBox->setChecked(true);
+		advancedWidget->setHidden(false);
 	}
 	if (!settings->value("FBXExportVersion").isNull())
 	{
@@ -280,6 +319,7 @@ bool DzBridgeDialog::loadSavedSettings()
 void DzBridgeDialog::refreshAsset()
 {
 	DzNode* Selection = dzScene->getPrimarySelection();
+
 	if (dzScene->getFilename().length() > 0)
 	{
 		QFileInfo fileInfo = QFileInfo(dzScene->getFilename());
@@ -301,9 +341,17 @@ void DzBridgeDialog::refreshAsset()
 
 }
 
+void DzBridgeDialog::accept()
+{
+	if (m_bSetupMode)
+		return  DzBasicDialog::reject();
+
+	return DzBasicDialog::accept();
+}
+
 void DzBridgeDialog::resetToDefaults()
 {
-	m_DontSaveSettings = true;
+	m_bDontSaveSettings = true;
 	// Set Defaults
 	refreshAsset();
 
@@ -311,12 +359,24 @@ void DzBridgeDialog::resetToDefaults()
 	morphsEnabledCheckBox->setChecked(false);
 	showFbxDialogCheckBox->setChecked(false);
 	exportMaterialPropertyCSVCheckBox->setChecked(false);
-	m_DontSaveSettings = false;
+	m_bDontSaveSettings = false;
 }
 
 void DzBridgeDialog::handleSceneSelectionChanged()
 {
 	refreshAsset();
+
+	if (dzScene->getPrimarySelection() == nullptr)
+	{
+		m_bSetupMode = true;
+		setDisabled(true);
+	}
+	else
+	{
+		m_bSetupMode = false;
+		setDisabled(false);
+	}
+
 }
 
 void DzBridgeDialog::HandleChooseMorphsButton()
@@ -341,42 +401,49 @@ QString DzBridgeDialog::GetMorphString()
 
 void DzBridgeDialog::HandleMorphsCheckBoxChange(int state)
 {
-	if (settings == nullptr || m_DontSaveSettings) return;
+	if (settings == nullptr || m_bDontSaveSettings) return;
 	settings->setValue("MorphsEnabled", state == Qt::Checked);
 }
 
 void DzBridgeDialog::HandleSubdivisionCheckBoxChange(int state)
 {
-	if (settings == nullptr || m_DontSaveSettings) return;
+	if (settings == nullptr || m_bDontSaveSettings) return;
 	settings->setValue("SubdivisionEnabled", state == Qt::Checked);
 }
 
 void DzBridgeDialog::HandleFBXVersionChange(const QString& fbxVersion)
 {
-	if (settings == nullptr || m_DontSaveSettings) return;
+	if (settings == nullptr || m_bDontSaveSettings) return;
 	settings->setValue("FBXExportVersion", fbxVersion);
 }
 void DzBridgeDialog::HandleShowFbxDialogCheckBoxChange(int state)
 {
-	if (settings == nullptr || m_DontSaveSettings) return;
+	if (settings == nullptr || m_bDontSaveSettings) return;
 	settings->setValue("ShowFBXDialog", state == Qt::Checked);
 }
 void DzBridgeDialog::HandleExportMaterialPropertyCSVCheckBoxChange(int state)
 {
-	if (settings == nullptr || m_DontSaveSettings) return;
+	if (settings == nullptr || m_bDontSaveSettings) return;
 	settings->setValue("ExportMaterialPropertyCSV", state == Qt::Checked);
 }
 
 void DzBridgeDialog::HandleShowAdvancedSettingsCheckBoxChange(bool checked)
 {
+	if (m_bSetupMode)
+	{
+		advancedWidget->setHidden(false);
+		advancedSettingsGroupBox->setChecked(true);
+		return;
+	}
+
 	advancedWidget->setHidden(!checked);
 
-	if (settings == nullptr || m_DontSaveSettings) return;
+	if (settings == nullptr || m_bDontSaveSettings) return;
 	settings->setValue("ShowAdvancedSettings", checked);
 }
 void DzBridgeDialog::HandleEnableNormalMapGenerationCheckBoxChange(int state)
 {
-	if (settings == nullptr || m_DontSaveSettings) return;
+	if (settings == nullptr || m_bDontSaveSettings) return;
 	settings->setValue("EnableNormalMapGeneration", state == Qt::Checked);
 }
 
@@ -513,5 +580,76 @@ bool DzBridgeDialog::installEmbeddedArchive(QString sArchiveFilename, QString sD
 	return bInstallSuccessful;
 }
 
+void DzBridgeDialog::setBridgeVersionStringAndLabel(QString sVersionString, QString sLabel)
+{
+	if (m_BridgeVersionLabel == nullptr)
+		return;
+
+	m_BridgeVersionLabel->setText(sVersionString);
+
+	if (sLabel != "")
+	{
+		auto wBridgeVersionLabel_Label = advancedLayout->labelForField(m_BridgeVersionLabel);
+		QLabel* rowLabel = qobject_cast<QLabel*>(wBridgeVersionLabel_Label);
+		if (rowLabel != nullptr)
+		{
+			rowLabel->setText(sLabel);
+		}
+	}
+
+	return;
+}
+
+void DzBridgeDialog::setDisabled(bool bDisabled)
+{
+	if (bDisabled)
+	{
+		advancedWidget->setHidden(false);
+		advancedSettingsGroupBox->setChecked(true);
+	}
+
+	m_WelcomeLabel->setVisible(bDisabled);
+	assetNameEdit->setDisabled(bDisabled);
+	assetTypeCombo->setDisabled(bDisabled);
+	subdivisionButton->setDisabled(bDisabled);
+	morphsButton->setDisabled(bDisabled);
+
+}
+
+#include <qprocess.h>
+#if WIN32
+#include "Windows.h"
+#endif
+void DzBridgeDialog::HandleOpenIntermediateFolderButton(QString sFolderPath)
+{
+	QString sIntermediateFolderPath = QDir().homePath() + "/Documents";
+	if (sFolderPath != "")
+	{
+		sIntermediateFolderPath = sFolderPath;
+	}
+
+#ifdef WIN32
+	ShellExecuteA(NULL, "open", sIntermediateFolderPath.toAscii().data(), NULL, NULL, SW_SHOWDEFAULT);
+//// The above line does the equivalent as following lines, but has advantage of only opening 1 explorer window
+//// with multiple clicks.
+//
+//	QStringList args;
+//	args << "/select," << QDir::toNativeSeparators(sIntermediateFolderPath);
+//	QProcess::startDetached("explorer", args);
+//
+#elif defined(__APPLE__)
+	QStringList args;
+	args << "-e";
+	args << "tell application \"Finder\"";
+	args << "-e";
+	args << "activate";
+	args << "-e";
+	args << "select POSIX file \"" + sIntermediateFolderPath + "\"";
+	args << "-e";
+	args << "end tell";
+	QProcess::startDetached("osascript", args);
+#endif
+
+}
 
 #include "moc_DzBridgeDialog.cpp"
