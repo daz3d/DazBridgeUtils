@@ -9,6 +9,7 @@ class QCheckBox;
 class QComboBox;
 class QGroupBox;
 class QFormLayout;
+class QLabel;
 
 class UnitTest_DzBridgeDialog;
 
@@ -59,6 +60,10 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual void showTargetPluginInstaller(bool bShowWidget = true);
 		Q_INVOKABLE virtual void renameTargetPluginInstaller(QString sNewLabelName);
 		Q_INVOKABLE bool installEmbeddedArchive(QString sArchiveFilename, QString sDestinationPath);
+		Q_INVOKABLE virtual void setBridgeVersionStringAndLabel(QString sVersionString, QString sLabel="");
+		Q_INVOKABLE virtual void setDisabled(bool bDisable);
+
+		void accept();
 
 	protected slots:
 		virtual void handleSceneSelectionChanged();
@@ -72,11 +77,12 @@ namespace DzBridgeNameSpace
 		virtual void HandleShowAdvancedSettingsCheckBoxChange(bool checked);
 		virtual void HandleEnableNormalMapGenerationCheckBoxChange(int state);
 		virtual void HandleTargetPluginInstallerButton();
+		virtual void HandleOpenIntermediateFolderButton(QString sFolderPath="");
 
 	protected:
 		QSettings* settings;
 
-		void refreshAsset();
+		virtual void refreshAsset();
 
 		// These are clumsy leftovers from before the dialog were singletons
 		QString morphString;
@@ -101,9 +107,13 @@ namespace DzBridgeNameSpace
 		QWidget* m_wTargetPluginInstaller;
 		QPushButton* m_TargetPluginInstallerButton;
 		QComboBox* m_TargetSoftwareVersionCombo;
+		QLabel* m_BridgeVersionLabel;
+		QLabel* m_WelcomeLabel;
+		QPushButton* m_OpenIntermediateFolderButton;
 
 		QString m_sEmbeddedFilesPath = ":/DazBridge";
-		bool m_DontSaveSettings = false;
+		bool m_bDontSaveSettings = false;
+		bool m_bSetupMode = false;
 
 #ifdef UNITTEST_DZBRIDGE
 		friend class ::UnitTest_DzBridgeDialog;
