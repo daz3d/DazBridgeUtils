@@ -96,7 +96,7 @@ Due to this exponentially increasing resource requirement, it is not recommended
 	mainLayout->addStretch();
 
 	this->addLayout(mainLayout);
-	resize(QSize(800, 800));//.expandedTo(minimumSizeHint()));
+	resize(QSize(800, 750));//.expandedTo(minimumSizeHint()));
 	setFixedWidth(width());
 	setFixedHeight(height());
 

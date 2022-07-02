@@ -21,7 +21,7 @@
 
 OpenFBXInterface* OpenFBXInterface::singleton = nullptr;
 
-#ifdef __APPLE__
+#ifdef __APPLE_CRASH__
 QList<void*> crashfix_reallocTable;
 int leakCounter = 0;
 void* crashfix_realloc(void* oPtr, size_t memsize)
@@ -49,19 +49,20 @@ void* crashfix_realloc(void* oPtr, size_t memsize)
 OpenFBXInterface::OpenFBXInterface()
 {
 	// Create FbxManager
-    m_fbxManager = FbxManager::Create();
-	if (m_fbxManager == nullptr)
+    FbxManager* result = FbxManager::Create();
+	if (result == nullptr)
 	{
 		throw (std::runtime_error("OpenFBXInterface: could not create FbxManager"));
 	}
+    m_fbxManager = result;
 
-#ifdef __APPLE__
+#ifdef __APPLE_CRASH__
     FbxReallocProc origProc = FbxGetReallocHandler();
     FbxSetReallocHandler(crashfix_realloc);
 #endif
     // Create FbxIOSettings
     m_fbxIOSettings = FbxIOSettings::Create(m_fbxManager, IOSROOT);
-#ifdef __APPLE__
+#ifdef __APPLE_CRASH__
     FbxSetReallocHandler(origProc);
     crashfix_reallocTable.clear();
 #endif

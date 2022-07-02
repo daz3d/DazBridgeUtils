@@ -23,6 +23,7 @@ namespace DzBridgeNameSpace
 		QString Type;
 		QString Path;
 		DzProperty *Property;
+		DzNode *Node;
 
 		inline bool operator==(MorphInfo other)
 		{
@@ -40,6 +41,7 @@ namespace DzBridgeNameSpace
 			Type = QString();
 			Path = QString();
 			Property = nullptr;
+			Node = nullptr;
 		}
 	};
 
@@ -104,7 +106,12 @@ namespace DzBridgeNameSpace
 
 		// Get MorphInfo from morph name
 		// DB June-01-2022, Created for MorphLinks Generation for Blender Bridge Morphs Support
-		MorphInfo GetMorphInfoFromName(QString morphName);
+		Q_INVOKABLE MorphInfo GetMorphInfoFromName(QString morphName);
+		Q_INVOKABLE void SetAutoJCMVisible(bool bVisible);
+
+		// get morph property name
+		Q_INVOKABLE static QString getMorphPropertyName(DzProperty* pMorphProperty);
+		Q_INVOKABLE QList<QString> getMorphNamesToDisconnectList();
 
 	public slots:
 		void FilterChanged(const QString& filter);
@@ -119,8 +126,11 @@ namespace DzBridgeNameSpace
 		void HandleARKitGenesis81MorphsButton();
 		void HandleFaceFXGenesis8Button();
 		void HandleAutoJCMCheckBoxChange(bool checked);
+		void HandleAddConnectedMorphs();
 
 	private:
+		// check if Morph is Valid
+		bool isValidMorph(DzProperty* pMorphProperty);
 
 		// Refresh the list of possible presets from disk
 		void RefreshPresetsCombo();
