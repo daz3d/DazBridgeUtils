@@ -183,26 +183,38 @@ void DzBridgeSubdivisionDialog::CreateList(DzNode* Node)
 		if (Geo)
 		{
 			int VertCount = Geo->getNumVertices();
-			QLabel *baseVertCountLabel = new QLabel(QString::number(VertCount));
-			baseVertCountLabel->setAlignment(Qt::AlignCenter);
-			subdivisionItemsGrid->addWidget(baseVertCountLabel, row, 2);
-
-			// estimated subdivided vert count
-			int currentSubDLevel = subdivisionLevelCombo->currentText().toInt();
-			int subdVertCount = VertCount;
-			for (int i = 0; i < currentSubDLevel; i++) subdVertCount = subdVertCount * 4;
-			float scale = subdVertCount / VertCount;
-			QLabel* subdVertCountLabel = new QLabel(QString::number(subdVertCount) + " (" + QString::number(scale) + "x)");
-			subdVertCountLabel->setAlignment(Qt::AlignCenter);
-			subdivisionItemsGrid->addWidget(subdVertCountLabel, row, 3);
-
-			/*for (int index = 0; index < Shape->getNumProperties(); index++)
+			// 2022-July-04: Fix fo Geoshell crash on export
+			if (VertCount > 0)
 			{
-				DzProperty* property = Shape->getProperty(index);
-				QString propName = property->getName();//property->getName();
-				QString propLabel = property->getLabel();
-				qDebug() << propName << " " << propLabel;
-			}*/
+				QLabel* baseVertCountLabel = new QLabel(QString::number(VertCount));
+				baseVertCountLabel->setAlignment(Qt::AlignCenter);
+				subdivisionItemsGrid->addWidget(baseVertCountLabel, row, 2);
+
+				// estimated subdivided vert count
+				int currentSubDLevel = subdivisionLevelCombo->currentText().toInt();
+				int subdVertCount = VertCount;
+				for (int i = 0; i < currentSubDLevel; i++) subdVertCount = subdVertCount * 4;
+				float scale = subdVertCount / VertCount;
+				QLabel* subdVertCountLabel = new QLabel(QString::number(subdVertCount) + " (" + QString::number(scale) + "x)");
+				subdVertCountLabel->setAlignment(Qt::AlignCenter);
+				subdivisionItemsGrid->addWidget(subdVertCountLabel, row, 3);
+
+				/*for (int index = 0; index < Shape->getNumProperties(); index++)
+				{
+					DzProperty* property = Shape->getProperty(index);
+					QString propName = property->getName();//property->getName();
+					QString propLabel = property->getLabel();
+					qDebug() << propName << " " << propLabel;
+				}*/
+
+			}
+			else
+			{
+				//auto debugGeoName = Geo->getName();
+				//auto debugShapeName = Shape->getName();
+				//auto debugNodeName = Node->getName();
+				//printf("DEBUG: DazBridgeLibrary, DzBridgeSubdivisionDialog.h: Geo VertCount is <= 0: %s", debugNodeName.toAscii().constData());
+			}
 		}
 	}
 
