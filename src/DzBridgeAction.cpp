@@ -1020,6 +1020,11 @@ void DzBridgeAction::exportNode(DzNode* Node)
 		  ExportOptions.setBoolValue("doSubD", false);
 		  ExportOptions.setBoolValue("doCollapseUVTiles", false);
 
+		  if (m_sAssetType == "SkeletalMesh" && m_EnableSubdivisions)
+		  {
+			  ExportOptions.setBoolValue("doCollapseUVTiles", true);
+		  }
+
 		  // get the top level node for things like clothing so we don't get dupe material names
 		  DzNode* Parent = Node;
 		  if (m_sAssetType != "Environment")
