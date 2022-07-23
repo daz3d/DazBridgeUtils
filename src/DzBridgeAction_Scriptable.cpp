@@ -132,7 +132,7 @@ void DzBridgeAction::executeAction()
 
 void DzBridgeAction::writeConfiguration()
 {
-	 QString DTUfilename = m_sDestinationPath + m_sAssetName + ".dtu";
+	 QString DTUfilename = m_sDestinationPath + m_sExportFilename + ".dtu";
 	 QFile DTUfile(DTUfilename);
 	 DTUfile.open(QIODevice::WriteOnly);
 	 DzJsonWriter writer(&DTUfile);
@@ -140,7 +140,7 @@ void DzBridgeAction::writeConfiguration()
 
 	 writeDTUHeader(writer);
 
-	 if (m_sAssetType.toLower().contains("mesh"))
+	 if (m_sAssetType.toLower().contains("mesh") || m_sAssetType == "Animation")
 	 {
 		 QTextStream *pCVSStream = nullptr;
 		 if (m_bExportMaterialPropertiesCSV)
@@ -154,10 +154,12 @@ void DzBridgeAction::writeConfiguration()
 		 writeAllMaterials(m_pSelectedNode, writer, pCVSStream);
 		 writeAllMorphs(writer);
 
-		 writer.startMemberObject("MorphLinks");
-		 writer.finishObject();
-		 writer.startMemberArray("MorphNames");
-		 writer.finishArray();
+		 writeMorphLinks(writer);
+		 //writer.startMemberObject("MorphLinks");
+		 //writer.finishObject();
+		 writeMorphNames(writer);
+		 //writer.startMemberArray("MorphNames");
+		 //writer.finishArray();
 
 		 DzBoneList aBoneList = getAllBones(m_pSelectedNode);
 

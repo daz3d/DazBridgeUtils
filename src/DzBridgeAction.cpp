@@ -2343,7 +2343,7 @@ void DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 
 	// Collect the values from the dialog fields
 	if (m_sAssetName == "" || m_nNonInteractiveMode == 0) m_sAssetName = BridgeDialog->getAssetNameEdit()->text();
-	m_sExportFilename = m_sAssetName;
+	if (m_sExportFilename == "" || m_nNonInteractiveMode == 0) m_sExportFilename = m_sAssetName;
 	if (m_sRootFolder == "" || m_nNonInteractiveMode == 0) m_sRootFolder = readGuiRootFolder();
 	if (m_sExportSubfolder == "" || m_nNonInteractiveMode == 0) m_sExportSubfolder = m_sExportFilename;
 	m_sDestinationPath = m_sRootFolder + "/" + m_sExportSubfolder + "/";
