@@ -12,6 +12,7 @@
 
 class DzProgress;
 class DzGeometry;
+class DzFigure;
 
 class UnitTest_DzBridgeAction;
 
@@ -73,6 +74,9 @@ namespace DzBridgeNameSpace
 		bool undoRenameDuplicateMaterials();
 		bool generateMissingNormalMap(DzMaterial* material);
 		bool undoGenerateMissingNormalMaps();
+		bool renameDuplicateClothing();
+
+		bool undoRenameDuplicateClothing();
 
 		Q_INVOKABLE static bool copyFile(QFile* file, QString* dst, bool replace = true, bool compareFiles = true);
 		Q_INVOKABLE static QString getMD5(const QString& path);
@@ -277,6 +281,7 @@ namespace DzBridgeNameSpace
 		// Undo data structures
 		QMap<DzMaterial*, QString> m_undoTable_DuplicateMaterialRename;
 		QMap<DzMaterial*, DzProperty*> m_undoTable_GenerateMissingNormalMap;
+		QMap<DzFigure*, QString> m_undoTable_DuplicateClothingRename;
 
 		// NormalMap utility methods
 		double getPixelIntensity(const  QRgb& pixel);

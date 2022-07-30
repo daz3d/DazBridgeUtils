@@ -137,6 +137,7 @@ void DzBridgeAction::resetToDefaults()
 	m_nNonInteractiveMode = 0;
 	m_undoTable_DuplicateMaterialRename.clear();
 	m_undoTable_GenerateMissingNormalMap.clear();
+	m_undoTable_DuplicateClothingRename.clear();
 	m_sExportFbx = "";
 
 }
@@ -201,6 +202,14 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 					// Rename Duplicate Material
 					/////////////////
 					renameDuplicateMaterial(material, &existingMaterialNameList);
+
+					//////////////////
+					// Rename Duplicate Clothing
+					/////////////////
+					if (m_sAssetType == "SkeletalMesh")
+					{
+						renameDuplicateClothing();
+					}
 
 					/////////////////
 					// Generate Missing Normal Maps
@@ -604,6 +613,69 @@ bool DzBridgeAction::undoRenameDuplicateMaterials()
 
 	return true;
 
+}
+
+/// <summary>
+/// Rename clothing if its name is already used by other clothing to
+/// prevent collisions in Target Software. Called by preProcessScene().
+/// See also: undoRenameDuplicateClothing().
+/// </summary>
+/// <returns>true if successful</returns> 
+bool DzBridgeAction::renameDuplicateClothing()
+{
+	// first get the figures.  We only need to check these
+	QList<DzFigure*> figureNodes;
+	int nodeCount = dzScene->getNumNodes();
+	for (int i = 0; i < nodeCount; i++)
+	{
+		DzNode* node = dzScene->getNode(i);
+		if (DzFigure* figure = qobject_cast<DzFigure*>(node))
+		{
+			figureNodes.append(figure);
+		}
+		/*if (DzSkeleton* skeleton = node->getSkeleton())
+		{
+			if (DzFigure* figure = qobject_cast<DzFigure*>(skeleton))
+			{
+				figureNodes.append(figure);
+			}
+		}*/
+	}
+
+	int figureCount = figureNodes.length();
+	qDebug() << "Count: " << figureCount;
+	for (int i = 0; i < figureCount; i++)
+	{
+		DzFigure* primaryFigure = figureNodes[i];
+		for (int j = i + 1; j < figureCount; j++)
+		{
+			DzFigure* secondaryFigure = figureNodes[j];
+			if (primaryFigure->getName() == secondaryFigure->getName())
+			{
+				qDebug() << "Match:" << primaryFigure->getName();
+				m_undoTable_DuplicateClothingRename.insert(secondaryFigure, secondaryFigure->getName());
+				QString newClothingName = secondaryFigure->getName() + QString("_%1").arg(j);
+				secondaryFigure->setName(newClothingName);
+			}
+		}
+	}
+	return true;
+}
+
+/// <summary>
+/// Undo any clothing modified by renameDuplicateClothing().
+/// </summary>
+/// <returns>true if successful</returns>
+bool DzBridgeAction::undoRenameDuplicateClothing()
+{
+	QMap<DzFigure*, QString>::iterator iter;
+	for (iter = m_undoTable_DuplicateClothingRename.begin(); iter != m_undoTable_DuplicateClothingRename.end(); ++iter)
+	{
+		iter.key()->setName(iter.value());
+	}
+	m_undoTable_DuplicateClothingRename.clear();
+
+	return true;
 }
 
 /// <summary>
