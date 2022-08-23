@@ -59,6 +59,7 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	 advancedSettingsGroupBox = nullptr;
 	 fbxVersionCombo = nullptr;
 	 showFbxDialogCheckBox = nullptr;
+	 animationSettingsGroupBox = nullptr;
 
 	 settings = nullptr;
 	 m_wTargetPluginInstaller = nullptr;
@@ -111,6 +112,19 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	assetTypeCombo->addItem("Animation");
 	assetTypeCombo->addItem("Environment");
 	assetTypeCombo->addItem("Pose");
+	connect(assetTypeCombo, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(HandleAssetTypeComboChange(const QString&)));
+
+	// Animation Settings
+	animationSettingsGroupBox = new QGroupBox("Animation Settings", this);
+	QFormLayout* animationSettingsLayout = new QFormLayout();
+	animationSettingsGroupBox->setLayout(animationSettingsLayout);
+	experimentalAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
+	animationSettingsLayout->addRow("Use Experimental Export", experimentalAnimationExportCheckBox);
+	bakeAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
+	animationSettingsLayout->addRow("Bake", bakeAnimationExportCheckBox);
+	faceAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
+	animationSettingsLayout->addRow("Transfer Face Bones", faceAnimationExportCheckBox);
+	animationSettingsGroupBox->setVisible(false);
 
 	// Morphs
 	QHBoxLayout* morphsLayout = new QHBoxLayout();
@@ -184,6 +198,7 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	mainLayout->addRow("Asset Type", assetTypeCombo);
 	mainLayout->addRow("Export Morphs", morphsLayout);
 	mainLayout->addRow("Bake Subdivision", subdivisionLayout);
+
 	// Advanced Settings Layout
 	advancedLayout->addRow("", m_BridgeVersionLabel);
 	advancedLayout->addRow("Install Destination Plugin", m_wTargetPluginInstaller);
@@ -195,6 +210,9 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	advancedLayout->addRow("Export Material CSV", exportMaterialPropertyCSVCheckBox);
 
 	addLayout(mainLayout);
+
+	// Add Animation settings
+	addWidget(animationSettingsGroupBox);
 
 	// Advanced
 	advancedSettingsGroupBox = new QGroupBox("Advanced Settings", this);
@@ -650,6 +668,11 @@ void DzBridgeDialog::HandleOpenIntermediateFolderButton(QString sFolderPath)
 	QProcess::startDetached("osascript", args);
 #endif
 
+}
+
+void DzBridgeDialog::HandleAssetTypeComboChange(const QString& assetType)
+{
+	animationSettingsGroupBox->setVisible(assetType == "Animation");
 }
 
 #include "moc_DzBridgeDialog.cpp"

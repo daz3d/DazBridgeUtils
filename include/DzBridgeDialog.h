@@ -42,6 +42,9 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE QCheckBox* getExportMaterialPropertyCSVCheckBox() { return exportMaterialPropertyCSVCheckBox; }
 		Q_INVOKABLE QPushButton* getTargetPluginInstallerButton() { return m_TargetPluginInstallerButton; }
 		Q_INVOKABLE QComboBox* getTargetSoftwareVersionCombo() { return m_TargetSoftwareVersionCombo; }
+		Q_INVOKABLE QCheckBox* getExperimentalAnimationExportCheckBox() { return experimentalAnimationExportCheckBox; }
+		Q_INVOKABLE QCheckBox* getBakeAnimationExportCheckBox () { return  bakeAnimationExportCheckBox; }
+		Q_INVOKABLE QCheckBox* getFaceAnimationExportCheckBox() { return faceAnimationExportCheckBox; }
 
 		/** Constructor **/
 		DzBridgeDialog(QWidget* parent = nullptr, const QString& windowTitle = "");
@@ -78,6 +81,7 @@ namespace DzBridgeNameSpace
 		virtual void HandleEnableNormalMapGenerationCheckBoxChange(int state);
 		virtual void HandleTargetPluginInstallerButton();
 		virtual void HandleOpenIntermediateFolderButton(QString sFolderPath="");
+		virtual void HandleAssetTypeComboChange(const QString& assetType);
 
 	protected:
 		QSettings* settings;
@@ -110,6 +114,10 @@ namespace DzBridgeNameSpace
 		QLabel* m_BridgeVersionLabel;
 		QLabel* m_WelcomeLabel;
 		QPushButton* m_OpenIntermediateFolderButton;
+		QGroupBox* animationSettingsGroupBox;
+		QCheckBox* experimentalAnimationExportCheckBox;
+		QCheckBox* bakeAnimationExportCheckBox;
+		QCheckBox* faceAnimationExportCheckBox;
 
 		QString m_sEmbeddedFilesPath = ":/DazBridge";
 		bool m_bDontSaveSettings = false;

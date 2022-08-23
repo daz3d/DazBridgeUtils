@@ -10,6 +10,8 @@
 
 #include "DzBridgeMorphSelectionDialog.h"
 
+#include <fbxsdk.h>
+
 class DzProgress;
 class DzGeometry;
 class DzFigure;
@@ -123,11 +125,19 @@ namespace DzBridgeNameSpace
 		bool m_bExportMaterialPropertiesCSV;
 		DzNode* m_pSelectedNode;
 
+		// Animation Settings
+		bool m_bAnimationUseExperimentalTransfer;
+		bool m_bAnimationBake;
+		bool m_bAnimationTransferFace;
+
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }
 
 		virtual void exportAsset();
 		virtual void exportNode(DzNode* Node);
+
+		virtual void exportAnimation();
+		virtual void exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzBone*, FbxNode*>& BoneMap);
 
 		virtual void writeConfiguration() = 0;
 		virtual void setExportOptions(DzFileIOSettings& ExportOptions) = 0;

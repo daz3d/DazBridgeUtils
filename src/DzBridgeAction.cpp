@@ -1040,6 +1040,15 @@ void DzBridgeAction::exportNode(DzNode* Node)
 		 return;
 	 }
 
+	 if (m_sAssetType == "Animation" && m_bAnimationUseExperimentalTransfer)
+	 {
+		 QDir dir;
+		 dir.mkpath(m_sDestinationPath);
+		 exportAnimation();
+		 writeConfiguration();
+		 return;
+	 }
+
 	 DzExportMgr* ExportManager = dzApp->getExportMgr();
 	 DzExporter* Exporter = ExportManager->findExporterByClassName("DzFbxExporter");
 
@@ -1162,6 +1171,209 @@ void DzBridgeAction::exportNode(DzNode* Node)
 
 		  undoPreProcessScene();
 	 }
+}
+
+void DzBridgeAction::exportAnimation()
+{
+	if (!m_pSelectedNode) return;
+
+	DzSkeleton* Skeleton = m_pSelectedNode->getSkeleton();
+	DzFigure* Figure = Skeleton ? qobject_cast<DzFigure*>(Skeleton) : NULL;
+
+	if (!Figure) return;
+
+	// Setup FBX Exporter
+	FbxManager* SdkManager = FbxManager::Create();
+
+	FbxIOSettings* ios = FbxIOSettings::Create(SdkManager, IOSROOT);
+	SdkManager->SetIOSettings(ios);
+
+	int FileFormat = -1;
+	FileFormat = SdkManager->GetIOPluginRegistry()->FindWriterIDByDescription("FBX ascii (*.fbx)");
+	qDebug() << "FileName: " << this->m_sDestinationFBX;
+	FbxExporter* Exporter = FbxExporter::Create(SdkManager, "");
+	if (!Exporter->Initialize(this->m_sDestinationFBX.toLocal8Bit().data(), FileFormat, SdkManager->GetIOSettings()))
+	{
+		return;
+	}
+
+	// Create the Scene
+	FbxScene* Scene = FbxScene::Create(SdkManager, "");
+
+	FbxAnimStack* AnimStack = FbxAnimStack::Create(Scene, "AnimStack");
+	FbxAnimLayer* AnimBaseLayer = FbxAnimLayer::Create(Scene, "Layer0");
+	AnimStack->AddMember(AnimBaseLayer);
+
+	// Add the skeleton to the scene
+	QMap<DzBone*, FbxNode*> BoneMap;
+	exportSkeleton(m_pSelectedNode, nullptr, nullptr, Scene, BoneMap);
+
+	// Get the play range
+	DzTimeRange PlayRange = dzScene->getPlayRange();
+
+	// Iterate the bones
+	DzBoneList Bones;
+	Skeleton->getAllBones(Bones);
+	for (auto Bone : Bones)
+	{
+		QString Name = Bone->getName();
+
+		FbxNode* Node = BoneMap.value(Bone);
+		if (Node == nullptr) continue;
+
+		// Set the rotation order for the bone
+		if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::XYZ)
+		{
+			Node->RotationOrder.Set(eEulerXYZ);
+		}
+		if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::XZY)
+		{
+			Node->RotationOrder.Set(eEulerXZY);
+		}
+		if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::YXZ)
+		{
+			Node->RotationOrder.Set(eEulerYXZ);
+		}
+		if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::YZX)
+		{
+			Node->RotationOrder.Set(eEulerYZX);
+		}
+		if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::ZXY)
+		{
+			Node->RotationOrder.Set(eEulerZXY);
+		}
+		if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::ZYX)
+		{
+			Node->RotationOrder.Set(eEulerZYX);
+		}
+
+		// Create a curve node for this bone
+		FbxAnimCurveNode* AnimCurveNode = Node->LclRotation.GetCurveNode(AnimBaseLayer, true);
+
+		// For each frame, write a key (equivalent of bake)
+		for (DzTime CurrentTime = PlayRange.getStart(); CurrentTime <= PlayRange.getEnd(); CurrentTime += dzScene->getTimeStep())
+		{
+			DzTime Frame = CurrentTime / dzScene->getTimeStep();
+			DzVec3 Position = Bone->getLocalPos();
+			
+			// Get an initial rotation
+			DzQuat Orientation = Bone->getOrientation(true);
+			DzQuat Rotation = Orientation * Bone->getLocalRot(CurrentTime);
+			DzVec3 VectorRotation;
+			Rotation.getValue(VectorRotation);
+
+			// Get the rotation relative to the parent
+			if (DzNode* ParentBone = Bone->getNodeParent())
+			{
+				DzQuat ParentRotation = ParentBone->getOrientation(true);
+				DzQuat LocalRotation = Orientation * Bone->getLocalRot(CurrentTime) * ParentRotation.inverse();
+				LocalRotation.inverse().getValue(VectorRotation);
+			}
+
+			// Set the frame
+			FbxTime Time;
+			int KeyIndex = 0;
+			Time.SetFrame(Frame);
+
+			// Write X Rot
+			FbxAnimCurve* RotXCurve = Node->LclRotation.GetCurve(AnimBaseLayer, "X", true);
+			RotXCurve->KeyModifyBegin();
+			KeyIndex = RotXCurve->KeyAdd(Time);
+			RotXCurve->KeySet(KeyIndex, Time, VectorRotation.m_x * FBXSDK_180_DIV_PI);
+			RotXCurve->KeyModifyEnd();
+
+			// Write Y Rot
+			FbxAnimCurve* RotYCurve = Node->LclRotation.GetCurve(AnimBaseLayer, "Y", true);
+			RotYCurve->KeyModifyBegin();
+			KeyIndex = RotYCurve->KeyAdd(Time);
+			RotYCurve->KeySet(KeyIndex, Time, VectorRotation.m_y * FBXSDK_180_DIV_PI);
+			RotYCurve->KeyModifyEnd();
+
+			// Write Z Rot
+			FbxAnimCurve* RotZCurve = Node->LclRotation.GetCurve(AnimBaseLayer, "Z", true);
+			RotZCurve->KeyModifyBegin();
+			KeyIndex = RotZCurve->KeyAdd(Time);
+			RotZCurve->KeySet(KeyIndex, Time, VectorRotation.m_z * FBXSDK_180_DIV_PI);
+			RotZCurve->KeyModifyEnd();
+		}
+	}
+
+	// Write the FBX
+	Exporter->Export(Scene);
+	Exporter->Destroy();
+}
+
+void DzBridgeAction::exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzBone*, FbxNode*>& BoneMap)
+{
+	// Only transfer face bones if requested
+	if (Parent != nullptr && Parent->getName() == "head" && m_bAnimationTransferFace == false) return;
+
+	FbxNode* BoneNode;
+
+	// null parent is the root bone
+	if (FbxParent == nullptr)
+	{
+		// Create a root bone.  Always named root so we don't have to fix it in Unreal
+		FbxSkeleton* SkeletonAttribute = FbxSkeleton::Create(Scene, "root");
+		SkeletonAttribute->SetSkeletonType(FbxSkeleton::eRoot);
+		BoneNode = FbxNode::Create(Scene, "root");
+		BoneNode->SetNodeAttribute(SkeletonAttribute);
+
+		FbxNode* RootNode = Scene->GetRootNode();
+		RootNode->AddChild(BoneNode);
+
+		// Looks through the child nodes for more bones
+		for (int ChildIndex = 0; ChildIndex < Node->getNumNodeChildren(); ChildIndex++)
+		{
+			DzNode* ChildNode = Node->getNodeChild(ChildIndex);
+			exportSkeleton(ChildNode, Node, BoneNode, Scene, BoneMap);
+		}
+	}
+	else
+	{
+		// Child nodes need to be bones
+		if (DzBone* Bone = qobject_cast<DzBone*>(Node))
+		{
+			// create the bone
+			FbxSkeleton* SkeletonAttribute = FbxSkeleton::Create(Scene, Node->getName().toLocal8Bit().data());
+			SkeletonAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
+			BoneNode = FbxNode::Create(Scene, Node->getName().toLocal8Bit().data());
+			BoneNode->SetNodeAttribute(SkeletonAttribute);
+
+			// find the bones position
+			DzVec3 Position = Node->getWSPos(DzTime(0), true);
+			DzVec3 ParentPosition = Parent->getWSPos(DzTime(0), true);
+			DzVec3 LocalPosition = Position - ParentPosition;
+
+			// find the bone's rotation
+			DzQuat Rotation = Node->getWSRot(DzTime(0), true);
+			DzQuat ParentRotation = Parent->getWSRot(DzTime(0), true);
+			DzQuat LocalRotation = Node->getOrientation(true);//Rotation * ParentRotation.inverse();
+			DzVec3 VectorRotation;
+			LocalRotation.getValue(VectorRotation);
+
+			// set the position and rotation properties
+			BoneNode->LclTranslation.Set(FbxVector4(LocalPosition.m_x, LocalPosition.m_y, LocalPosition.m_z));
+			BoneNode->LclRotation.Set(FbxVector4(VectorRotation.m_x, VectorRotation.m_y, VectorRotation.m_z));
+
+			FbxParent->AddChild(BoneNode);
+
+			// Looks through the child nodes for more bones
+			for (int ChildIndex = 0; ChildIndex < Node->getNumNodeChildren(); ChildIndex++)
+			{
+				DzNode* ChildNode = Node->getNodeChild(ChildIndex);
+				exportSkeleton(ChildNode, Node, BoneNode, Scene, BoneMap);
+			}
+		}
+	}
+
+	// Add the bone to the map
+	if (DzBone* Bone = qobject_cast<DzBone*>(Node))
+	{
+		BoneMap.insert(Bone, BoneNode);
+	}
+
+
 }
 
 // If there are duplicate material names, save off the original and rename one
@@ -1584,6 +1796,7 @@ void DzBridgeAction::writeDTUHeader(DzJsonWriter& writer)
 	writer.addMember("Asset Name", m_sAssetName);
 	writer.addMember("Import Name", sImportName); // Blender Compatibility
 	writer.addMember("Asset Type", m_sAssetType);
+	writer.addMember("Use Experimental Animation Transfer", m_bAnimationUseExperimentalTransfer);
 	writer.addMember("Asset Id", sAssetId); // Unity Compatibility
 	writer.addMember("Content Type", sContentType);
 	writer.addMember("FBX File", m_sDestinationFBX);
@@ -2439,6 +2652,9 @@ void DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 	m_sFbxVersion = BridgeDialog->getFbxVersionCombo()->currentText();
 	m_bGenerateNormalMaps = BridgeDialog->getEnableNormalMapGenerationCheckBox()->isChecked();
 
+	m_bAnimationUseExperimentalTransfer = BridgeDialog->getExperimentalAnimationExportCheckBox()->isChecked();
+	m_bAnimationBake = BridgeDialog->getBakeAnimationExportCheckBox()->isChecked();
+	m_bAnimationTransferFace = BridgeDialog->getFaceAnimationExportCheckBox()->isChecked();
 }
 
 // ------------------------------------------------
