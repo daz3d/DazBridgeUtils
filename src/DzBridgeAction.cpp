@@ -1205,97 +1205,21 @@ void DzBridgeAction::exportAnimation()
 	AnimStack->AddMember(AnimBaseLayer);
 
 	// Add the skeleton to the scene
-	QMap<DzBone*, FbxNode*> BoneMap;
+	QMap<DzNode*, FbxNode*> BoneMap;
 	exportSkeleton(m_pSelectedNode, nullptr, nullptr, Scene, BoneMap);
 
 	// Get the play range
 	DzTimeRange PlayRange = dzScene->getPlayRange();
+
+	//
+	//exportNodeAnimation(Figure, BoneMap, AnimBaseLayer);
 
 	// Iterate the bones
 	DzBoneList Bones;
 	Skeleton->getAllBones(Bones);
 	for (auto Bone : Bones)
 	{
-		QString Name = Bone->getName();
-
-		FbxNode* Node = BoneMap.value(Bone);
-		if (Node == nullptr) continue;
-
-		// Set the rotation order for the bone
-		if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::XYZ)
-		{
-			Node->RotationOrder.Set(eEulerXYZ);
-		}
-		if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::XZY)
-		{
-			Node->RotationOrder.Set(eEulerXZY);
-		}
-		if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::YXZ)
-		{
-			Node->RotationOrder.Set(eEulerYXZ);
-		}
-		if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::YZX)
-		{
-			Node->RotationOrder.Set(eEulerYZX);
-		}
-		if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::ZXY)
-		{
-			Node->RotationOrder.Set(eEulerZXY);
-		}
-		if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::ZYX)
-		{
-			Node->RotationOrder.Set(eEulerZYX);
-		}
-
-		// Create a curve node for this bone
-		FbxAnimCurveNode* AnimCurveNode = Node->LclRotation.GetCurveNode(AnimBaseLayer, true);
-
-		// For each frame, write a key (equivalent of bake)
-		for (DzTime CurrentTime = PlayRange.getStart(); CurrentTime <= PlayRange.getEnd(); CurrentTime += dzScene->getTimeStep())
-		{
-			DzTime Frame = CurrentTime / dzScene->getTimeStep();
-			DzVec3 Position = Bone->getLocalPos();
-			
-			// Get an initial rotation
-			DzQuat Orientation = Bone->getOrientation(true);
-			DzQuat Rotation = Orientation * Bone->getLocalRot(CurrentTime);
-			DzVec3 VectorRotation;
-			Rotation.getValue(VectorRotation);
-
-			// Get the rotation relative to the parent
-			if (DzNode* ParentBone = Bone->getNodeParent())
-			{
-				DzQuat ParentRotation = ParentBone->getOrientation(true);
-				DzQuat LocalRotation = Orientation * Bone->getLocalRot(CurrentTime) * ParentRotation.inverse();
-				LocalRotation.inverse().getValue(VectorRotation);
-			}
-
-			// Set the frame
-			FbxTime Time;
-			int KeyIndex = 0;
-			Time.SetFrame(Frame);
-
-			// Write X Rot
-			FbxAnimCurve* RotXCurve = Node->LclRotation.GetCurve(AnimBaseLayer, "X", true);
-			RotXCurve->KeyModifyBegin();
-			KeyIndex = RotXCurve->KeyAdd(Time);
-			RotXCurve->KeySet(KeyIndex, Time, VectorRotation.m_x * FBXSDK_180_DIV_PI);
-			RotXCurve->KeyModifyEnd();
-
-			// Write Y Rot
-			FbxAnimCurve* RotYCurve = Node->LclRotation.GetCurve(AnimBaseLayer, "Y", true);
-			RotYCurve->KeyModifyBegin();
-			KeyIndex = RotYCurve->KeyAdd(Time);
-			RotYCurve->KeySet(KeyIndex, Time, VectorRotation.m_y * FBXSDK_180_DIV_PI);
-			RotYCurve->KeyModifyEnd();
-
-			// Write Z Rot
-			FbxAnimCurve* RotZCurve = Node->LclRotation.GetCurve(AnimBaseLayer, "Z", true);
-			RotZCurve->KeyModifyBegin();
-			KeyIndex = RotZCurve->KeyAdd(Time);
-			RotZCurve->KeySet(KeyIndex, Time, VectorRotation.m_z * FBXSDK_180_DIV_PI);
-			RotZCurve->KeyModifyEnd();
-		}
+		exportNodeAnimation(Bone, BoneMap, AnimBaseLayer);
 	}
 
 	// Write the FBX
@@ -1303,7 +1227,132 @@ void DzBridgeAction::exportAnimation()
 	Exporter->Destroy();
 }
 
-void DzBridgeAction::exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzBone*, FbxNode*>& BoneMap)
+void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& BoneMap, FbxAnimLayer* AnimBaseLayer)
+{
+	DzTimeRange PlayRange = dzScene->getPlayRange();
+
+	QString Name = Bone->getName();
+
+	FbxNode* Node = BoneMap.value(Bone);
+	if (Node == nullptr) return;
+
+	// Set the rotation order for the bone
+	if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::XYZ)
+	{
+		Node->RotationOrder.Set(eEulerXYZ);
+	}
+	if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::XZY)
+	{
+		Node->RotationOrder.Set(eEulerXZY);
+	}
+	if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::YXZ)
+	{
+		Node->RotationOrder.Set(eEulerYXZ);
+	}
+	if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::YZX)
+	{
+		Node->RotationOrder.Set(eEulerYZX);
+	}
+	if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::ZXY)
+	{
+		Node->RotationOrder.Set(eEulerZXY);
+	}
+	if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::ZYX)
+	{
+		Node->RotationOrder.Set(eEulerZYX);
+	}
+
+	qDebug() << Bone->getName() << " Order: " << Bone->getRotationOrder().toString();
+
+	// Create a curve node for this bone
+	FbxAnimCurveNode* AnimCurveNode = Node->LclRotation.GetCurveNode(AnimBaseLayer, true);
+
+	// For each frame, write a key (equivalent of bake)
+	for (DzTime CurrentTime = PlayRange.getStart(); CurrentTime <= PlayRange.getEnd(); CurrentTime += dzScene->getTimeStep())
+	{
+		DzTime Frame = CurrentTime / dzScene->getTimeStep();
+		DzVec3 Position = Bone->getWSPos(CurrentTime);
+		//qDebug() << Bone->getName() << " Position: " << Position.m_x << "," << Position.m_y << "," << Position.m_z;
+
+		// Get an initial rotation
+		DzVec3 ControlRotation;
+		ControlRotation.m_x = Bone->getXRotControl()->getValue(CurrentTime);
+		ControlRotation.m_y = Bone->getYRotControl()->getValue(CurrentTime);
+		ControlRotation.m_z = Bone->getZRotControl()->getValue(CurrentTime);
+		DzVec3 VectorRotation = ControlRotation;
+
+
+		// Get the rotation and position relative to the parent
+		if (DzNode* ParentBone = Bone->getNodeParent())
+		{
+			DzQuat Orientation = Bone->getOrientation(true) * ParentBone->getOrientation(true).inverse();
+			DzVec3 OrientationVec;
+			Orientation.inverse().getValue(OrientationVec);
+
+			OrientationVec.m_x = OrientationVec.m_x * FBXSDK_180_DIV_PI;
+			OrientationVec.m_y = OrientationVec.m_y * FBXSDK_180_DIV_PI;
+			OrientationVec.m_z = OrientationVec.m_z * FBXSDK_180_DIV_PI;
+
+			VectorRotation = OrientationVec + ControlRotation;
+
+			//qDebug() << Bone->getName() << " LocalRot: " << VectorRotation.m_x * FBXSDK_180_DIV_PI << "," << VectorRotation.m_y * FBXSDK_180_DIV_PI << "," << VectorRotation.m_z * FBXSDK_180_DIV_PI;
+
+			DzVec3 ParentPosition = ParentBone->getWSPos(CurrentTime);
+			//qDebug() << Bone->getName() << " Parent Position: " << ParentPosition.m_x << "," << ParentPosition.m_y << "," << ParentPosition.m_z;
+			DzVec3 LocalPosition = Position - ParentPosition;
+			Position = LocalPosition;
+		}
+
+		// Set the frame
+		FbxTime Time;
+		int KeyIndex = 0;
+		Time.SetFrame(Frame);
+
+		// Write X Rot
+		FbxAnimCurve* RotXCurve = Node->LclRotation.GetCurve(AnimBaseLayer, "X", true);
+		RotXCurve->KeyModifyBegin();
+		KeyIndex = RotXCurve->KeyAdd(Time);
+		RotXCurve->KeySet(KeyIndex, Time, VectorRotation.m_x);
+		RotXCurve->KeyModifyEnd();
+
+		// Write Y Rot
+		FbxAnimCurve* RotYCurve = Node->LclRotation.GetCurve(AnimBaseLayer, "Y", true);
+		RotYCurve->KeyModifyBegin();
+		KeyIndex = RotYCurve->KeyAdd(Time);
+		RotYCurve->KeySet(KeyIndex, Time, VectorRotation.m_y);
+		RotYCurve->KeyModifyEnd();
+
+		// Write Z Rot
+		FbxAnimCurve* RotZCurve = Node->LclRotation.GetCurve(AnimBaseLayer, "Z", true);
+		RotZCurve->KeyModifyBegin();
+		KeyIndex = RotZCurve->KeyAdd(Time);
+		RotZCurve->KeySet(KeyIndex, Time, VectorRotation.m_z);
+		RotZCurve->KeyModifyEnd();
+
+		// Write X Pos
+		FbxAnimCurve* PosXCurve = Node->LclTranslation.GetCurve(AnimBaseLayer, "X", true);
+		PosXCurve->KeyModifyBegin();
+		KeyIndex = PosXCurve->KeyAdd(Time);
+		PosXCurve->KeySet(KeyIndex, Time, Position.m_x);
+		PosXCurve->KeyModifyEnd();
+
+		// Write Y Pos
+		FbxAnimCurve* PosYCurve = Node->LclTranslation.GetCurve(AnimBaseLayer, "Y", true);
+		PosYCurve->KeyModifyBegin();
+		KeyIndex = PosYCurve->KeyAdd(Time);
+		PosYCurve->KeySet(KeyIndex, Time, Position.m_y);
+		PosYCurve->KeyModifyEnd();
+
+		// Write Z Pos
+		FbxAnimCurve* PosZCurve = Node->LclTranslation.GetCurve(AnimBaseLayer, "Z", true);
+		PosZCurve->KeyModifyBegin();
+		KeyIndex = PosZCurve->KeyAdd(Time);
+		PosZCurve->KeySet(KeyIndex, Time, Position.m_z);
+		PosZCurve->KeyModifyEnd();
+	}
+}
+
+void DzBridgeAction::exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzNode*, FbxNode*>& BoneMap)
 {
 	// Only transfer face bones if requested
 	if (Parent != nullptr && Parent->getName() == "head" && m_bAnimationTransferFace == false) return;
@@ -1368,9 +1417,9 @@ void DzBridgeAction::exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxPa
 	}
 
 	// Add the bone to the map
-	if (DzBone* Bone = qobject_cast<DzBone*>(Node))
+	//if (DzBone* Bone = qobject_cast<DzBone*>(Node))
 	{
-		BoneMap.insert(Bone, BoneNode);
+		BoneMap.insert(Node, BoneNode);
 	}
 
 

@@ -137,7 +137,8 @@ namespace DzBridgeNameSpace
 		virtual void exportNode(DzNode* Node);
 
 		virtual void exportAnimation();
-		virtual void exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzBone*, FbxNode*>& BoneMap);
+		virtual void exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& BoneMap, FbxAnimLayer* AnimBaseLayer);
+		virtual void exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzNode*, FbxNode*>& BoneMap);
 
 		virtual void writeConfiguration() = 0;
 		virtual void setExportOptions(DzFileIOSettings& ExportOptions) = 0;

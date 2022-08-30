@@ -331,7 +331,29 @@ bool DzBridgeDialog::loadSavedSettings()
 		exportMaterialPropertyCSVCheckBox->setChecked(settings->value("ExportMaterialPropertyCSV").toBool());
 	}
 
+	// Animation settings
+	if (!settings->value("AnimationExperminentalExport").isNull())
+	{
+		experimentalAnimationExportCheckBox->setChecked(settings->value("AnimationExperminentalExport").toBool());
+	}
+	if (!settings->value("AnimationBake").isNull())
+	{
+		bakeAnimationExportCheckBox->setChecked(settings->value("AnimationBake").toBool());
+	}
+	if (!settings->value("AnimationExportFace").isNull())
+	{
+		faceAnimationExportCheckBox->setChecked(settings->value("AnimationExportFace").toBool());
+	}
+
 	return true;
+}
+
+// Some settings will be saved when Accept is hit so we don't need a hanlder attached to all of them
+void DzBridgeDialog::saveSettings()
+{
+	settings->setValue("AnimationExperminentalExport", experimentalAnimationExportCheckBox->isChecked());
+	settings->setValue("AnimationBake", bakeAnimationExportCheckBox->isChecked());
+	settings->setValue("AnimationExportFace", faceAnimationExportCheckBox->isChecked());
 }
 
 void DzBridgeDialog::refreshAsset()
@@ -364,6 +386,7 @@ void DzBridgeDialog::accept()
 	if (m_bSetupMode)
 		return  DzBasicDialog::reject();
 
+	saveSettings();
 	return DzBasicDialog::accept();
 }
 

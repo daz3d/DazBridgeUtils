@@ -58,6 +58,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE QMap<QString, QString> GetMorphMapping() { return morphMapping; }
 		Q_INVOKABLE virtual void resetToDefaults();
 		Q_INVOKABLE virtual bool loadSavedSettings();
+		Q_INVOKABLE virtual void saveSettings();
 		void Accepted();
 
 		Q_INVOKABLE virtual void showTargetPluginInstaller(bool bShowWidget = true);
