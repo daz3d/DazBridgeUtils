@@ -1236,32 +1236,6 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 	FbxNode* Node = BoneMap.value(Bone);
 	if (Node == nullptr) return;
 
-	// Set the rotation order for the bone
-	if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::XYZ)
-	{
-		Node->RotationOrder.Set(eEulerXYZ);
-	}
-	if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::XZY)
-	{
-		Node->RotationOrder.Set(eEulerXZY);
-	}
-	if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::YXZ)
-	{
-		Node->RotationOrder.Set(eEulerYXZ);
-	}
-	if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::YZX)
-	{
-		Node->RotationOrder.Set(eEulerYZX);
-	}
-	if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::ZXY)
-	{
-		Node->RotationOrder.Set(eEulerZXY);
-	}
-	if (Bone->getRotationOrder().order() == DzRotationOrder::RotOrder::ZYX)
-	{
-		Node->RotationOrder.Set(eEulerZYX);
-	}
-
 	qDebug() << Bone->getName() << " Order: " << Bone->getRotationOrder().toString();
 
 	// Create a curve node for this bone
@@ -1274,7 +1248,7 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 		DzVec3 Position = Bone->getWSPos(CurrentTime);
 		//qDebug() << Bone->getName() << " Position: " << Position.m_x << "," << Position.m_y << "," << Position.m_z;
 
-		// Get an initial rotation
+		// Get an initial rotation via the controls
 		DzVec3 ControlRotation;
 		ControlRotation.m_x = Bone->getXRotControl()->getValue(CurrentTime);
 		ControlRotation.m_y = Bone->getYRotControl()->getValue(CurrentTime);
@@ -1285,17 +1259,24 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 		// Get the rotation and position relative to the parent
 		if (DzNode* ParentBone = Bone->getNodeParent())
 		{
+			// Get the local orientation
 			DzQuat Orientation = Bone->getOrientation(true) * ParentBone->getOrientation(true).inverse();
-			DzVec3 OrientationVec;
-			Orientation.inverse().getValue(OrientationVec);
+			
+			// Fix the rotation order
+			VectorRotation = ControlRotation;
+			DzQuat ReorderQuat;
+			VectorRotation.m_x = VectorRotation.m_x / FBXSDK_180_DIV_PI;
+			VectorRotation.m_y = VectorRotation.m_y / FBXSDK_180_DIV_PI;
+			VectorRotation.m_z = VectorRotation.m_z / FBXSDK_180_DIV_PI;
+			ReorderQuat.setValue(Bone->getRotationOrder().order(), VectorRotation);
+			ReorderQuat = ReorderQuat * Orientation;
 
-			OrientationVec.m_x = OrientationVec.m_x * FBXSDK_180_DIV_PI;
-			OrientationVec.m_y = OrientationVec.m_y * FBXSDK_180_DIV_PI;
-			OrientationVec.m_z = OrientationVec.m_z * FBXSDK_180_DIV_PI;
+			ReorderQuat.getValue(DzRotationOrder::RotOrder::XYZ, VectorRotation);
+			VectorRotation.m_x = VectorRotation.m_x * FBXSDK_180_DIV_PI;
+			VectorRotation.m_y = VectorRotation.m_y * FBXSDK_180_DIV_PI;
+			VectorRotation.m_z = VectorRotation.m_z * FBXSDK_180_DIV_PI;
 
-			VectorRotation = OrientationVec + ControlRotation;
-
-			//qDebug() << Bone->getName() << " LocalRot: " << VectorRotation.m_x * FBXSDK_180_DIV_PI << "," << VectorRotation.m_y * FBXSDK_180_DIV_PI << "," << VectorRotation.m_z * FBXSDK_180_DIV_PI;
+			//qDebug() << Bone->getName() << " Reorder LocalRot: " << VectorRotation.m_x << "," << VectorRotation.m_y << "," << VectorRotation.m_z;
 
 			DzVec3 ParentPosition = ParentBone->getWSPos(CurrentTime);
 			//qDebug() << Bone->getName() << " Parent Position: " << ParentPosition.m_x << "," << ParentPosition.m_y << "," << ParentPosition.m_z;
