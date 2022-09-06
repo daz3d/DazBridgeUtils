@@ -219,7 +219,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE QString getExportFbx() { return this->m_sExportFbx; };
 		Q_INVOKABLE void setExportFbx(QString arg_FbxName) { this->m_sExportFbx = arg_FbxName; };
 
-		Q_INVOKABLE void readGui(DzBridgeDialog*);
+		Q_INVOKABLE bool readGui(DzBridgeDialog*);
 		Q_INVOKABLE void exportHD(DzProgress* exportProgress = nullptr);
 		Q_INVOKABLE bool upgradeToHD(QString baseFilePath, QString hdFilePath, QString outFilePath, std::map<std::string, int>* pLookupTable);
 		Q_INVOKABLE void writeWeightMaps(DzNode* Node, DzJsonWriter& Stream);
@@ -244,6 +244,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE void reparentFigure(DzNode* figure);
 
 		virtual void resetArray_ControllersToDisconnect();
+		Q_INVOKABLE bool checkForIrreversibleOperations_in_disconnectOverrideControllers();
 
 	private:
 		class MaterialGroupExportOrderMetaData

@@ -888,10 +888,17 @@ void DzBridgeAction::exportAsset()
 	}
 	else if (m_sAssetType == "SkeletalMesh")
 	{
-		QList<QString> DisconnectedModifiers = disconnectOverrideControllers();
+		QList<QString> DisconnectedModifiers;
+		if (m_bEnableMorphs)
+		{
+			DisconnectedModifiers = disconnectOverrideControllers();
+		}
 		DzNode* Selection = dzScene->getPrimarySelection();
 		exportNode(Selection);
-		reconnectOverrideControllers(DisconnectedModifiers);
+		if (m_bEnableMorphs)
+		{
+			reconnectOverrideControllers(DisconnectedModifiers);
+		}
 	}
 	else
 	{
@@ -1181,6 +1188,67 @@ void DzBridgeAction::getScenePropList(DzNode* Node, QMap<QString, DzNode*>& Type
 	}
 }
 
+bool DzBridgeAction::checkForIrreversibleOperations_in_disconnectOverrideControllers()
+{
+	DzNode* Selection = dzScene->getPrimarySelection();
+	if (Selection == nullptr)
+		return false;
+
+	int poseIndex = 0;
+	DzNumericProperty* previousProperty = nullptr;
+	for (int index = 0; index < Selection->getNumProperties(); index++)
+	{
+		DzProperty* property = Selection->getProperty(index);
+		DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
+		if (numericProperty && !numericProperty->isOverridingControllers())
+		{
+			QString propName = property->getName();
+			if (m_mMorphNameToLabel.contains(propName) && m_ControllersToDisconnect.contains(propName))
+			{
+				double propValue = numericProperty->getDoubleValue();
+				if (propValue != 0)
+				{
+					return true;
+				}
+			}
+		}
+	}
+
+	DzObject* Object = Selection->getObject();
+	if (Object)
+	{
+		for (int index = 0; index < Object->getNumModifiers(); index++)
+		{
+			DzModifier* modifier = Object->getModifier(index);
+			DzMorph* mod = qobject_cast<DzMorph*>(modifier);
+			if (mod)
+			{
+				for (int propindex = 0; propindex < modifier->getNumProperties(); propindex++)
+				{
+					DzProperty* property = modifier->getProperty(propindex);
+					DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
+					if (numericProperty && !numericProperty->isOverridingControllers())
+					{
+						QString propName = DzBridgeMorphSelectionDialog::getMorphPropertyName(property);
+						if (m_mMorphNameToLabel.contains(modifier->getName()) && m_ControllersToDisconnect.contains(modifier->getName()))
+						{
+							double propValue = numericProperty->getDoubleValue();
+							if (propValue != 0)
+							{
+								return true;
+							}
+						}
+					}
+				}
+
+			}
+
+		}
+	}
+
+	return false;
+}
+
 QList<QString> DzBridgeAction::disconnectOverrideControllers()
 {
 	QList<QString> ModifiedList;
@@ -1268,7 +1336,7 @@ void DzBridgeAction::reconnectOverrideControllers(QList<QString>& DisconnetedCon
 			if (DisconnetedControllers.contains(propName))
 			{
 				double propValue = m_undoTable_ControllersToDisconnect.value(propName);
-				numericProperty->setDoubleValue(1.0);
+				numericProperty->setDoubleValue(propValue);
 
 				numericProperty->setOverrideControllers(false);
 			}
@@ -1554,6 +1622,38 @@ void DzBridgeAction::writeAllMaterials(DzNode* Node, DzJsonWriter& Writer, QText
 					writeMaterialProperty(Node, Writer, pCVSStream, Material, propertyList.next());
 				}
 				finishMaterialBlock(Writer);
+			}
+		}
+	}
+
+	// Check if Genitalia, add extra material block with parent's header info
+	DzPresentation* presentation = Node->getPresentation();
+	if (Shape && presentation)
+	{
+		const QString presentationType = presentation->getType();
+		if (Node->getName().toLower().contains("genitalia") || 
+			presentationType == "Follower/Attachment/Lower-Body/Hip/Front" ||
+			presentationType == "Follower/Attachment/Lower-Body")
+		{
+			// get parent node
+			DzNode* ParentNode = Node->getNodeParent();
+			if (ParentNode)
+			{
+				for (int i = 0; i < Shape->getNumMaterials(); i++)
+				{
+					DzMaterial* Material = Shape->getMaterial(i);
+					if (Material)
+					{
+						auto propertyList = Material->propertyListIterator();
+						// Custom Header
+						startMaterialBlock(ParentNode, Writer, pCVSStream, Material);
+						while (propertyList.hasNext())
+						{
+							writeMaterialProperty(ParentNode, Writer, pCVSStream, Material, propertyList.next());
+						}
+						finishMaterialBlock(Writer);
+					}
+				}
 			}
 		}
 	}
@@ -2327,10 +2427,10 @@ QUuid DzBridgeAction::writeInstance(DzNode* Node, DzJsonWriter& Writer, QUuid Pa
 	return Uid;
 }
 
-void DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
+bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 {
 	if (BridgeDialog == nullptr)
-		return;
+		return false;
 
 	if (m_subdivisionDialog == nullptr)
 	{
@@ -2367,6 +2467,25 @@ void DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 	m_sFbxVersion = BridgeDialog->getFbxVersionCombo()->currentText();
 	m_bGenerateNormalMaps = BridgeDialog->getEnableNormalMapGenerationCheckBox()->isChecked();
 
+	// Check for irreversible operations, warn user and give opportunity to cancel
+	if (m_bEnableMorphs)
+	{
+		if (checkForIrreversibleOperations_in_disconnectOverrideControllers() == true)
+		{
+			// warn user
+			auto userChoice = QMessageBox::warning(0, "Daz Bridge",
+				tr("You are exporting morph controllers that directly control other morphs that are also \n\
+being exported. To prevent morph values from incorrect exponential growth in these cases, \n\
+we must now disconnect all linked morph controllers. This may cause irrersible changes to \n\
+your scene. Please save changes to the scene before proceeding."),
+QMessageBox::Ignore | QMessageBox::Abort,
+				QMessageBox::Abort);
+			if (userChoice == QMessageBox::StandardButton::Abort)
+				return false;
+		}
+	}
+
+	return true;
 }
 
 // ------------------------------------------------
