@@ -10,8 +10,11 @@
 
 #include "DzBridgeMorphSelectionDialog.h"
 
+#include <fbxsdk.h>
+
 class DzProgress;
 class DzGeometry;
+class DzFigure;
 
 class UnitTest_DzBridgeAction;
 
@@ -73,6 +76,9 @@ namespace DzBridgeNameSpace
 		bool undoRenameDuplicateMaterials();
 		bool generateMissingNormalMap(DzMaterial* material);
 		bool undoGenerateMissingNormalMaps();
+		bool renameDuplicateClothing();
+
+		bool undoRenameDuplicateClothing();
 
 		Q_INVOKABLE static bool copyFile(QFile* file, QString* dst, bool replace = true, bool compareFiles = true);
 		Q_INVOKABLE static QString getMD5(const QString& path);
@@ -119,11 +125,20 @@ namespace DzBridgeNameSpace
 		bool m_bExportMaterialPropertiesCSV;
 		DzNode* m_pSelectedNode;
 
+		// Animation Settings
+		bool m_bAnimationUseExperimentalTransfer;
+		bool m_bAnimationBake;
+		bool m_bAnimationTransferFace;
+
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }
 
 		virtual void exportAsset();
 		virtual void exportNode(DzNode* Node);
+
+		virtual void exportAnimation();
+		virtual void exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& BoneMap, FbxAnimLayer* AnimBaseLayer);
+		virtual void exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzNode*, FbxNode*>& BoneMap);
 
 		virtual void writeConfiguration() = 0;
 		virtual void setExportOptions(DzFileIOSettings& ExportOptions) = 0;
@@ -219,7 +234,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE QString getExportFbx() { return this->m_sExportFbx; };
 		Q_INVOKABLE void setExportFbx(QString arg_FbxName) { this->m_sExportFbx = arg_FbxName; };
 
-		Q_INVOKABLE void readGui(DzBridgeDialog*);
+		Q_INVOKABLE bool readGui(DzBridgeDialog*);
 		Q_INVOKABLE void exportHD(DzProgress* exportProgress = nullptr);
 		Q_INVOKABLE bool upgradeToHD(QString baseFilePath, QString hdFilePath, QString outFilePath, std::map<std::string, int>* pLookupTable);
 		Q_INVOKABLE void writeWeightMaps(DzNode* Node, DzJsonWriter& Stream);
@@ -244,6 +259,10 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE void reparentFigure(DzNode* figure);
 
 		virtual void resetArray_ControllersToDisconnect();
+		Q_INVOKABLE bool checkForIrreversibleOperations_in_disconnectOverrideControllers();
+		Q_INVOKABLE bool exportObj(QString filepath);
+		Q_INVOKABLE bool exportGeograftMorphs(DzNode *Node, QString destinationFolder);
+		Q_INVOKABLE bool checkForGeograftMorphsToExport(DzNode* Node, bool bZeroMorphForExport=false);
 
 	private:
 		class MaterialGroupExportOrderMetaData
@@ -277,6 +296,7 @@ namespace DzBridgeNameSpace
 		// Undo data structures
 		QMap<DzMaterial*, QString> m_undoTable_DuplicateMaterialRename;
 		QMap<DzMaterial*, DzProperty*> m_undoTable_GenerateMissingNormalMap;
+		QMap<DzFigure*, QString> m_undoTable_DuplicateClothingRename;
 
 		// NormalMap utility methods
 		double getPixelIntensity(const  QRgb& pixel);
