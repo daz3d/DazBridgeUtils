@@ -1020,6 +1020,11 @@ void DzBridgeAction::exportNode(DzNode* Node)
 		  ExportOptions.setBoolValue("doSubD", false);
 		  ExportOptions.setBoolValue("doCollapseUVTiles", false);
 
+		  if (m_sAssetType == "SkeletalMesh" && m_EnableSubdivisions)
+		  {
+			  ExportOptions.setBoolValue("doCollapseUVTiles", true);
+		  }
+
 		  // get the top level node for things like clothing so we don't get dupe material names
 		  DzNode* Parent = Node;
 		  if (m_sAssetType != "Environment")
@@ -1930,7 +1935,7 @@ void DzBridgeAction::writeMorphLinks(DzJsonWriter& writer)
 				writer.addItem(meshname);
 			}
 			writer.finishArray();
-			
+
 			writer.finishObject();
 		}
 
@@ -2338,7 +2343,7 @@ void DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 
 	// Collect the values from the dialog fields
 	if (m_sAssetName == "" || m_nNonInteractiveMode == 0) m_sAssetName = BridgeDialog->getAssetNameEdit()->text();
-	m_sExportFilename = m_sAssetName;
+	if (m_sExportFilename == "" || m_nNonInteractiveMode == 0) m_sExportFilename = m_sAssetName;
 	if (m_sRootFolder == "" || m_nNonInteractiveMode == 0) m_sRootFolder = readGuiRootFolder();
 	if (m_sExportSubfolder == "" || m_nNonInteractiveMode == 0) m_sExportSubfolder = m_sExportFilename;
 	m_sDestinationPath = m_sRootFolder + "/" + m_sExportSubfolder + "/";

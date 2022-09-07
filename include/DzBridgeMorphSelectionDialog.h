@@ -111,7 +111,7 @@ namespace DzBridgeNameSpace
 
 		// get morph property name
 		Q_INVOKABLE static QString getMorphPropertyName(DzProperty* pMorphProperty);
-		Q_INVOKABLE QList<QString> DzBridgeMorphSelectionDialog::getMorphNamesToDisconnectList();
+		Q_INVOKABLE QList<QString> getMorphNamesToDisconnectList();
 
 	public slots:
 		void FilterChanged(const QString& filter);
