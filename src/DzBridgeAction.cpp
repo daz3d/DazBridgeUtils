@@ -137,6 +137,7 @@ void DzBridgeAction::resetToDefaults()
 	m_nNonInteractiveMode = 0;
 	m_undoTable_DuplicateMaterialRename.clear();
 	m_undoTable_GenerateMissingNormalMap.clear();
+	m_undoTable_DuplicateClothingRename.clear();
 	m_sExportFbx = "";
 
 }
@@ -201,6 +202,14 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 					// Rename Duplicate Material
 					/////////////////
 					renameDuplicateMaterial(material, &existingMaterialNameList);
+
+					//////////////////
+					// Rename Duplicate Clothing
+					/////////////////
+					if (m_sAssetType == "SkeletalMesh")
+					{
+						renameDuplicateClothing();
+					}
 
 					/////////////////
 					// Generate Missing Normal Maps
@@ -607,6 +616,69 @@ bool DzBridgeAction::undoRenameDuplicateMaterials()
 }
 
 /// <summary>
+/// Rename clothing if its name is already used by other clothing to
+/// prevent collisions in Target Software. Called by preProcessScene().
+/// See also: undoRenameDuplicateClothing().
+/// </summary>
+/// <returns>true if successful</returns>
+bool DzBridgeAction::renameDuplicateClothing()
+{
+	// first get the figures.  We only need to check these
+	QList<DzFigure*> figureNodes;
+	int nodeCount = dzScene->getNumNodes();
+	for (int i = 0; i < nodeCount; i++)
+	{
+		DzNode* node = dzScene->getNode(i);
+		if (DzFigure* figure = qobject_cast<DzFigure*>(node))
+		{
+			figureNodes.append(figure);
+		}
+		/*if (DzSkeleton* skeleton = node->getSkeleton())
+		{
+			if (DzFigure* figure = qobject_cast<DzFigure*>(skeleton))
+			{
+				figureNodes.append(figure);
+			}
+		}*/
+	}
+
+	int figureCount = figureNodes.length();
+	qDebug() << "Count: " << figureCount;
+	for (int i = 0; i < figureCount; i++)
+	{
+		DzFigure* primaryFigure = figureNodes[i];
+		for (int j = i + 1; j < figureCount; j++)
+		{
+			DzFigure* secondaryFigure = figureNodes[j];
+			if (primaryFigure->getName() == secondaryFigure->getName())
+			{
+				qDebug() << "Match:" << primaryFigure->getName();
+				m_undoTable_DuplicateClothingRename.insert(secondaryFigure, secondaryFigure->getName());
+				QString newClothingName = secondaryFigure->getName() + QString("_%1").arg(j);
+				secondaryFigure->setName(newClothingName);
+			}
+		}
+	}
+	return true;
+}
+
+/// <summary>
+/// Undo any clothing modified by renameDuplicateClothing().
+/// </summary>
+/// <returns>true if successful</returns>
+bool DzBridgeAction::undoRenameDuplicateClothing()
+{
+	QMap<DzFigure*, QString>::iterator iter;
+	for (iter = m_undoTable_DuplicateClothingRename.begin(); iter != m_undoTable_DuplicateClothingRename.end(); ++iter)
+	{
+		iter.key()->setName(iter.value());
+	}
+	m_undoTable_DuplicateClothingRename.clear();
+
+	return true;
+}
+
+/// <summary>
 /// Convenience method to export base mesh and HD mesh as needed.
 /// Performs weightmap fix on subdivided mesh.
 /// See also: upgradeToHD(), Export().
@@ -988,6 +1060,15 @@ void DzBridgeAction::exportNode(DzNode* Node)
 		 return;
 	 }
 
+	 if (m_sAssetType == "Animation" && m_bAnimationUseExperimentalTransfer)
+	 {
+		 QDir dir;
+		 dir.mkpath(m_sDestinationPath);
+		 exportAnimation();
+		 writeConfiguration();
+		 return;
+	 }
+
 	 DzExportMgr* ExportManager = dzApp->getExportMgr();
 	 DzExporter* Exporter = ExportManager->findExporterByClassName("DzFbxExporter");
 
@@ -1110,6 +1191,239 @@ void DzBridgeAction::exportNode(DzNode* Node)
 
 		  undoPreProcessScene();
 	 }
+}
+
+void DzBridgeAction::exportAnimation()
+{
+	if (!m_pSelectedNode) return;
+
+	DzSkeleton* Skeleton = m_pSelectedNode->getSkeleton();
+	DzFigure* Figure = Skeleton ? qobject_cast<DzFigure*>(Skeleton) : NULL;
+
+	if (!Figure) return;
+
+	// Setup FBX Exporter
+	FbxManager* SdkManager = FbxManager::Create();
+
+	FbxIOSettings* ios = FbxIOSettings::Create(SdkManager, IOSROOT);
+	SdkManager->SetIOSettings(ios);
+
+	int FileFormat = -1;
+	FileFormat = SdkManager->GetIOPluginRegistry()->FindWriterIDByDescription("FBX ascii (*.fbx)");
+	qDebug() << "FileName: " << this->m_sDestinationFBX;
+	FbxExporter* Exporter = FbxExporter::Create(SdkManager, "");
+	if (!Exporter->Initialize(this->m_sDestinationFBX.toLocal8Bit().data(), FileFormat, SdkManager->GetIOSettings()))
+	{
+		return;
+	}
+
+	// Create the Scene
+	FbxScene* Scene = FbxScene::Create(SdkManager, "");
+
+	FbxAnimStack* AnimStack = FbxAnimStack::Create(Scene, "AnimStack");
+	FbxAnimLayer* AnimBaseLayer = FbxAnimLayer::Create(Scene, "Layer0");
+	AnimStack->AddMember(AnimBaseLayer);
+
+	// Add the skeleton to the scene
+	QMap<DzNode*, FbxNode*> BoneMap;
+	exportSkeleton(m_pSelectedNode, nullptr, nullptr, Scene, BoneMap);
+
+	// Get the play range
+	DzTimeRange PlayRange = dzScene->getPlayRange();
+
+	//
+	//exportNodeAnimation(Figure, BoneMap, AnimBaseLayer);
+
+	// Iterate the bones
+	DzBoneList Bones;
+	Skeleton->getAllBones(Bones);
+	for (auto Bone : Bones)
+	{
+		exportNodeAnimation(Bone, BoneMap, AnimBaseLayer);
+	}
+
+	// Write the FBX
+	Exporter->Export(Scene);
+	Exporter->Destroy();
+}
+
+void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& BoneMap, FbxAnimLayer* AnimBaseLayer)
+{
+	DzTimeRange PlayRange = dzScene->getPlayRange();
+
+	QString Name = Bone->getName();
+
+	FbxNode* Node = BoneMap.value(Bone);
+	if (Node == nullptr) return;
+
+	qDebug() << Bone->getName() << " Order: " << Bone->getRotationOrder().toString();
+
+	// Create a curve node for this bone
+	FbxAnimCurveNode* AnimCurveNode = Node->LclRotation.GetCurveNode(AnimBaseLayer, true);
+
+	// For each frame, write a key (equivalent of bake)
+	for (DzTime CurrentTime = PlayRange.getStart(); CurrentTime <= PlayRange.getEnd(); CurrentTime += dzScene->getTimeStep())
+	{
+		DzTime Frame = CurrentTime / dzScene->getTimeStep();
+		DzVec3 Position = Bone->getWSPos(CurrentTime);
+		//qDebug() << Bone->getName() << " Position: " << Position.m_x << "," << Position.m_y << "," << Position.m_z;
+
+		// Get an initial rotation via the controls
+		DzVec3 ControlRotation;
+		ControlRotation.m_x = Bone->getXRotControl()->getValue(CurrentTime);
+		ControlRotation.m_y = Bone->getYRotControl()->getValue(CurrentTime);
+		ControlRotation.m_z = Bone->getZRotControl()->getValue(CurrentTime);
+		DzVec3 VectorRotation = ControlRotation;
+
+
+		// Get the rotation and position relative to the parent
+		if (DzNode* ParentBone = Bone->getNodeParent())
+		{
+			// Get the local orientation
+			DzQuat Orientation = Bone->getOrientation(true) * ParentBone->getOrientation(true).inverse();
+
+			// Fix the rotation order
+			VectorRotation = ControlRotation;
+			DzQuat ReorderQuat;
+			VectorRotation.m_x = VectorRotation.m_x / FBXSDK_180_DIV_PI;
+			VectorRotation.m_y = VectorRotation.m_y / FBXSDK_180_DIV_PI;
+			VectorRotation.m_z = VectorRotation.m_z / FBXSDK_180_DIV_PI;
+			ReorderQuat.setValue(Bone->getRotationOrder().order(), VectorRotation);
+			ReorderQuat = ReorderQuat * Orientation;
+
+			ReorderQuat.getValue(DzRotationOrder::RotOrder::XYZ, VectorRotation);
+			VectorRotation.m_x = VectorRotation.m_x * FBXSDK_180_DIV_PI;
+			VectorRotation.m_y = VectorRotation.m_y * FBXSDK_180_DIV_PI;
+			VectorRotation.m_z = VectorRotation.m_z * FBXSDK_180_DIV_PI;
+
+			//qDebug() << Bone->getName() << " Reorder LocalRot: " << VectorRotation.m_x << "," << VectorRotation.m_y << "," << VectorRotation.m_z;
+
+			DzVec3 ParentPosition = ParentBone->getWSPos(CurrentTime);
+			//qDebug() << Bone->getName() << " Parent Position: " << ParentPosition.m_x << "," << ParentPosition.m_y << "," << ParentPosition.m_z;
+			DzVec3 LocalPosition = Position - ParentPosition;
+			Position = LocalPosition;
+		}
+
+		// Set the frame
+		FbxTime Time;
+		int KeyIndex = 0;
+		Time.SetFrame(Frame);
+
+		// Write X Rot
+		FbxAnimCurve* RotXCurve = Node->LclRotation.GetCurve(AnimBaseLayer, "X", true);
+		RotXCurve->KeyModifyBegin();
+		KeyIndex = RotXCurve->KeyAdd(Time);
+		RotXCurve->KeySet(KeyIndex, Time, VectorRotation.m_x);
+		RotXCurve->KeyModifyEnd();
+
+		// Write Y Rot
+		FbxAnimCurve* RotYCurve = Node->LclRotation.GetCurve(AnimBaseLayer, "Y", true);
+		RotYCurve->KeyModifyBegin();
+		KeyIndex = RotYCurve->KeyAdd(Time);
+		RotYCurve->KeySet(KeyIndex, Time, VectorRotation.m_y);
+		RotYCurve->KeyModifyEnd();
+
+		// Write Z Rot
+		FbxAnimCurve* RotZCurve = Node->LclRotation.GetCurve(AnimBaseLayer, "Z", true);
+		RotZCurve->KeyModifyBegin();
+		KeyIndex = RotZCurve->KeyAdd(Time);
+		RotZCurve->KeySet(KeyIndex, Time, VectorRotation.m_z);
+		RotZCurve->KeyModifyEnd();
+
+		// Write X Pos
+		FbxAnimCurve* PosXCurve = Node->LclTranslation.GetCurve(AnimBaseLayer, "X", true);
+		PosXCurve->KeyModifyBegin();
+		KeyIndex = PosXCurve->KeyAdd(Time);
+		PosXCurve->KeySet(KeyIndex, Time, Position.m_x);
+		PosXCurve->KeyModifyEnd();
+
+		// Write Y Pos
+		FbxAnimCurve* PosYCurve = Node->LclTranslation.GetCurve(AnimBaseLayer, "Y", true);
+		PosYCurve->KeyModifyBegin();
+		KeyIndex = PosYCurve->KeyAdd(Time);
+		PosYCurve->KeySet(KeyIndex, Time, Position.m_y);
+		PosYCurve->KeyModifyEnd();
+
+		// Write Z Pos
+		FbxAnimCurve* PosZCurve = Node->LclTranslation.GetCurve(AnimBaseLayer, "Z", true);
+		PosZCurve->KeyModifyBegin();
+		KeyIndex = PosZCurve->KeyAdd(Time);
+		PosZCurve->KeySet(KeyIndex, Time, Position.m_z);
+		PosZCurve->KeyModifyEnd();
+	}
+}
+
+void DzBridgeAction::exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzNode*, FbxNode*>& BoneMap)
+{
+	// Only transfer face bones if requested
+	if (Parent != nullptr && Parent->getName() == "head" && m_bAnimationTransferFace == false) return;
+
+	FbxNode* BoneNode;
+
+	// null parent is the root bone
+	if (FbxParent == nullptr)
+	{
+		// Create a root bone.  Always named root so we don't have to fix it in Unreal
+		FbxSkeleton* SkeletonAttribute = FbxSkeleton::Create(Scene, "root");
+		SkeletonAttribute->SetSkeletonType(FbxSkeleton::eRoot);
+		BoneNode = FbxNode::Create(Scene, "root");
+		BoneNode->SetNodeAttribute(SkeletonAttribute);
+
+		FbxNode* RootNode = Scene->GetRootNode();
+		RootNode->AddChild(BoneNode);
+
+		// Looks through the child nodes for more bones
+		for (int ChildIndex = 0; ChildIndex < Node->getNumNodeChildren(); ChildIndex++)
+		{
+			DzNode* ChildNode = Node->getNodeChild(ChildIndex);
+			exportSkeleton(ChildNode, Node, BoneNode, Scene, BoneMap);
+		}
+	}
+	else
+	{
+		// Child nodes need to be bones
+		if (DzBone* Bone = qobject_cast<DzBone*>(Node))
+		{
+			// create the bone
+			FbxSkeleton* SkeletonAttribute = FbxSkeleton::Create(Scene, Node->getName().toLocal8Bit().data());
+			SkeletonAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
+			BoneNode = FbxNode::Create(Scene, Node->getName().toLocal8Bit().data());
+			BoneNode->SetNodeAttribute(SkeletonAttribute);
+
+			// find the bones position
+			DzVec3 Position = Node->getWSPos(DzTime(0), true);
+			DzVec3 ParentPosition = Parent->getWSPos(DzTime(0), true);
+			DzVec3 LocalPosition = Position - ParentPosition;
+
+			// find the bone's rotation
+			DzQuat Rotation = Node->getWSRot(DzTime(0), true);
+			DzQuat ParentRotation = Parent->getWSRot(DzTime(0), true);
+			DzQuat LocalRotation = Node->getOrientation(true);//Rotation * ParentRotation.inverse();
+			DzVec3 VectorRotation;
+			LocalRotation.getValue(VectorRotation);
+
+			// set the position and rotation properties
+			BoneNode->LclTranslation.Set(FbxVector4(LocalPosition.m_x, LocalPosition.m_y, LocalPosition.m_z));
+			BoneNode->LclRotation.Set(FbxVector4(VectorRotation.m_x, VectorRotation.m_y, VectorRotation.m_z));
+
+			FbxParent->AddChild(BoneNode);
+
+			// Looks through the child nodes for more bones
+			for (int ChildIndex = 0; ChildIndex < Node->getNumNodeChildren(); ChildIndex++)
+			{
+				DzNode* ChildNode = Node->getNodeChild(ChildIndex);
+				exportSkeleton(ChildNode, Node, BoneNode, Scene, BoneMap);
+			}
+		}
+	}
+
+	// Add the bone to the map
+	//if (DzBone* Bone = qobject_cast<DzBone*>(Node))
+	{
+		BoneMap.insert(Node, BoneNode);
+	}
+
+
 }
 
 // If there are duplicate material names, save off the original and rename one
@@ -1589,6 +1903,7 @@ void DzBridgeAction::writeDTUHeader(DzJsonWriter& writer)
 	writer.addMember("Asset Name", m_sAssetName);
 	writer.addMember("Import Name", sImportName); // Blender Compatibility
 	writer.addMember("Asset Type", m_sAssetType);
+	writer.addMember("Use Experimental Animation Transfer", m_bAnimationUseExperimentalTransfer);
 	writer.addMember("Asset Id", sAssetId); // Unity Compatibility
 	writer.addMember("Content Type", sContentType);
 	writer.addMember("FBX File", m_sDestinationFBX);
@@ -1640,7 +1955,7 @@ void DzBridgeAction::writeAllMaterials(DzNode* Node, DzJsonWriter& Writer, QText
 	if (Shape && presentation)
 	{
 		const QString presentationType = presentation->getType();
-		if (Node->getName().toLower().contains("genital") || 
+		if (Node->getName().toLower().contains("genital") ||
 			presentationType == "Follower/Attachment/Lower-Body/Hip/Front" ||
 			presentationType == "Follower/Attachment/Lower-Body")
 		{
@@ -2044,7 +2359,7 @@ void DzBridgeAction::writeMorphLinks(DzJsonWriter& writer)
 				writer.addItem(meshname);
 			}
 			writer.finishArray();
-			
+
 			writer.finishObject();
 		}
 
@@ -2493,6 +2808,10 @@ QMessageBox::Ignore | QMessageBox::Abort,
 				return false;
 		}
 	}
+
+	m_bAnimationUseExperimentalTransfer = BridgeDialog->getExperimentalAnimationExportCheckBox()->isChecked();
+	m_bAnimationBake = BridgeDialog->getBakeAnimationExportCheckBox()->isChecked();
+	m_bAnimationTransferFace = BridgeDialog->getFaceAnimationExportCheckBox()->isChecked();
 
 	return true;
 }
@@ -4189,7 +4508,7 @@ bool DzBridgeAction::exportGeograftMorphs(DzNode *Node, QString sDestinationFold
 			}
 		}
 	}
-	// for each morph, 
+	// for each morph,
 	foreach(auto morphPair, oGeograftMorphsToExport)
 	{
 		QString sMorphName = morphPair.first;
