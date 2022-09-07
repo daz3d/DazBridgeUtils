@@ -628,6 +628,9 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 		QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 	}
 
+	// look for geograft morphs for export, and prepare
+	checkForGeograftMorphsToExport(dzScene->getPrimarySelection(), true);
+
 	if (m_EnableSubdivisions)
 	{
 		if (exportProgress)
@@ -665,6 +668,16 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 	{
 		exportProgress->step();
 		exportProgress->setInfo(tr("Mesh exported."));
+	}
+
+	// Export any geograft morphs if exist
+	if (m_bEnableMorphs)
+	{
+		if (exportGeograftMorphs(dzScene->getPrimarySelection(), m_sDestinationPath))
+		{
+			exportProgress->step();
+			exportProgress->setInfo(tr("Geograft morphs exported."));
+		}
 	}
 
 	if (m_EnableSubdivisions)
@@ -1194,7 +1207,6 @@ bool DzBridgeAction::checkForIrreversibleOperations_in_disconnectOverrideControl
 	if (Selection == nullptr)
 		return false;
 
-	int poseIndex = 0;
 	DzNumericProperty* previousProperty = nullptr;
 	for (int index = 0; index < Selection->getNumProperties(); index++)
 	{
@@ -1240,9 +1252,7 @@ bool DzBridgeAction::checkForIrreversibleOperations_in_disconnectOverrideControl
 						}
 					}
 				}
-
 			}
-
 		}
 	}
 
@@ -1258,7 +1268,6 @@ QList<QString> DzBridgeAction::disconnectOverrideControllers()
 	if (Selection == nullptr)
 		return ModifiedList;
 
-	int poseIndex = 0;
 	DzNumericProperty* previousProperty = nullptr;
 	for (int index = 0; index < Selection->getNumProperties(); index++)
 	{
@@ -1626,12 +1635,12 @@ void DzBridgeAction::writeAllMaterials(DzNode* Node, DzJsonWriter& Writer, QText
 		}
 	}
 
-	// Check if Genitalia, add extra material block with parent's header info
+	// Check if Genitalia exists, add extra material block with parent's header info
 	DzPresentation* presentation = Node->getPresentation();
 	if (Shape && presentation)
 	{
 		const QString presentationType = presentation->getType();
-		if (Node->getName().toLower().contains("genitalia") || 
+		if (Node->getName().toLower().contains("genital") || 
 			presentationType == "Follower/Attachment/Lower-Body/Hip/Front" ||
 			presentationType == "Follower/Attachment/Lower-Body")
 		{
@@ -3919,6 +3928,288 @@ void DzBridgeAction::resetArray_ControllersToDisconnect()
 	m_ControllersToDisconnect.clear();
 	m_ControllersToDisconnect.append("facs_bs_MouthClose_div2");
 	m_undoTable_ControllersToDisconnect.clear();
+}
+
+bool DzBridgeAction::exportObj(QString filepath)
+{
+	DzExportMgr* ExportManager = dzApp->getExportMgr();
+	DzExporter* Exporter = ExportManager->findExporterByClassName("DzObjExporter");
+
+	if (Exporter)
+	{
+		DzFileIOSettings ExportOptions;
+		ExportOptions.setStringValue("Custom", "Custom");
+		ExportOptions.setFloatValue("Scale", 1.0);
+		ExportOptions.setStringValue("LatAxis", "X");
+		ExportOptions.setStringValue("VertAxis", "Y");
+		ExportOptions.setStringValue("DepthAxis", "Z");
+		ExportOptions.setBoolValue("InvertLat", false);
+		ExportOptions.setBoolValue("InvertVert", false);
+		ExportOptions.setBoolValue("InvertDepth", false);
+		ExportOptions.setBoolValue("IgnoreInvisible", true);
+		ExportOptions.setBoolValue("WeldSeams", false);
+		ExportOptions.setBoolValue("RemoveUnusedVerts", true);
+		ExportOptions.setBoolValue("WriteVT", false);
+		ExportOptions.setBoolValue("WriteVN", false);
+		ExportOptions.setBoolValue("WriteO", false);
+		ExportOptions.setBoolValue("WriteG", false);
+		ExportOptions.setBoolValue("GroupGeom", false);
+		ExportOptions.setBoolValue("GroupNodes", false);
+		ExportOptions.setBoolValue("GroupSurfaces", false);
+		ExportOptions.setBoolValue("GroupSingle", false);
+		ExportOptions.setBoolValue("WriteUsemtl", false);
+		ExportOptions.setBoolValue("WriteMtllib", false);
+		ExportOptions.setBoolValue("OriginalMaps", false);
+		ExportOptions.setBoolValue("CollectMaps", false);
+		ExportOptions.setBoolValue("ConvertMaps", false);
+		ExportOptions.setBoolValue("SelectedOnly", false);
+		ExportOptions.setBoolValue("SelectedRootsOnly", false);
+		ExportOptions.setBoolValue("PrimaryRootOnly", false);
+		ExportOptions.setBoolValue("IncludeParented", false);
+		ExportOptions.setBoolValue("TriangulateNgons", false);
+		ExportOptions.setBoolValue("CollapseUVTiles", false);
+		ExportOptions.setBoolValue("ShowIndividualSettings", false);
+		ExportOptions.setIntValue("FloatPrecision", 6);
+		ExportOptions.setBoolValue("WriteF", true);
+		ExportOptions.setIntValue("RunSilent", 1);
+
+		Exporter->writeFile(filepath, &ExportOptions);
+//		Exporter->writeFile(filepath);
+	}
+	Exporter->deleteLater();
+	return true;
+}
+
+bool is_faced_mesh_single(DzNode* pNode)
+{
+	if (pNode == nullptr)
+		return false;
+
+	if (pNode->inherits("DzBone"))
+		return false;
+
+	DzObject* pObject = pNode->getObject();
+	if (pObject == nullptr)
+		return false;
+
+	DzShape* pShape = pObject->getCurrentShape();
+	if (pShape == nullptr)
+		return false;
+
+	DzGeometry* pMesh = pShape->getGeometry();
+	if (pMesh == nullptr)
+		return false;
+
+	//pMesh->getNumFacets();
+	DzFacetMesh* pMesh2 = qobject_cast<DzFacetMesh*>(pMesh);
+	int num_facets = pMesh2->getNumFacets();
+	if (num_facets < 1 && pMesh2->getName().toLower().contains("eyebrow"))
+		return false;
+
+	if (num_facets > 13000)
+		return false;
+
+	if (pNode->isRootNode())
+		return false;
+
+	return true;
+}
+
+bool DzBridgeAction::checkForGeograftMorphsToExport(DzNode* Node, bool bZeroMorphForExport)
+{
+	bool bGeograftMorphsFoundToExport = false;
+	DzNode* pGeograftNode = nullptr;
+	DzNode* pParentNode = Node;
+	// 1. find geograft/genital
+	DzNodeListIterator oNodeChildrenIter = Node->nodeChildrenIterator();
+	while (oNodeChildrenIter.hasNext())
+	{
+		DzNode* pChild = oNodeChildrenIter.next();
+		DzPresentation* presentation = pChild->getPresentation();
+		if (presentation)
+		{
+			const QString presentationType = presentation->getType();
+			if (pChild->getName().toLower().contains("genital") ||
+				presentationType == "Follower/Attachment/Lower-Body/Hip/Front" ||
+				presentationType == "Follower/Attachment/Lower-Body")
+			{
+				pGeograftNode = pChild;
+				break;
+			}
+		}
+	}
+	if (pGeograftNode == nullptr)
+	{
+		return false;
+	}
+	DzNumericProperty* previousProperty = nullptr;
+	for (int index = 0; index < pGeograftNode->getNumProperties(); index++)
+	{
+		DzProperty* property = pGeograftNode->getProperty(index);
+		DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
+		if (numericProperty && !numericProperty->isOverridingControllers())
+		{
+			QString propName = property->getName();
+			if (m_mMorphNameToLabel.contains(propName))
+			{
+				if (bZeroMorphForExport)
+				{
+					numericProperty->setDoubleValue(0);
+				}
+				bGeograftMorphsFoundToExport = true;
+			}
+		}
+	}
+	DzObject* Object = pGeograftNode->getObject();
+	if (Object)
+	{
+		for (int index = 0; index < Object->getNumModifiers(); index++)
+		{
+			DzModifier* modifier = Object->getModifier(index);
+			DzMorph* mod = qobject_cast<DzMorph*>(modifier);
+			if (mod)
+			{
+				for (int propindex = 0; propindex < modifier->getNumProperties(); propindex++)
+				{
+					DzProperty* property = modifier->getProperty(propindex);
+					DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
+					if (numericProperty && !numericProperty->isOverridingControllers())
+					{
+						QString propName = DzBridgeMorphSelectionDialog::getMorphPropertyName(property);
+						if (m_mMorphNameToLabel.contains(modifier->getName()))
+						{
+							if (bZeroMorphForExport)
+							{
+								numericProperty->setDoubleValue(0);
+							}
+							bGeograftMorphsFoundToExport = true;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return bGeograftMorphsFoundToExport;
+}
+
+bool DzBridgeAction::exportGeograftMorphs(DzNode *Node, QString sDestinationFolder)
+{
+	DzNode *pGeograftNode = nullptr;
+	DzNode *pParentNode = Node;
+	// 1. find geograft/genital
+	DzNodeListIterator oNodeChildrenIter = Node->nodeChildrenIterator();
+	while (oNodeChildrenIter.hasNext())
+	{
+		DzNode* pChild = oNodeChildrenIter.next();
+		DzPresentation* presentation = pChild->getPresentation();
+		if (presentation)
+		{
+			const QString presentationType = presentation->getType();
+			if (pChild->getName().toLower().contains("genital") ||
+				presentationType == "Follower/Attachment/Lower-Body/Hip/Front" ||
+				presentationType == "Follower/Attachment/Lower-Body")
+			{
+				pGeograftNode = pChild;
+				break;
+			}
+		}
+	}
+	if (pGeograftNode == nullptr)
+	{
+		return false;
+	}
+	// Hide everything
+	QList<QPair<DzNode*, bool>> oUndoList_for_NodeVisibility;
+	DzNodeListIterator oSceneNodeIterator = dzScene->nodeListIterator();
+	while (oSceneNodeIterator.hasNext())
+	{
+		DzNode* pNode = oSceneNodeIterator.next();
+		oUndoList_for_NodeVisibility.append(QPair<DzNode*, bool>(pNode, pNode->isVisible()));
+		if (pNode == pParentNode || pNode == pGeograftNode)
+		{
+			pNode->setVisible(true);
+		}
+		else if (pNode->getNodeParent() == pParentNode)
+		{
+			pNode->setVisible(false);
+		}
+		else
+		{
+			if (is_faced_mesh_single(pNode) != false)
+				pNode->setVisible(false);
+		}
+	}
+//	pGeograftNode->setVisible(true);
+//	pParentNode->setVisible(true);
+
+	// set all morphs to zero
+	// add morphs to TODO list for exporting
+	QList<QPair<QString, DzNumericProperty*>> oGeograftMorphsToExport;
+	DzNumericProperty* previousProperty = nullptr;
+	for (int index = 0; index < pGeograftNode->getNumProperties(); index++)
+	{
+		DzProperty* property = pGeograftNode->getProperty(index);
+		DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
+		if (numericProperty && !numericProperty->isOverridingControllers())
+		{
+			QString propName = property->getName();
+			if (m_mMorphNameToLabel.contains(propName))
+			{
+				oGeograftMorphsToExport.append(QPair<QString, DzNumericProperty*>(propName, numericProperty));
+				double propValue = numericProperty->getDoubleValue();
+				numericProperty->setDoubleValue(0);
+			}
+		}
+	}
+	DzObject* Object = pGeograftNode->getObject();
+	if (Object)
+	{
+		for (int index = 0; index < Object->getNumModifiers(); index++)
+		{
+			DzModifier* modifier = Object->getModifier(index);
+			DzMorph* mod = qobject_cast<DzMorph*>(modifier);
+			if (mod)
+			{
+				for (int propindex = 0; propindex < modifier->getNumProperties(); propindex++)
+				{
+					DzProperty* property = modifier->getProperty(propindex);
+					DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
+					if (numericProperty && !numericProperty->isOverridingControllers())
+					{
+						QString propName = DzBridgeMorphSelectionDialog::getMorphPropertyName(property);
+						if (m_mMorphNameToLabel.contains(modifier->getName()) )
+						{
+							oGeograftMorphsToExport.append(QPair<QString, DzNumericProperty*>(modifier->getName(), numericProperty));
+							double propValue = numericProperty->getDoubleValue();
+							numericProperty->setDoubleValue(0);
+						}
+					}
+				}
+			}
+		}
+	}
+	// for each morph, 
+	foreach(auto morphPair, oGeograftMorphsToExport)
+	{
+		QString sMorphName = morphPair.first;
+		DzNumericProperty* pNumericProperty = morphPair.second;
+		QString sMorphObjFileName = sMorphName + ".obj";
+		QString sObjFullPath = sDestinationFolder + "/" + sMorphObjFileName;
+		pNumericProperty->setDoubleValue(1.0);
+		exportObj(sObjFullPath);
+		pNumericProperty->setDoubleValue(0);
+	}
+
+	// Reverse Visibility changes
+	foreach(auto UndoPair, oUndoList_for_NodeVisibility)
+	{
+		DzNode *pNode = UndoPair.first;
+		bool bIsVisible = UndoPair.second;
+		pNode->setVisible(bIsVisible);
+	}
+
+	return true;
 }
 
 #include "moc_DzBridgeAction.cpp"
