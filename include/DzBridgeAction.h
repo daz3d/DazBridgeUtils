@@ -82,6 +82,7 @@ namespace DzBridgeNameSpace
 
 		Q_INVOKABLE static bool copyFile(QFile* file, QString* dst, bool replace = true, bool compareFiles = true);
 		Q_INVOKABLE static QString getMD5(const QString& path);
+		Q_INVOKABLE static bool isGeograft(const DzNode* pNode);
 
 	protected:
 		// Struct to remember attachment info

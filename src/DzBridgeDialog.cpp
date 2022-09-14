@@ -352,6 +352,8 @@ bool DzBridgeDialog::loadSavedSettings()
 // Some settings will be saved when Accept is hit so we don't need a hanlder attached to all of them
 void DzBridgeDialog::saveSettings()
 {
+	if (settings == nullptr) return;
+	if (experimentalAnimationExportCheckBox == nullptr) return;
 	settings->setValue("AnimationExperminentalExport", experimentalAnimationExportCheckBox->isChecked());
 	settings->setValue("AnimationBake", bakeAnimationExportCheckBox->isChecked());
 	settings->setValue("AnimationExportFace", faceAnimationExportCheckBox->isChecked());

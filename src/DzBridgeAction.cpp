@@ -1951,32 +1951,25 @@ void DzBridgeAction::writeAllMaterials(DzNode* Node, DzJsonWriter& Writer, QText
 	}
 
 	// Check if Genitalia exists, add extra material block with parent's header info
-	DzPresentation* presentation = Node->getPresentation();
-	if (Shape && presentation)
+	if (isGeograft(Node))
 	{
-		const QString presentationType = presentation->getType();
-		if (Node->getName().toLower().contains("genital") ||
-			presentationType == "Follower/Attachment/Lower-Body/Hip/Front" ||
-			presentationType == "Follower/Attachment/Lower-Body")
+		// get parent node
+		DzNode* ParentNode = Node->getNodeParent();
+		if (ParentNode)
 		{
-			// get parent node
-			DzNode* ParentNode = Node->getNodeParent();
-			if (ParentNode)
+			for (int i = 0; i < Shape->getNumMaterials(); i++)
 			{
-				for (int i = 0; i < Shape->getNumMaterials(); i++)
+				DzMaterial* Material = Shape->getMaterial(i);
+				if (Material)
 				{
-					DzMaterial* Material = Shape->getMaterial(i);
-					if (Material)
+					auto propertyList = Material->propertyListIterator();
+					// Custom Header
+					startMaterialBlock(ParentNode, Writer, pCVSStream, Material);
+					while (propertyList.hasNext())
 					{
-						auto propertyList = Material->propertyListIterator();
-						// Custom Header
-						startMaterialBlock(ParentNode, Writer, pCVSStream, Material);
-						while (propertyList.hasNext())
-						{
-							writeMaterialProperty(ParentNode, Writer, pCVSStream, Material, propertyList.next());
-						}
-						finishMaterialBlock(Writer);
+						writeMaterialProperty(ParentNode, Writer, pCVSStream, Material, propertyList.next());
 					}
+					finishMaterialBlock(Writer);
 				}
 			}
 		}
@@ -4344,17 +4337,10 @@ bool DzBridgeAction::checkForGeograftMorphsToExport(DzNode* Node, bool bZeroMorp
 	while (oNodeChildrenIter.hasNext())
 	{
 		DzNode* pChild = oNodeChildrenIter.next();
-		DzPresentation* presentation = pChild->getPresentation();
-		if (presentation)
+		if (isGeograft(pChild))
 		{
-			const QString presentationType = presentation->getType();
-			if (pChild->getName().toLower().contains("genital") ||
-				presentationType == "Follower/Attachment/Lower-Body/Hip/Front" ||
-				presentationType == "Follower/Attachment/Lower-Body")
-			{
-				pGeograftNode = pChild;
-				break;
-			}
+			pGeograftNode = pChild;
+			break;
 		}
 	}
 	if (pGeograftNode == nullptr)
@@ -4421,17 +4407,10 @@ bool DzBridgeAction::exportGeograftMorphs(DzNode *Node, QString sDestinationFold
 	while (oNodeChildrenIter.hasNext())
 	{
 		DzNode* pChild = oNodeChildrenIter.next();
-		DzPresentation* presentation = pChild->getPresentation();
-		if (presentation)
+		if (isGeograft(pChild))
 		{
-			const QString presentationType = presentation->getType();
-			if (pChild->getName().toLower().contains("genital") ||
-				presentationType == "Follower/Attachment/Lower-Body/Hip/Front" ||
-				presentationType == "Follower/Attachment/Lower-Body")
-			{
-				pGeograftNode = pChild;
-				break;
-			}
+			pGeograftNode = pChild;
+			break;
 		}
 	}
 	if (pGeograftNode == nullptr)
@@ -4463,7 +4442,7 @@ bool DzBridgeAction::exportGeograftMorphs(DzNode *Node, QString sDestinationFold
 //	pParentNode->setVisible(true);
 
 	// set all morphs to zero
-	// add morphs to TODO list for exporting
+	// add morphs to todo list for exporting
 	QList<QPair<QString, DzNumericProperty*>> oGeograftMorphsToExport;
 	DzNumericProperty* previousProperty = nullptr;
 	for (int index = 0; index < pGeograftNode->getNumProperties(); index++)
@@ -4529,6 +4508,24 @@ bool DzBridgeAction::exportGeograftMorphs(DzNode *Node, QString sDestinationFold
 	}
 
 	return true;
+}
+
+bool DzBridgeAction::isGeograft(const DzNode* pNode)
+{
+	if (pNode->inherits("DzFigure"))
+	{
+		const DzFigure* figure = dynamic_cast<const DzFigure*>(pNode);
+		if (figure->isGraftFollowing())
+		{
+			DzSkeleton* target = figure->getFollowTarget();
+			if (target && target->isVisible() && target->isVisibileInRender())
+			{
+//				dzApp->log("DazBridge: DEBUG: skipping geograft node: " + pNode->getName());
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 #include "moc_DzBridgeAction.cpp"
