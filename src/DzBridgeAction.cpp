@@ -1236,7 +1236,7 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 	FbxNode* Node = BoneMap.value(Bone);
 	if (Node == nullptr) return;
 
-	qDebug() << Bone->getName() << " Order: " << Bone->getRotationOrder().toString();
+	//qDebug() << Bone->getName() << " Order: " << Bone->getRotationOrder().toString();
 
 	// Create a curve node for this bone
 	FbxAnimCurveNode* AnimCurveNode = Node->LclRotation.GetCurveNode(AnimBaseLayer, true);
@@ -1245,7 +1245,19 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 	for (DzTime CurrentTime = PlayRange.getStart(); CurrentTime <= PlayRange.getEnd(); CurrentTime += dzScene->getTimeStep())
 	{
 		DzTime Frame = CurrentTime / dzScene->getTimeStep();
-		DzVec3 Position = Bone->getWSPos(CurrentTime);
+		DzVec3 DefaultPosition;
+		DefaultPosition.m_x = Bone->getOriginXControl()->getValue(CurrentTime);
+		DefaultPosition.m_y = Bone->getOriginYControl()->getValue(CurrentTime);
+		DefaultPosition.m_z = Bone->getOriginZControl()->getValue(CurrentTime);
+		DzMatrix3 Scale = Bone->getWSScale();
+		//qDebug() << Bone->getName() << " Scale: " << Scale.row(0).length() << "," << Scale.row(1).length() << "," << Scale.row(2).length();
+		
+		//qDebug() << Bone->getName() << " Default Position: " << DefaultPosition.m_x << "," << DefaultPosition.m_y << "," << DefaultPosition.m_z;
+		DzVec3 Position;
+		Position.m_x = Bone->getXPosControl()->getValue(CurrentTime);
+		Position.m_y = Bone->getYPosControl()->getValue(CurrentTime);
+		Position.m_z = Bone->getZPosControl()->getValue(CurrentTime);
+		//Position = Bone->getWSPos(CurrentTime);
 		//qDebug() << Bone->getName() << " Position: " << Position.m_x << "," << Position.m_y << "," << Position.m_z;
 
 		// Get an initial rotation via the controls
@@ -1259,6 +1271,7 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 		// Get the rotation and position relative to the parent
 		if (DzNode* ParentBone = Bone->getNodeParent())
 		{
+
 			// Get the local orientation
 			DzQuat Orientation = Bone->getOrientation(true) * ParentBone->getOrientation(true).inverse();
 			
@@ -1268,6 +1281,7 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 			VectorRotation.m_x = VectorRotation.m_x / FBXSDK_180_DIV_PI;
 			VectorRotation.m_y = VectorRotation.m_y / FBXSDK_180_DIV_PI;
 			VectorRotation.m_z = VectorRotation.m_z / FBXSDK_180_DIV_PI;
+			//qDebug() << Bone->getName() << " ControlRot: " << VectorRotation.m_x << "," << VectorRotation.m_y << "," << VectorRotation.m_z;
 			ReorderQuat.setValue(Bone->getRotationOrder().order(), VectorRotation);
 			ReorderQuat = ReorderQuat * Orientation;
 
@@ -1278,10 +1292,27 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 
 			//qDebug() << Bone->getName() << " Reorder LocalRot: " << VectorRotation.m_x << "," << VectorRotation.m_y << "," << VectorRotation.m_z;
 
-			DzVec3 ParentPosition = ParentBone->getWSPos(CurrentTime);
+			//qDebug() << Bone->getName() << " Parent Default Position: " << DefaultParentPosition.m_x << "," << DefaultParentPosition.m_y << "," << DefaultParentPosition.m_z;
+			DzVec3 ParentPosition;
+			ParentPosition.m_x = ParentBone->getXPosControl()->getValue(CurrentTime);
+			ParentPosition.m_y = ParentBone->getYPosControl()->getValue(CurrentTime);
+			ParentPosition.m_z = ParentBone->getZPosControl()->getValue(CurrentTime);
 			//qDebug() << Bone->getName() << " Parent Position: " << ParentPosition.m_x << "," << ParentPosition.m_y << "," << ParentPosition.m_z;
-			DzVec3 LocalPosition = Position - ParentPosition;
-			Position = LocalPosition;
+
+			DzVec3 DefaultParentPosition;
+			DefaultParentPosition.m_x = ParentBone->getOriginXControl()->getValue(CurrentTime);
+			DefaultParentPosition.m_y = ParentBone->getOriginYControl()->getValue(CurrentTime);
+			DefaultParentPosition.m_z = ParentBone->getOriginZControl()->getValue(CurrentTime);
+			//qDebug() << Bone->getName() << " Parent Default Position: " << DefaultParentPosition.m_x << "," << DefaultParentPosition.m_y << "," << DefaultParentPosition.m_z;
+
+			DzVec3 RelativeDefaultPosition = DefaultPosition - DefaultParentPosition;
+			float Length = RelativeDefaultPosition.length();
+			DzVec3 NewRelativeDefaultPosition = ParentBone->getOrientation(true).inverse().multVec(RelativeDefaultPosition);
+
+			//qDebug() << Bone->getName() << " RelativeDefaultPosition: " << NewRelativeDefaultPosition.m_x << "," << NewRelativeDefaultPosition.m_y << "," << NewRelativeDefaultPosition.m_z;
+			DzVec3 RelativeMovement = Position - ParentPosition;
+			//qDebug() << Bone->getName() << " RelativeMovement: " << RelativeMovement.m_x << "," << RelativeMovement.m_y << "," << RelativeMovement.m_z;
+			Position = NewRelativeDefaultPosition + RelativeMovement;
 		}
 
 		// Set the frame
