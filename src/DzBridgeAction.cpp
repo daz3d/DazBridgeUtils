@@ -1222,6 +1222,13 @@ void DzBridgeAction::exportAnimation()
 		exportNodeAnimation(Bone, BoneMap, AnimBaseLayer);
 	}
 
+	// Get a list of animated properties
+	if (m_bAnimationExportActiveCurves)
+	{
+		QList<DzNumericProperty*> animatedProperties = getAnimatedProperties(m_pSelectedNode);
+		exportAnimatedProperties(animatedProperties, Scene, AnimBaseLayer);
+	}
+
 	// Write the FBX
 	Exporter->Export(Scene);
 	Exporter->Destroy();
@@ -1257,7 +1264,6 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 		Position.m_x = Bone->getXPosControl()->getValue(CurrentTime);
 		Position.m_y = Bone->getYPosControl()->getValue(CurrentTime);
 		Position.m_z = Bone->getZPosControl()->getValue(CurrentTime);
-		//Position = Bone->getWSPos(CurrentTime);
 		//qDebug() << Bone->getName() << " Position: " << Position.m_x << "," << Position.m_y << "," << Position.m_z;
 
 		// Get an initial rotation via the controls
@@ -1266,7 +1272,6 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 		ControlRotation.m_y = Bone->getYRotControl()->getValue(CurrentTime);
 		ControlRotation.m_z = Bone->getZRotControl()->getValue(CurrentTime);
 		DzVec3 VectorRotation = ControlRotation;
-
 
 		// Get the rotation and position relative to the parent
 		if (DzNode* ParentBone = Bone->getNodeParent())
@@ -1307,12 +1312,12 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 
 			DzVec3 RelativeDefaultPosition = DefaultPosition - DefaultParentPosition;
 			float Length = RelativeDefaultPosition.length();
-			DzVec3 NewRelativeDefaultPosition = ParentBone->getOrientation(true).inverse().multVec(RelativeDefaultPosition);
+			DzVec3 OrientedRelativeDefaultPosition = ParentBone->getOrientation(true).inverse().multVec(RelativeDefaultPosition);
 
 			//qDebug() << Bone->getName() << " RelativeDefaultPosition: " << NewRelativeDefaultPosition.m_x << "," << NewRelativeDefaultPosition.m_y << "," << NewRelativeDefaultPosition.m_z;
 			DzVec3 RelativeMovement = Position - ParentPosition;
 			//qDebug() << Bone->getName() << " RelativeMovement: " << RelativeMovement.m_x << "," << RelativeMovement.m_y << "," << RelativeMovement.m_z;
-			Position = NewRelativeDefaultPosition + RelativeMovement;
+			Position = OrientedRelativeDefaultPosition + RelativeMovement;
 		}
 
 		// Set the frame
@@ -1429,12 +1434,112 @@ void DzBridgeAction::exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxPa
 	}
 
 	// Add the bone to the map
-	//if (DzBone* Bone = qobject_cast<DzBone*>(Node))
+	BoneMap.insert(Node, BoneNode);
+}
+
+QList<DzNumericProperty*> DzBridgeAction::getAnimatedProperties(DzNode* Node)
+{
+	QList<DzNumericProperty*> animatedPropertyList;
+	animatedPropertyList.clear();
+
+	if (Node == nullptr)
+		return animatedPropertyList;
+
+	DzObject* Object = Node->getObject();
+	DzShape* Shape = Object ? Object->getCurrentShape() : NULL;
+
+	for (int index = 0; index < Node->getNumProperties(); index++)
 	{
-		BoneMap.insert(Node, BoneNode);
+		DzProperty* property = Node->getProperty(index);
+		DzNumericProperty* numericProp = qobject_cast<DzNumericProperty*>(property);
+		if (numericProp)
+		{
+			for (int keyIndex = 0; keyIndex < property->getNumKeys(); keyIndex++)
+			{
+				if (numericProp->getDoubleValue(property->getKeyTime(keyIndex)) > 0.001f)
+				{
+					animatedPropertyList.append(numericProp);
+					QString propName = property->getLabel();
+					qDebug() << "Animated Property: " << propName;
+				}
+			}
+		}
 	}
 
+	if (Object)
+	{
+		for (int index = 0; index < Object->getNumModifiers(); index++)
+		{
+			DzModifier* modifier = Object->getModifier(index);
+			QString modName = modifier->getName();
+			QString modLabel = modifier->getLabel();
+			DzMorph* mod = qobject_cast<DzMorph*>(modifier);
+			if (mod)
+			{
+				for (int propindex = 0; propindex < modifier->getNumProperties(); propindex++)
+				{
+					DzProperty* property = modifier->getProperty(propindex);
+					DzNumericProperty* numericProp = qobject_cast<DzNumericProperty*>(property);
+					if (numericProp)
+					{
+						for (int keyIndex = 0; keyIndex < property->getNumKeys(); keyIndex++)
+						{
+							if (numericProp->getDoubleValue(property->getKeyTime(keyIndex)) > 0.001f)
+							{
+								animatedPropertyList.append(numericProp);
+								QString propName = property->getLabel();
+								qDebug() << "Animated Property: " << propName;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 
+	return animatedPropertyList;
+}
+
+void DzBridgeAction::exportAnimatedProperties(QList<DzNumericProperty*>& Properties, FbxScene* Scene, FbxAnimLayer* AnimBaseLayer)
+{
+	DzTimeRange PlayRange = dzScene->getPlayRange();
+
+	foreach(DzNumericProperty * numericProperty, Properties)
+	{
+		FbxNode* RootNode = Scene->FindNodeByName("root");
+		FbxProperty fbxProperty = FbxProperty::Create(RootNode, FbxDoubleDT, numericProperty->getLabel().toLocal8Bit().data());
+		if (fbxProperty.IsValid())
+		{
+			FbxAnimCurveNode* CurveNode = fbxProperty.CreateCurveNode(AnimBaseLayer);			
+			fbxProperty.ModifyFlag(FbxPropertyFlags::eAnimatable, true);
+			fbxProperty.ModifyFlag(FbxPropertyFlags::eUserDefined, true);
+			FbxAnimCurve* lAnimCurve = fbxProperty.GetCurve(AnimBaseLayer, true);
+
+			if (lAnimCurve == nullptr)
+			{
+				qDebug() << "Animated Property: FbxAnimCurve is invalid: " << numericProperty->getLabel();
+				continue;
+			}
+			lAnimCurve->KeyModifyBegin();
+
+			// For each frame, write a key (equivalent of bake)
+			for (DzTime CurrentTime = PlayRange.getStart(); CurrentTime <= PlayRange.getEnd(); CurrentTime += dzScene->getTimeStep())
+			{
+				DzTime Frame = CurrentTime / dzScene->getTimeStep();
+				double Value = numericProperty->getDoubleValue(CurrentTime);
+
+				FbxTime Time;
+				int KeyIndex = 0;
+				Time.SetFrame(Frame);
+
+				int lKeyIndex = lAnimCurve->KeyAdd(Time);
+				lAnimCurve->KeySet(lKeyIndex, Time, Value, FbxAnimCurveDef::eInterpolationLinear);
+				//qDebug() << "Animated Property: " << numericProperty->getLabel() << " Time: " << Frame << "Value:" << Value;
+			}
+
+			lAnimCurve->KeyModifyEnd();
+		}
+	}
 }
 
 // If there are duplicate material names, save off the original and rename one
@@ -2716,6 +2821,7 @@ void DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 	m_bAnimationUseExperimentalTransfer = BridgeDialog->getExperimentalAnimationExportCheckBox()->isChecked();
 	m_bAnimationBake = BridgeDialog->getBakeAnimationExportCheckBox()->isChecked();
 	m_bAnimationTransferFace = BridgeDialog->getFaceAnimationExportCheckBox()->isChecked();
+	m_bAnimationExportActiveCurves = BridgeDialog->getAnimationExportActiveCurvesCheckBox()->isChecked();
 }
 
 // ------------------------------------------------

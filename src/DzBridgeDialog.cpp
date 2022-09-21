@@ -124,6 +124,8 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	animationSettingsLayout->addRow("Bake", bakeAnimationExportCheckBox);
 	faceAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
 	animationSettingsLayout->addRow("Transfer Face Bones", faceAnimationExportCheckBox);
+	animationExportActiveCurvesCheckBox = new QCheckBox("", animationSettingsGroupBox);
+	animationSettingsLayout->addRow("Transfer Active Curves", animationExportActiveCurvesCheckBox);
 	animationSettingsGroupBox->setVisible(false);
 
 	// Morphs
@@ -344,6 +346,10 @@ bool DzBridgeDialog::loadSavedSettings()
 	{
 		faceAnimationExportCheckBox->setChecked(settings->value("AnimationExportFace").toBool());
 	}
+	if (!settings->value("AnimationExportActiveCurves").isNull())
+	{
+		animationExportActiveCurvesCheckBox->setChecked(settings->value("AnimationExportActiveCurves").toBool());
+	}
 
 	return true;
 }
@@ -354,6 +360,7 @@ void DzBridgeDialog::saveSettings()
 	settings->setValue("AnimationExperminentalExport", experimentalAnimationExportCheckBox->isChecked());
 	settings->setValue("AnimationBake", bakeAnimationExportCheckBox->isChecked());
 	settings->setValue("AnimationExportFace", faceAnimationExportCheckBox->isChecked());
+	settings->setValue("AnimationExportActiveCurves", animationExportActiveCurvesCheckBox->isChecked());
 }
 
 void DzBridgeDialog::refreshAsset()
