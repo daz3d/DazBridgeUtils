@@ -92,7 +92,7 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	m_WelcomeLabel->setWordWrap(true);
 	m_WelcomeLabel->setText(sSetupModeString);
 	m_WelcomeLabel->setOpenExternalLinks(true);
-	m_WelcomeLabel->setHidden(true);
+//	m_WelcomeLabel->setHidden(true);
 	mainLayout->addRow(m_WelcomeLabel);
 
 	advancedWidget = new QWidget();
@@ -247,6 +247,7 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	{
 		setDisabled(true);
 	}
+	m_WelcomeLabel->setVisible(true);
 
 }
 
@@ -656,7 +657,7 @@ void DzBridgeDialog::setDisabled(bool bDisabled)
 		advancedSettingsGroupBox->setChecked(true);
 	}
 
-	m_WelcomeLabel->setVisible(bDisabled);
+//	m_WelcomeLabel->setVisible(bDisabled);
 	assetNameEdit->setDisabled(bDisabled);
 	assetTypeCombo->setDisabled(bDisabled);
 	subdivisionButton->setDisabled(bDisabled);

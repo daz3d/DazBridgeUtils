@@ -384,6 +384,9 @@ FbxMesh* SubdivideFbxScene::SaveClustersToMesh(FbxScene* pDestScene, FbxNode* pN
 			if (tmp->GetAssociateModel() != NULL)
 				cluster->SetTransformAssociateModelMatrix(tmp->GetTransformAssociateModelMatrix(lMatrix));
 
+			// DB 2022-09-05: destroy tmp Cluster, crashfix for Blender FbxImporter
+			tmp->Destroy(false);
+
 			// get interpolated skin weight data from subd cluster and save it to the original cluster
 			FbxCluster* subdCluster = subdSkin->GetCluster(j);
 			int lIndexCount = subdCluster->GetControlPointIndicesCount();
