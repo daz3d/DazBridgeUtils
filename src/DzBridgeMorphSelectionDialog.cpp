@@ -522,11 +522,6 @@ QList<JointLinkInfo> DzBridgeMorphSelectionDialog::GetJointControlledMorphInfo(D
 
 			}
 
-			if (morphs.contains(linkLabel) && !morphsToExport.contains(morphs[linkLabel]))
-			{
-				morphsToExport.append(morphs[linkLabel]);
-			}
-
 			returnMorphs.append(linkInfo);
 
 		}
