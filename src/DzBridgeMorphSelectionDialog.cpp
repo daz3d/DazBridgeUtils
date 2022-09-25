@@ -256,7 +256,7 @@ void DzBridgeMorphSelectionDialog::PrepareDialog()
 		}
 	}
 
-	// clear and repopulate m_morphInfoMap / left-mose pane
+	// clear and repopulate m_morphInfoMap / left-most pane
 	m_morphInfoMap.clear();
 	GetAvailableMorphs(Selection);
 	for (int ChildIndex = 0; ChildIndex < Selection->getNumNodeChildren(); ChildIndex++)
