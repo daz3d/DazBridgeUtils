@@ -72,7 +72,9 @@ public:
 DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	DzBasicDialog(parent, DAZ_BRIDGE_LIBRARY_NAME)
 {
-	 settings = new QSettings("Daz 3D", "DazToUnreal");
+	connect(this, SIGNAL(accepted()), this, SLOT(HandleDialogAccepted()));
+
+	settings = new QSettings("Daz 3D", "DazToUnreal");
 
 	 morphListWidget = NULL;
 	 morphExportListWidget = NULL;
@@ -242,17 +244,17 @@ void DzBridgeMorphSelectionDialog::PrepareDialog()
 		}
 	}
 
-	morphs.clear();
-	morphList = GetAvailableMorphs(Selection);
+	// clear and repopulate m_morphInfoMap / left-mose pane
+	m_morphInfoMap.clear();
+	GetAvailableMorphs(Selection);
 	for (int ChildIndex = 0; ChildIndex < Selection->getNumNodeChildren(); ChildIndex++)
 	{
 		DzNode* ChildNode = Selection->getNodeChild(ChildIndex);
-		morphList.append(GetAvailableMorphs(ChildNode));
+		GetAvailableMorphs(ChildNode);
 	}
 
-	//GetActiveJointControlledMorphs(Selection);
-
 	UpdateMorphsTree();
+	RefreshPresetsCombo();
 	HandlePresetChanged("LastUsed.csv");
 }
 
@@ -302,30 +304,31 @@ QStringList DzBridgeMorphSelectionDialog::GetAvailableMorphs(DzNode* Node)
 			morphInfo.Type = presentation->getType();
 			morphInfo.Property = property;
 			morphInfo.Node = Node;
-			if (!morphs.contains(morphInfo.Name))
+			if (!m_morphInfoMap.contains(morphInfo.Name))
 			{
-				morphs.insert(morphInfo.Name, morphInfo);
+				m_morphInfoMap.insert(morphInfo.Name, morphInfo);
 			}
 			//qDebug() << "Property Name " << propName << " Label " << propLabel << " Presentation Type:" << presentation->getType() << "Path: " << property->getPath();
 			//qDebug() << "Path " << property->getGroupOnlyPath();
 		}
-		if (presentation && presentation->getType() == "Modifier/Shape")
-		{
-			SortingListItem* item = new SortingListItem();// modLabel, morphListWidget);
-			item->setText(propLabel);
-			item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-			if (morphList.contains(propLabel))
-			{
-				item->setCheckState(Qt::Checked);
-				newMorphList.append(propName);
-			}
-			else
-			{
-				item->setCheckState(Qt::Unchecked);
-			}
-			item->setData(Qt::UserRole, propName);
-			morphNameMapping.insert(propName, propLabel);
-		}
+		// DB (2022-Sept-24): This appears to be dead code.  All active data now stored in m_morphInfoMap, commenting out.
+		//if (presentation && presentation->getType() == "Modifier/Shape")
+		//{
+		//	SortingListItem* item = new SortingListItem();// modLabel, morphListWidget);
+		//	item->setText(propLabel);
+		//	item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
+		//	if (morphList.contains(propLabel))
+		//	{
+		//		item->setCheckState(Qt::Checked);
+		//		newMorphList.append(propName);
+		//	}
+		//	else
+		//	{
+		//		item->setCheckState(Qt::Unchecked);
+		//	}
+		//	item->setData(Qt::UserRole, propName);
+		//	morphNameMapping.insert(propName, propLabel);
+		//}
 	}
 
 	if (Object)
@@ -353,9 +356,9 @@ QStringList DzBridgeMorphSelectionDialog::GetAvailableMorphs(DzNode* Node)
 						morphInfoProp.Type = presentation->getType();
 						morphInfoProp.Property = property;
 						morphInfoProp.Node = Node;
-						if (!morphs.contains(morphInfoProp.Name))
+						if (!m_morphInfoMap.contains(morphInfoProp.Name))
 						{
-							morphs.insert(morphInfoProp.Name, morphInfoProp);
+							m_morphInfoMap.insert(morphInfoProp.Name, morphInfoProp);
 						}
 						//qDebug() << "Modifier Name " << modName << " Label " << propLabel << " Presentation Type:" << presentation->getType() << " Path: " << property->getPath();
 						//qDebug() << "Path " << property->getGroupOnlyPath();
@@ -370,7 +373,6 @@ QStringList DzBridgeMorphSelectionDialog::GetAvailableMorphs(DzNode* Node)
 	return newMorphList;
 }
 
-
 void DzBridgeMorphSelectionDialog::AddActiveJointControlledMorphs(DzNode* Node)
 {
 	QList<JointLinkInfo> activeMorphs = GetActiveJointControlledMorphs(Node);
@@ -379,9 +381,9 @@ void DzBridgeMorphSelectionDialog::AddActiveJointControlledMorphs(DzNode* Node)
 	{
 		QString linkLabel = linkInfo.Morph;
 
-		if (morphs.contains(linkLabel) && !morphsToExport.contains(morphs[linkLabel]))
+		if (m_morphInfoMap.contains(linkLabel) && !m_morphsToExport_finalized.contains(m_morphInfoMap[linkLabel]))
 		{
-			morphsToExport.append(morphs[linkLabel]);
+			m_morphsToExport_finalized.append(m_morphInfoMap[linkLabel]);
 		}
 	}
 
@@ -550,9 +552,9 @@ void DzBridgeMorphSelectionDialog::UpdateMorphsTree()
 {
 	morphTreeWidget->clear();
 	morphsForNode.clear();
-	foreach(QString morph, morphs.keys())
+	foreach(QString morph, m_morphInfoMap.keys())
 	{
-		QString path = morphs[morph].Path;
+		QString path = m_morphInfoMap[morph].Path;
 		QTreeWidgetItem* parentItem = nullptr;
 		foreach(QString pathPart, path.split("/"))
 		{
@@ -563,7 +565,7 @@ void DzBridgeMorphSelectionDialog::UpdateMorphsTree()
 			{
 				morphsForNode.insert(parentItem, QList<MorphInfo>());
 			}
-			morphsForNode[parentItem].append(morphs[morph]);
+			morphsForNode[parentItem].append(m_morphInfoMap[morph]);
 		}
 	}
 }
@@ -636,13 +638,12 @@ void DzBridgeMorphSelectionDialog::HandleAddMorphsButton()
 	foreach(QListWidgetItem* selectedItem, morphListWidget->selectedItems())
 	{
 		QString morphName = selectedItem->data(Qt::UserRole).toString();
-		if (morphs.contains(morphName) && !morphsToExport.contains(morphs[morphName]))
+		if (m_morphInfoMap.contains(morphName) && !m_morphsToExport.contains(m_morphInfoMap[morphName]))
 		{
-			morphsToExport.append(morphs[morphName]);
+			m_morphsToExport.append(m_morphInfoMap[morphName]);
 		}
 	}
 	RefreshExportMorphList();
-	RefreshPresetsCombo();
 }
 
 // Remove morph from export list
@@ -651,13 +652,12 @@ void DzBridgeMorphSelectionDialog::HandleRemoveMorphsButton()
 	foreach(QListWidgetItem* selectedItem, morphExportListWidget->selectedItems())
 	{
 		QString morphName = selectedItem->data(Qt::UserRole).toString();
-		if (morphs.keys().contains(morphName))
+		if (m_morphInfoMap.keys().contains(morphName))
 		{
-			morphsToExport.removeAll(morphs[morphName]);
+			m_morphsToExport.removeAll(m_morphInfoMap[morphName]);
 		}
 	}
 	RefreshExportMorphList();
-	RefreshPresetsCombo();
 }
 
 // Brings up a dialgo for choosing a preset name
@@ -692,7 +692,7 @@ void DzBridgeMorphSelectionDialog::SavePresetFile(QString filePath)
 	QFile file(filePath);
 	file.open(QIODevice::WriteOnly | QIODevice::Text);
 	QTextStream out(&file);
-	out << GetMorphCSVString();
+	out << GetMorphCSVString(false);
 
 	// optional, as QFile destructor will already do it:
 	file.close();
@@ -746,9 +746,9 @@ void DzBridgeMorphSelectionDialog::HandleArmJCMMorphsButton()
 	// Add the list for export
 	foreach(QString MorphName, MorphsToAdd)
 	{
-		if (morphs.contains(MorphName) && !morphsToExport.contains(morphs[MorphName]))
+		if (m_morphInfoMap.contains(MorphName) && !m_morphsToExport.contains(m_morphInfoMap[MorphName]))
 		{
-			morphsToExport.append(morphs[MorphName]);
+			m_morphsToExport.append(m_morphInfoMap[MorphName]);
 		}
 	}
 	RefreshExportMorphList();
@@ -784,9 +784,9 @@ void DzBridgeMorphSelectionDialog::HandleLegJCMMorphsButton()
 	// Add the list for export
 	foreach(QString MorphName, MorphsToAdd)
 	{
-		if (morphs.contains(MorphName) && !morphsToExport.contains(morphs[MorphName]))
+		if (m_morphInfoMap.contains(MorphName) && !m_morphsToExport.contains(m_morphInfoMap[MorphName]))
 		{
-			morphsToExport.append(morphs[MorphName]);
+			m_morphsToExport.append(m_morphInfoMap[MorphName]);
 		}
 	}
 	RefreshExportMorphList();
@@ -821,9 +821,9 @@ void DzBridgeMorphSelectionDialog::HandleTorsoJCMMorphsButton()
 	// Add the list for export
 	foreach(QString MorphName, MorphsToAdd)
 	{
-		if (morphs.contains(MorphName) && !morphsToExport.contains(morphs[MorphName]))
+		if (m_morphInfoMap.contains(MorphName) && !m_morphsToExport.contains(m_morphInfoMap[MorphName]))
 		{
-			morphsToExport.append(morphs[MorphName]);
+			m_morphsToExport.append(m_morphInfoMap[MorphName]);
 		}
 	}
 	RefreshExportMorphList();
@@ -894,9 +894,9 @@ void DzBridgeMorphSelectionDialog::HandleARKitGenesis81MorphsButton()
 	// Add the list for export
 	foreach(QString MorphName, MorphsToAdd)
 	{
-		if (morphs.contains(MorphName) && !morphsToExport.contains(morphs[MorphName]))
+		if (m_morphInfoMap.contains(MorphName) && !m_morphsToExport.contains(m_morphInfoMap[MorphName]))
 		{
-			morphsToExport.append(morphs[MorphName]);
+			m_morphsToExport.append(m_morphInfoMap[MorphName]);
 		}
 	}
 	RefreshExportMorphList();
@@ -918,9 +918,9 @@ void DzBridgeMorphSelectionDialog::HandleFaceFXGenesis8Button()
 	// Add the list for export
 	foreach(QString MorphName, MorphsToAdd)
 	{
-		if (morphs.contains(MorphName) && !morphsToExport.contains(morphs[MorphName]))
+		if (m_morphInfoMap.contains(MorphName) && !m_morphsToExport.contains(m_morphInfoMap[MorphName]))
 		{
-			morphsToExport.append(morphs[MorphName]);
+			m_morphsToExport.append(m_morphInfoMap[MorphName]);
 		}
 	}
 	RefreshExportMorphList();
@@ -935,7 +935,7 @@ void DzBridgeMorphSelectionDialog::HandleAutoJCMCheckBoxChange(bool checked)
 void DzBridgeMorphSelectionDialog::RefreshExportMorphList()
 {
 	morphExportListWidget->clear();
-	foreach(MorphInfo morphInfo, morphsToExport)
+	foreach(MorphInfo morphInfo, m_morphsToExport)
 	{
 		SortingListItem* item = new SortingListItem();
 		item->setText(morphInfo.Label);
@@ -943,7 +943,6 @@ void DzBridgeMorphSelectionDialog::RefreshExportMorphList()
 
 		morphExportListWidget->addItem(item);
 	}
-	SavePresetFile(NULL);
 }
 
 // Refresh the list of preset csvs from the files in the folder
@@ -967,7 +966,7 @@ void DzBridgeMorphSelectionDialog::RefreshPresetsCombo()
 // Call when the preset combo is changed by the user
 void DzBridgeMorphSelectionDialog::HandlePresetChanged(const QString& presetName)
 {
-	morphsToExport.clear();
+	m_morphsToExport.clear();
 	QString PresetFilePath = presetsFolder + QDir::separator() + presetName;
 
 	QFile file(PresetFilePath);
@@ -985,37 +984,31 @@ void DzBridgeMorphSelectionDialog::HandlePresetChanged(const QString& presetName
 		{
 			QStringList Items = MorphLine.split(",");
 			QString MorphName = Items[0].replace("\"", "");
-			if (morphs.contains(MorphName))
+			if (m_morphInfoMap.contains(MorphName))
 			{
-				morphsToExport.append(morphs[MorphName]);
+				m_morphsToExport.append(m_morphInfoMap[MorphName]);
 			}
 		}
 	}
 
 	RefreshExportMorphList();
-//	GetActiveJointControlledMorphs();
-	if (IsAutoJCMEnabled())
-	{
-		AddActiveJointControlledMorphs();
-	}
 	file.close();
 }
 
-// Get the morph string (aka morphsToExport) in the format for the Daz FBX Export
+// Get the morph string (aka m_morphsToExport_finalized) in the format for the Daz FBX Export
 QString DzBridgeMorphSelectionDialog::GetMorphString()
 {
-//	GetActiveJointControlledMorphs();
 	if (IsAutoJCMEnabled())
 	{
 		AddActiveJointControlledMorphs();
 	}
 
-	if (morphsToExport.length() == 0)
+	if (m_morphsToExport.length() == 0)
 	{
 		return "";
 	}
 	QStringList morphNamesToExport;
-	foreach(MorphInfo exportMorph, morphsToExport)
+	foreach(MorphInfo exportMorph, m_morphsToExport_finalized)
 	{
 		morphNamesToExport.append(exportMorph.Name);
 	}
@@ -1024,14 +1017,19 @@ QString DzBridgeMorphSelectionDialog::GetMorphString()
 	return morphString;
 }
 
-// Get the morph string (aka morphsToExport) in the format used for presets
-QString DzBridgeMorphSelectionDialog::GetMorphCSVString()
+// Get the morph string (aka m_morphsToExport_finalized) in the format used for presets
+QString DzBridgeMorphSelectionDialog::GetMorphCSVString(bool bUseFinalizedList)
 {
-	morphList.clear();
+	//morphList.clear();
 	QString morphString;
-	foreach(MorphInfo exportMorph, morphsToExport)
+	QList<MorphInfo> *pMorphList = &m_morphsToExport;
+	if (bUseFinalizedList) 
 	{
-		morphList.append(exportMorph.Name);
+		pMorphList = &m_morphsToExport_finalized;
+	}
+	foreach(MorphInfo exportMorph, *pMorphList)
+	{
+		//morphList.append(exportMorph.Name);
 		morphString += "\"" + exportMorph.Name + "\",\"Export\"\n";
 	}
 	morphString += "\".CTRLVS\", \"Ignore\"\n";
@@ -1039,13 +1037,14 @@ QString DzBridgeMorphSelectionDialog::GetMorphCSVString()
 	return morphString;
 }
 
-// Get the morph string (aka morphsToExport) in an internal name = friendly name format
+// Get the morph string (aka m_morphsToExport_finalized) in an internal name = friendly name format
 // Used to rename them to the friendly name in Unreal
 QMap<QString,QString> DzBridgeMorphSelectionDialog::GetMorphRenaming()
 {
 	// NOTE: morphNameMapping is alternatively populated with ALL morphs by GetAvailableMorphs()
-	morphNameMapping.clear();
-	foreach(MorphInfo exportMorph, morphsToExport)
+	//morphNameMapping.clear();
+	QMap<QString, QString> morphNameMapping;
+	foreach(MorphInfo exportMorph, m_morphsToExport_finalized)
 	{
 		morphNameMapping.insert(exportMorph.Name, exportMorph.Label);
 	}
@@ -1057,11 +1056,11 @@ QMap<QString,QString> DzBridgeMorphSelectionDialog::GetMorphRenaming()
 // DB Dec-21-2021, Created for scripting.
 QString DzBridgeMorphSelectionDialog::GetMorphLabelFromName(QString morphName)
 {
-	if (morphs.isEmpty()) return QString();
+	if (m_morphInfoMap.isEmpty()) return QString();
 
-	if (morphs.contains(morphName))
+	if (m_morphInfoMap.contains(morphName))
 	{
-		MorphInfo morph = morphs[morphName];
+		MorphInfo morph = m_morphInfoMap[morphName];
 		return morph.Label;
 	}
 	else
@@ -1075,11 +1074,11 @@ QString DzBridgeMorphSelectionDialog::GetMorphLabelFromName(QString morphName)
 // DB June-01-2022, Created for MorphLinks Generation for Blender Bridge Morphs Support
 MorphInfo DzBridgeMorphSelectionDialog::GetMorphInfoFromName(QString morphName)
 {
-	if (morphs.isEmpty()) return MorphInfo();
+	if (m_morphInfoMap.isEmpty()) return MorphInfo();
 
-	if (morphs.contains(morphName))
+	if (m_morphInfoMap.contains(morphName))
 	{
-		MorphInfo morph = morphs[morphName];
+		MorphInfo morph = m_morphInfoMap[morphName];
 		return morph;
 	}
 	else
@@ -1141,11 +1140,11 @@ bool DzBridgeMorphSelectionDialog::isValidMorph(DzProperty* pMorphProperty)
 void DzBridgeMorphSelectionDialog::HandleAddConnectedMorphs()
 {
 	// sanity check
-	if (morphsToExport.length() == 0)
+	if (m_morphsToExport.length() == 0)
 	{
 		return;
 	}
-	foreach (MorphInfo exportMorph, morphsToExport)
+	foreach (MorphInfo exportMorph, m_morphsToExport)
 	{
 		DzProperty *morphProperty = exportMorph.Property;
 		if (morphProperty == nullptr)
@@ -1161,21 +1160,22 @@ void DzBridgeMorphSelectionDialog::HandleAddConnectedMorphs()
 			QString sMorphName = getMorphPropertyName(controllerProperty);
 
 			// Add the list for export
-			if (morphs.contains(sMorphName) && !morphsToExport.contains(morphs[sMorphName]))
+			if (m_morphInfoMap.contains(sMorphName) && !m_morphsToExport.contains(m_morphInfoMap[sMorphName]))
 			{
-				morphsToExport.append(morphs[sMorphName]);
+				m_morphsToExport.append(m_morphInfoMap[sMorphName]);
 			}
 
 		}
 	}
 	RefreshExportMorphList();
 }
-// Disable Morph if the morph has a controller that is also being exported
+
+// Return list of Morphs to disable if the morph has a controller that is also being exported
 QList<QString> DzBridgeMorphSelectionDialog::getMorphNamesToDisconnectList()
 {
 	QList<QString> morphsToDisconnect;
 
-	foreach (MorphInfo exportMorph, morphsToExport)
+	foreach (MorphInfo exportMorph, m_morphsToExport_finalized)
 	{
 		DzProperty* morphProperty = exportMorph.Property;
 		// DB, 2022-June-07: NOTE: using iterator may be more efficient due to potentially large number of controllers
@@ -1187,7 +1187,7 @@ QList<QString> DzBridgeMorphSelectionDialog::getMorphNamesToDisconnectList()
 			auto controllerProperty = ercLink->getProperty();
 			QString sControllerName = getMorphPropertyName(controllerProperty);
 			// iterate through each exported morph
-			foreach (MorphInfo compareMorph, morphsToExport)
+			foreach (MorphInfo compareMorph, m_morphsToExport_finalized)
 			{
 				if (compareMorph.Name == sControllerName)
 				{
@@ -1207,6 +1207,19 @@ void DzBridgeMorphSelectionDialog::SetAutoJCMVisible(bool bVisible)
 		return;
 	autoJCMCheckBox->setVisible(bVisible);
 	update();
+}
+
+void DzBridgeMorphSelectionDialog::HandleDialogAccepted()
+{
+	// Commit GUI right pane listbox to m_morphsToExport
+	m_morphsToExport_finalized.clear();
+	for (auto morph : m_morphsToExport)
+	{
+		m_morphsToExport_finalized.append(morph);
+	}
+
+	SavePresetFile(NULL);
+	return;
 }
 
 #include "moc_DzBridgeMorphSelectionDialog.cpp"

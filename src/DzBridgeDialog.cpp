@@ -423,24 +423,29 @@ void DzBridgeDialog::handleSceneSelectionChanged()
 
 }
 
-void DzBridgeDialog::HandleChooseMorphsButton()
+int DzBridgeDialog::HandleChooseMorphsButton()
 {
-	DzBridgeMorphSelectionDialog *dlg = DzBridgeMorphSelectionDialog::Get(this);
-	dlg->exec();
-	morphString = dlg->GetMorphString();
-	morphMapping = dlg->GetMorphRenaming();
+	DzBridgeMorphSelectionDialog * morphDialog = DzBridgeMorphSelectionDialog::Get(this);
+	int dialogReturnCode = morphDialog->exec();
+	return dialogReturnCode;
 }
 
 void DzBridgeDialog::HandleChooseSubdivisionsButton()
 {
-	DzBridgeSubdivisionDialog *dlg = DzBridgeSubdivisionDialog::Get(this);
-	dlg->exec();
+	DzBridgeSubdivisionDialog *subdivisionDialog = DzBridgeSubdivisionDialog::Get(this);
+	subdivisionDialog->exec();
 }
 
 QString DzBridgeDialog::GetMorphString()
 {
-	morphMapping = DzBridgeMorphSelectionDialog::Get(this)->GetMorphRenaming();
-	return DzBridgeMorphSelectionDialog::Get(this)->GetMorphString();
+	DzBridgeMorphSelectionDialog* morphDialog = DzBridgeMorphSelectionDialog::Get(this);
+	return morphDialog->GetMorphString();
+}
+
+QMap<QString, QString> DzBridgeDialog::GetMorphMapping()
+{
+	DzBridgeMorphSelectionDialog* morphDialog = DzBridgeMorphSelectionDialog::Get(this);
+	return morphDialog->GetMorphRenaming();
 }
 
 void DzBridgeDialog::HandleMorphsCheckBoxChange(int state)

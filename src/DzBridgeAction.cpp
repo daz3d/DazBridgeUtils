@@ -701,7 +701,10 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 	}
 
 	// look for geograft morphs for export, and prepare
-	prepareGeograftMorphsToExport(dzScene->getPrimarySelection(), true);
+	if (m_bEnableMorphs)
+	{
+		prepareGeograftMorphsToExport(dzScene->getPrimarySelection(), true);
+	}
 
 	if (m_EnableSubdivisions)
 	{

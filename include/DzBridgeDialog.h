@@ -55,7 +55,7 @@ namespace DzBridgeNameSpace
 		// Pass so the DazToUnrealAction can access it from the morph dialog
 		Q_INVOKABLE QString GetMorphString();
 		// Pass so the DazToUnrealAction can access it from the morph dialog
-		Q_INVOKABLE QMap<QString, QString> GetMorphMapping() { return morphMapping; }
+		Q_INVOKABLE QMap<QString, QString> GetMorphMapping();
 		Q_INVOKABLE virtual void resetToDefaults();
 		Q_INVOKABLE virtual bool loadSavedSettings();
 		Q_INVOKABLE virtual void saveSettings();
@@ -71,7 +71,7 @@ namespace DzBridgeNameSpace
 
 	protected slots:
 		virtual void handleSceneSelectionChanged();
-		virtual void HandleChooseMorphsButton();
+		virtual int  HandleChooseMorphsButton();
 		virtual void HandleMorphsCheckBoxChange(int state);
 		virtual void HandleChooseSubdivisionsButton();
 		virtual void HandleSubdivisionCheckBoxChange(int state);
@@ -88,10 +88,6 @@ namespace DzBridgeNameSpace
 		QSettings* settings;
 
 		virtual void refreshAsset();
-
-		// These are clumsy leftovers from before the dialog were singletons
-		QString morphString;
-		QMap<QString, QString> morphMapping;
 
 		QFormLayout* mainLayout;
 		QFormLayout* advancedLayout;

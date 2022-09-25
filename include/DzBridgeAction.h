@@ -105,7 +105,7 @@ namespace DzBridgeNameSpace
 		QString m_sAssetType; // Asset Types: "SkeletalMesh", "StaticMesh", "Animation", "Pose", "Environment"
 		QString m_sMorphSelectionRule; // Selection Rule used by FbxExporter to choose morphs to export
 		QString m_sFbxVersion; // FBX file format version to export
-		QMap<QString, QString> m_mMorphNameToLabel; // Internal name to Friendly label (from MorphSelectionDialog->morphsToExport)
+		QMap<QString, QString> m_mMorphNameToLabel; // Internal name to Friendly label (from MorphSelectionDialog->m_morphsToExport)
 		QList<QString> m_aPoseList; // Control Pose names
 		QMap<DzImageProperty*, double> m_imgPropertyTable_NormalMapStrength; // Image Property to Normal Map Strength
 
