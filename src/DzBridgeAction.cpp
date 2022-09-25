@@ -701,7 +701,7 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 	}
 
 	// look for geograft morphs for export, and prepare
-	checkForGeograftMorphsToExport(dzScene->getPrimarySelection(), true);
+	prepareGeograftMorphsToExport(dzScene->getPrimarySelection(), true);
 
 	if (m_EnableSubdivisions)
 	{
@@ -1950,7 +1950,7 @@ void DzBridgeAction::writeAllMaterials(DzNode* Node, DzJsonWriter& Writer, QText
 		}
 	}
 
-	// Check if Genitalia exists, add extra material block with parent's header info
+	// Check if Node is a geograft, add extra material block with parent's header info
 	if (isGeograft(Node))
 	{
 		// get parent node
@@ -4327,10 +4327,10 @@ bool is_faced_mesh_single(DzNode* pNode)
 	return true;
 }
 
-bool DzBridgeAction::checkForGeograftMorphsToExport(DzNode* Node, bool bZeroMorphForExport)
+bool DzBridgeAction::prepareGeograftMorphsToExport(DzNode* Node, bool bZeroMorphForExport)
 {
 	bool bGeograftMorphsFoundToExport = false;
-	DzNode* pGeograftNode = nullptr;
+	QList<DzNode*> aGeograftNodes;
 	DzNode* pParentNode = Node;
 	// 1. find geograft/genital
 	DzNodeListIterator oNodeChildrenIter = Node->nodeChildrenIterator();
@@ -4339,60 +4339,65 @@ bool DzBridgeAction::checkForGeograftMorphsToExport(DzNode* Node, bool bZeroMorp
 		DzNode* pChild = oNodeChildrenIter.next();
 		if (isGeograft(pChild))
 		{
-			pGeograftNode = pChild;
-			break;
+//			pGeograftNode = pChild;
+			aGeograftNodes.append(pChild);
+//			break;
 		}
 	}
-	if (pGeograftNode == nullptr)
+	if (aGeograftNodes.count() == 0)
 	{
 		return false;
 	}
 	DzNumericProperty* previousProperty = nullptr;
-	for (int index = 0; index < pGeograftNode->getNumProperties(); index++)
+	for (DzNode* pGeograftNode : aGeograftNodes)
 	{
-		DzProperty* property = pGeograftNode->getProperty(index);
-		DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
-		if (numericProperty && !numericProperty->isOverridingControllers())
+		for (int index = 0; index < pGeograftNode->getNumProperties(); index++)
 		{
-			QString propName = property->getName();
-			if (m_mMorphNameToLabel.contains(propName))
+			DzProperty* property = pGeograftNode->getProperty(index);
+			DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
+			if (numericProperty && !numericProperty->isOverridingControllers())
 			{
-				if (bZeroMorphForExport)
+				QString propName = property->getName();
+				if (m_mMorphNameToLabel.contains(propName))
 				{
-					numericProperty->setDoubleValue(0);
+					if (bZeroMorphForExport)
+					{
+						numericProperty->setDoubleValue(0);
+					}
+					bGeograftMorphsFoundToExport = true;
 				}
-				bGeograftMorphsFoundToExport = true;
 			}
 		}
-	}
-	DzObject* Object = pGeograftNode->getObject();
-	if (Object)
-	{
-		for (int index = 0; index < Object->getNumModifiers(); index++)
+		DzObject* Object = pGeograftNode->getObject();
+		if (Object)
 		{
-			DzModifier* modifier = Object->getModifier(index);
-			DzMorph* mod = qobject_cast<DzMorph*>(modifier);
-			if (mod)
+			for (int index = 0; index < Object->getNumModifiers(); index++)
 			{
-				for (int propindex = 0; propindex < modifier->getNumProperties(); propindex++)
+				DzModifier* modifier = Object->getModifier(index);
+				DzMorph* mod = qobject_cast<DzMorph*>(modifier);
+				if (mod)
 				{
-					DzProperty* property = modifier->getProperty(propindex);
-					DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
-					if (numericProperty && !numericProperty->isOverridingControllers())
+					for (int propindex = 0; propindex < modifier->getNumProperties(); propindex++)
 					{
-						QString propName = DzBridgeMorphSelectionDialog::getMorphPropertyName(property);
-						if (m_mMorphNameToLabel.contains(modifier->getName()))
+						DzProperty* property = modifier->getProperty(propindex);
+						DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
+						if (numericProperty && !numericProperty->isOverridingControllers())
 						{
-							if (bZeroMorphForExport)
+							QString propName = DzBridgeMorphSelectionDialog::getMorphPropertyName(property);
+							if (m_mMorphNameToLabel.contains(modifier->getName()))
 							{
-								numericProperty->setDoubleValue(0);
+								if (bZeroMorphForExport)
+								{
+									numericProperty->setDoubleValue(0);
+								}
+								bGeograftMorphsFoundToExport = true;
 							}
-							bGeograftMorphsFoundToExport = true;
 						}
 					}
 				}
 			}
 		}
+
 	}
 
 	return bGeograftMorphsFoundToExport;

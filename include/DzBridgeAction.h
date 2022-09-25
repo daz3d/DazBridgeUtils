@@ -263,7 +263,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE bool checkForIrreversibleOperations_in_disconnectOverrideControllers();
 		Q_INVOKABLE bool exportObj(QString filepath);
 		Q_INVOKABLE bool exportGeograftMorphs(DzNode *Node, QString destinationFolder);
-		Q_INVOKABLE bool checkForGeograftMorphsToExport(DzNode* Node, bool bZeroMorphForExport=false);
+		Q_INVOKABLE bool prepareGeograftMorphsToExport(DzNode* Node, bool bZeroMorphForExport=false);
 
 	private:
 		class MaterialGroupExportOrderMetaData
