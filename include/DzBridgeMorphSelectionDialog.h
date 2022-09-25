@@ -95,7 +95,7 @@ namespace DzBridgeNameSpace
 		// Used to rename them to the friendly name in Unreal
 		Q_INVOKABLE QMap<QString, QString> GetMorphRenaming();
 
-		Q_INVOKABLE bool IsAutoJCMEnabled() { return autoJCMCheckBox->isChecked(); }
+		Q_INVOKABLE bool IsAutoJCMEnabled();
 
 		// Recursive function for finding all active JCM morphs for a node
 		Q_INVOKABLE QList<JointLinkInfo> GetActiveJointControlledMorphs(DzNode* Node = nullptr);
@@ -110,6 +110,7 @@ namespace DzBridgeNameSpace
 		// DB June-01-2022, Created for MorphLinks Generation for Blender Bridge Morphs Support
 		Q_INVOKABLE MorphInfo GetMorphInfoFromName(QString morphName);
 		Q_INVOKABLE void SetAutoJCMVisible(bool bVisible);
+		Q_INVOKABLE void SetAutoJCMEnabled(bool bEnabled);
 
 		// get morph property name
 		Q_INVOKABLE static QString getMorphPropertyName(DzProperty* pMorphProperty);

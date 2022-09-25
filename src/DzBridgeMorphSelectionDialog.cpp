@@ -45,6 +45,7 @@
 
 #include "DzBridgeMorphSelectionDialog.h"
 #include "DzBridgeAction.h"
+#include "DzBridgeDialog.h"
 
 /*****************************
 Local definitions
@@ -74,7 +75,18 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 {
 	connect(this, SIGNAL(accepted()), this, SLOT(HandleDialogAccepted()));
 
-	settings = new QSettings("Daz 3D", "DazToUnreal");
+	// Try to retrieve settings from parent dialog
+	DzBridgeDialog* bridgeDialog = qobject_cast<DzBridgeDialog*>(parent);
+	if (bridgeDialog != nullptr)
+	{
+		settings = bridgeDialog->getSettings();
+	}
+	else
+	{
+		settings = new QSettings("Daz 3D", "Morph Selection Dialog");
+	}
+
+	presetsFolder = QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation) + QDir::separator() + "DAZ 3D" + QDir::separator() + "Bridges" + QDir::separator() + "Morph Selection Presets";
 
 	 morphListWidget = NULL;
 	 morphExportListWidget = NULL;
@@ -86,10 +98,6 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 
 	// Set the dialog title 
 	setWindowTitle(tr("Select Morphs"));
-
-	// Setup folder
-	presetsFolder = QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation) + QDir::separator() + "DAZ 3D"+ QDir::separator() + "Bridges" + QDir::separator() + "Daz To Unreal" + QDir::separator() + "Presets";
-
 
 	QVBoxLayout* mainLayout = new QVBoxLayout();
 
@@ -228,6 +236,10 @@ QSize DzBridgeMorphSelectionDialog::minimumSizeHint() const
 void DzBridgeMorphSelectionDialog::PrepareDialog()
 {
 	DzNode* Selection = dzScene->getPrimarySelection();
+	if (Selection == nullptr)
+	{
+		return;
+	}
 
 	// For items like clothing, create the morph list from the character
 	DzNode* ParentFigureNode = Selection;
@@ -1220,6 +1232,20 @@ void DzBridgeMorphSelectionDialog::HandleDialogAccepted()
 
 	SavePresetFile(NULL);
 	return;
+}
+
+bool DzBridgeMorphSelectionDialog::IsAutoJCMEnabled()
+{ 
+	bool bJCMenabled = autoJCMCheckBox->isChecked(); 
+	return bJCMenabled;
+}
+
+void DzBridgeMorphSelectionDialog::SetAutoJCMEnabled(bool bEnabled)
+{
+	if (autoJCMCheckBox == nullptr)
+		return;
+	autoJCMCheckBox->setChecked(bEnabled);
+	update();
 }
 
 #include "moc_DzBridgeMorphSelectionDialog.cpp"
