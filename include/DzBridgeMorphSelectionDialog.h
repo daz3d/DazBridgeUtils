@@ -99,6 +99,8 @@ namespace DzBridgeNameSpace
 
 		// Recursive function for finding all active JCM morphs for a node
 		Q_INVOKABLE QList<JointLinkInfo> GetActiveJointControlledMorphs(DzNode* Node = nullptr);
+		// Find and ADD JCMs
+		Q_INVOKABLE void AddActiveJointControlledMorphs(DzNode* Node = nullptr);
 
 		// Retrieve label based on morph name
 		// DB Dec-21-2021, Created for scripting.

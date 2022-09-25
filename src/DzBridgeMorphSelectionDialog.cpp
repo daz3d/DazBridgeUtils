@@ -370,11 +370,28 @@ QStringList DzBridgeMorphSelectionDialog::GetAvailableMorphs(DzNode* Node)
 	return newMorphList;
 }
 
+
+void DzBridgeMorphSelectionDialog::AddActiveJointControlledMorphs(DzNode* Node)
+{
+	QList<JointLinkInfo> activeMorphs = GetActiveJointControlledMorphs(Node);
+
+	for (JointLinkInfo linkInfo : activeMorphs)
+	{
+		QString linkLabel = linkInfo.Morph;
+
+		if (morphs.contains(linkLabel) && !morphsToExport.contains(morphs[linkLabel]))
+		{
+			morphsToExport.append(morphs[linkLabel]);
+		}
+	}
+
+}
+
 // Recursive function for finding all active JCM morphs for a node
 QList<JointLinkInfo> DzBridgeMorphSelectionDialog::GetActiveJointControlledMorphs(DzNode* Node)
 {
 	QList<JointLinkInfo> returnMorphs;
-	if (autoJCMCheckBox->isChecked())
+	if (IsAutoJCMEnabled())
 	{
 		if (Node == nullptr)
 		{
@@ -395,7 +412,6 @@ QList<JointLinkInfo> DzBridgeMorphSelectionDialog::GetActiveJointControlledMorph
 				}
 			}
 		}
-
 
 		DzObject* Object = Node->getObject();
 		DzShape* Shape = Object ? Object->getCurrentShape() : NULL;
@@ -977,14 +993,22 @@ void DzBridgeMorphSelectionDialog::HandlePresetChanged(const QString& presetName
 	}
 
 	RefreshExportMorphList();
-	GetActiveJointControlledMorphs();
+//	GetActiveJointControlledMorphs();
+	if (IsAutoJCMEnabled())
+	{
+		AddActiveJointControlledMorphs();
+	}
 	file.close();
 }
 
 // Get the morph string (aka morphsToExport) in the format for the Daz FBX Export
 QString DzBridgeMorphSelectionDialog::GetMorphString()
 {
-	GetActiveJointControlledMorphs();
+//	GetActiveJointControlledMorphs();
+	if (IsAutoJCMEnabled())
+	{
+		AddActiveJointControlledMorphs();
+	}
 
 	if (morphsToExport.length() == 0)
 	{
