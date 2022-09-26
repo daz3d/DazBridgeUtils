@@ -164,12 +164,35 @@ bool OpenFBXInterface::LoadScene(FbxScene* pScene, QString sFilename)
 
 }
 
-
 FbxScene* OpenFBXInterface::CreateScene(QString sSceneName)
 {
 	FbxScene* pNewScene = FbxScene::Create(m_fbxManager, sSceneName.toLocal8Bit().data());
 
 	return pNewScene;
+}
+
+FbxGeometry* OpenFBXInterface::FindGeometry(FbxScene* pScene, QString sGeometryName)
+{
+	int numGeometry = pScene->GetGeometryCount();
+	for (int i = 0; i < numGeometry; i++)
+	{
+		FbxGeometry* geo = pScene->GetGeometry(i);
+		FbxNode* node = geo->GetNode();
+		auto raw_name = node->GetName();
+		QString sGeoName(raw_name);
+		if (sGeoName == sGeometryName)
+		{
+			return geo;
+		}
+	}
+	return nullptr;
+}
+
+FbxNode* OpenFBXInterface::FindNode(FbxScene* pScene, QString sNodeName)
+{
+	FbxString fsName(sNodeName.toLocal8Bit().data());
+	auto result = pScene->FindNodeByName(fsName);
+	return result;
 }
 
 #include "moc_OpenFBXInterface.cpp"

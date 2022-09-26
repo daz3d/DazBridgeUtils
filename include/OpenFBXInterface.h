@@ -39,6 +39,10 @@ public:
 	Q_INVOKABLE QString GetErrorString() { return m_ErrorString; }
 	Q_INVOKABLE int GetErrorCode() { return m_ErrorCode; }
 
+	//Q_INVOKABLE FbxSurfaceMaterial* FindMaterial(FbxScene* pScene, QString sMaterialName);
+	Q_INVOKABLE FbxGeometry* FindGeometry(FbxScene* pScene, QString sGeometryName);
+	Q_INVOKABLE FbxNode* FindNode(FbxScene* pScene, QString sNodeName);
+
 protected:
 	static OpenFBXInterface* singleton;
 

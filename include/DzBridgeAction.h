@@ -84,6 +84,9 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE static QString getMD5(const QString& path);
 		Q_INVOKABLE static bool isGeograft(const DzNode* pNode);
 
+		// perform post-processing of Fbx after export
+		Q_INVOKABLE virtual bool postProcessFbx(QString fbxFilePath);
+
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo
@@ -130,6 +133,11 @@ namespace DzBridgeNameSpace
 		bool m_bAnimationUseExperimentalTransfer;
 		bool m_bAnimationBake;
 		bool m_bAnimationTransferFace;
+
+		// post-process FBX
+		bool m_bPostProcessFbx;
+		bool m_bRemoveDuplicateGeografts;
+		QStringList m_aGeografts;
 
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }

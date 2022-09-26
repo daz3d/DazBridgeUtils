@@ -82,6 +82,8 @@ DzBridgeAction::DzBridgeAction(const QString& text, const QString& desc) :
 	 m_bUndoNormalMaps = true;
 #endif
 
+	 m_bPostProcessFbx = false;
+	 m_bRemoveDuplicateGeografts = false;
 }
 
 DzBridgeAction::~DzBridgeAction()
@@ -218,6 +220,18 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 						generateMissingNormalMap(material);
 				}
 			}
+
+			// Look for geografts, add to geograft list
+			if (isGeograft(node))
+			{
+				m_aGeografts.append(node->getName());
+				//QString shapeName = shape->getName();
+				//if (shapeName != "" && shapeName != node->getName())
+				//{
+				//	m_aGeografts.append(shapeName);
+				//}
+			}
+
 		}
 	}
 
@@ -1189,6 +1203,10 @@ void DzBridgeAction::exportNode(DzNode* Node)
 		  else
 		  {
 			  Exporter->writeFile(m_sDestinationFBX, &ExportOptions);
+
+			  // DB 2022-09-26: Post-Process FBX file
+			  postProcessFbx(m_sDestinationFBX);
+
 			  writeConfiguration();
 		  }
 
@@ -2775,11 +2793,11 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 		// TODO: consider removing once findData( ) method above is completely implemented
 		m_sAssetType = cleanString(BridgeDialog->getAssetTypeCombo()->currentText());
 
+		m_bEnableMorphs = BridgeDialog->getMorphsEnabledCheckBox()->isChecked();
 		m_sMorphSelectionRule = BridgeDialog->GetMorphString();
 		resetArray_ControllersToDisconnect();
 		m_ControllersToDisconnect.append(m_morphSelectionDialog->getMorphNamesToDisconnectList());
 		m_mMorphNameToLabel = BridgeDialog->GetMorphMapping();
-		m_bEnableMorphs = BridgeDialog->getMorphsEnabledCheckBox()->isChecked();
 	}
 
 	m_EnableSubdivisions = BridgeDialog->getSubdivisionEnabledCheckBox()->isChecked();
@@ -3441,7 +3459,6 @@ bool DzBridgeAction::metaInvokeMethod(QObject* object, const char* methodSig, vo
 #include "OpenFBXInterface.h"
 #include "OpenSubdivInterface.h"
 
-
 bool DzBridgeAction::upgradeToHD(QString baseFilePath, QString hdFilePath, QString outFilePath, std::map<std::string, int>* pLookupTable)
 {
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
@@ -3480,6 +3497,62 @@ bool DzBridgeAction::upgradeToHD(QString baseFilePath, QString hdFilePath, QStri
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // END: SUBDIVISION
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+// Perform post-processing of Fbx after export
+// NOTE: must be called prior to writeconfiguration, otherwise can not guarantee that it will be executed before
+// import process is started in target software
+bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
+{
+	if (m_bPostProcessFbx == false)
+		return false;
+
+	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
+	FbxScene* pScene = openFBX->CreateScene("Base Mesh Scene");
+	if (openFBX->LoadScene(pScene, fbxFilePath.toLocal8Bit().data()) == false)
+	{
+		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, "Error",
+			"An error occurred while processing the Fbx file...", QMessageBox::Ok);
+		printf("\n\nAn error occurred while processing the Fbx file...");
+		return false;
+	}
+
+	// Remove Extra Geograft nodes and geometry
+	// TODO: replace with list generated during export
+	if (m_bRemoveDuplicateGeografts)
+	{
+		for (QString searchString : m_aGeografts)
+		{
+			auto geo = openFBX->FindGeometry(pScene, searchString + ".Shape");
+			if (geo)
+			{
+				auto node = geo->GetNode();
+				node->RemoveAllMaterials();
+				pScene->RemoveGeometry(geo);
+				pScene->RemoveNode(node);
+				geo->Destroy();
+				node->Destroy();
+			}
+			auto node = openFBX->FindNode(pScene, searchString);
+			if (node)
+			{
+				pScene->RemoveNode(node);
+				node->Destroy();
+			}
+		}
+	}
+
+	if (openFBX->SaveScene(pScene, fbxFilePath.toLocal8Bit().data()) == false)
+	{
+		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, "Error",
+			"An error occurred while processing the Fbx file...", QMessageBox::Ok);
+
+		printf("\n\nAn error occurred while processing the Fbx file...");
+		return false;
+	}
+
+	return true;
+
+}
 
 QString DzBridgeAction::getMD5(const QString& path)
 {
