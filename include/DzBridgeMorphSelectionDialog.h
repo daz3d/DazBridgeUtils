@@ -130,7 +130,7 @@ namespace DzBridgeNameSpace
 		void HandleFaceFXGenesis8Button();
 		void HandleAutoJCMCheckBoxChange(bool checked);
 		void HandleAddConnectedMorphs();
-		void HandleDialogAccepted();
+		void HandleDialogAccepted(bool bSavePreset = true);
 
 	private:
 		// check if Morph is Valid

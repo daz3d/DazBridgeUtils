@@ -421,6 +421,10 @@ void DzBridgeDialog::handleSceneSelectionChanged()
 		setDisabled(false);
 	}
 
+	// DB (2022-Sept-26): Crashfix for changing selection and exporting without opening morphselectiondialog
+	DzBridgeMorphSelectionDialog* morphDialog = DzBridgeMorphSelectionDialog::Get(this);
+	morphDialog->PrepareDialog();
+
 }
 
 int DzBridgeDialog::HandleChooseMorphsButton()

@@ -96,7 +96,7 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	 fullBodyMorphTreeItem = NULL;
 	 charactersTreeItem = NULL;
 
-	// Set the dialog title 
+	// Set the dialog title
 	setWindowTitle(tr("Select Morphs"));
 
 	QVBoxLayout* mainLayout = new QVBoxLayout();
@@ -174,7 +174,7 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	{
 		autoJCMCheckBox->setChecked(settings->value("AutoJCMEnabled").toBool());
 	}
-	
+
 	connect(ArmsJCMButton, SIGNAL(released()), this, SLOT(HandleArmJCMMorphsButton()));
 	connect(LegsJCMButton, SIGNAL(released()), this, SLOT(HandleLegJCMMorphsButton()));
 	connect(TorsoJCMButton, SIGNAL(released()), this, SLOT(HandleTorsoJCMMorphsButton()));
@@ -182,7 +182,7 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	connect(FaceFX8Button, SIGNAL(released()), this, SLOT(HandleFaceFXGenesis8Button()));
 	connect(autoJCMCheckBox, SIGNAL(clicked(bool)), this, SLOT(HandleAutoJCMCheckBoxChange(bool)));
 	connect(AddConnectedMorphsButton, SIGNAL(clicked(bool)), this, SLOT(HandleAddConnectedMorphs()));
-	
+
 	treeLayout->addWidget(MorphGroupBox);
 	morphsLayout->addLayout(treeLayout);
 
@@ -268,6 +268,8 @@ void DzBridgeMorphSelectionDialog::PrepareDialog()
 	UpdateMorphsTree();
 	RefreshPresetsCombo();
 	HandlePresetChanged("LastUsed.csv");
+	// DB (2022-Sept-26): crashfix for changed selection and export without opening morph selection dialog
+	HandleDialogAccepted(false);
 }
 
 // When the filter text is changed, update the center list
@@ -376,12 +378,12 @@ QStringList DzBridgeMorphSelectionDialog::GetAvailableMorphs(DzNode* Node)
 						//qDebug() << "Path " << property->getGroupOnlyPath();
 					}
 				}
-				
+
 			}
 
 		}
 	}
-	
+
 	return newMorphList;
 }
 
@@ -923,7 +925,7 @@ void DzBridgeMorphSelectionDialog::HandleFaceFXGenesis8Button()
 	MorphsToAdd.append("eCTRLvM");
 	MorphsToAdd.append("eCTRLvF");
 	MorphsToAdd.append("eCTRLMouthOpen");
-	MorphsToAdd.append("eCTRLMouthWide-Narrow"); 
+	MorphsToAdd.append("eCTRLMouthWide-Narrow");
 	MorphsToAdd.append("eCTRLTongueIn-Out");
 	MorphsToAdd.append("eCTRLTongueUp-Down");
 
@@ -966,7 +968,7 @@ void DzBridgeMorphSelectionDialog::RefreshPresetsCombo()
 	presetCombo->addItem("None");
 
 	QDirIterator it(presetsFolder, QStringList() << "*.csv", QDir::NoFilter, QDirIterator::NoIteratorFlags);
-	while (it.hasNext()) 
+	while (it.hasNext())
 	{
 		QString Path = it.next();
 		QString NewPath = Path.right(Path.length() - presetsFolder.length() - 1);
@@ -1035,7 +1037,7 @@ QString DzBridgeMorphSelectionDialog::GetMorphCSVString(bool bUseFinalizedList)
 	//morphList.clear();
 	QString morphString;
 	QList<MorphInfo> *pMorphList = &m_morphsToExport;
-	if (bUseFinalizedList) 
+	if (bUseFinalizedList)
 	{
 		pMorphList = &m_morphsToExport_finalized;
 	}
@@ -1104,7 +1106,7 @@ QString DzBridgeMorphSelectionDialog::getMorphPropertyName(DzProperty* pMorphPro
 {
 	if (pMorphProperty == nullptr)
 	{
-		// issue error message or alternatively: throw exception 
+		// issue error message or alternatively: throw exception
 		printf("ERROR: DazBridge: DzBridgeMorphSelectionDialog.cpp, getPropertyName(): nullptr passed as argument.");
 		return "";
 	}
@@ -1121,7 +1123,7 @@ bool DzBridgeMorphSelectionDialog::isValidMorph(DzProperty* pMorphProperty)
 {
 	if (pMorphProperty == nullptr)
 	{
-		// issue error message or alternatively: throw exception 
+		// issue error message or alternatively: throw exception
 		printf("ERROR: DazBridge: DzBridgeMorphSelectionDialog.cpp, isValidMorph(): nullptr passed as argument.");
 		return false;
 	}
@@ -1190,6 +1192,10 @@ QList<QString> DzBridgeMorphSelectionDialog::getMorphNamesToDisconnectList()
 	foreach (MorphInfo exportMorph, m_morphsToExport_finalized)
 	{
 		DzProperty* morphProperty = exportMorph.Property;
+		// DB (2022-Sept-26): crashfix
+		if (morphProperty == nullptr)
+			continue;
+
 		// DB, 2022-June-07: NOTE: using iterator may be more efficient due to potentially large number of controllers
 		for (auto iterator = morphProperty->controllerListIterator(); iterator.hasNext(); )
 		{
@@ -1221,7 +1227,7 @@ void DzBridgeMorphSelectionDialog::SetAutoJCMVisible(bool bVisible)
 	update();
 }
 
-void DzBridgeMorphSelectionDialog::HandleDialogAccepted()
+void DzBridgeMorphSelectionDialog::HandleDialogAccepted(bool bSavePreset)
 {
 	// Commit GUI right pane listbox to m_morphsToExport
 	m_morphsToExport_finalized.clear();
@@ -1230,13 +1236,17 @@ void DzBridgeMorphSelectionDialog::HandleDialogAccepted()
 		m_morphsToExport_finalized.append(morph);
 	}
 
-	SavePresetFile(NULL);
+	if (bSavePreset)
+	{
+		SavePresetFile(NULL);
+	}
+
 	return;
 }
 
 bool DzBridgeMorphSelectionDialog::IsAutoJCMEnabled()
-{ 
-	bool bJCMenabled = autoJCMCheckBox->isChecked(); 
+{
+	bool bJCMenabled = autoJCMCheckBox->isChecked();
 	return bJCMenabled;
 }
 
