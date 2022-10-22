@@ -507,17 +507,17 @@ QList<JointLinkInfo> DzBridgeMorphSelectionDialog::GetJointControlledMorphInfo(D
 			linkInfo.Scalar = linkScalar;
 			linkInfo.Alpha = currentBodyScalar;
 			linkInfo.Keys = linkKeys;
-			qDebug() << "Label " << linkLabel << " Description " << linkDescription << " Bone " << linkBone << " Axis " << linkAxis << " Alpha " << currentBodyScalar << " Scalar " << linkScalar;
+			//qDebug() << "Label " << linkLabel << " Description " << linkDescription << " Bone " << linkBone << " Axis " << linkAxis << " Alpha " << currentBodyScalar << " Scalar " << linkScalar;
 			if (!keys.isEmpty())
 			{
 				foreach(double key, keys)
 				{
-					qDebug() << key;
+					//qDebug() << key;
 				}
 
 				foreach(double key, keysValues)
 				{
-					qDebug() << key;
+					//qDebug() << key;
 				}
 
 			}

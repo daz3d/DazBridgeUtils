@@ -92,8 +92,11 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	m_WelcomeLabel->setWordWrap(true);
 	m_WelcomeLabel->setText(sSetupModeString);
 	m_WelcomeLabel->setOpenExternalLinks(true);
-//	m_WelcomeLabel->setHidden(true);
+#ifdef VODSVERSION
+	m_WelcomeLabel->setHidden(true);
+#else
 	mainLayout->addRow(m_WelcomeLabel);
+#endif
 
 	advancedWidget = new QWidget();
 	QHBoxLayout* advancedLayoutOuter = new QHBoxLayout();
@@ -126,6 +129,8 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	animationSettingsLayout->addRow("Transfer Face Bones", faceAnimationExportCheckBox);
 	animationExportActiveCurvesCheckBox = new QCheckBox("", animationSettingsGroupBox);
 	animationSettingsLayout->addRow("Transfer Active Curves", animationExportActiveCurvesCheckBox);
+	animationApplyBoneScaleCheckBox = new QCheckBox("", animationSettingsGroupBox);
+	animationSettingsLayout->addRow("Apply Bone Scale", animationApplyBoneScaleCheckBox);
 	animationSettingsGroupBox->setVisible(false);
 
 	// Morphs
@@ -235,7 +240,7 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	showFbxDialogCheckBox->setWhatsThis("Checking this will show the FBX Dialog for adjustments before export.");
 	exportMaterialPropertyCSVCheckBox->setWhatsThis("Checking this will write out a CSV of all the material properties.  Useful for reference when changing materials.");
 	enableNormalMapGenerationCheckBox->setWhatsThis("Checking this will enable generation of Normal Maps for any surfaces that only have Bump Height Maps.");
-	m_wTargetPluginInstaller->setWhatsThis("Install a plugin to use Daz Bridge with the destination software.");
+	//m_wTargetPluginInstaller->setWhatsThis("Install a plugin to use Daz Bridge with the destination software.");
 
 	// detect scene change
 	connect(dzScene, SIGNAL(nodeSelectionListChanged()), this, SLOT(handleSceneSelectionChanged()));
@@ -247,8 +252,9 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	{
 		setDisabled(true);
 	}
+#ifndef VODSVERSION
 	m_WelcomeLabel->setVisible(true);
-
+#endif
 }
 
 void DzBridgeDialog::renameTargetPluginInstaller(QString sNewLabelName)
@@ -351,6 +357,10 @@ bool DzBridgeDialog::loadSavedSettings()
 	{
 		animationExportActiveCurvesCheckBox->setChecked(settings->value("AnimationExportActiveCurves").toBool());
 	}
+	if (!settings->value("AnimationApplyBoneScale").isNull())
+	{
+		animationApplyBoneScaleCheckBox->setChecked(settings->value("AnimationApplyBoneScale").toBool());
+	}
 
 	return true;
 }
@@ -362,6 +372,7 @@ void DzBridgeDialog::saveSettings()
 	settings->setValue("AnimationBake", bakeAnimationExportCheckBox->isChecked());
 	settings->setValue("AnimationExportFace", faceAnimationExportCheckBox->isChecked());
 	settings->setValue("AnimationExportActiveCurves", animationExportActiveCurvesCheckBox->isChecked());
+	settings->setValue("AnimationApplyBoneScale", animationApplyBoneScaleCheckBox->isChecked());
 }
 
 void DzBridgeDialog::refreshAsset()

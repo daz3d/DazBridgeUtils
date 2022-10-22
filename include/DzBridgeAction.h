@@ -130,6 +130,7 @@ namespace DzBridgeNameSpace
 		bool m_bAnimationBake;
 		bool m_bAnimationTransferFace;
 		bool m_bAnimationExportActiveCurves;
+		bool m_bAnimationApplyBoneScale;
 
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }
@@ -142,6 +143,9 @@ namespace DzBridgeNameSpace
 		virtual void exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzNode*, FbxNode*>& BoneMap);
 		virtual QList<DzNumericProperty*> getAnimatedProperties(DzNode* Node);
 		virtual void exportAnimatedProperties(QList<DzNumericProperty*>& Properties, FbxScene* Scene, FbxAnimLayer* AnimBaseLayer);
+
+		virtual void lockBoneControls(DzNode* Bone);
+		virtual void unlockBoneControl(DzNode* Bone);
 
 		virtual void writeConfiguration() = 0;
 		virtual void setExportOptions(DzFileIOSettings& ExportOptions) = 0;
