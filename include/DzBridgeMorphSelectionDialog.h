@@ -58,6 +58,7 @@ namespace DzBridgeNameSpace
 		QString Morph;
 		double Scalar;
 		double Alpha;
+		MorphInfo LinkMorphInfo;
 		QList<JointLinkKey> Keys;
 	};
 

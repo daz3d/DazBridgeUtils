@@ -507,6 +507,12 @@ QList<JointLinkInfo> DzBridgeMorphSelectionDialog::GetJointControlledMorphInfo(D
 			linkInfo.Scalar = linkScalar;
 			linkInfo.Alpha = currentBodyScalar;
 			linkInfo.Keys = linkKeys;
+
+			if (morphs.contains(linkLabel))
+			{
+				linkInfo.LinkMorphInfo = morphs[linkLabel];
+			}
+
 			//qDebug() << "Label " << linkLabel << " Description " << linkDescription << " Bone " << linkBone << " Axis " << linkAxis << " Alpha " << currentBodyScalar << " Scalar " << linkScalar;
 			if (!keys.isEmpty())
 			{
@@ -984,9 +990,9 @@ void DzBridgeMorphSelectionDialog::HandlePresetChanged(const QString& presetName
 // Get the morph string (aka morphsToExport) in the format for the Daz FBX Export
 QString DzBridgeMorphSelectionDialog::GetMorphString()
 {
-	GetActiveJointControlledMorphs();
+	QList<JointLinkInfo> jointLinks = GetActiveJointControlledMorphs();
 
-	if (morphsToExport.length() == 0)
+	if (morphsToExport.length() == 0 && jointLinks.length() == 0)
 	{
 		return "";
 	}
@@ -994,6 +1000,10 @@ QString DzBridgeMorphSelectionDialog::GetMorphString()
 	foreach(MorphInfo exportMorph, morphsToExport)
 	{
 		morphNamesToExport.append(exportMorph.Name);
+	}
+	foreach(JointLinkInfo jointLink, jointLinks)
+	{
+		morphNamesToExport.append(jointLink.Morph);
 	}
 	QString morphString = morphNamesToExport.join("\n1\n");
 	morphString += "\n1\n.CTRLVS\n2\nAnything\n0";
@@ -1024,6 +1034,12 @@ QMap<QString,QString> DzBridgeMorphSelectionDialog::GetMorphRenaming()
 	foreach(MorphInfo exportMorph, morphsToExport)
 	{
 		morphNameMapping.insert(exportMorph.Name, exportMorph.Label);
+	}
+
+	QList<JointLinkInfo> jointLinks = GetActiveJointControlledMorphs();
+	foreach(JointLinkInfo jointLink, jointLinks)
+	{
+		morphNameMapping.insert(jointLink.LinkMorphInfo.Name, jointLink.LinkMorphInfo.Label);
 	}
 
 	return morphNameMapping;
@@ -1116,14 +1132,11 @@ bool DzBridgeMorphSelectionDialog::isValidMorph(DzProperty* pMorphProperty)
 // Load morphs controlling the morphs in the export list
 void DzBridgeMorphSelectionDialog::HandleAddConnectedMorphs()
 {
-	// sanity check
-	if (morphsToExport.length() == 0)
+	QList<JointLinkInfo> jointLinks = GetActiveJointControlledMorphs();
+		
+	foreach (JointLinkInfo jointLink, jointLinks)
 	{
-		return;
-	}
-	foreach (MorphInfo exportMorph, morphsToExport)
-	{
-		DzProperty *morphProperty = exportMorph.Property;
+		DzProperty *morphProperty = jointLink.LinkMorphInfo.Property;
 		if (morphProperty == nullptr)
 		{
 			// log unexpected error
