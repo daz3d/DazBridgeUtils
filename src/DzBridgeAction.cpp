@@ -2961,7 +2961,7 @@ QUuid DzBridgeAction::writeInstance(DzNode* Node, DzJsonWriter& Writer, QUuid Pa
 
 	// Instance Node needs an InstanceAsset
 	DzInstanceNode* InstanceNode = qobject_cast<DzInstanceNode*>(Node);
-	if (InstanceNode)
+	if (InstanceNode && InstanceNode->getTarget())
 	{
 		AssetID = InstanceNode->getTarget()->getAssetUri().getId();
 		Name = AssetID.remove(QRegExp("[^A-Za-z0-9_]"));
