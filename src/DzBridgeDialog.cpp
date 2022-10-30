@@ -122,7 +122,8 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	QFormLayout* animationSettingsLayout = new QFormLayout();
 	animationSettingsGroupBox->setLayout(animationSettingsLayout);
 	experimentalAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
-	animationSettingsLayout->addRow("Use Experimental Export", experimentalAnimationExportCheckBox);
+	experimentalAnimationExportCheckBox->setChecked(true);
+	animationSettingsLayout->addRow("Use New Export", experimentalAnimationExportCheckBox);
 	bakeAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
 	animationSettingsLayout->addRow("Bake", bakeAnimationExportCheckBox);
 	faceAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
