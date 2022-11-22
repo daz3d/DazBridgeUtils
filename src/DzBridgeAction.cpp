@@ -31,6 +31,7 @@
 #include <dzprogress.h>
 #include <dztexture.h>
 #include <dzimagemgr.h>
+#include <dzscript.h>
 
 #include "dzgeometry.h"
 #include "dzweightmap.h"
@@ -735,6 +736,7 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 	}
 	m_subdivisionDialog->LockSubdivisionProperties(m_EnableSubdivisions);
 	m_bExportingBaseMesh = false;
+
 	exportAsset();
 	if (exportProgress)
 	{
@@ -976,6 +978,10 @@ void DzBridgeAction::exportAsset()
 		QList<QString> DisconnectedModifiers;
 		if (m_bEnableMorphs)
 		{
+			if (m_morphSelectionDialog->IsAutoJCMEnabled() && m_morphSelectionDialog->IsFakeDualQuatEnabled())
+			{
+				exportJCMDualQuatDiff();
+			}
 			DisconnectedModifiers = disconnectOverrideControllers();
 		}
 		DzNode* Selection = dzScene->getPrimarySelection();
@@ -1611,6 +1617,212 @@ void DzBridgeAction::exportAnimatedProperties(QList<DzNumericProperty*>& Propert
 			lAnimCurve->KeyModifyEnd();
 		}
 	}
+}
+
+void DzBridgeAction::exportJCMDualQuatDiff()
+{
+	if (!m_pSelectedNode) return;
+
+	// Set the resolution level to Base
+	int ResolutionLevel = 1; // High Resolution
+	DzEnumProperty* ResolutionLevelProperty = NULL;
+	if (m_pSelectedNode->getObject() && m_pSelectedNode->getObject()->getCurrentShape())
+	{
+		DzShape* Shape = m_pSelectedNode->getObject()->getCurrentShape();
+		if (DzProperty* Property = Shape->findProperty("lodlevel"))
+		{
+			if (ResolutionLevelProperty = qobject_cast<DzEnumProperty*>(Property))
+			{
+				ResolutionLevel = ResolutionLevelProperty->getValue();
+				ResolutionLevelProperty->setValue(0); // Base
+			}
+		}
+	}
+
+	//QList<DzNode*> FigureNodeList = GetFigureNodeList(m_pSelectedNode);
+	DzNode* FigureNode = m_pSelectedNode;
+	//foreach(DzNode * FigureNode, FigureNodeList)
+	{
+		QList<JointLinkInfo> JointLinks = m_morphSelectionDialog->GetActiveJointControlledMorphs(FigureNode);
+		for (auto JointLink : JointLinks)
+		{
+			if (JointLink.IsBaseJCM)
+			{
+				exportNodeexportJCMDualQuatDiff(JointLink);
+			}
+		}
+	}
+
+	// Set the resolution level back to what it was
+	if (ResolutionLevelProperty)
+	{
+		ResolutionLevelProperty->setValue(ResolutionLevel);
+	}
+}
+void DzBridgeAction::exportNodeexportJCMDualQuatDiff(const JointLinkInfo& JointInfo)
+{
+	//if (JointInfo.Bone != "l_upperarm") return;
+
+	float RotationAmount = 90.0f;
+
+	if (JointInfo.Scalar != 0.0f && JointInfo.Keys.count() == 0)
+	{
+		RotationAmount = 1.0f / JointInfo.Scalar;
+	}
+
+	if (JointInfo.Keys.count() > 0)
+	{
+		for (JointLinkKey Key : JointInfo.Keys)
+		{
+			if (Key.Value == 1)
+			{
+				RotationAmount = Key.Angle;
+			}
+		}
+
+		//Remove the rotation for the largest 0 key
+		// We're only rotating by the applied amount of the JCM, not the max angle
+		for (JointLinkKey Key : JointInfo.Keys)
+		{
+			if (Key.Value == 0 && abs(Key.Angle) > 0.1f)
+			{
+				float Ratio = pow(abs(sinf(0.01745329251 * (RotationAmount - Key.Angle))), 0.5f);
+				RotationAmount *= Ratio;
+
+				// Extreme rotations turn inside out in spots.
+				if (RotationAmount > 120.0f) RotationAmount = 120.0f;
+				if (RotationAmount < -120.0f) RotationAmount = -120.0f;
+			}
+		}
+	}
+
+
+	
+	DzSkeleton* Skeleton = m_pSelectedNode->getSkeleton();
+	DzFigure* Figure = Skeleton ? qobject_cast<DzFigure*>(Skeleton) : NULL;
+
+	DzSkinBinding* Binding = Figure->getSkinBinding();
+
+	DzObject* Object = m_pSelectedNode->getObject();
+
+	DzGeometry* Geometry = Object->getCurrentShape()->getGeometry();
+
+	DzBone* Bone = Skeleton->findBone(JointInfo.Bone);
+	if (Bone == nullptr) return;
+	if (JointInfo.Axis == "XRotate")
+	{
+		Bone->getXRotControl()->setValue(RotationAmount);
+	}
+	if (JointInfo.Axis == "YRotate")
+	{
+		Bone->getYRotControl()->setValue(RotationAmount);
+	}
+	if (JointInfo.Axis == "ZRotate")
+	{
+		Bone->getZRotControl()->setValue(RotationAmount);
+	}
+
+	setDualQuaternionBlending(Binding);
+
+	DzVertexMesh* DualQuaternionMesh = Object->getCachedGeom();
+	DzFacetMesh* CachedDualQuaternionMesh = new DzFacetMesh();
+	CachedDualQuaternionMesh->copyFrom(DualQuaternionMesh, false, false);
+
+	setLinearBlending(Binding);
+
+	createDualQuaternionToLinearBlendDiffMorph(JointInfo.Morph, CachedDualQuaternionMesh, dzScene->getPrimarySelection());
+
+	Bone->getXRotControl()->setValue(0.0f);
+	Bone->getYRotControl()->setValue(0.0f);
+	Bone->getZRotControl()->setValue(0.0f);
+
+	setDualQuaternionBlending(Binding);
+}
+
+void DzBridgeAction::setLinearBlending(DzSkinBinding* Binding)
+{
+	int methodIndex = Binding->metaObject()->indexOfMethod(QMetaObject::normalizedSignature("setGeneralMapMode(int)"));
+	if (methodIndex != -1)
+	{
+		QMetaMethod method = Binding->metaObject()->method(methodIndex);
+		int result = method.invoke((QObject*)Binding, Q_ARG(int, 0));
+		if (result != -1)
+		{
+
+		}
+	}
+
+	m_pSelectedNode->update();
+	m_pSelectedNode->finalize();
+}
+void DzBridgeAction::setDualQuaternionBlending(DzSkinBinding* Binding)
+{
+	int methodIndex = Binding->metaObject()->indexOfMethod(QMetaObject::normalizedSignature("setGeneralMapMode(int)"));
+	if (methodIndex != -1)
+	{
+		QMetaMethod method = Binding->metaObject()->method(methodIndex);
+		int result = method.invoke((QObject*)Binding, Q_ARG(int, 1));
+		if (result != -1)
+		{
+
+		}
+	}
+
+	m_pSelectedNode->update();
+	m_pSelectedNode->finalize();
+}
+
+void DzBridgeAction::createDualQuaternionToLinearBlendDiffMorph(const QString BaseMorphName, DzVertexMesh* Mesh, DzNode* Node)
+{
+	DzScript* Script = new DzScript();
+
+	Script->addLine("function myFunction(oNode, oSavedGeom, sName) {");
+	Script->addLine("var oMorphLoader = new DzMorphLoader();");
+	Script->addLine("oMorphLoader.setMorphName(sName);");
+	Script->addLine("oMorphLoader.setMorphSubdivision(true);");
+	Script->addLine("oMorphLoader.setSubdivisionBuiltResolution(0);");
+	Script->addLine("oMorphLoader.setSubdivisionMinResolution(0);");
+	Script->addLine("oMorphLoader.setSubdivisionMaxResolution(0);");
+	Script->addLine("oMorphLoader.setSubdivisionSmoothCage(false);");
+	Script->addLine("oMorphLoader.setSubdivisionMapping(DzMorphLoader.Catmark);");
+	Script->addLine("oMorphLoader.setDeltaTolerance(0.01);");
+	Script->addLine("oMorphLoader.setCreateControlProperty(true);");
+	Script->addLine("oMorphLoader.setPropertyGroupPath(\"Morph Loader Pro\");");
+	Script->addLine("oMorphLoader.setReverseDeformations(true);");
+	Script->addLine("oMorphLoader.setOverwriteExisting(DzMorphLoader.DeltasOnly);");
+	Script->addLine("oMorphLoader.setCleanUpOrphans(true);");
+	Script->addLine("oMorphLoader.setMorphMirroring(DzMorphLoader.DoNotMirror);");
+	//Script->addLine("oMorphLoader.applyReverseDeformationsPose();");
+	Script->addLine("var result = oMorphLoader.createMorphFromMesh(oSavedGeom, oNode);");
+	Script->addLine("};");
+
+	QString NewMorphName = BaseMorphName + "_dq2lb";
+
+	QVariantList Args;
+	QVariant v(QMetaType::QObjectStar, &Node);
+	Args.append(QVariant(QMetaType::QObjectStar, &Node));
+	Args.append(QVariant(QMetaType::QObjectStar, &Mesh));
+	Args.append(QVariant(NewMorphName));
+	Script->call("myFunction", Args);
+}
+
+QList<DzNode*> DzBridgeAction::GetFigureNodeList(DzNode* Node)
+{
+	QList<DzNode*> FigureList;
+	DzSkeleton* Skeleton = Node->getSkeleton();
+	DzFigure* Figure = Skeleton ? qobject_cast<DzFigure*>(Skeleton) : NULL;
+	if (Figure != NULL)
+	{
+		FigureList.append(Node);
+	}
+
+	// Looks through the child nodes for more bones
+	for (int ChildIndex = 0; ChildIndex < Node->getNumNodeChildren(); ChildIndex++)
+	{
+		DzNode* ChildNode = Node->getNodeChild(ChildIndex);
+		FigureList.append(GetFigureNodeList(ChildNode));
+	}
+	return FigureList;
 }
 
 void DzBridgeAction::lockBoneControls(DzNode* Bone)
@@ -2490,6 +2702,7 @@ void DzBridgeAction::writeMorphLinks(DzJsonWriter& writer)
 			QString sMorphLabel = morphNameToLabel.value();
 			MorphInfo morphInfo = m_morphSelectionDialog->GetMorphInfoFromName(sMorphName);
 			DzProperty *morphProperty = morphInfo.Property;
+			if (morphProperty == nullptr) continue; // The added dq2lb morphs won't have properties yet
 			QStringList controlledMeshList = checkMorphControlsChildren(m_pSelectedNode, morphProperty);
 			if (morphInfo.Node != nullptr)
 			{

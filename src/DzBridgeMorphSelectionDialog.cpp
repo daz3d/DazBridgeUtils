@@ -147,6 +147,11 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	autoJCMCheckBox->setChecked(false);
 	autoJCMCheckBox->setVisible(false);
 
+	fakeDualQuatCheckBox = new QCheckBox("Fake Dual Quat");
+	fakeDualQuatCheckBox->setChecked(false);
+	fakeDualQuatCheckBox->setVisible(false);
+	fakeDualQuatCheckBox->setWhatsThis("Adds additional JCMs that fake the difference between Linear Blending and Dual Quaternion Skinning.");
+
 	QPushButton* AddConnectedMorphsButton = new QPushButton("Add Connected Morphs");
 
 	((QGridLayout*)JCMGroupBox->layout())->addWidget(ArmsJCMButton, 0, 0);
@@ -158,11 +163,17 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	MorphGroupBox->layout()->addWidget(JCMGroupBox);
 	MorphGroupBox->layout()->addWidget(FaceGroupBox);
 	MorphGroupBox->layout()->addWidget(autoJCMCheckBox);
+	MorphGroupBox->layout()->addWidget(fakeDualQuatCheckBox);
 	MorphGroupBox->layout()->addWidget(AddConnectedMorphsButton);
 
 	if (!settings->value("AutoJCMEnabled").isNull())
 	{
 		autoJCMCheckBox->setChecked(settings->value("AutoJCMEnabled").toBool());
+	}
+
+	if (!settings->value("FakeDualQuatEnabled").isNull())
+	{
+		fakeDualQuatCheckBox->setChecked(settings->value("FakeDualQuatEnabled").toBool());
 	}
 	
 	connect(ArmsJCMButton, SIGNAL(released()), this, SLOT(HandleArmJCMMorphsButton()));
@@ -171,6 +182,7 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	connect(ARKit81Button, SIGNAL(released()), this, SLOT(HandleARKitGenesis81MorphsButton()));
 	connect(FaceFX8Button, SIGNAL(released()), this, SLOT(HandleFaceFXGenesis8Button()));
 	connect(autoJCMCheckBox, SIGNAL(clicked(bool)), this, SLOT(HandleAutoJCMCheckBoxChange(bool)));
+	connect(fakeDualQuatCheckBox, SIGNAL(clicked(bool)), this, SLOT(HandleFakeDualQuatCheckBoxChange(bool)));
 	connect(AddConnectedMorphsButton, SIGNAL(clicked(bool)), this, SLOT(HandleAddConnectedMorphs()));
 	
 	treeLayout->addWidget(MorphGroupBox);
@@ -450,6 +462,7 @@ QList<JointLinkInfo> DzBridgeMorphSelectionDialog::GetJointControlledMorphInfo(D
 		double currentBodyScalar = 0.0f;
 		double linkScalar = 0.0f;
 		bool isJCM = false;
+		bool isBaseJCM = false;
 		QList<double> keys;
 		QList<double> keysValues;
 		QList<JointLinkKey> linkKeys;
@@ -494,6 +507,11 @@ QList<JointLinkInfo> DzBridgeMorphSelectionDialog::GetJointControlledMorphInfo(D
 					linkBodyType = linkObject;
 					bodyStrength = value;
 					currentBodyScalar = currentValue;
+					if (linkProperty == "body_ctrl_basejointcorrectives" ||
+						linkProperty == "BaseJointCorrectives")
+					{
+						isBaseJCM = true;
+					}
 				}
 			}
 		}
@@ -507,6 +525,7 @@ QList<JointLinkInfo> DzBridgeMorphSelectionDialog::GetJointControlledMorphInfo(D
 			linkInfo.Scalar = linkScalar;
 			linkInfo.Alpha = currentBodyScalar;
 			linkInfo.Keys = linkKeys;
+			linkInfo.IsBaseJCM = isBaseJCM;
 
 			if (morphs.contains(linkLabel))
 			{
@@ -921,6 +940,11 @@ void DzBridgeMorphSelectionDialog::HandleAutoJCMCheckBoxChange(bool checked)
 	settings->setValue("AutoJCMEnabled", checked);
 }
 
+void DzBridgeMorphSelectionDialog::HandleFakeDualQuatCheckBoxChange(bool checked)
+{
+	settings->setValue("FakeDualQuatEnabled", checked);
+}
+
 // Refresh the Right export list
 void DzBridgeMorphSelectionDialog::RefreshExportMorphList()
 {
@@ -1004,6 +1028,7 @@ QString DzBridgeMorphSelectionDialog::GetMorphString()
 	foreach(JointLinkInfo jointLink, jointLinks)
 	{
 		morphNamesToExport.append(jointLink.Morph);
+		morphNamesToExport.append(jointLink.Morph + "_dq2lb");
 	}
 	QString morphString = morphNamesToExport.join("\n1\n");
 	morphString += "\n1\n.CTRLVS\n2\nAnything\n0";
@@ -1040,6 +1065,7 @@ QMap<QString,QString> DzBridgeMorphSelectionDialog::GetMorphRenaming()
 	foreach(JointLinkInfo jointLink, jointLinks)
 	{
 		morphNameMapping.insert(jointLink.LinkMorphInfo.Name, jointLink.LinkMorphInfo.Label);
+		morphNameMapping.insert(jointLink.LinkMorphInfo.Name + "_dq2lb", jointLink.LinkMorphInfo.Label + "_dq2lb");
 	}
 
 	return morphNameMapping;
@@ -1195,6 +1221,7 @@ void DzBridgeMorphSelectionDialog::SetAutoJCMVisible(bool bVisible)
 	if (autoJCMCheckBox==nullptr)
 		return;
 	autoJCMCheckBox->setVisible(bVisible);
+	fakeDualQuatCheckBox->setVisible(bVisible);
 	update();
 }
 

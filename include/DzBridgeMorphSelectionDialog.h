@@ -58,6 +58,7 @@ namespace DzBridgeNameSpace
 		QString Morph;
 		double Scalar;
 		double Alpha;
+		bool IsBaseJCM = false;
 		MorphInfo LinkMorphInfo;
 		QList<JointLinkKey> Keys;
 	};
@@ -97,6 +98,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE QMap<QString, QString> GetMorphRenaming();
 
 		Q_INVOKABLE bool IsAutoJCMEnabled() { return autoJCMCheckBox->isChecked(); }
+		Q_INVOKABLE bool IsFakeDualQuatEnabled() { return fakeDualQuatCheckBox->isChecked(); }
 
 		// Recursive function for finding all active JCM morphs for a node
 		Q_INVOKABLE QList<JointLinkInfo> GetActiveJointControlledMorphs(DzNode* Node = nullptr);
@@ -127,6 +129,7 @@ namespace DzBridgeNameSpace
 		void HandleARKitGenesis81MorphsButton();
 		void HandleFaceFXGenesis8Button();
 		void HandleAutoJCMCheckBoxChange(bool checked);
+		void HandleFakeDualQuatCheckBoxChange(bool checked);
 		void HandleAddConnectedMorphs();
 
 	private:
@@ -195,6 +198,7 @@ namespace DzBridgeNameSpace
 		QTreeWidgetItem* fullBodyMorphTreeItem;
 		QTreeWidgetItem* charactersTreeItem;
 		QCheckBox* autoJCMCheckBox;
+		QCheckBox* fakeDualQuatCheckBox;
 
 		QSettings* settings;
 	};

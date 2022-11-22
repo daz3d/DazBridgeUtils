@@ -15,6 +15,7 @@
 class DzProgress;
 class DzGeometry;
 class DzFigure;
+class DzSkinBinding;
 
 class UnitTest_DzBridgeAction;
 
@@ -143,6 +144,13 @@ namespace DzBridgeNameSpace
 		virtual void exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzNode*, FbxNode*>& BoneMap);
 		virtual QList<DzNumericProperty*> getAnimatedProperties(DzNode* Node);
 		virtual void exportAnimatedProperties(QList<DzNumericProperty*>& Properties, FbxScene* Scene, FbxAnimLayer* AnimBaseLayer);
+
+		virtual void exportJCMDualQuatDiff();
+		virtual void exportNodeexportJCMDualQuatDiff(const JointLinkInfo& JointInfo);
+		void setLinearBlending(DzSkinBinding* Binding);
+		void setDualQuaternionBlending(DzSkinBinding* Binding);
+		void createDualQuaternionToLinearBlendDiffMorph(const QString BaseMorphName, class DzVertexMesh* Mesh, DzNode* Node);
+		QList<DzNode*> GetFigureNodeList(DzNode* Node);
 
 		virtual void lockBoneControls(DzNode* Bone);
 		virtual void unlockBoneControl(DzNode* Bone);
