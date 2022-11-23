@@ -1361,7 +1361,15 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 			//qDebug() << Bone->getName() << " RelativeDefaultPosition: " << OrientedRelativeDefaultPosition.m_x << "," << OrientedRelativeDefaultPosition.m_y << "," << OrientedRelativeDefaultPosition.m_z;
 			DzVec3 RelativeMovement = Position - ParentPosition;
 			//qDebug() << Bone->getName() << " RelativeMovement: " << RelativeMovement.m_x << "," << RelativeMovement.m_y << "," << RelativeMovement.m_z;
-			Position = OrientedRelativeDefaultPosition + RelativeMovement;
+			if (ParentBone->isRootNode())
+			{
+				// Hip needs to move independently
+				Position = Position + OrientedRelativeDefaultPosition;
+			}
+			else
+			{
+				Position = OrientedRelativeDefaultPosition + RelativeMovement;
+			}
 			//Position = Position * FigureScale;
 			/*Position.m_x = Position.m_x * ControlScale.m_x;
 			Position.m_y = Position.m_y * ControlScale.m_y;
