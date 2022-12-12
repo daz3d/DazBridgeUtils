@@ -460,6 +460,11 @@ QString DzBridgeDialog::GetMorphString()
 	return DzBridgeMorphSelectionDialog::Get(this)->GetMorphString();
 }
 
+QList<QString> DzBridgeDialog::GetPoseList()
+{
+	return DzBridgeMorphSelectionDialog::Get(this)->GetPoseList();
+}
+
 void DzBridgeDialog::HandleMorphsCheckBoxChange(int state)
 {
 	if (settings == nullptr || m_bDontSaveSettings) return;
@@ -715,7 +720,7 @@ void DzBridgeDialog::HandleOpenIntermediateFolderButton(QString sFolderPath)
 
 void DzBridgeDialog::HandleAssetTypeComboChange(const QString& assetType)
 {
-	animationSettingsGroupBox->setVisible(assetType == "Animation");
+	animationSettingsGroupBox->setVisible(assetType == "Animation" || assetType == "Pose");
 }
 
 #include "moc_DzBridgeDialog.cpp"

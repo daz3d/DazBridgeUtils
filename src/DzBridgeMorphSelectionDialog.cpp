@@ -1216,6 +1216,16 @@ QList<QString> DzBridgeMorphSelectionDialog::getMorphNamesToDisconnectList()
 	return morphsToDisconnect;
 }
 
+QList<QString> DzBridgeMorphSelectionDialog::GetPoseList()
+{
+	QList<QString> poseList;
+	foreach(MorphInfo exportMorph, morphsToExport)
+	{
+		poseList.append(exportMorph.Name);
+	}
+	return poseList;
+}
+
 void DzBridgeMorphSelectionDialog::SetAutoJCMVisible(bool bVisible)
 {
 	if (autoJCMCheckBox==nullptr)

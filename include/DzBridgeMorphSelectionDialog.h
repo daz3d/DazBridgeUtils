@@ -116,6 +116,9 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE static QString getMorphPropertyName(DzProperty* pMorphProperty);
 		Q_INVOKABLE QList<QString> getMorphNamesToDisconnectList();
 
+		// Get Pose list.  Similart to morphs, but without AutoJCM or FakeDualQuat items
+		Q_INVOKABLE QList<QString> GetPoseList();
+
 	public slots:
 		void FilterChanged(const QString& filter);
 		void ItemSelectionChanged();

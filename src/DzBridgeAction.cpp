@@ -916,7 +916,7 @@ void DzBridgeAction::exportAsset()
 			if (numericProperty)
 			{
 				QString propName = property->getName();
-				if (m_mMorphNameToLabel.contains(propName))
+				if (m_aPoseExportList.contains(propName))
 				{
 					poseIndex++;
 					numericProperty->setDoubleValue(0.0f, 0.0f);
@@ -949,11 +949,11 @@ void DzBridgeAction::exportAsset()
 						{
 							QString propName = property->getName();
 							//qDebug() << propName;
-							if (m_mMorphNameToLabel.contains(modifier->getName()))
+							if (m_aPoseExportList.contains(modifier->getName()))
 							{
 								poseIndex++;
 								numericProperty->setDoubleValue(0.0f, 0.0f);
-								for (int frame = 0; frame < m_mMorphNameToLabel.count() + 1; frame++)
+								for (int frame = 0; frame < m_aPoseExportList.count() + 1; frame++)
 								{
 									numericProperty->setDoubleValue(dzScene->getTimeStep() * double(frame), 0.0f);
 								}
@@ -1066,7 +1066,7 @@ void DzBridgeAction::exportNode(DzNode* Node)
 		 return;
 	 }
 
-	 if (m_sAssetType == "Animation" && m_bAnimationUseExperimentalTransfer)
+	 if ((m_sAssetType == "Animation" || m_sAssetType == "Pose") && m_bAnimationUseExperimentalTransfer)
 	 {
 		 QDir dir;
 		 dir.mkpath(m_sDestinationPath);
@@ -3248,6 +3248,7 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 		m_ControllersToDisconnect.append(m_morphSelectionDialog->getMorphNamesToDisconnectList());
 		m_mMorphNameToLabel = BridgeDialog->GetMorphMapping();
 		m_bEnableMorphs = BridgeDialog->getMorphsEnabledCheckBox()->isChecked();
+		m_aPoseExportList = BridgeDialog->GetPoseList();
 	}
 
 	m_EnableSubdivisions = BridgeDialog->getSubdivisionEnabledCheckBox()->isChecked();

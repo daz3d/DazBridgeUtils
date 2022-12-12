@@ -107,6 +107,7 @@ namespace DzBridgeNameSpace
 		QString m_sFbxVersion; // FBX file format version to export
 		QMap<QString, QString> m_mMorphNameToLabel; // Internal name to Friendly label (from MorphSelectionDialog->morphsToExport)
 		QList<QString> m_aPoseList; // Control Pose names
+		QList<QString> m_aPoseExportList; // Poses chosen in the export dialog
 		QMap<DzImageProperty*, double> m_imgPropertyTable_NormalMapStrength; // Image Property to Normal Map Strength
 
 		// Used only by script system
