@@ -46,6 +46,8 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE QCheckBox* getBakeAnimationExportCheckBox () { return  bakeAnimationExportCheckBox; }
 		Q_INVOKABLE QCheckBox* getFaceAnimationExportCheckBox() { return faceAnimationExportCheckBox; }
 		Q_INVOKABLE QSettings* getSettings() { return settings; }
+		Q_INVOKABLE QCheckBox* getAnimationExportActiveCurvesCheckBox() { return animationExportActiveCurvesCheckBox; }
+		Q_INVOKABLE QCheckBox* getAnimationApplyBoneScaleCheckBox() { return animationApplyBoneScaleCheckBox; }
 
 		/** Constructor **/
 		DzBridgeDialog(QWidget* parent = nullptr, const QString& windowTitle = "");
@@ -56,7 +58,8 @@ namespace DzBridgeNameSpace
 		// Pass so the DazToUnrealAction can access it from the morph dialog
 		Q_INVOKABLE QString GetMorphString();
 		// Pass so the DazToUnrealAction can access it from the morph dialog
-		Q_INVOKABLE QMap<QString, QString> GetMorphMapping();
+		Q_INVOKABLE QMap<QString, QString> GetMorphMapping() { return morphMapping; }
+		Q_INVOKABLE QList<QString> GetPoseList();
 		Q_INVOKABLE virtual void resetToDefaults();
 		Q_INVOKABLE virtual bool loadSavedSettings();
 		Q_INVOKABLE virtual void saveSettings();
@@ -116,6 +119,8 @@ namespace DzBridgeNameSpace
 		QCheckBox* experimentalAnimationExportCheckBox;
 		QCheckBox* bakeAnimationExportCheckBox;
 		QCheckBox* faceAnimationExportCheckBox;
+		QCheckBox* animationExportActiveCurvesCheckBox;
+		QCheckBox* animationApplyBoneScaleCheckBox;
 
 		QString m_sEmbeddedFilesPath = ":/DazBridge";
 		bool m_bDontSaveSettings = false;

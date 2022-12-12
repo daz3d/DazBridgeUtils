@@ -92,8 +92,11 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	m_WelcomeLabel->setWordWrap(true);
 	m_WelcomeLabel->setText(sSetupModeString);
 	m_WelcomeLabel->setOpenExternalLinks(true);
-//	m_WelcomeLabel->setHidden(true);
+#ifdef VODSVERSION
+	m_WelcomeLabel->setHidden(true);
+#else
 	mainLayout->addRow(m_WelcomeLabel);
+#endif
 
 	advancedWidget = new QWidget();
 	QHBoxLayout* advancedLayoutOuter = new QHBoxLayout();
@@ -119,11 +122,16 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	QFormLayout* animationSettingsLayout = new QFormLayout();
 	animationSettingsGroupBox->setLayout(animationSettingsLayout);
 	experimentalAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
-	animationSettingsLayout->addRow("Use Experimental Export", experimentalAnimationExportCheckBox);
+	experimentalAnimationExportCheckBox->setChecked(true);
+	animationSettingsLayout->addRow("Use New Export", experimentalAnimationExportCheckBox);
 	bakeAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
 	animationSettingsLayout->addRow("Bake", bakeAnimationExportCheckBox);
 	faceAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
 	animationSettingsLayout->addRow("Transfer Face Bones", faceAnimationExportCheckBox);
+	animationExportActiveCurvesCheckBox = new QCheckBox("", animationSettingsGroupBox);
+	animationSettingsLayout->addRow("Transfer Active Curves", animationExportActiveCurvesCheckBox);
+	animationApplyBoneScaleCheckBox = new QCheckBox("", animationSettingsGroupBox);
+	animationSettingsLayout->addRow("Apply Bone Scale", animationApplyBoneScaleCheckBox);
 	animationSettingsGroupBox->setVisible(false);
 
 	// Morphs
@@ -233,7 +241,7 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	showFbxDialogCheckBox->setWhatsThis("Checking this will show the FBX Dialog for adjustments before export.");
 	exportMaterialPropertyCSVCheckBox->setWhatsThis("Checking this will write out a CSV of all the material properties.  Useful for reference when changing materials.");
 	enableNormalMapGenerationCheckBox->setWhatsThis("Checking this will enable generation of Normal Maps for any surfaces that only have Bump Height Maps.");
-	m_wTargetPluginInstaller->setWhatsThis("Install a plugin to use Daz Bridge with the destination software.");
+	//m_wTargetPluginInstaller->setWhatsThis("Install a plugin to use Daz Bridge with the destination software.");
 
 	// detect scene change
 	connect(dzScene, SIGNAL(nodeSelectionListChanged()), this, SLOT(handleSceneSelectionChanged()));
@@ -245,8 +253,9 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	{
 		setDisabled(true);
 	}
+#ifndef VODSVERSION
 	m_WelcomeLabel->setVisible(true);
-
+#endif
 }
 
 void DzBridgeDialog::renameTargetPluginInstaller(QString sNewLabelName)
@@ -345,6 +354,14 @@ bool DzBridgeDialog::loadSavedSettings()
 	{
 		faceAnimationExportCheckBox->setChecked(settings->value("AnimationExportFace").toBool());
 	}
+	if (!settings->value("AnimationExportActiveCurves").isNull())
+	{
+		animationExportActiveCurvesCheckBox->setChecked(settings->value("AnimationExportActiveCurves").toBool());
+	}
+	if (!settings->value("AnimationApplyBoneScale").isNull())
+	{
+		animationApplyBoneScaleCheckBox->setChecked(settings->value("AnimationApplyBoneScale").toBool());
+	}
 
 	return true;
 }
@@ -357,6 +374,8 @@ void DzBridgeDialog::saveSettings()
 	settings->setValue("AnimationExperminentalExport", experimentalAnimationExportCheckBox->isChecked());
 	settings->setValue("AnimationBake", bakeAnimationExportCheckBox->isChecked());
 	settings->setValue("AnimationExportFace", faceAnimationExportCheckBox->isChecked());
+	settings->setValue("AnimationExportActiveCurves", animationExportActiveCurvesCheckBox->isChecked());
+	settings->setValue("AnimationApplyBoneScale", animationApplyBoneScaleCheckBox->isChecked());
 }
 
 void DzBridgeDialog::refreshAsset()
@@ -450,6 +469,11 @@ QMap<QString, QString> DzBridgeDialog::GetMorphMapping()
 {
 	DzBridgeMorphSelectionDialog* morphDialog = DzBridgeMorphSelectionDialog::Get(this);
 	return morphDialog->GetMorphRenaming();
+}
+
+QList<QString> DzBridgeDialog::GetPoseList()
+{
+	return DzBridgeMorphSelectionDialog::Get(this)->GetPoseList();
 }
 
 void DzBridgeDialog::HandleMorphsCheckBoxChange(int state)
@@ -707,7 +731,7 @@ void DzBridgeDialog::HandleOpenIntermediateFolderButton(QString sFolderPath)
 
 void DzBridgeDialog::HandleAssetTypeComboChange(const QString& assetType)
 {
-	animationSettingsGroupBox->setVisible(assetType == "Animation");
+	animationSettingsGroupBox->setVisible(assetType == "Animation" || assetType == "Pose");
 }
 
 #include "moc_DzBridgeDialog.cpp"

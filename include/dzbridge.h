@@ -15,6 +15,7 @@
 
 #define DZ_BRIDGE_NAMESPACE DzBridgeNameSpace
 //#define DZ_BRIDGE_NAMESPACE DzBridgeStatic_71fb72024b4947baa82a4780e3819776
+#define VODSVERSION
 
 
 /////////////////////////////////////////////

@@ -157,6 +157,11 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	autoJCMCheckBox->setChecked(false);
 	autoJCMCheckBox->setVisible(false);
 
+	fakeDualQuatCheckBox = new QCheckBox("Fake Dual Quat");
+	fakeDualQuatCheckBox->setChecked(false);
+	fakeDualQuatCheckBox->setVisible(false);
+	fakeDualQuatCheckBox->setWhatsThis("Adds additional JCMs that fake the difference between Linear Blending and Dual Quaternion Skinning.");
+
 	QPushButton* AddConnectedMorphsButton = new QPushButton("Add Connected Morphs");
 
 	((QGridLayout*)JCMGroupBox->layout())->addWidget(ArmsJCMButton, 0, 0);
@@ -168,11 +173,17 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	MorphGroupBox->layout()->addWidget(JCMGroupBox);
 	MorphGroupBox->layout()->addWidget(FaceGroupBox);
 	MorphGroupBox->layout()->addWidget(autoJCMCheckBox);
+	MorphGroupBox->layout()->addWidget(fakeDualQuatCheckBox);
 	MorphGroupBox->layout()->addWidget(AddConnectedMorphsButton);
 
 	if (!settings->value("AutoJCMEnabled").isNull())
 	{
 		autoJCMCheckBox->setChecked(settings->value("AutoJCMEnabled").toBool());
+	}
+
+	if (!settings->value("FakeDualQuatEnabled").isNull())
+	{
+		fakeDualQuatCheckBox->setChecked(settings->value("FakeDualQuatEnabled").toBool());
 	}
 
 	connect(ArmsJCMButton, SIGNAL(released()), this, SLOT(HandleArmJCMMorphsButton()));
@@ -181,6 +192,7 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	connect(ARKit81Button, SIGNAL(released()), this, SLOT(HandleARKitGenesis81MorphsButton()));
 	connect(FaceFX8Button, SIGNAL(released()), this, SLOT(HandleFaceFXGenesis8Button()));
 	connect(autoJCMCheckBox, SIGNAL(clicked(bool)), this, SLOT(HandleAutoJCMCheckBoxChange(bool)));
+	connect(fakeDualQuatCheckBox, SIGNAL(clicked(bool)), this, SLOT(HandleFakeDualQuatCheckBoxChange(bool)));
 	connect(AddConnectedMorphsButton, SIGNAL(clicked(bool)), this, SLOT(HandleAddConnectedMorphs()));
 
 	treeLayout->addWidget(MorphGroupBox);
@@ -482,6 +494,7 @@ QList<JointLinkInfo> DzBridgeMorphSelectionDialog::GetJointControlledMorphInfo(D
 		double currentBodyScalar = 0.0f;
 		double linkScalar = 0.0f;
 		bool isJCM = false;
+		bool isBaseJCM = false;
 		QList<double> keys;
 		QList<double> keysValues;
 		QList<JointLinkKey> linkKeys;
@@ -526,6 +539,11 @@ QList<JointLinkInfo> DzBridgeMorphSelectionDialog::GetJointControlledMorphInfo(D
 					linkBodyType = linkObject;
 					bodyStrength = value;
 					currentBodyScalar = currentValue;
+					if (linkProperty == "body_ctrl_basejointcorrectives" ||
+						linkProperty == "BaseJointCorrectives")
+					{
+						isBaseJCM = true;
+					}
 				}
 			}
 		}
@@ -539,17 +557,24 @@ QList<JointLinkInfo> DzBridgeMorphSelectionDialog::GetJointControlledMorphInfo(D
 			linkInfo.Scalar = linkScalar;
 			linkInfo.Alpha = currentBodyScalar;
 			linkInfo.Keys = linkKeys;
-			qDebug() << "Label " << linkLabel << " Description " << linkDescription << " Bone " << linkBone << " Axis " << linkAxis << " Alpha " << currentBodyScalar << " Scalar " << linkScalar;
+			linkInfo.IsBaseJCM = isBaseJCM;
+
+			if (morphs.contains(linkLabel))
+			{
+				linkInfo.LinkMorphInfo = morphs[linkLabel];
+			}
+
+			//qDebug() << "Label " << linkLabel << " Description " << linkDescription << " Bone " << linkBone << " Axis " << linkAxis << " Alpha " << currentBodyScalar << " Scalar " << linkScalar;
 			if (!keys.isEmpty())
 			{
 				foreach(double key, keys)
 				{
-					qDebug() << key;
+					//qDebug() << key;
 				}
 
 				foreach(double key, keysValues)
 				{
-					qDebug() << key;
+					//qDebug() << key;
 				}
 
 			}
@@ -945,6 +970,11 @@ void DzBridgeMorphSelectionDialog::HandleAutoJCMCheckBoxChange(bool checked)
 	settings->setValue("AutoJCMEnabled", checked);
 }
 
+void DzBridgeMorphSelectionDialog::HandleFakeDualQuatCheckBoxChange(bool checked)
+{
+	settings->setValue("FakeDualQuatEnabled", checked);
+}
+
 // Refresh the Right export list
 void DzBridgeMorphSelectionDialog::RefreshExportMorphList()
 {
@@ -1017,7 +1047,9 @@ QString DzBridgeMorphSelectionDialog::GetMorphString()
 		AddActiveJointControlledMorphs();
 	}
 
-	if (m_morphsToExport.length() == 0)
+	QList<JointLinkInfo> jointLinks = GetActiveJointControlledMorphs();
+
+	if (m_morphsToExport.length() == 0 && jointLinks.length() == 0))
 	{
 		return "";
 	}
@@ -1025,6 +1057,11 @@ QString DzBridgeMorphSelectionDialog::GetMorphString()
 	foreach(MorphInfo exportMorph, m_morphsToExport_finalized)
 	{
 		morphNamesToExport.append(exportMorph.Name);
+	}
+	foreach(JointLinkInfo jointLink, jointLinks)
+	{
+		morphNamesToExport.append(jointLink.Morph);
+		morphNamesToExport.append(jointLink.Morph + "_dq2lb");
 	}
 	QString morphString = morphNamesToExport.join("\n1\n");
 	morphString += "\n1\n.CTRLVS\n2\nAnything\n0";
@@ -1061,6 +1098,13 @@ QMap<QString,QString> DzBridgeMorphSelectionDialog::GetMorphRenaming()
 	foreach(MorphInfo exportMorph, m_morphsToExport_finalized)
 	{
 		morphNameMapping.insert(exportMorph.Name, exportMorph.Label);
+	}
+
+	QList<JointLinkInfo> jointLinks = GetActiveJointControlledMorphs();
+	foreach(JointLinkInfo jointLink, jointLinks)
+	{
+		morphNameMapping.insert(jointLink.LinkMorphInfo.Name, jointLink.LinkMorphInfo.Label);
+		morphNameMapping.insert(jointLink.LinkMorphInfo.Name + "_dq2lb", jointLink.LinkMorphInfo.Label + "_dq2lb");
 	}
 
 	return morphNameMapping;
@@ -1158,9 +1202,18 @@ void DzBridgeMorphSelectionDialog::HandleAddConnectedMorphs()
 	{
 		return;
 	}
-	foreach (MorphInfo exportMorph, m_morphsToExport)
+
+	QList<JointLinkInfo> jointLinks = GetActiveJointControlledMorphs();
+
+	/////////////////////////////////////////////////////////////////////////////////////
+	// foreach (MorphInfo exportMorph, m_morphsToExport)
+	// {
+	// 	DzProperty *morphProperty = exportMorph.Property;
+	/////////////////////////////////////////////////////////////////////////////////////
+	foreach (JointLinkInfo jointLink, jointLinks)
 	{
-		DzProperty *morphProperty = exportMorph.Property;
+		DzProperty *morphProperty = jointLink.LinkMorphInfo.Property;
+	/////////////////////////////////////////////////////////////////////////////////////
 		if (morphProperty == nullptr)
 		{
 			// log unexpected error
@@ -1219,11 +1272,22 @@ QList<QString> DzBridgeMorphSelectionDialog::getMorphNamesToDisconnectList()
 	return morphsToDisconnect;
 }
 
+QList<QString> DzBridgeMorphSelectionDialog::GetPoseList()
+{
+	QList<QString> poseList;
+	foreach(MorphInfo exportMorph, morphsToExport)
+	{
+		poseList.append(exportMorph.Name);
+	}
+	return poseList;
+}
+
 void DzBridgeMorphSelectionDialog::SetAutoJCMVisible(bool bVisible)
 {
 	if (autoJCMCheckBox==nullptr)
 		return;
 	autoJCMCheckBox->setVisible(bVisible);
+	fakeDualQuatCheckBox->setVisible(bVisible);
 	update();
 }
 

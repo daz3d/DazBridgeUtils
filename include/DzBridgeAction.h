@@ -15,6 +15,7 @@
 class DzProgress;
 class DzGeometry;
 class DzFigure;
+class DzSkinBinding;
 
 class UnitTest_DzBridgeAction;
 
@@ -110,6 +111,7 @@ namespace DzBridgeNameSpace
 		QString m_sFbxVersion; // FBX file format version to export
 		QMap<QString, QString> m_mMorphNameToLabel; // Internal name to Friendly label (from MorphSelectionDialog->m_morphsToExport)
 		QList<QString> m_aPoseList; // Control Pose names
+		QList<QString> m_aPoseExportList; // Poses chosen in the export dialog
 		QMap<DzImageProperty*, double> m_imgPropertyTable_NormalMapStrength; // Image Property to Normal Map Strength
 
 		// Used only by script system
@@ -133,6 +135,8 @@ namespace DzBridgeNameSpace
 		bool m_bAnimationUseExperimentalTransfer;
 		bool m_bAnimationBake;
 		bool m_bAnimationTransferFace;
+		bool m_bAnimationExportActiveCurves;
+		bool m_bAnimationApplyBoneScale;
 
 		// post-process FBX
 		bool m_bPostProcessFbx;
@@ -148,6 +152,18 @@ namespace DzBridgeNameSpace
 		virtual void exportAnimation();
 		virtual void exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& BoneMap, FbxAnimLayer* AnimBaseLayer);
 		virtual void exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzNode*, FbxNode*>& BoneMap);
+		virtual QList<DzNumericProperty*> getAnimatedProperties(DzNode* Node);
+		virtual void exportAnimatedProperties(QList<DzNumericProperty*>& Properties, FbxScene* Scene, FbxAnimLayer* AnimBaseLayer);
+
+		virtual void exportJCMDualQuatDiff();
+		virtual void exportNodeexportJCMDualQuatDiff(const JointLinkInfo& JointInfo);
+		void setLinearBlending(DzSkinBinding* Binding);
+		void setDualQuaternionBlending(DzSkinBinding* Binding);
+		void createDualQuaternionToLinearBlendDiffMorph(const QString BaseMorphName, class DzVertexMesh* Mesh, DzNode* Node);
+		QList<DzNode*> GetFigureNodeList(DzNode* Node);
+
+		virtual void lockBoneControls(DzNode* Bone);
+		virtual void unlockBoneControl(DzNode* Bone);
 
 		virtual void writeConfiguration() = 0;
 		virtual void setExportOptions(DzFileIOSettings& ExportOptions) = 0;

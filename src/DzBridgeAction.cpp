@@ -31,6 +31,7 @@
 #include <dzprogress.h>
 #include <dztexture.h>
 #include <dzimagemgr.h>
+#include <dzscript.h>
 
 #include "dzgeometry.h"
 #include "dzweightmap.h"
@@ -657,7 +658,7 @@ bool DzBridgeAction::renameDuplicateClothing()
 	}
 
 	int figureCount = figureNodes.length();
-	qDebug() << "Count: " << figureCount;
+	//qDebug() << "Count: " << figureCount;
 	for (int i = 0; i < figureCount; i++)
 	{
 		DzFigure* primaryFigure = figureNodes[i];
@@ -666,7 +667,7 @@ bool DzBridgeAction::renameDuplicateClothing()
 			DzFigure* secondaryFigure = figureNodes[j];
 			if (primaryFigure->getName() == secondaryFigure->getName())
 			{
-				qDebug() << "Match:" << primaryFigure->getName();
+				//qDebug() << "Match:" << primaryFigure->getName();
 				m_undoTable_DuplicateClothingRename.insert(secondaryFigure, secondaryFigure->getName());
 				QString newClothingName = secondaryFigure->getName() + QString("_%1").arg(j);
 				secondaryFigure->setName(newClothingName);
@@ -752,6 +753,7 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 	}
 	m_subdivisionDialog->LockSubdivisionProperties(m_EnableSubdivisions);
 	m_bExportingBaseMesh = false;
+
 	exportAsset();
 	if (exportProgress)
 	{
@@ -931,7 +933,7 @@ void DzBridgeAction::exportAsset()
 			if (numericProperty)
 			{
 				QString propName = property->getName();
-				if (m_mMorphNameToLabel.contains(propName))
+				if (m_aPoseExportList.contains(propName))
 				{
 					poseIndex++;
 					numericProperty->setDoubleValue(0.0f, 0.0f);
@@ -964,11 +966,11 @@ void DzBridgeAction::exportAsset()
 						{
 							QString propName = property->getName();
 							//qDebug() << propName;
-							if (m_mMorphNameToLabel.contains(modifier->getName()))
+							if (m_aPoseExportList.contains(modifier->getName()))
 							{
 								poseIndex++;
 								numericProperty->setDoubleValue(0.0f, 0.0f);
-								for (int frame = 0; frame < m_mMorphNameToLabel.count() + 1; frame++)
+								for (int frame = 0; frame < m_aPoseExportList.count() + 1; frame++)
 								{
 									numericProperty->setDoubleValue(dzScene->getTimeStep() * double(frame), 0.0f);
 								}
@@ -993,6 +995,10 @@ void DzBridgeAction::exportAsset()
 		QList<QString> DisconnectedModifiers;
 		if (m_bEnableMorphs)
 		{
+			if (m_morphSelectionDialog->IsAutoJCMEnabled() && m_morphSelectionDialog->IsFakeDualQuatEnabled())
+			{
+				exportJCMDualQuatDiff();
+			}
 			DisconnectedModifiers = disconnectOverrideControllers();
 		}
 		DzNode* Selection = dzScene->getPrimarySelection();
@@ -1077,7 +1083,7 @@ void DzBridgeAction::exportNode(DzNode* Node)
 		 return;
 	 }
 
-	 if (m_sAssetType == "Animation" && m_bAnimationUseExperimentalTransfer)
+	 if ((m_sAssetType == "Animation" || m_sAssetType == "Pose") && m_bAnimationUseExperimentalTransfer)
 	 {
 		 QDir dir;
 		 dir.mkpath(m_sDestinationPath);
@@ -1186,6 +1192,7 @@ void DzBridgeAction::exportNode(DzNode* Node)
 */
 
 		  preProcessScene(Parent);
+		  //lockBoneControls(Parent);
 
 		  QDir dir;
 		  dir.mkpath(m_sDestinationPath);
@@ -1209,7 +1216,7 @@ void DzBridgeAction::exportNode(DzNode* Node)
 
 			  writeConfiguration();
 		  }
-
+		  //unlockBoneControl(Parent);
 		  undoPreProcessScene();
 	 }
 }
@@ -1231,7 +1238,7 @@ void DzBridgeAction::exportAnimation()
 
 	int FileFormat = -1;
 	FileFormat = SdkManager->GetIOPluginRegistry()->FindWriterIDByDescription("FBX ascii (*.fbx)");
-	qDebug() << "FileName: " << this->m_sDestinationFBX;
+	//qDebug() << "FileName: " << this->m_sDestinationFBX;
 	FbxExporter* Exporter = FbxExporter::Create(SdkManager, "");
 	if (!Exporter->Initialize(this->m_sDestinationFBX.toLocal8Bit().data(), FileFormat, SdkManager->GetIOSettings()))
 	{
@@ -1253,7 +1260,7 @@ void DzBridgeAction::exportAnimation()
 	DzTimeRange PlayRange = dzScene->getPlayRange();
 
 	//
-	//exportNodeAnimation(Figure, BoneMap, AnimBaseLayer);
+	exportNodeAnimation(Figure, BoneMap, AnimBaseLayer);
 
 	// Iterate the bones
 	DzBoneList Bones;
@@ -1261,6 +1268,13 @@ void DzBridgeAction::exportAnimation()
 	for (auto Bone : Bones)
 	{
 		exportNodeAnimation(Bone, BoneMap, AnimBaseLayer);
+	}
+
+	// Get a list of animated properties
+	if (m_bAnimationExportActiveCurves)
+	{
+		QList<DzNumericProperty*> animatedProperties = getAnimatedProperties(m_pSelectedNode);
+		exportAnimatedProperties(animatedProperties, Scene, AnimBaseLayer);
 	}
 
 	// Write the FBX
@@ -1277,7 +1291,7 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 	FbxNode* Node = BoneMap.value(Bone);
 	if (Node == nullptr) return;
 
-	qDebug() << Bone->getName() << " Order: " << Bone->getRotationOrder().toString();
+	//qDebug() << Bone->getName() << " Order: " << Bone->getRotationOrder().toString();
 
 	// Create a curve node for this bone
 	FbxAnimCurveNode* AnimCurveNode = Node->LclRotation.GetCurveNode(AnimBaseLayer, true);
@@ -1286,7 +1300,18 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 	for (DzTime CurrentTime = PlayRange.getStart(); CurrentTime <= PlayRange.getEnd(); CurrentTime += dzScene->getTimeStep())
 	{
 		DzTime Frame = CurrentTime / dzScene->getTimeStep();
-		DzVec3 Position = Bone->getWSPos(CurrentTime);
+		DzVec3 DefaultPosition;
+		DefaultPosition.m_x = Bone->getOriginXControl()->getValue(CurrentTime);
+		DefaultPosition.m_y = Bone->getOriginYControl()->getValue(CurrentTime);
+		DefaultPosition.m_z = Bone->getOriginZControl()->getValue(CurrentTime);
+		DzMatrix3 Scale = Bone->getWSScale();
+		//qDebug() << Bone->getName() << " Scale: " << Scale.row(0).length() << "," << Scale.row(1).length() << "," << Scale.row(2).length();
+
+		//qDebug() << Bone->getName() << " Default Position: " << DefaultPosition.m_x << "," << DefaultPosition.m_y << "," << DefaultPosition.m_z;
+		DzVec3 Position;
+		Position.m_x = Bone->getXPosControl()->getValue(CurrentTime);
+		Position.m_y = Bone->getYPosControl()->getValue(CurrentTime);
+		Position.m_z = Bone->getZPosControl()->getValue(CurrentTime);
 		//qDebug() << Bone->getName() << " Position: " << Position.m_x << "," << Position.m_y << "," << Position.m_z;
 
 		// Get an initial rotation via the controls
@@ -1296,10 +1321,27 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 		ControlRotation.m_z = Bone->getZRotControl()->getValue(CurrentTime);
 		DzVec3 VectorRotation = ControlRotation;
 
+		// Scale
+		DzVec3 ControlScale(1.0f, 1.0f, 1.0f);
+		float FigureScale = 1.0f;
+		if (m_bAnimationApplyBoneScale)
+		{
+			//DzSkeleton* Skeleton = m_pSelectedNode->getSkeleton();
+			//DzFigure* Figure = Skeleton ? qobject_cast<DzFigure*>(Skeleton) : NULL;
+			float FigureScale = Bone->getScaleControl()->getValue(CurrentTime);
+
+			ControlScale.m_x = Bone->getXScaleControl()->getValue(CurrentTime) * FigureScale;
+			ControlScale.m_y = Bone->getYScaleControl()->getValue(CurrentTime) * FigureScale;
+			ControlScale.m_z = Bone->getZScaleControl()->getValue(CurrentTime) * FigureScale;
+
+			//DzMatrix3 Scale = Bone->getLocalScale(CurrentTime);
+			//qDebug() << Bone->getName() << " Scale: " << ControlScale.m_x << "," << ControlScale.m_y << "," << ControlScale.m_z;
+		}
 
 		// Get the rotation and position relative to the parent
 		if (DzNode* ParentBone = Bone->getNodeParent())
 		{
+
 			// Get the local orientation
 			DzQuat Orientation = Bone->getOrientation(true) * ParentBone->getOrientation(true).inverse();
 
@@ -1309,6 +1351,7 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 			VectorRotation.m_x = VectorRotation.m_x / FBXSDK_180_DIV_PI;
 			VectorRotation.m_y = VectorRotation.m_y / FBXSDK_180_DIV_PI;
 			VectorRotation.m_z = VectorRotation.m_z / FBXSDK_180_DIV_PI;
+			//qDebug() << Bone->getName() << " ControlRot: " << VectorRotation.m_x << "," << VectorRotation.m_y << "," << VectorRotation.m_z;
 			ReorderQuat.setValue(Bone->getRotationOrder().order(), VectorRotation);
 			ReorderQuat = ReorderQuat * Orientation;
 
@@ -1319,11 +1362,48 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 
 			//qDebug() << Bone->getName() << " Reorder LocalRot: " << VectorRotation.m_x << "," << VectorRotation.m_y << "," << VectorRotation.m_z;
 
-			DzVec3 ParentPosition = ParentBone->getWSPos(CurrentTime);
+			//qDebug() << Bone->getName() << " Parent Default Position: " << DefaultParentPosition.m_x << "," << DefaultParentPosition.m_y << "," << DefaultParentPosition.m_z;
+			DzVec3 ParentPosition;
+			ParentPosition.m_x = ParentBone->getXPosControl()->getValue(CurrentTime);
+			ParentPosition.m_y = ParentBone->getYPosControl()->getValue(CurrentTime);
+			ParentPosition.m_z = ParentBone->getZPosControl()->getValue(CurrentTime);
 			//qDebug() << Bone->getName() << " Parent Position: " << ParentPosition.m_x << "," << ParentPosition.m_y << "," << ParentPosition.m_z;
-			DzVec3 LocalPosition = Position - ParentPosition;
-			Position = LocalPosition;
+
+			DzVec3 DefaultParentPosition;
+			DefaultParentPosition.m_x = ParentBone->getOriginXControl()->getValue(CurrentTime);
+			DefaultParentPosition.m_y = ParentBone->getOriginYControl()->getValue(CurrentTime);
+			DefaultParentPosition.m_z = ParentBone->getOriginZControl()->getValue(CurrentTime);
+			//qDebug() << Bone->getName() << " Parent Default Position: " << DefaultParentPosition.m_x << "," << DefaultParentPosition.m_y << "," << DefaultParentPosition.m_z;
+
+			DzVec3 RelativeDefaultPosition = DefaultPosition - DefaultParentPosition;
+			//float Length = RelativeDefaultPosition.length();
+			DzVec3 OrientedRelativeDefaultPosition = ParentBone->getOrientation(true).inverse().multVec(RelativeDefaultPosition);
+
+			//qDebug() << Bone->getName() << " RelativeDefaultPosition: " << OrientedRelativeDefaultPosition.m_x << "," << OrientedRelativeDefaultPosition.m_y << "," << OrientedRelativeDefaultPosition.m_z;
+			DzVec3 RelativeMovement = Position - ParentPosition;
+			//qDebug() << Bone->getName() << " RelativeMovement: " << RelativeMovement.m_x << "," << RelativeMovement.m_y << "," << RelativeMovement.m_z;
+			if (ParentBone->isRootNode())
+			{
+				// Hip needs to move independently
+				Position = Position + OrientedRelativeDefaultPosition;
+			}
+			else
+			{
+				Position = OrientedRelativeDefaultPosition + RelativeMovement;
+			}
+			//Position = Position * FigureScale;
+			/*Position.m_x = Position.m_x * ControlScale.m_x;
+			Position.m_y = Position.m_y * ControlScale.m_y;
+			Position.m_z = Position.m_z * ControlScale.m_z;*/
+			//Position = Position * ControlScale;
+
+			if (ParentBone->getName() == "head")
+			{
+				ControlScale = ControlScale * FigureScale;
+			}
 		}
+
+
 
 		// Set the frame
 		FbxTime Time;
@@ -1371,6 +1451,27 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 		KeyIndex = PosZCurve->KeyAdd(Time);
 		PosZCurve->KeySet(KeyIndex, Time, Position.m_z);
 		PosZCurve->KeyModifyEnd();
+
+		// Write X Pos
+		FbxAnimCurve* ScaleXCurve = Node->LclScaling.GetCurve(AnimBaseLayer, "X", true);
+		ScaleXCurve->KeyModifyBegin();
+		KeyIndex = ScaleXCurve->KeyAdd(Time);
+		ScaleXCurve->KeySet(KeyIndex, Time, ControlScale.m_x);
+		ScaleXCurve->KeyModifyEnd();
+
+		// Write Y Pos
+		FbxAnimCurve* ScaleYCurve = Node->LclScaling.GetCurve(AnimBaseLayer, "Y", true);
+		ScaleYCurve->KeyModifyBegin();
+		KeyIndex = ScaleYCurve->KeyAdd(Time);
+		ScaleYCurve->KeySet(KeyIndex, Time, ControlScale.m_y);
+		ScaleYCurve->KeyModifyEnd();
+
+		// Write Z Pos
+		FbxAnimCurve* ScaleZCurve = Node->LclScaling.GetCurve(AnimBaseLayer, "Z", true);
+		ScaleZCurve->KeyModifyBegin();
+		KeyIndex = ScaleZCurve->KeyAdd(Time);
+		ScaleZCurve->KeySet(KeyIndex, Time, ControlScale.m_z);
+		ScaleZCurve->KeyModifyEnd();
 	}
 }
 
@@ -1439,12 +1540,374 @@ void DzBridgeAction::exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxPa
 	}
 
 	// Add the bone to the map
-	//if (DzBone* Bone = qobject_cast<DzBone*>(Node))
+	BoneMap.insert(Node, BoneNode);
+}
+
+QList<DzNumericProperty*> DzBridgeAction::getAnimatedProperties(DzNode* Node)
+{
+	QList<DzNumericProperty*> animatedPropertyList;
+	animatedPropertyList.clear();
+
+	if (Node == nullptr)
+		return animatedPropertyList;
+
+	DzObject* Object = Node->getObject();
+	DzShape* Shape = Object ? Object->getCurrentShape() : NULL;
+
+	for (int index = 0; index < Node->getNumProperties(); index++)
 	{
-		BoneMap.insert(Node, BoneNode);
+		DzProperty* property = Node->getProperty(index);
+		DzNumericProperty* numericProp = qobject_cast<DzNumericProperty*>(property);
+		if (numericProp)
+		{
+			for (int keyIndex = 0; keyIndex < property->getNumKeys(); keyIndex++)
+			{
+				if (numericProp->getDoubleValue(property->getKeyTime(keyIndex)) > 0.001f)
+				{
+					animatedPropertyList.append(numericProp);
+					QString propName = property->getLabel();
+					//qDebug() << "Animated Property: " << propName;
+				}
+			}
+		}
+	}
+
+	if (Object)
+	{
+		for (int index = 0; index < Object->getNumModifiers(); index++)
+		{
+			DzModifier* modifier = Object->getModifier(index);
+			QString modName = modifier->getName();
+			QString modLabel = modifier->getLabel();
+			DzMorph* mod = qobject_cast<DzMorph*>(modifier);
+			if (mod)
+			{
+				for (int propindex = 0; propindex < modifier->getNumProperties(); propindex++)
+				{
+					DzProperty* property = modifier->getProperty(propindex);
+					DzNumericProperty* numericProp = qobject_cast<DzNumericProperty*>(property);
+					if (numericProp)
+					{
+						for (int keyIndex = 0; keyIndex < property->getNumKeys(); keyIndex++)
+						{
+							if (numericProp->getDoubleValue(property->getKeyTime(keyIndex)) > 0.001f)
+							{
+								animatedPropertyList.append(numericProp);
+								QString propName = property->getLabel();
+								//qDebug() << "Animated Property: " << propName;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return animatedPropertyList;
+}
+
+void DzBridgeAction::exportAnimatedProperties(QList<DzNumericProperty*>& Properties, FbxScene* Scene, FbxAnimLayer* AnimBaseLayer)
+{
+	DzTimeRange PlayRange = dzScene->getPlayRange();
+
+	foreach(DzNumericProperty * numericProperty, Properties)
+	{
+		FbxNode* RootNode = Scene->FindNodeByName("root");
+		FbxProperty fbxProperty = FbxProperty::Create(RootNode, FbxDoubleDT, numericProperty->getLabel().toLocal8Bit().data());
+		if (fbxProperty.IsValid())
+		{
+			FbxAnimCurveNode* CurveNode = fbxProperty.CreateCurveNode(AnimBaseLayer);
+			fbxProperty.ModifyFlag(FbxPropertyFlags::eAnimatable, true);
+			fbxProperty.ModifyFlag(FbxPropertyFlags::eUserDefined, true);
+			FbxAnimCurve* lAnimCurve = fbxProperty.GetCurve(AnimBaseLayer, true);
+
+			if (lAnimCurve == nullptr)
+			{
+				//qDebug() << "Animated Property: FbxAnimCurve is invalid: " << numericProperty->getLabel();
+				continue;
+			}
+			lAnimCurve->KeyModifyBegin();
+
+			// For each frame, write a key (equivalent of bake)
+			for (DzTime CurrentTime = PlayRange.getStart(); CurrentTime <= PlayRange.getEnd(); CurrentTime += dzScene->getTimeStep())
+			{
+				DzTime Frame = CurrentTime / dzScene->getTimeStep();
+				double Value = numericProperty->getDoubleValue(CurrentTime);
+
+				FbxTime Time;
+				int KeyIndex = 0;
+				Time.SetFrame(Frame);
+
+				int lKeyIndex = lAnimCurve->KeyAdd(Time);
+				lAnimCurve->KeySet(lKeyIndex, Time, Value, FbxAnimCurveDef::eInterpolationLinear);
+				//qDebug() << "Animated Property: " << numericProperty->getLabel() << " Time: " << Frame << "Value:" << Value;
+			}
+
+			lAnimCurve->KeyModifyEnd();
+		}
+	}
+}
+
+void DzBridgeAction::exportJCMDualQuatDiff()
+{
+	if (!m_pSelectedNode) return;
+
+	// Set the resolution level to Base
+	int ResolutionLevel = 1; // High Resolution
+	DzEnumProperty* ResolutionLevelProperty = NULL;
+	if (m_pSelectedNode->getObject() && m_pSelectedNode->getObject()->getCurrentShape())
+	{
+		DzShape* Shape = m_pSelectedNode->getObject()->getCurrentShape();
+		if (DzProperty* Property = Shape->findProperty("lodlevel"))
+		{
+			if (ResolutionLevelProperty = qobject_cast<DzEnumProperty*>(Property))
+			{
+				ResolutionLevel = ResolutionLevelProperty->getValue();
+				ResolutionLevelProperty->setValue(0); // Base
+			}
+		}
+	}
+
+	//QList<DzNode*> FigureNodeList = GetFigureNodeList(m_pSelectedNode);
+	DzNode* FigureNode = m_pSelectedNode;
+	//foreach(DzNode * FigureNode, FigureNodeList)
+	{
+		QList<JointLinkInfo> JointLinks = m_morphSelectionDialog->GetActiveJointControlledMorphs(FigureNode);
+		for (auto JointLink : JointLinks)
+		{
+			if (JointLink.IsBaseJCM)
+			{
+				exportNodeexportJCMDualQuatDiff(JointLink);
+			}
+		}
+	}
+
+	// Set the resolution level back to what it was
+	if (ResolutionLevelProperty)
+	{
+		ResolutionLevelProperty->setValue(ResolutionLevel);
+	}
+}
+void DzBridgeAction::exportNodeexportJCMDualQuatDiff(const JointLinkInfo& JointInfo)
+{
+	//if (JointInfo.Bone != "l_upperarm") return;
+
+	float RotationAmount = 90.0f;
+
+	if (JointInfo.Scalar != 0.0f && JointInfo.Keys.count() == 0)
+	{
+		RotationAmount = 1.0f / JointInfo.Scalar;
+	}
+
+	if (JointInfo.Keys.count() > 0)
+	{
+		for (JointLinkKey Key : JointInfo.Keys)
+		{
+			if (Key.Value == 1)
+			{
+				RotationAmount = Key.Angle;
+			}
+		}
+
+		//Remove the rotation for the largest 0 key
+		// We're only rotating by the applied amount of the JCM, not the max angle
+		for (JointLinkKey Key : JointInfo.Keys)
+		{
+			if (Key.Value == 0 && abs(Key.Angle) > 0.1f)
+			{
+				float Ratio = pow(abs(sinf(0.01745329251 * (RotationAmount - Key.Angle))), 0.5f);
+				RotationAmount *= Ratio;
+
+				// Extreme rotations turn inside out in spots.
+				if (RotationAmount > 120.0f) RotationAmount = 120.0f;
+				if (RotationAmount < -120.0f) RotationAmount = -120.0f;
+			}
+		}
 	}
 
 
+
+	DzSkeleton* Skeleton = m_pSelectedNode->getSkeleton();
+	DzFigure* Figure = Skeleton ? qobject_cast<DzFigure*>(Skeleton) : NULL;
+
+	DzSkinBinding* Binding = Figure->getSkinBinding();
+
+	DzObject* Object = m_pSelectedNode->getObject();
+
+	DzGeometry* Geometry = Object->getCurrentShape()->getGeometry();
+
+	DzBone* Bone = Skeleton->findBone(JointInfo.Bone);
+	if (Bone == nullptr) return;
+	if (JointInfo.Axis == "XRotate")
+	{
+		Bone->getXRotControl()->setValue(RotationAmount);
+	}
+	if (JointInfo.Axis == "YRotate")
+	{
+		Bone->getYRotControl()->setValue(RotationAmount);
+	}
+	if (JointInfo.Axis == "ZRotate")
+	{
+		Bone->getZRotControl()->setValue(RotationAmount);
+	}
+
+	setDualQuaternionBlending(Binding);
+
+	DzVertexMesh* DualQuaternionMesh = Object->getCachedGeom();
+	DzFacetMesh* CachedDualQuaternionMesh = new DzFacetMesh();
+	CachedDualQuaternionMesh->copyFrom(DualQuaternionMesh, false, false);
+
+	setLinearBlending(Binding);
+
+	createDualQuaternionToLinearBlendDiffMorph(JointInfo.Morph, CachedDualQuaternionMesh, dzScene->getPrimarySelection());
+
+	Bone->getXRotControl()->setValue(0.0f);
+	Bone->getYRotControl()->setValue(0.0f);
+	Bone->getZRotControl()->setValue(0.0f);
+
+	setDualQuaternionBlending(Binding);
+}
+
+void DzBridgeAction::setLinearBlending(DzSkinBinding* Binding)
+{
+	int methodIndex = Binding->metaObject()->indexOfMethod(QMetaObject::normalizedSignature("setGeneralMapMode(int)"));
+	if (methodIndex != -1)
+	{
+		QMetaMethod method = Binding->metaObject()->method(methodIndex);
+		int result = method.invoke((QObject*)Binding, Q_ARG(int, 0));
+		if (result != -1)
+		{
+
+		}
+	}
+
+	m_pSelectedNode->update();
+	m_pSelectedNode->finalize();
+}
+void DzBridgeAction::setDualQuaternionBlending(DzSkinBinding* Binding)
+{
+	int methodIndex = Binding->metaObject()->indexOfMethod(QMetaObject::normalizedSignature("setGeneralMapMode(int)"));
+	if (methodIndex != -1)
+	{
+		QMetaMethod method = Binding->metaObject()->method(methodIndex);
+		int result = method.invoke((QObject*)Binding, Q_ARG(int, 1));
+		if (result != -1)
+		{
+
+		}
+	}
+
+	m_pSelectedNode->update();
+	m_pSelectedNode->finalize();
+}
+
+void DzBridgeAction::createDualQuaternionToLinearBlendDiffMorph(const QString BaseMorphName, DzVertexMesh* Mesh, DzNode* Node)
+{
+	DzScript* Script = new DzScript();
+
+	Script->addLine("function myFunction(oNode, oSavedGeom, sName) {");
+	Script->addLine("var oMorphLoader = new DzMorphLoader();");
+	Script->addLine("oMorphLoader.setMorphName(sName);");
+	Script->addLine("oMorphLoader.setMorphSubdivision(true);");
+	Script->addLine("oMorphLoader.setSubdivisionBuiltResolution(0);");
+	Script->addLine("oMorphLoader.setSubdivisionMinResolution(0);");
+	Script->addLine("oMorphLoader.setSubdivisionMaxResolution(0);");
+	Script->addLine("oMorphLoader.setSubdivisionSmoothCage(false);");
+	Script->addLine("oMorphLoader.setSubdivisionMapping(DzMorphLoader.Catmark);");
+	Script->addLine("oMorphLoader.setDeltaTolerance(0.01);");
+	Script->addLine("oMorphLoader.setCreateControlProperty(true);");
+	Script->addLine("oMorphLoader.setPropertyGroupPath(\"Morph Loader Pro\");");
+	Script->addLine("oMorphLoader.setReverseDeformations(true);");
+	Script->addLine("oMorphLoader.setOverwriteExisting(DzMorphLoader.DeltasOnly);");
+	Script->addLine("oMorphLoader.setCleanUpOrphans(true);");
+	Script->addLine("oMorphLoader.setMorphMirroring(DzMorphLoader.DoNotMirror);");
+	//Script->addLine("oMorphLoader.applyReverseDeformationsPose();");
+	Script->addLine("var result = oMorphLoader.createMorphFromMesh(oSavedGeom, oNode);");
+	Script->addLine("};");
+
+	QString NewMorphName = BaseMorphName + "_dq2lb";
+
+	QVariantList Args;
+	QVariant v(QMetaType::QObjectStar, &Node);
+	Args.append(QVariant(QMetaType::QObjectStar, &Node));
+	Args.append(QVariant(QMetaType::QObjectStar, &Mesh));
+	Args.append(QVariant(NewMorphName));
+	Script->call("myFunction", Args);
+}
+
+QList<DzNode*> DzBridgeAction::GetFigureNodeList(DzNode* Node)
+{
+	QList<DzNode*> FigureList;
+	DzSkeleton* Skeleton = Node->getSkeleton();
+	DzFigure* Figure = Skeleton ? qobject_cast<DzFigure*>(Skeleton) : NULL;
+	if (Figure != NULL)
+	{
+		FigureList.append(Node);
+	}
+
+	// Looks through the child nodes for more bones
+	for (int ChildIndex = 0; ChildIndex < Node->getNumNodeChildren(); ChildIndex++)
+	{
+		DzNode* ChildNode = Node->getNodeChild(ChildIndex);
+		FigureList.append(GetFigureNodeList(ChildNode));
+	}
+	return FigureList;
+}
+
+void DzBridgeAction::lockBoneControls(DzNode* Bone)
+{
+	Bone->getScaleControl()->lock(true);
+	Bone->getScaleControl()->setOverrideControllers(true);
+
+	Bone->getOriginXControl()->lock(true);
+	Bone->getOriginXControl()->setOverrideControllers(true);
+	Bone->getEndXControl()->lock(true);
+	Bone->getEndXControl()->setOverrideControllers(true);
+
+	Bone->getOriginYControl()->lock(true);
+	Bone->getOriginYControl()->setOverrideControllers(true);
+	Bone->getEndYControl()->lock(true);
+	Bone->getEndYControl()->setOverrideControllers(true);
+
+	Bone->getOriginZControl()->lock(true);
+	Bone->getOriginZControl()->setOverrideControllers(true);
+	Bone->getEndZControl()->lock(true);
+	Bone->getEndZControl()->setOverrideControllers(true);
+
+	// Looks through the child nodes for more bones
+	for (int ChildIndex = 0; ChildIndex < Bone->getNumNodeChildren(); ChildIndex++)
+	{
+		DzNode* ChildNode = Bone->getNodeChild(ChildIndex);
+		lockBoneControls(ChildNode);
+	}
+}
+
+void DzBridgeAction::unlockBoneControl(DzNode* Bone)
+{
+	Bone->getScaleControl()->lock(false);
+	Bone->getScaleControl()->setOverrideControllers(false);
+
+	Bone->getOriginXControl()->lock(false);
+	Bone->getOriginXControl()->setOverrideControllers(false);
+	Bone->getEndXControl()->lock(false);
+	Bone->getEndXControl()->setOverrideControllers(false);
+
+	Bone->getOriginYControl()->lock(false);
+	Bone->getOriginYControl()->setOverrideControllers(false);
+	Bone->getEndYControl()->lock(false);
+	Bone->getEndYControl()->setOverrideControllers(false);
+
+	Bone->getOriginZControl()->lock(false);
+	Bone->getOriginZControl()->setOverrideControllers(false);
+	Bone->getEndZControl()->lock(false);
+	Bone->getEndZControl()->setOverrideControllers(false);
+
+	// Looks through the child nodes for more bones
+	for (int ChildIndex = 0; ChildIndex < Bone->getNumNodeChildren(); ChildIndex++)
+	{
+		DzNode* ChildNode = Bone->getNodeChild(ChildIndex);
+		lockBoneControls(ChildNode);
+	}
 }
 
 // If there are duplicate material names, save off the original and rename one
@@ -2261,6 +2724,7 @@ void DzBridgeAction::writeMorphLinks(DzJsonWriter& writer)
 			QString sMorphLabel = morphNameToLabel.value();
 			MorphInfo morphInfo = m_morphSelectionDialog->GetMorphInfoFromName(sMorphName);
 			DzProperty *morphProperty = morphInfo.Property;
+			if (morphProperty == nullptr) continue; // The added dq2lb morphs won't have properties yet
 			QStringList controlledMeshList = checkMorphControlsChildren(m_pSelectedNode, morphProperty);
 			if (morphInfo.Node != nullptr)
 			{
@@ -2732,7 +3196,7 @@ QUuid DzBridgeAction::writeInstance(DzNode* Node, DzJsonWriter& Writer, QUuid Pa
 
 	// Instance Node needs an InstanceAsset
 	DzInstanceNode* InstanceNode = qobject_cast<DzInstanceNode*>(Node);
-	if (InstanceNode)
+	if (InstanceNode && InstanceNode->getTarget())
 	{
 		AssetID = InstanceNode->getTarget()->getAssetUri().getId();
 		Name = AssetID.remove(QRegExp("[^A-Za-z0-9_]"));
@@ -2798,6 +3262,8 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 		resetArray_ControllersToDisconnect();
 		m_ControllersToDisconnect.append(m_morphSelectionDialog->getMorphNamesToDisconnectList());
 		m_mMorphNameToLabel = BridgeDialog->GetMorphMapping();
+		m_bEnableMorphs = BridgeDialog->getMorphsEnabledCheckBox()->isChecked();
+		m_aPoseExportList = BridgeDialog->GetPoseList();
 	}
 
 	m_EnableSubdivisions = BridgeDialog->getSubdivisionEnabledCheckBox()->isChecked();
@@ -2826,6 +3292,8 @@ QMessageBox::Ignore | QMessageBox::Abort,
 	m_bAnimationUseExperimentalTransfer = BridgeDialog->getExperimentalAnimationExportCheckBox()->isChecked();
 	m_bAnimationBake = BridgeDialog->getBakeAnimationExportCheckBox()->isChecked();
 	m_bAnimationTransferFace = BridgeDialog->getFaceAnimationExportCheckBox()->isChecked();
+	m_bAnimationExportActiveCurves = BridgeDialog->getAnimationExportActiveCurvesCheckBox()->isChecked();
+	m_bAnimationApplyBoneScale = BridgeDialog->getAnimationApplyBoneScaleCheckBox()->isChecked();
 
 	return true;
 }
