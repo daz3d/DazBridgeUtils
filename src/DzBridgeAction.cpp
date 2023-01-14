@@ -1175,7 +1175,10 @@ void DzBridgeAction::exportNode(DzNode* Node)
 */
 
 		  preProcessScene(Parent);
-		  //lockBoneControls(Parent);
+		  if (m_bMorphLockBoneTranslation)
+		  {
+			  lockBoneControls(Parent);
+		  }
 
 		  QDir dir;
 		  dir.mkpath(m_sDestinationPath);
@@ -1195,7 +1198,10 @@ void DzBridgeAction::exportNode(DzNode* Node)
 			  Exporter->writeFile(m_sDestinationFBX, &ExportOptions);
 			  writeConfiguration();
 		  }
-		  //unlockBoneControl(Parent);
+		  if (m_bMorphLockBoneTranslation)
+		  {
+			  unlockBoneControl(Parent);
+		  }
 		  undoPreProcessScene();
 	 }
 }
@@ -3261,6 +3267,9 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 	m_bAnimationTransferFace = BridgeDialog->getFaceAnimationExportCheckBox()->isChecked();
 	m_bAnimationExportActiveCurves = BridgeDialog->getAnimationExportActiveCurvesCheckBox()->isChecked();
 	m_bAnimationApplyBoneScale = BridgeDialog->getAnimationApplyBoneScaleCheckBox()->isChecked();
+
+	m_bMorphLockBoneTranslation = BridgeDialog->getMorphLockBoneTranslationCheckBox()->isChecked();
+	return true;
 }
 
 // ------------------------------------------------

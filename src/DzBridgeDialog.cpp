@@ -144,6 +144,15 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	morphsLayout->addWidget(morphsButton);
 	connect(morphsEnabledCheckBox, SIGNAL(stateChanged(int)), this, SLOT(HandleMorphsCheckBoxChange(int)));
 
+	// Morph Settings
+	morphSettingsGroupBox = new QGroupBox("Morph Settings", this);
+	QFormLayout* morphSettingsLayout = new QFormLayout();
+	morphSettingsGroupBox->setLayout(morphSettingsLayout);
+	morphLockBoneTranslationCheckBox = new QCheckBox("", morphSettingsGroupBox);
+	morphLockBoneTranslationCheckBox->setChecked(false);
+	morphSettingsLayout->addRow("Lock Bone Translation for Morphs", morphLockBoneTranslationCheckBox);
+	morphSettingsGroupBox->setVisible(false);
+
 	// Subdivision
 	QHBoxLayout* subdivisionLayout = new QHBoxLayout();
 	subdivisionButton = new QPushButton(tr("Bake Subdivision Levels"), this);
@@ -221,6 +230,9 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 
 	// Add Animation settings
 	addWidget(animationSettingsGroupBox);
+
+	// Add Morph settings
+	addWidget(morphSettingsGroupBox);
 
 	// Advanced
 	advancedSettingsGroupBox = new QGroupBox("Advanced Settings", this);
@@ -467,6 +479,7 @@ QList<QString> DzBridgeDialog::GetPoseList()
 
 void DzBridgeDialog::HandleMorphsCheckBoxChange(int state)
 {
+	morphSettingsGroupBox->setHidden(state != Qt::Checked);
 	if (settings == nullptr || m_bDontSaveSettings) return;
 	settings->setValue("MorphsEnabled", state == Qt::Checked);
 }

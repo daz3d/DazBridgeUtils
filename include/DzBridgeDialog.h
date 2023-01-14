@@ -47,6 +47,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE QCheckBox* getFaceAnimationExportCheckBox() { return faceAnimationExportCheckBox; }
 		Q_INVOKABLE QCheckBox* getAnimationExportActiveCurvesCheckBox() { return animationExportActiveCurvesCheckBox; }
 		Q_INVOKABLE QCheckBox* getAnimationApplyBoneScaleCheckBox() { return animationApplyBoneScaleCheckBox; }
+		Q_INVOKABLE QCheckBox* getMorphLockBoneTranslationCheckBox() { return morphLockBoneTranslationCheckBox; }
 
 		/** Constructor **/
 		DzBridgeDialog(QWidget* parent = nullptr, const QString& windowTitle = "");
@@ -118,12 +119,18 @@ namespace DzBridgeNameSpace
 		QLabel* m_BridgeVersionLabel;
 		QLabel* m_WelcomeLabel;
 		QPushButton* m_OpenIntermediateFolderButton;
+
+		// Animation settings
 		QGroupBox* animationSettingsGroupBox;
 		QCheckBox* experimentalAnimationExportCheckBox;
 		QCheckBox* bakeAnimationExportCheckBox;
 		QCheckBox* faceAnimationExportCheckBox;
 		QCheckBox* animationExportActiveCurvesCheckBox;
 		QCheckBox* animationApplyBoneScaleCheckBox;
+
+		// Morph settings
+		QGroupBox* morphSettingsGroupBox;
+		QCheckBox* morphLockBoneTranslationCheckBox;
 
 		QString m_sEmbeddedFilesPath = ":/DazBridge";
 		bool m_bDontSaveSettings = false;

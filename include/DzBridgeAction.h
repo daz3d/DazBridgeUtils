@@ -134,6 +134,9 @@ namespace DzBridgeNameSpace
 		bool m_bAnimationExportActiveCurves;
 		bool m_bAnimationApplyBoneScale;
 
+		// Morph Settings;
+		bool m_bMorphLockBoneTranslation;
+
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }
 
