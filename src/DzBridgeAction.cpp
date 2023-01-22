@@ -2405,7 +2405,7 @@ void DzBridgeAction::writeDTUHeader(DzJsonWriter& writer)
 }
 
 // Write out all the surface properties
-void DzBridgeAction::writeAllMaterials(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCVSStream, bool bRecursive)
+void DzBridgeAction::writeAllMaterials(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCSVstream, bool bRecursive)
 {
 	if (Node == nullptr)
 		return;
@@ -2424,10 +2424,10 @@ void DzBridgeAction::writeAllMaterials(DzNode* Node, DzJsonWriter& Writer, QText
 			if (Material)
 			{
 				auto propertyList = Material->propertyListIterator();
-				startMaterialBlock(Node, Writer, pCVSStream, Material);
+				startMaterialBlock(Node, Writer, pCSVstream, Material);
 				while (propertyList.hasNext())
 				{
-					writeMaterialProperty(Node, Writer, pCVSStream, Material, propertyList.next());
+					writeMaterialProperty(Node, Writer, pCSVstream, Material, propertyList.next());
 				}
 				finishMaterialBlock(Writer);
 			}
@@ -2448,10 +2448,10 @@ void DzBridgeAction::writeAllMaterials(DzNode* Node, DzJsonWriter& Writer, QText
 				{
 					auto propertyList = Material->propertyListIterator();
 					// Custom Header
-					startMaterialBlock(ParentNode, Writer, pCVSStream, Material);
+					startMaterialBlock(ParentNode, Writer, pCSVstream, Material);
 					while (propertyList.hasNext())
 					{
-						writeMaterialProperty(ParentNode, Writer, pCVSStream, Material, propertyList.next());
+						writeMaterialProperty(ParentNode, Writer, pCSVstream, Material, propertyList.next());
 					}
 					finishMaterialBlock(Writer);
 				}
@@ -2463,14 +2463,14 @@ void DzBridgeAction::writeAllMaterials(DzNode* Node, DzJsonWriter& Writer, QText
 	while (Iterator.hasNext())
 	{
 		DzNode* Child = Iterator.next();
-		writeAllMaterials(Child, Writer, pCVSStream, true);
+		writeAllMaterials(Child, Writer, pCSVstream, true);
 	}
 
 	if (!bRecursive)
 		Writer.finishArray();
 }
 
-void DzBridgeAction::startMaterialBlock(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCVSStream, DzMaterial* Material)
+void DzBridgeAction::startMaterialBlock(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCSVstream, DzMaterial* Material)
 {
 	if (Node == nullptr || Material == nullptr)
 		return;
@@ -2507,9 +2507,9 @@ void DzBridgeAction::startMaterialBlock(DzNode* Node, DzJsonWriter& Writer, QTex
 		Writer.addMember("Texture", QString(""));
 		Writer.finishObject();
 
-		if (m_bExportMaterialPropertiesCSV && pCVSStream)
+		if (m_bExportMaterialPropertiesCSV && pCSVstream)
 		{
-			*pCVSStream << "2, " << Node->getLabel() << ", " << Material->getName() << ", " << Material->getMaterialName() << ", " << "Asset Type" << ", " << presentationType << ", " << "String" << ", " << "" << endl;
+			*pCSVstream << "2, " << Node->getLabel() << ", " << Material->getName() << ", " << Material->getMaterialName() << ", " << "Asset Type" << ", " << presentationType << ", " << "String" << ", " << "" << endl;
 		}
 	}
 }
@@ -2522,7 +2522,7 @@ void DzBridgeAction::finishMaterialBlock(DzJsonWriter& Writer)
 
 }
 
-void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCVSStream, DzMaterial* Material, DzProperty* Property)
+void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCSVstream, DzMaterial* Material, DzProperty* Property)
 {
 	if (Node == nullptr || Material == nullptr || Property == nullptr)
 		return;
@@ -2598,12 +2598,12 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 	else
 		writePropertyTexture(Writer, Name, sLabel, dtuPropValue, dtuPropType, dtuTextureName);
 
-	if (m_bExportMaterialPropertiesCSV && pCVSStream)
+	if (m_bExportMaterialPropertiesCSV && pCSVstream)
 	{
 		if (bUseNumeric)
-			*pCVSStream << "2, " << Node->getLabel() << ", " << Material->getName() << ", " << Material->getMaterialName() << ", " << Name << ", " << dtuPropNumericValue << ", " << dtuPropType << ", " << TextureName << endl;
+			*pCSVstream << "2, " << Node->getLabel() << ", " << Material->getName() << ", " << Material->getMaterialName() << ", " << Name << ", " << dtuPropNumericValue << ", " << dtuPropType << ", " << TextureName << endl;
 		else
-			*pCVSStream << "2, " << Node->getLabel() << ", " << Material->getName() << ", " << Material->getMaterialName() << ", " << Name << ", " << dtuPropValue << ", " << dtuPropType << ", " << TextureName << endl;
+			*pCSVstream << "2, " << Node->getLabel() << ", " << Material->getName() << ", " << Material->getMaterialName() << ", " << Name << ", " << dtuPropValue << ", " << dtuPropType << ", " << TextureName << endl;
 	}
 	return;
 
@@ -2953,7 +2953,7 @@ void DzBridgeAction::writeSubdivisionProperties(DzJsonWriter& writer, const QStr
 	writer.finishObject();
 }
 
-void DzBridgeAction::writeAllDforceInfo(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCVSStream, bool bRecursive)
+void DzBridgeAction::writeAllDforceInfo(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCSVstream, bool bRecursive)
 {
 	if (Node == nullptr)
 		return;
@@ -3025,7 +3025,7 @@ void DzBridgeAction::writeAllDforceInfo(DzNode* Node, DzJsonWriter& Writer, QTex
 	while (Iterator.hasNext())
 	{
 		DzNode* Child = Iterator.next();
-		writeAllDforceInfo(Child, Writer, pCVSStream, true);
+		writeAllDforceInfo(Child, Writer, pCSVstream, true);
 	}
 
 	if (!bRecursive)
@@ -3261,7 +3261,7 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 		m_sMorphSelectionRule = BridgeDialog->GetMorphString();
 		resetArray_ControllersToDisconnect();
 		m_ControllersToDisconnect.append(m_morphSelectionDialog->getMorphNamesToDisconnectList());
-		m_mMorphNameToLabel = BridgeDialog->GetMorphMapping();
+		m_mMorphNameToLabel = BridgeDialog->GetMorphMappingFromMorphSelectionDialog();
 		m_bEnableMorphs = BridgeDialog->getMorphsEnabledCheckBox()->isChecked();
 		m_aPoseExportList = BridgeDialog->GetPoseList();
 	}
@@ -3966,11 +3966,122 @@ bool DzBridgeAction::upgradeToHD(QString baseFilePath, QString hdFilePath, QStri
 // END: SUBDIVISION
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// DEV TESTING
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void FixClusterTranformLinks(FbxScene* Scene, FbxNode* RootNode)
+{
+	FbxGeometry* NodeGeometry = static_cast<FbxGeometry*>(RootNode->GetMesh());
+
+	// Create missing weights
+	if (NodeGeometry)
+	{
+
+		for (int DeformerIndex = 0; DeformerIndex < NodeGeometry->GetDeformerCount(); ++DeformerIndex)
+		{
+			FbxSkin* Skin = static_cast<FbxSkin*>(NodeGeometry->GetDeformer(DeformerIndex));
+			if (Skin)
+			{
+				for (int ClusterIndex = 0; ClusterIndex < Skin->GetClusterCount(); ++ClusterIndex)
+				{
+					// Get the current tranform
+					FbxAMatrix Matrix;
+					FbxCluster* Cluster = Skin->GetCluster(ClusterIndex);
+					Cluster->GetTransformLinkMatrix(Matrix);
+
+					// Update the rotation
+					FbxDouble3 Rotation = Cluster->GetLink()->PostRotation.Get();
+					Matrix.SetR(Rotation);
+					Cluster->SetTransformLinkMatrix(Matrix);
+				}
+			}
+		}
+	}
+
+	for (int ChildIndex = 0; ChildIndex < RootNode->GetChildCount(); ++ChildIndex)
+	{
+		FbxNode* ChildNode = RootNode->GetChild(ChildIndex);
+		FixClusterTranformLinks(Scene, ChildNode);
+	}
+}
+void RemoveBindPoses(FbxScene* Scene)
+{
+	for (int PoseIndex = Scene->GetPoseCount() - 1; PoseIndex >= 0; --PoseIndex)
+	{
+		Scene->RemovePose(PoseIndex);
+	}
+}
+void RemovePrePostRotations(FbxNode* pNode)
+{
+	QString sNodeName = pNode->GetName();
+	for (int nChildIndex = 0; nChildIndex < pNode->GetChildCount(); nChildIndex++)
+	{
+		FbxNode* pChildBone = pNode->GetChild(nChildIndex);
+		RemovePrePostRotations(pChildBone);
+	}
+	if (sNodeName.contains("twist", Qt::CaseInsensitive) == false)
+	{
+		pNode->SetPreRotation(FbxNode::EPivotSet::eSourcePivot, FbxVector4(0, 0, 0));
+		pNode->SetPostRotation(FbxNode::EPivotSet::eSourcePivot, FbxVector4(0, 0, 0));
+	}
+}
+void ReparentTwistBone(FbxNode* pNode)
+{
+	FbxNode* pParentNode = pNode->GetParent();
+	FbxNode* pGrandParentNode = pParentNode->GetParent();
+	QString sNodeName = pNode->GetName();
+	QString sParentName = pParentNode->GetName();
+	QString sGrandParentName = pGrandParentNode->GetName();
+
+	// Calc Position Delta to add to Child
+	FbxAMatrix mNodeLocalTransform = pNode->EvaluateLocalTransform();
+	FbxVector4 vDelta = pNode->EvaluateLocalTransform().GetT();
+	for (int nChildIndex = 0; nChildIndex < pNode->GetChildCount(); nChildIndex++)
+	{
+		FbxNode* pChildBone = pNode->GetChild(nChildIndex);
+		QString sChildName = pChildBone->GetName();
+		pNode->RemoveChild(pChildBone);
+		pParentNode->AddChild(pChildBone);
+		FbxAMatrix pChildLocalTransform = pChildBone->EvaluateLocalTransform();
+		FbxAMatrix mNewTransform = mNodeLocalTransform * pChildLocalTransform;
+		pChildBone->LclTranslation.Set(mNodeLocalTransform.GetT());
+		//pChildBone->LclRotation.Set(mNodeLocalTransform.GetR());
+		//pChildBone->LclScaling.Set(mNodeLocalTransform.GetS());
+	}
+	if (pGrandParentNode)
+	{
+//		pParentNode->RemoveChild(pNode);
+//		pGrandParentNode->AddChild(pNode);
+	}
+	else
+	{
+		printf("nop");
+	}
+
+}
+void FindAndProcessTwistBones(FbxNode* pNode)
+{
+	QString sNodeName = pNode->GetName();
+	for (int nChildIndex = 0; nChildIndex < pNode->GetChildCount(); nChildIndex++)
+	{
+		FbxNode* pChildBone = pNode->GetChild(nChildIndex);
+		FindAndProcessTwistBones(pChildBone);
+	}
+	if (sNodeName.contains("twist", Qt::CaseInsensitive))
+	{
+		ReparentTwistBone(pNode);
+	}
+}
+
+
 // Perform post-processing of Fbx after export
 // NOTE: must be called prior to writeconfiguration, otherwise can not guarantee that it will be executed before
 // import process is started in target software
 bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 {
+	// DEBUG
+	m_bPostProcessFbx = true;
+
 	if (m_bPostProcessFbx == false)
 		return false;
 
@@ -4008,6 +4119,44 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 			}
 		}
 	}
+
+	// Find the root bone.  There should only be one bone off the scene root
+	FbxNode* RootNode = pScene->GetRootNode();
+	FbxNode* RootBone = nullptr;
+	QString RootBoneName("");
+	for (int ChildIndex = 0; ChildIndex < RootNode->GetChildCount(); ++ChildIndex)
+	{
+		FbxNode* ChildNode = RootNode->GetChild(ChildIndex);
+		FbxNodeAttribute* Attr = ChildNode->GetNodeAttribute();
+		if (Attr && Attr->GetAttributeType() == FbxNodeAttribute::eSkeleton)
+		{
+			RootBone = ChildNode;
+			RootBoneName = RootBone->GetName();
+			RootBone->SetName("root");
+			Attr->SetName("root");
+			break;
+		}
+	}
+	//// Daz characters sometimes have additional skeletons inside the character for accesories
+	//if (AssetType == DazAssetType::SkeletalMesh)
+	//{
+	//	FDazToUnrealFbx::ParentAdditionalSkeletalMeshes(Scene);
+	//}
+	// Daz Studio puts the base bone rotations in a different place than Unreal expects them.
+	//if (CachedSettings->FixBoneRotationsOnImport && AssetType == DazAssetType::SkeletalMesh && RootBone)
+	//{
+	//	FDazToUnrealFbx::RemoveBindPoses(Scene);
+	//	FDazToUnrealFbx::FixClusterTranformLinks(Scene, RootBone);
+	//}
+	if (RootBone)
+	{
+		// remove pre and post rotations
+		RemovePrePostRotations(RootBone);
+//		FindAndProcessTwistBones(RootBone);
+//		RemoveBindPoses(pScene);
+//		FixClusterTranformLinks(pScene, RootBone);
+	}
+
 
 	if (openFBX->SaveScene(pScene, fbxFilePath.toLocal8Bit().data()) == false)
 	{

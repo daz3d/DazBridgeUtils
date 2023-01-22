@@ -94,6 +94,27 @@ bool OpenFBXInterface::SaveScene(FbxScene* pScene, QString sFilename, int nFileF
 	// Create FbxExporter
 	FbxExporter* pExporter = FbxExporter::Create(m_fbxManager, "");
 
+	///////////////////////////////////
+	// DEBUG
+	///////////////////////////////////
+	bool bUseAscii = false;
+	if (bUseAscii)
+	{
+		int lFormatIndex, lFormatCount = m_fbxManager->GetIOPluginRegistry()->GetWriterFormatCount();
+		for (lFormatIndex = 0; lFormatIndex < lFormatCount; lFormatIndex++)
+		{
+			if (m_fbxManager->GetIOPluginRegistry()->WriterIsFBX(lFormatIndex))
+			{
+				FbxString lDesc = m_fbxManager->GetIOPluginRegistry()->GetWriterFormatDescription(lFormatIndex);
+				if (lDesc.Find("ascii") >= 0)
+				{
+					nFileFormat = lFormatIndex;
+					break;
+				}
+			}
+		}
+	}
+
 	// Check if fileformat is invalid
 	if (nFileFormat < 0 || nFileFormat >= m_fbxManager->GetIOPluginRegistry()->GetWriterFormatCount())
 	{

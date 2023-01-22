@@ -559,9 +559,9 @@ QList<JointLinkInfo> DzBridgeMorphSelectionDialog::GetJointControlledMorphInfo(D
 			linkInfo.Keys = linkKeys;
 			linkInfo.IsBaseJCM = isBaseJCM;
 
-			if (morphs.contains(linkLabel))
+			if (m_morphInfoMap.contains(linkLabel))
 			{
-				linkInfo.LinkMorphInfo = morphs[linkLabel];
+				linkInfo.LinkMorphInfo = m_morphInfoMap[linkLabel];
 			}
 
 			//qDebug() << "Label " << linkLabel << " Description " << linkDescription << " Bone " << linkBone << " Axis " << linkAxis << " Alpha " << currentBodyScalar << " Scalar " << linkScalar;
@@ -1049,7 +1049,7 @@ QString DzBridgeMorphSelectionDialog::GetMorphString()
 
 	QList<JointLinkInfo> jointLinks = GetActiveJointControlledMorphs();
 
-	if (m_morphsToExport.length() == 0 && jointLinks.length() == 0))
+	if (m_morphsToExport.length() == 0 && jointLinks.length() == 0)
 	{
 		return "";
 	}
@@ -1090,7 +1090,7 @@ QString DzBridgeMorphSelectionDialog::GetMorphCSVString(bool bUseFinalizedList)
 
 // Get the morph string (aka m_morphsToExport_finalized) in an internal name = friendly name format
 // Used to rename them to the friendly name in Unreal
-QMap<QString,QString> DzBridgeMorphSelectionDialog::GetMorphRenaming()
+QMap<QString,QString> DzBridgeMorphSelectionDialog::GetMorphMapping()
 {
 	// NOTE: morphNameMapping is alternatively populated with ALL morphs by GetAvailableMorphs()
 	//morphNameMapping.clear();
@@ -1275,7 +1275,7 @@ QList<QString> DzBridgeMorphSelectionDialog::getMorphNamesToDisconnectList()
 QList<QString> DzBridgeMorphSelectionDialog::GetPoseList()
 {
 	QList<QString> poseList;
-	foreach(MorphInfo exportMorph, morphsToExport)
+	foreach(MorphInfo exportMorph, m_morphsToExport)
 	{
 		poseList.append(exportMorph.Name);
 	}
@@ -1306,12 +1306,6 @@ void DzBridgeMorphSelectionDialog::HandleDialogAccepted(bool bSavePreset)
 	}
 
 	return;
-}
-
-bool DzBridgeMorphSelectionDialog::IsAutoJCMEnabled()
-{
-	bool bJCMenabled = autoJCMCheckBox->isChecked();
-	return bJCMenabled;
 }
 
 void DzBridgeMorphSelectionDialog::SetAutoJCMEnabled(bool bEnabled)

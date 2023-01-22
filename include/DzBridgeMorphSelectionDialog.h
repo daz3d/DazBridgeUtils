@@ -95,7 +95,7 @@ namespace DzBridgeNameSpace
 
 		// Get the morph string (aka m_morphsToExport) in an internal name = friendly name format
 		// Used to rename them to the friendly name in Unreal
-		Q_INVOKABLE QMap<QString, QString> GetMorphRenaming();
+		Q_INVOKABLE QMap<QString, QString> GetMorphMapping();
 
 		Q_INVOKABLE bool IsAutoJCMEnabled() { return autoJCMCheckBox->isChecked(); }
 		Q_INVOKABLE bool IsFakeDualQuatEnabled() { return fakeDualQuatCheckBox->isChecked(); }

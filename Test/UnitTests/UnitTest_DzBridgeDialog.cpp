@@ -29,7 +29,7 @@ bool UnitTest_DzBridgeDialog::runUnitTests()
 	RUNTEST(getShowFbxDialogCheckBox);
 	RUNTEST(_DzBridgeDialog);
 	RUNTEST(GetMorphString);
-	RUNTEST(GetMorphMapping);
+	RUNTEST(GetMorphMappingFromMorphSelectionDialog);
 	RUNTEST(resetToDefaults);
 	RUNTEST(loadSavedSettings);
 	RUNTEST(Accepted);
@@ -109,10 +109,10 @@ bool UnitTest_DzBridgeDialog::GetMorphString(UnitTest::TestResult* testResult)
 	return bResult;
 }
 
-bool UnitTest_DzBridgeDialog::GetMorphMapping(UnitTest::TestResult* testResult)
+bool UnitTest_DzBridgeDialog::GetMorphMappingFromMorphSelectionDialog(UnitTest::TestResult* testResult)
 {
 	bool bResult = true;
-	TRY_METHODCALL(qobject_cast<DzBridgeDialog*>(m_testObject)->GetMorphMapping());
+	TRY_METHODCALL(qobject_cast<DzBridgeDialog*>(m_testObject)->GetMorphMappingFromMorphSelectionDialog());
 	return bResult;
 }
 

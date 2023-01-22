@@ -171,10 +171,10 @@ namespace DzBridgeNameSpace
 
 		Q_INVOKABLE virtual void writeDTUHeader(DzJsonWriter& writer);
 
-		Q_INVOKABLE virtual void writeAllMaterials(DzNode* Node, DzJsonWriter& Writer, QTextStream* CVSStream = nullptr, bool bRecursive = false);
-		Q_INVOKABLE virtual void startMaterialBlock(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCVSStream, DzMaterial* Material);
+		Q_INVOKABLE virtual void writeAllMaterials(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCSVstream = nullptr, bool bRecursive = false);
+		Q_INVOKABLE virtual void startMaterialBlock(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCSVstream, DzMaterial* Material);
 		Q_INVOKABLE virtual void finishMaterialBlock(DzJsonWriter& Writer);
-		Q_INVOKABLE virtual void writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCVSStream, DzMaterial* Material, DzProperty* Property);
+		Q_INVOKABLE virtual void writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCSVstream, DzMaterial* Material, DzProperty* Property);
 
 		Q_INVOKABLE virtual void writeAllMorphs(DzJsonWriter& Writer);
 		Q_INVOKABLE virtual void writeMorphProperties(DzJsonWriter& writer, const QString& key, const QString& value);
@@ -183,7 +183,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual void writeAllSubdivisions(DzJsonWriter& Writer);
 		Q_INVOKABLE virtual void writeSubdivisionProperties(DzJsonWriter& writer, const QString& Name, int targetValue);
 
-		Q_INVOKABLE virtual void writeAllDforceInfo(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCVSStream = nullptr, bool bRecursive = false);
+		Q_INVOKABLE virtual void writeAllDforceInfo(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCSVstream = nullptr, bool bRecursive = false);
 		Q_INVOKABLE virtual void writeDforceMaterialProperties(DzJsonWriter& Writer, DzMaterial* Material, DzShape* Shape);
 		Q_INVOKABLE virtual void writeDforceModifiers(const QList<DzModifier*>& dforceModifierList, DzJsonWriter& Writer, DzShape* Shape);
 

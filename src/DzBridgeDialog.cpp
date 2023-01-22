@@ -465,10 +465,10 @@ QString DzBridgeDialog::GetMorphString()
 	return morphDialog->GetMorphString();
 }
 
-QMap<QString, QString> DzBridgeDialog::GetMorphMapping()
+QMap<QString, QString> DzBridgeDialog::GetMorphMappingFromMorphSelectionDialog()
 {
 	DzBridgeMorphSelectionDialog* morphDialog = DzBridgeMorphSelectionDialog::Get(this);
-	return morphDialog->GetMorphRenaming();
+	return morphDialog->GetMorphMapping();
 }
 
 QList<QString> DzBridgeDialog::GetPoseList()

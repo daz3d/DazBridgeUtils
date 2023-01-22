@@ -24,7 +24,7 @@ bool UnitTest_DzBridgeMorphSelectionDialog::runUnitTests()
 	RUNTEST(PrepareDialog);
 	RUNTEST(GetMorphString);
 	RUNTEST(GetMorphCSVString);
-	RUNTEST(GetMorphRenaming);
+	RUNTEST(GetMorphMapping);
 	RUNTEST(IsAutoJCMEnabled);
 	RUNTEST(GetActiveJointControlledMorphs);
 	RUNTEST(GetMorphLabelFromName);
@@ -72,10 +72,10 @@ bool UnitTest_DzBridgeMorphSelectionDialog::GetMorphCSVString(UnitTest::TestResu
 	return bResult;
 }
 
-bool UnitTest_DzBridgeMorphSelectionDialog::GetMorphRenaming(UnitTest::TestResult* testResult)
+bool UnitTest_DzBridgeMorphSelectionDialog::GetMorphMapping(UnitTest::TestResult* testResult)
 {
 	bool bResult = true;
-	TRY_METHODCALL(qobject_cast<DzBridgeMorphSelectionDialog*>(m_testObject)->GetMorphRenaming());
+	TRY_METHODCALL(qobject_cast<DzBridgeMorphSelectionDialog*>(m_testObject)->GetMorphMapping());
 	return bResult;
 }
 

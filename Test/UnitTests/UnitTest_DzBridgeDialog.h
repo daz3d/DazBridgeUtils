@@ -20,7 +20,7 @@ private:
 	bool getShowFbxDialogCheckBox(UnitTest::TestResult* testResult);
 	bool _DzBridgeDialog(UnitTest::TestResult* testResult);
 	bool GetMorphString(UnitTest::TestResult* testResult);
-	bool GetMorphMapping(UnitTest::TestResult* testResult);
+	bool GetMorphMappingFromMorphSelectionDialog(UnitTest::TestResult* testResult);
 	bool resetToDefaults(UnitTest::TestResult* testResult);
 	bool loadSavedSettings(UnitTest::TestResult* testResult);
 	bool Accepted(UnitTest::TestResult* testResult);

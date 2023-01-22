@@ -15,7 +15,7 @@ private:
 	bool PrepareDialog(UnitTest::TestResult* testResult);
 	bool GetMorphString(UnitTest::TestResult* testResult);
 	bool GetMorphCSVString(UnitTest::TestResult* testResult);
-	bool GetMorphRenaming(UnitTest::TestResult* testResult);
+	bool GetMorphMapping(UnitTest::TestResult* testResult);
 	bool IsAutoJCMEnabled(UnitTest::TestResult* testResult);
 	bool GetActiveJointControlledMorphs(UnitTest::TestResult* testResult);
 	bool GetMorphLabelFromName(UnitTest::TestResult* testResult);
