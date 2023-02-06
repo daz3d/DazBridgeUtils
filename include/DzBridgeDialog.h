@@ -48,6 +48,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE QCheckBox* getAnimationExportActiveCurvesCheckBox() { return animationExportActiveCurvesCheckBox; }
 		Q_INVOKABLE QCheckBox* getAnimationApplyBoneScaleCheckBox() { return animationApplyBoneScaleCheckBox; }
 		Q_INVOKABLE QCheckBox* getMorphLockBoneTranslationCheckBox() { return morphLockBoneTranslationCheckBox; }
+		Q_INVOKABLE QLineEdit* getMLDeformerPoseCountEdit() {return mlDeformerPoseCountEdit; }
 
 		/** Constructor **/
 		DzBridgeDialog(QWidget* parent = nullptr, const QString& windowTitle = "");
@@ -131,6 +132,10 @@ namespace DzBridgeNameSpace
 		// Morph settings
 		QGroupBox* morphSettingsGroupBox;
 		QCheckBox* morphLockBoneTranslationCheckBox;
+
+		// MLDeformer settings
+		QGroupBox* mlDeformerSettingsGroupBox;
+		QLineEdit* mlDeformerPoseCountEdit;
 
 		QString m_sEmbeddedFilesPath = ":/DazBridge";
 		bool m_bDontSaveSettings = false;

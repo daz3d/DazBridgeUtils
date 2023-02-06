@@ -23,6 +23,11 @@ set(OSDI_SOURCES
 	../include/OpenSubdivInterface.h
 )
 
+set(MLD_SOURCES
+	MLDeformer.cpp
+	../include/MlDeformer.h
+)
+
 set(MINI_LIBZIP_SOURCES
 	miniz.h
 	../include/zip.h
@@ -44,6 +49,7 @@ add_library(dzbridge-static
 	${OS_SOURCES}
 	${OFBXI_SOURCES}
 	${OSDI_SOURCES}
+	${MLD_SOURCES}
 	${MINI_LIBZIP_SOURCES}
 )
 
@@ -51,6 +57,8 @@ target_include_directories(dzbridge-static
 	PUBLIC
 	${FBX_SDK_INCLUDE}
 	${OPENSUBDIV_INCLUDE}
+	${ALEMBIC_INCLUDE}
+	${IMATH_INCLUDE}
 )
 
 target_link_libraries(dzbridge-static
@@ -76,6 +84,7 @@ add_library(dzbridge-shared
 	${OS_SOURCES}
 	${OFBXI_SOURCES}
 	${OSDI_SOURCES}
+	${MLD_SOURCES}
 	${MINI_LIBZIP_SOURCES}
 	pluginmain.cpp
 	DzBridgeAction_Scriptable.h
@@ -92,6 +101,8 @@ target_include_directories(dzbridge-shared
 	PUBLIC
 	${FBX_SDK_INCLUDE}
 	${OPENSUBDIV_INCLUDE}
+	${ALEMBIC_INCLUDE}
+	${IMATH_INCLUDE}
 )
 
 target_link_libraries(dzbridge-shared
@@ -103,6 +114,8 @@ target_link_libraries(dzbridge-shared
 	${DZSDK_QT_NETWORK_TARGET}
 	${FBX_IMPORT_LIBS}
 	${OPENSUBDIV_LIB}
+	${ALEMBIC_LIB}
+	${IMATH_LIB}
 )
 
 set_target_properties (dzbridge-shared
