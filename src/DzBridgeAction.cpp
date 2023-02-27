@@ -705,7 +705,7 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 	// look for geograft morphs for export, and prepare
 	checkForGeograftMorphsToExport(dzScene->getPrimarySelection(), true);
 
-	if (m_EnableSubdivisions)
+	if (m_EnableSubdivisions && m_sAssetType != "MLDeformer")
 	{
 		if (exportProgress)
 		{
@@ -755,7 +755,7 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 		}
 	}
 
-	if (m_EnableSubdivisions)
+	if (m_EnableSubdivisions && m_sAssetType != "MLDeformer")
 	{
 		if (exportProgress)
 		{
