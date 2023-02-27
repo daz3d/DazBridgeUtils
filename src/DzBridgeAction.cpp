@@ -691,6 +691,9 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 	if (m_subdivisionDialog == nullptr)
 		return;
 
+	// Update the dialog so subdivision locks later find all the meshes
+	m_subdivisionDialog->PrepareDialog();
+
 	bool bLocalDzProgress = false;
 	if (!exportProgress)
 	{
