@@ -14,10 +14,18 @@
 #include <dzmodifier.h>
 #include <dzfloatproperty.h>
 #include <dzintproperty.h>
+#include <dzprogress.h>
 
 
 void MLDeformer::GeneratePoses(DzNode* Node, int PoseCount)
 {
+    DzProgress exportProgress = DzProgress("DazBridge: MLDeformer Creating Poses", PoseCount, false, true);
+    exportProgress.setCloseOnFinish(true);
+    exportProgress.enable(true);
+    exportProgress.step();
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+
+
     dzScene->setAnimRange(DzTimeRange(0, PoseCount * dzScene->getTimeStep()));
     dzScene->setPlayRange(DzTimeRange(0, PoseCount * dzScene->getTimeStep()));
 
@@ -28,6 +36,9 @@ void MLDeformer::GeneratePoses(DzNode* Node, int PoseCount)
     // Start at frame 1.  Leave frame 0 as the reference pose.
     for (int Frame = 1; Frame < PoseCount; Frame++)
     {
+        exportProgress.step();
+        QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+
         for (QMap<QString, QList<DzNode*>>::iterator BoneNameIter = Bones.begin(); BoneNameIter != Bones.end(); ++BoneNameIter)
         {
             QList<DzNode*> MatchingBones = BoneNameIter.value();
@@ -54,6 +65,7 @@ void MLDeformer::GeneratePoses(DzNode* Node, int PoseCount)
             (*BoneIter)->getZRotControl()->setValue(dzScene->getTimeStep() * double(Frame), ZRotation);
         }
     }
+    exportProgress.finish();
 }
 
 float MLDeformer::RandomInRange(float Min, float Max)
@@ -109,6 +121,16 @@ void MLDeformer::ExportTrainingData(DzNode* Node, QString FileName)
     QList<DzNode*> FigureList;
     GetFigureList(Node, FigureList);
 
+    // Setup the progress dialog
+    DzTime EndFrame = dzScene->getPlayRange().getEnd() / dzScene->getTimeStep();
+    int PoseCount = FigureList.count() * EndFrame;
+    DzProgress exportProgress = DzProgress("DazBridge: MLDeformer Exporting Geocache", PoseCount, false, true);
+    exportProgress.setCloseOnFinish(true);
+    exportProgress.enable(true);
+    exportProgress.step();
+    QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+  
+
     // Add each figure to the archive
     foreach(DzNode * FigureNode, FigureList)
     {
@@ -126,6 +148,10 @@ void MLDeformer::ExportTrainingData(DzNode* Node, QString FileName)
         DzTimeRange PlayRange = dzScene->getPlayRange();
         for (DzTime CurrentTime = PlayRange.getStart(); CurrentTime <= PlayRange.getEnd(); CurrentTime += dzScene->getTimeStep())
         {
+            // Update the progress bar
+            exportProgress.step();
+            QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+
             // Update the frame
             DzTime Frame = CurrentTime / dzScene->getTimeStep();
             dzScene->setFrame(Frame);
@@ -182,6 +208,7 @@ void MLDeformer::ExportTrainingData(DzNode* Node, QString FileName)
             MeshSchema.set(FrameSample);
         }
     }
+    exportProgress.finish();
 }
 
 void MLDeformer::GetFigureList(DzNode* Node, QList<DzNode*>& Figures)
