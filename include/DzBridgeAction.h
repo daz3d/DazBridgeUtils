@@ -143,14 +143,17 @@ namespace DzBridgeNameSpace
 		bool m_bRemoveDuplicateGeografts;
 		QStringList m_aGeografts;
 
+		// Morph Settings;
+		bool m_bMorphLockBoneTranslation;
+
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }
 
 		virtual void exportAsset();
 		virtual void exportNode(DzNode* Node);
 
-		virtual void exportAnimation();
-		virtual void exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& BoneMap, FbxAnimLayer* AnimBaseLayer);
+		virtual void exportAnimation(bool bExportingForMLDeformer);
+		virtual void exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& BoneMap, FbxAnimLayer* AnimBaseLayer, float FigureScale, bool bExportingForMLDeformer);
 		virtual void exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzNode*, FbxNode*>& BoneMap);
 		virtual QList<DzNumericProperty*> getAnimatedProperties(DzNode* Node);
 		virtual void exportAnimatedProperties(QList<DzNumericProperty*>& Properties, FbxScene* Scene, FbxAnimLayer* AnimBaseLayer);
@@ -192,6 +195,8 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual QUuid writeInstance(DzNode* Node, DzJsonWriter& Writer, QUuid ParentID);
 
 		Q_INVOKABLE virtual void writeAllPoses(DzJsonWriter& writer);
+
+		Q_INVOKABLE virtual void writeMLDeformerData(DzJsonWriter& writer);
 
 		// Used to find all the unique props in a scene for Environment export
 		void getScenePropList(DzNode* Node, QMap<QString, DzNode*>& Types);

@@ -61,6 +61,7 @@
 #include "DzBridgeDialog.h"
 #include "DzBridgeSubdivisionDialog.h"
 #include "DzBridgeMorphSelectionDialog.h"
+#include "MLDeformer.h"
 
 using namespace DzBridgeNameSpace;
 
@@ -704,6 +705,9 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 	if (m_subdivisionDialog == nullptr)
 		return;
 
+	// Update the dialog so subdivision locks later find all the meshes
+	m_subdivisionDialog->PrepareDialog();
+
 	bool bLocalDzProgress = false;
 	if (!exportProgress)
 	{
@@ -721,7 +725,7 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 		prepareGeograftMorphsToExport(dzScene->getPrimarySelection(), true);
 	}
 
-	if (m_EnableSubdivisions)
+	if (m_EnableSubdivisions && m_sAssetType != "MLDeformer")
 	{
 		if (exportProgress)
 		{
@@ -771,7 +775,7 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 		}
 	}
 
-	if (m_EnableSubdivisions)
+	if (m_EnableSubdivisions && m_sAssetType != "MLDeformer")
 	{
 		if (exportProgress)
 		{
@@ -1087,7 +1091,18 @@ void DzBridgeAction::exportNode(DzNode* Node)
 	 {
 		 QDir dir;
 		 dir.mkpath(m_sDestinationPath);
-		 exportAnimation();
+		 exportAnimation(/*bExportingForMLDeformer*/ false);
+		 writeConfiguration();
+		 return;
+	 }
+
+	 if (m_sAssetType == "MLDeformer")
+	 {
+		 QDir dir;
+		 dir.mkpath(m_sDestinationPath);
+		 MLDeformer::GeneratePoses(Node, m_bridgeDialog->getMLDeformerPoseCountEdit()->text().toInt());
+		 exportAnimation(/*bExportingForMLDeformer*/ true);
+		 MLDeformer::ExportTrainingData(Node, m_sDestinationPath + m_sExportFilename + ".abc");
 		 writeConfiguration();
 		 return;
 	 }
@@ -1192,7 +1207,10 @@ void DzBridgeAction::exportNode(DzNode* Node)
 */
 
 		  preProcessScene(Parent);
-		  //lockBoneControls(Parent);
+		  if (m_bMorphLockBoneTranslation)
+		  {
+			  lockBoneControls(Parent);
+		  }
 
 		  QDir dir;
 		  dir.mkpath(m_sDestinationPath);
@@ -1216,12 +1234,15 @@ void DzBridgeAction::exportNode(DzNode* Node)
 
 			  writeConfiguration();
 		  }
-		  //unlockBoneControl(Parent);
+		  if (m_bMorphLockBoneTranslation)
+		  {
+			  unlockBoneControl(Parent);
+		  }
 		  undoPreProcessScene();
 	 }
 }
 
-void DzBridgeAction::exportAnimation()
+void DzBridgeAction::exportAnimation(bool bExportingForMLDeformer)
 {
 	if (!m_pSelectedNode) return;
 
@@ -1245,6 +1266,9 @@ void DzBridgeAction::exportAnimation()
 		return;
 	}
 
+	// Get the Figure Scale
+	float FigureScale = m_pSelectedNode->getScaleControl()->getValue();
+
 	// Create the Scene
 	FbxScene* Scene = FbxScene::Create(SdkManager, "");
 
@@ -1260,14 +1284,14 @@ void DzBridgeAction::exportAnimation()
 	DzTimeRange PlayRange = dzScene->getPlayRange();
 
 	//
-	exportNodeAnimation(Figure, BoneMap, AnimBaseLayer);
+	exportNodeAnimation(Figure, BoneMap, AnimBaseLayer, FigureScale, bExportingForMLDeformer);
 
 	// Iterate the bones
 	DzBoneList Bones;
 	Skeleton->getAllBones(Bones);
 	for (auto Bone : Bones)
 	{
-		exportNodeAnimation(Bone, BoneMap, AnimBaseLayer);
+		exportNodeAnimation(Bone, BoneMap, AnimBaseLayer, FigureScale, bExportingForMLDeformer);
 	}
 
 	// Get a list of animated properties
@@ -1282,7 +1306,7 @@ void DzBridgeAction::exportAnimation()
 	Exporter->Destroy();
 }
 
-void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& BoneMap, FbxAnimLayer* AnimBaseLayer)
+void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& BoneMap, FbxAnimLayer* AnimBaseLayer, float FigureScale, bool bExportingForMLDeformer)
 {
 	DzTimeRange PlayRange = dzScene->getPlayRange();
 
@@ -1307,12 +1331,12 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 		DzMatrix3 Scale = Bone->getWSScale();
 		//qDebug() << Bone->getName() << " Scale: " << Scale.row(0).length() << "," << Scale.row(1).length() << "," << Scale.row(2).length();
 
-		//qDebug() << Bone->getName() << " Default Position: " << DefaultPosition.m_x << "," << DefaultPosition.m_y << "," << DefaultPosition.m_z;
+		qDebug() << Bone->getName() << " Default Position: " << DefaultPosition.m_x << "," << DefaultPosition.m_y << "," << DefaultPosition.m_z;
 		DzVec3 Position;
 		Position.m_x = Bone->getXPosControl()->getValue(CurrentTime);
 		Position.m_y = Bone->getYPosControl()->getValue(CurrentTime);
 		Position.m_z = Bone->getZPosControl()->getValue(CurrentTime);
-		//qDebug() << Bone->getName() << " Position: " << Position.m_x << "," << Position.m_y << "," << Position.m_z;
+		qDebug() << Bone->getName() << " Position: " << Position.m_x << "," << Position.m_y << "," << Position.m_z;
 
 		// Get an initial rotation via the controls
 		DzVec3 ControlRotation;
@@ -1323,12 +1347,12 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 
 		// Scale
 		DzVec3 ControlScale(1.0f, 1.0f, 1.0f);
-		float FigureScale = 1.0f;
+		//float FigureScale = 1.0f;
 		if (m_bAnimationApplyBoneScale)
 		{
 			//DzSkeleton* Skeleton = m_pSelectedNode->getSkeleton();
 			//DzFigure* Figure = Skeleton ? qobject_cast<DzFigure*>(Skeleton) : NULL;
-			float FigureScale = Bone->getScaleControl()->getValue(CurrentTime);
+			FigureScale = Bone->getScaleControl()->getValue(CurrentTime);
 
 			ControlScale.m_x = Bone->getXScaleControl()->getValue(CurrentTime) * FigureScale;
 			ControlScale.m_y = Bone->getYScaleControl()->getValue(CurrentTime) * FigureScale;
@@ -1382,15 +1406,16 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 			//qDebug() << Bone->getName() << " RelativeDefaultPosition: " << OrientedRelativeDefaultPosition.m_x << "," << OrientedRelativeDefaultPosition.m_y << "," << OrientedRelativeDefaultPosition.m_z;
 			DzVec3 RelativeMovement = Position - ParentPosition;
 			//qDebug() << Bone->getName() << " RelativeMovement: " << RelativeMovement.m_x << "," << RelativeMovement.m_y << "," << RelativeMovement.m_z;
+			qDebug() << Bone->getName() << " Position: " << Position.m_x << "," << Position.m_y << "," << Position.m_z;
 			if (ParentBone->isRootNode())
 			{
-				// Hip needs to move independently
-				Position = Position + OrientedRelativeDefaultPosition;
+				Position = (Position + OrientedRelativeDefaultPosition) * FigureScale;
 			}
 			else
 			{
 				Position = OrientedRelativeDefaultPosition + RelativeMovement;
 			}
+			qDebug() << Bone->getName() << " Position: " << Position.m_x << "," << Position.m_y << "," << Position.m_z;
 			//Position = Position * FigureScale;
 			/*Position.m_x = Position.m_x * ControlScale.m_x;
 			Position.m_y = Position.m_y * ControlScale.m_y;
@@ -3137,6 +3162,11 @@ void DzBridgeAction::writeEnvironment(DzJsonWriter& writer)
 	writer.finishArray();
 }
 
+void DzBridgeAction::writeMLDeformerData(DzJsonWriter& writer)
+{
+	writer.addMember("AlembicFile", m_sDestinationPath + m_sExportFilename + ".abc");
+}
+
 void DzBridgeAction::writeInstances(DzNode* Node, DzJsonWriter& Writer, QMap<QString, DzMatrix3>& WritenInstances, QList<DzGeometry*>& ExportedGeometry, QUuid ParentID)
 {
 	if (Node == nullptr)
@@ -3295,6 +3325,7 @@ QMessageBox::Ignore | QMessageBox::Abort,
 	m_bAnimationExportActiveCurves = BridgeDialog->getAnimationExportActiveCurvesCheckBox()->isChecked();
 	m_bAnimationApplyBoneScale = BridgeDialog->getAnimationApplyBoneScaleCheckBox()->isChecked();
 
+	m_bMorphLockBoneTranslation = BridgeDialog->getMorphLockBoneTranslationCheckBox()->isChecked();
 	return true;
 }
 

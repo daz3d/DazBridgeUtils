@@ -115,6 +115,7 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	assetTypeCombo->addItem("Animation");
 	assetTypeCombo->addItem("Environment");
 	assetTypeCombo->addItem("Pose");
+	assetTypeCombo->addItem("MLDeformer");
 	connect(assetTypeCombo, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(HandleAssetTypeComboChange(const QString&)));
 
 	// Animation Settings
@@ -143,6 +144,24 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	morphsLayout->addWidget(morphsEnabledCheckBox);
 	morphsLayout->addWidget(morphsButton);
 	connect(morphsEnabledCheckBox, SIGNAL(stateChanged(int)), this, SLOT(HandleMorphsCheckBoxChange(int)));
+
+	// Morph Settings
+	morphSettingsGroupBox = new QGroupBox("Morph Settings", this);
+	QFormLayout* morphSettingsLayout = new QFormLayout();
+	morphSettingsGroupBox->setLayout(morphSettingsLayout);
+	morphLockBoneTranslationCheckBox = new QCheckBox("", morphSettingsGroupBox);
+	morphLockBoneTranslationCheckBox->setChecked(false);
+	morphSettingsLayout->addRow("Lock Bone Translation for Morphs", morphLockBoneTranslationCheckBox);
+	morphSettingsGroupBox->setVisible(false);
+
+	// Morph Settings
+	mlDeformerSettingsGroupBox = new QGroupBox("MLDeformer Settings", this);
+	QFormLayout* mlDeformerSettingsLayout = new QFormLayout();
+	mlDeformerSettingsGroupBox->setLayout(mlDeformerSettingsLayout);
+	mlDeformerPoseCountEdit = new QLineEdit("500", mlDeformerSettingsGroupBox);
+	mlDeformerPoseCountEdit->setValidator(new QIntValidator());
+	mlDeformerSettingsLayout->addRow("Pose Count", mlDeformerPoseCountEdit);
+	mlDeformerSettingsGroupBox->setVisible(false);
 
 	// Subdivision
 	QHBoxLayout* subdivisionLayout = new QHBoxLayout();
@@ -221,6 +240,12 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 
 	// Add Animation settings
 	addWidget(animationSettingsGroupBox);
+
+	// Add Morph settings
+	addWidget(morphSettingsGroupBox);
+
+	// Add ML Deformer settings
+	addWidget(mlDeformerSettingsGroupBox);
 
 	// Advanced
 	advancedSettingsGroupBox = new QGroupBox("Advanced Settings", this);
@@ -362,6 +387,10 @@ bool DzBridgeDialog::loadSavedSettings()
 	{
 		animationApplyBoneScaleCheckBox->setChecked(settings->value("AnimationApplyBoneScale").toBool());
 	}
+	if (!settings->value("MLDeformerPoseCount").isNull())
+	{
+		mlDeformerPoseCountEdit->setText(settings->value("MLDeformerPoseCount").toString());
+	}
 
 	return true;
 }
@@ -376,6 +405,7 @@ void DzBridgeDialog::saveSettings()
 	settings->setValue("AnimationExportFace", faceAnimationExportCheckBox->isChecked());
 	settings->setValue("AnimationExportActiveCurves", animationExportActiveCurvesCheckBox->isChecked());
 	settings->setValue("AnimationApplyBoneScale", animationApplyBoneScaleCheckBox->isChecked());
+	settings->setValue("MLDeformerPoseCount", mlDeformerPoseCountEdit->text().toInt());
 }
 
 void DzBridgeDialog::refreshAsset()
@@ -478,6 +508,7 @@ QList<QString> DzBridgeDialog::GetPoseList()
 
 void DzBridgeDialog::HandleMorphsCheckBoxChange(int state)
 {
+	morphSettingsGroupBox->setHidden(state != Qt::Checked);
 	if (settings == nullptr || m_bDontSaveSettings) return;
 	settings->setValue("MorphsEnabled", state == Qt::Checked);
 }
@@ -732,6 +763,7 @@ void DzBridgeDialog::HandleOpenIntermediateFolderButton(QString sFolderPath)
 void DzBridgeDialog::HandleAssetTypeComboChange(const QString& assetType)
 {
 	animationSettingsGroupBox->setVisible(assetType == "Animation" || assetType == "Pose");
+	mlDeformerSettingsGroupBox->setVisible(assetType == "MLDeformer");
 }
 
 #include "moc_DzBridgeDialog.cpp"
