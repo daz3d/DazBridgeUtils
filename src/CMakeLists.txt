@@ -23,11 +23,6 @@ set(OSDI_SOURCES
 	../include/OpenSubdivInterface.h
 )
 
-set(MLD_SOURCES
-	MLDeformer.cpp
-	../include/MlDeformer.h
-)
-
 set(MINI_LIBZIP_SOURCES
 	miniz.h
 	../include/zip.h

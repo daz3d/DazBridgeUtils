@@ -152,8 +152,8 @@ namespace DzBridgeNameSpace
 		virtual void exportAsset();
 		virtual void exportNode(DzNode* Node);
 
-		virtual void exportAnimation(bool bExportingForMLDeformer);
-		virtual void exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& BoneMap, FbxAnimLayer* AnimBaseLayer, float FigureScale, bool bExportingForMLDeformer);
+		virtual void exportAnimation();
+		virtual void exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& BoneMap, FbxAnimLayer* AnimBaseLayer, float FigureScale);
 		virtual void exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzNode*, FbxNode*>& BoneMap);
 		virtual QList<DzNumericProperty*> getAnimatedProperties(DzNode* Node);
 		virtual void exportAnimatedProperties(QList<DzNumericProperty*>& Properties, FbxScene* Scene, FbxAnimLayer* AnimBaseLayer);

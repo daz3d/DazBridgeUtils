@@ -61,7 +61,6 @@
 #include "DzBridgeDialog.h"
 #include "DzBridgeSubdivisionDialog.h"
 #include "DzBridgeMorphSelectionDialog.h"
-#include "MLDeformer.h"
 
 using namespace DzBridgeNameSpace;
 
@@ -1091,18 +1090,7 @@ void DzBridgeAction::exportNode(DzNode* Node)
 	 {
 		 QDir dir;
 		 dir.mkpath(m_sDestinationPath);
-		 exportAnimation(/*bExportingForMLDeformer*/ false);
-		 writeConfiguration();
-		 return;
-	 }
-
-	 if (m_sAssetType == "MLDeformer")
-	 {
-		 QDir dir;
-		 dir.mkpath(m_sDestinationPath);
-		 MLDeformer::GeneratePoses(Node, m_bridgeDialog->getMLDeformerPoseCountEdit()->text().toInt());
-		 exportAnimation(/*bExportingForMLDeformer*/ true);
-		 MLDeformer::ExportTrainingData(Node, m_sDestinationPath + m_sExportFilename + ".abc");
+		 exportAnimation(/*bExportingForMLDeformer*/);
 		 writeConfiguration();
 		 return;
 	 }
@@ -1242,7 +1230,7 @@ void DzBridgeAction::exportNode(DzNode* Node)
 	 }
 }
 
-void DzBridgeAction::exportAnimation(bool bExportingForMLDeformer)
+void DzBridgeAction::exportAnimation()
 {
 	if (!m_pSelectedNode) return;
 
@@ -1284,14 +1272,14 @@ void DzBridgeAction::exportAnimation(bool bExportingForMLDeformer)
 	DzTimeRange PlayRange = dzScene->getPlayRange();
 
 	//
-	exportNodeAnimation(Figure, BoneMap, AnimBaseLayer, FigureScale, bExportingForMLDeformer);
+	exportNodeAnimation(Figure, BoneMap, AnimBaseLayer, FigureScale /*, bExportingForMLDeformer*/);
 
 	// Iterate the bones
 	DzBoneList Bones;
 	Skeleton->getAllBones(Bones);
 	for (auto Bone : Bones)
 	{
-		exportNodeAnimation(Bone, BoneMap, AnimBaseLayer, FigureScale, bExportingForMLDeformer);
+		exportNodeAnimation(Bone, BoneMap, AnimBaseLayer, FigureScale /*, bExportingForMLDeformer*/);
 	}
 
 	// Get a list of animated properties
@@ -1306,7 +1294,7 @@ void DzBridgeAction::exportAnimation(bool bExportingForMLDeformer)
 	Exporter->Destroy();
 }
 
-void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& BoneMap, FbxAnimLayer* AnimBaseLayer, float FigureScale, bool bExportingForMLDeformer)
+void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& BoneMap, FbxAnimLayer* AnimBaseLayer, float FigureScale)
 {
 	DzTimeRange PlayRange = dzScene->getPlayRange();
 
