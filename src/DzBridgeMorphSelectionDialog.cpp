@@ -745,6 +745,7 @@ void DzBridgeMorphSelectionDialog::HandleArmJCMMorphsButton()
 {
 	QStringList MorphsToAdd;
 
+	// Genesis 8
 	MorphsToAdd.append("pJCMCollarTwist_n30_L");
 	MorphsToAdd.append("pJCMCollarTwist_n30_R");
 	MorphsToAdd.append("pJCMCollarTwist_p30_L");
@@ -782,6 +783,70 @@ void DzBridgeMorphSelectionDialog::HandleArmJCMMorphsButton()
 	MorphsToAdd.append("pJCMShldrUp_35_L");
 	MorphsToAdd.append("pJCMShldrUp_35_R");
 
+	// Genesis 9
+	MorphsToAdd.append("body_cbs_forearm_y135n_l");
+	MorphsToAdd.append("body_cbs_forearm_y135p_r");
+	MorphsToAdd.append("body_cbs_forearm_y75n_l");
+	MorphsToAdd.append("body_cbs_forearm_y75p_r");
+	MorphsToAdd.append("body_cbs_hand_y28n_l");
+	MorphsToAdd.append("body_cbs_hand_y28p_r");
+	MorphsToAdd.append("body_cbs_hand_z70n_l");
+	MorphsToAdd.append("body_cbs_hand_z70p_r");
+	MorphsToAdd.append("body_cbs_hand_z80n_r");
+	MorphsToAdd.append("body_cbs_hand_z80p_l");
+	MorphsToAdd.append("body_cbs_index1_z90n_l");
+	MorphsToAdd.append("body_cbs_index1_z90p_r");
+	MorphsToAdd.append("body_cbs_index2_z105n_l");
+	MorphsToAdd.append("body_cbs_index2_z105p_r");
+	MorphsToAdd.append("body_cbs_index3_z90n_l");
+	MorphsToAdd.append("body_cbs_index3_z90p_r");
+	MorphsToAdd.append("body_cbs_mid1_z95n_l");
+	MorphsToAdd.append("body_cbs_mid1_z95p_r");
+	MorphsToAdd.append("body_cbs_mid2_z105n_l");
+	MorphsToAdd.append("body_cbs_mid2_z105p_r");
+	MorphsToAdd.append("body_cbs_mid3_z90n_l");
+	MorphsToAdd.append("body_cbs_mid3_z90p_r");
+	MorphsToAdd.append("body_cbs_pinky1_z95n_l");
+	MorphsToAdd.append("body_cbs_pinky1_z95p_r");
+	MorphsToAdd.append("body_cbs_pinky2_z105n_l");
+	MorphsToAdd.append("body_cbs_pinky2_z105p_r");
+	MorphsToAdd.append("body_cbs_pinky3_z90n_l");
+	MorphsToAdd.append("body_cbs_pinky3_z90p_r");
+	MorphsToAdd.append("body_cbs_ring1_z95n_l");
+	MorphsToAdd.append("body_cbs_ring1_z95p_r");
+	MorphsToAdd.append("body_cbs_ring2_z105n_l");
+	MorphsToAdd.append("body_cbs_ring2_z105p_r");
+	MorphsToAdd.append("body_cbs_ring3_z90n_l");
+	MorphsToAdd.append("body_cbs_ring3_z90p_r");
+	MorphsToAdd.append("body_cbs_shoulder_x30n_l");
+	MorphsToAdd.append("body_cbs_shoulder_x30n_r");
+	MorphsToAdd.append("body_cbs_shoulder_x30p_l");
+	MorphsToAdd.append("body_cbs_shoulder_x30p_r");
+	MorphsToAdd.append("body_cbs_shoulder_z55n_r");
+	MorphsToAdd.append("body_cbs_shoulder_z55n_r_COR");
+	MorphsToAdd.append("body_cbs_shoulder_z55p_l");
+	MorphsToAdd.append("body_cbs_shoulder_z55p_l_COR");
+	MorphsToAdd.append("body_cbs_thumb1_y40n_r");
+	MorphsToAdd.append("body_cbs_thumb1_y40p_l");
+	MorphsToAdd.append("body_cbs_thumb1_z20n_r");
+	MorphsToAdd.append("body_cbs_thumb1_z20p_l");
+	MorphsToAdd.append("body_cbs_thumb2_y65n_r");
+	MorphsToAdd.append("body_cbs_thumb2_y65p_l");
+	MorphsToAdd.append("body_cbs_thumb3_y90n_r");
+	MorphsToAdd.append("body_cbs_thumb3_y90p_l");
+	MorphsToAdd.append("body_cbs_upperarm_x95n_l");
+	MorphsToAdd.append("body_cbs_upperarm_x95n_r");
+	MorphsToAdd.append("body_cbs_upperarm_y110n_l");
+	MorphsToAdd.append("body_cbs_upperarm_y110n_z40n_l");
+	MorphsToAdd.append("body_cbs_upperarm_y110n_z90p_l");
+	MorphsToAdd.append("body_cbs_upperarm_y110p_r");
+	MorphsToAdd.append("body_cbs_upperarm_y110p_z40p_r");
+	MorphsToAdd.append("body_cbs_upperarm_y110p_z90n_r");
+	MorphsToAdd.append("body_cbs_upperarm_z40n_l");
+	MorphsToAdd.append("body_cbs_upperarm_z40p_r");
+	MorphsToAdd.append("body_cbs_upperarm_z90n_r");
+	MorphsToAdd.append("body_cbs_upperarm_z90p_l");
+
 	// Add the list for export
 	foreach(QString MorphName, MorphsToAdd)
 	{
@@ -799,6 +864,7 @@ void DzBridgeMorphSelectionDialog::HandleLegJCMMorphsButton()
 {
 	QStringList MorphsToAdd;
 
+	// Genesis 8
 	MorphsToAdd.append("pJCMBigToeDown_45_L");
 	MorphsToAdd.append("pJCMBigToeDown_45_R");
 	MorphsToAdd.append("pJCMFootDwn_75_L");
@@ -820,6 +886,32 @@ void DzBridgeMorphSelectionDialog::HandleLegJCMMorphsButton()
 	MorphsToAdd.append("pJCMToesUp_60_L");
 	MorphsToAdd.append("pJCMToesUp_60_R");
 
+	// Genesis 9
+	MorphsToAdd.append("body_cbs_foot_x45n_l");
+	MorphsToAdd.append("body_cbs_foot_x45n_r");
+	MorphsToAdd.append("body_cbs_foot_x65p_l");
+	MorphsToAdd.append("body_cbs_foot_x65p_r");
+	MorphsToAdd.append("body_cbs_foot_z45n_l");
+	MorphsToAdd.append("body_cbs_foot_z45p_r");
+	MorphsToAdd.append("body_cbs_shin_x155p_l");
+	MorphsToAdd.append("body_cbs_shin_x155p_r");
+	MorphsToAdd.append("body_cbs_shin_x90p_l");
+	MorphsToAdd.append("body_cbs_shin_x90p_r");
+	MorphsToAdd.append("body_cbs_thigh_x115n_l");
+	MorphsToAdd.append("body_cbs_thigh_x115n_r");
+	MorphsToAdd.append("body_cbs_thigh_x115n_z90n_r");
+	MorphsToAdd.append("body_cbs_thigh_x115n_z90p_l");
+	MorphsToAdd.append("body_cbs_thigh_x35p_l");
+	MorphsToAdd.append("body_cbs_thigh_x35p_r");
+	MorphsToAdd.append("body_cbs_thigh_x90n_l");
+	MorphsToAdd.append("body_cbs_thigh_x90n_r");
+	MorphsToAdd.append("body_cbs_thigh_z90n_r");
+	MorphsToAdd.append("body_cbs_thigh_z90p_l");
+	MorphsToAdd.append("body_cbs_toes_x40p_l");
+	MorphsToAdd.append("body_cbs_toes_x40p_r");
+	MorphsToAdd.append("body_cbs_toes_x60n_l");
+	MorphsToAdd.append("body_cbs_toes_x60n_r");
+
 	// Add the list for export
 	foreach(QString MorphName, MorphsToAdd)
 	{
@@ -837,6 +929,7 @@ void DzBridgeMorphSelectionDialog::HandleTorsoJCMMorphsButton()
 {
 	QStringList MorphsToAdd;
 
+	// Genesis 8
 	MorphsToAdd.append("pJCMAbdomen2Fwd_40");
 	MorphsToAdd.append("pJCMAbdomen2Side_24_L");
 	MorphsToAdd.append("pJCMAbdomen2Side_24_R");
@@ -856,6 +949,32 @@ void DzBridgeMorphSelectionDialog::HandleTorsoJCMMorphsButton()
 	MorphsToAdd.append("pJCMChestFwd_35");
 	MorphsToAdd.append("pJCMChestSide_20_L");
 	MorphsToAdd.append("pJCMChestSide_20_R");
+
+	// Genesis 9
+	MorphsToAdd.append("body_cbs_head_x25p");
+	MorphsToAdd.append("body_cbs_head_x30n");
+	MorphsToAdd.append("body_cbs_neck1_x25n");
+	MorphsToAdd.append("body_cbs_neck1_x40p");
+	MorphsToAdd.append("body_cbs_neck1_x40p_COR");
+	MorphsToAdd.append("body_cbs_neck1_y22n_r");
+	MorphsToAdd.append("body_cbs_neck1_y22p_l");
+	MorphsToAdd.append("body_cbs_neck1_z40n_l");
+	MorphsToAdd.append("body_cbs_neck1_z40n_l_COR");
+	MorphsToAdd.append("body_cbs_neck1_z40p_r");
+	MorphsToAdd.append("body_cbs_neck1_z40p_r_COR");
+	MorphsToAdd.append("body_cbs_pelvis_x25n");
+	MorphsToAdd.append("body_cbs_pelvis_x25p");
+	MorphsToAdd.append("body_cbs_spine1_x35p");
+	MorphsToAdd.append("body_cbs_spine1_z15n_l");
+	MorphsToAdd.append("body_cbs_spine1_z15p_r");
+	MorphsToAdd.append("body_cbs_spine2_x40p");
+	MorphsToAdd.append("body_cbs_spine2_z24n_l");
+	MorphsToAdd.append("body_cbs_spine2_z24p_r");
+	MorphsToAdd.append("body_cbs_spine3_x35p");
+	MorphsToAdd.append("body_cbs_spine3_z20n_l");
+	MorphsToAdd.append("body_cbs_spine3_z20p_r");
+	MorphsToAdd.append("body_ctrl_pecmovement_l");
+	MorphsToAdd.append("body_ctrl_pecmovement_r");
 
 	// Add the list for export
 	foreach(QString MorphName, MorphsToAdd)
