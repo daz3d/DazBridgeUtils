@@ -75,8 +75,8 @@ namespace DzBridgeNameSpace
 
 		struct UndoData
 		{
-			bool originalLockState;
-			double originalValue;
+			bool originalNumericLockState;
+			double originalNumericValue;
 		};
 		QMap<DzProperty*, UndoData> UndoSubdivisionOverrides;
 

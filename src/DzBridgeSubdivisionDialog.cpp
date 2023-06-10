@@ -320,6 +320,7 @@ void DzBridgeSubdivisionDialog::LockSubdivisionProperties(bool subdivisionEnable
 	foreach(QComboBox* combo, SubdivisionCombos)
 	{
 		QString Name = combo->property("Object").toString();
+		double targetValue = combo->currentText().toDouble();
 		DzNode* ObjectNode = FindObject(Selection, Name);
 		if (ObjectNode)
 		{
@@ -335,18 +336,38 @@ void DzBridgeSubdivisionDialog::LockSubdivisionProperties(bool subdivisionEnable
 					DzProperty* property = Shape->getProperty(index);
 					DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
 					QString propName = property->getName();
+
+					// DB 2023-May-26: fix for native subdivision in target software
+					if (propName == "lodlevel" && numericProperty)
+					{
+						UndoData undo_data;
+						undo_data.originalNumericLockState = numericProperty->isLocked();
+						undo_data.originalNumericValue = numericProperty->getDoubleValue();
+						UndoSubdivisionOverrides.insert(numericProperty, undo_data);
+
+						numericProperty->lock(false);
+						if (targetValue == 0.0)
+						{
+							// use base mesh resolution
+							numericProperty->setDoubleValue(0.0f);
+						}
+						else
+						{
+							// use high resolution mesh
+							numericProperty->setDoubleValue(1.0f);
+						}
+					}
 					if (propName == "SubDIALevel" && numericProperty)
 					{
 						// DB 2021-09-02: Record data to Unlock/Undo changes
 						UndoData undo_data;
-						undo_data.originalLockState = numericProperty->isLocked();
-						undo_data.originalValue = numericProperty->getDoubleValue();
+						undo_data.originalNumericLockState = numericProperty->isLocked();
+						undo_data.originalNumericValue = numericProperty->getDoubleValue();
 						UndoSubdivisionOverrides.insert(numericProperty, undo_data);
 
 						numericProperty->lock(false);
 						if (subdivisionEnabled)
 						{
-							double targetValue = combo->currentText().toDouble();
 							numericProperty->setDoubleValue(targetValue);
 						}
 						else
@@ -375,8 +396,8 @@ void DzBridgeSubdivisionDialog::UnlockSubdivisionProperties()
 		{
 			UndoData undo_data = undoIterator.value();
 			numericProperty->lock(false);
-			numericProperty->setDoubleValue(undo_data.originalValue);
-			numericProperty->lock(undo_data.originalLockState);
+			numericProperty->setDoubleValue(undo_data.originalNumericValue);
+			numericProperty->lock(undo_data.originalNumericLockState);
 		}
 		undoIterator++;
 	}

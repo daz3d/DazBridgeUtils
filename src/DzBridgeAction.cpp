@@ -1144,7 +1144,8 @@ void DzBridgeAction::exportNode(DzNode* Node)
 		  ExportOptions.setBoolValue("doStaticClothing", false);
 		  ExportOptions.setBoolValue("degradedSkinning", true);
 		  ExportOptions.setBoolValue("degradedScaling", true);
-		  ExportOptions.setBoolValue("doSubD", false);
+		  // DB 5-26-2023: enable doSubD to export crease-info
+		  ExportOptions.setBoolValue("doSubD", true);
 		  ExportOptions.setBoolValue("doCollapseUVTiles", false);
 
 		  if (m_sAssetType == "SkeletalMesh" && m_EnableSubdivisions)
@@ -3045,7 +3046,7 @@ void DzBridgeAction::writeAllDforceInfo(DzNode* Node, DzJsonWriter& Writer, QTex
 	{
 		if (m_sAssetType == "SkeletalMesh")
 		{
-			bool ExportDForce = true;
+			bool ExportDForce = false;
 			Writer.startMemberArray("dForce-WeightMaps", true);
 			if (ExportDForce)
 			{
