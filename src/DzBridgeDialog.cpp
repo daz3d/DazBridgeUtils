@@ -73,9 +73,9 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	int revision = COMMON_REV % 1000;
 	QString workingTitle;
 	if (windowTitle != "")
-		workingTitle = windowTitle + QString(tr(" v%1.%2 Build %3.%4")).arg(COMMON_MAJOR).arg(COMMON_MINOR).arg(revision).arg(COMMON_BUILD);
+		workingTitle = windowTitle + QString(tr(" %1 v%2.%3.%4")).arg(COMMON_MAJOR).arg(COMMON_MINOR).arg(revision).arg(COMMON_BUILD);
 	else
-		workingTitle = QString(tr("DazBridge v%1.%2 Build %3.%4").arg(COMMON_MAJOR).arg(COMMON_MINOR).arg(revision).arg(COMMON_BUILD));
+		workingTitle = QString(tr("DazBridge %1 v%2.%3.%4").arg(COMMON_MAJOR).arg(COMMON_MINOR).arg(revision).arg(COMMON_BUILD));
 	setWindowTitle(workingTitle);
 	layout()->setSizeConstraint(QLayout::SetFixedSize);
 	mainLayout = new QFormLayout();
@@ -206,7 +206,7 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	m_wTargetPluginInstaller->setLayout(targetPluginInstallerLayout);
 
 	// Bridge Software Version Label
-	QString sBridgeVersionString = QString(tr("Daz Bridge Library v%1.%2  revision %3.%4")).arg(COMMON_MAJOR).arg(COMMON_MINOR).arg(revision).arg(COMMON_BUILD);
+	QString sBridgeVersionString = QString(tr("Daz Bridge Library %1 v%2.%3.%4")).arg(COMMON_MAJOR).arg(COMMON_MINOR).arg(revision).arg(COMMON_BUILD);
 	m_BridgeVersionLabel = new QLabel(sBridgeVersionString);
 
 	// Go To Intermediate Folder
