@@ -329,15 +329,20 @@ bool DzBridgeDialog::loadSavedSettings()
 	{
 		showFbxDialogCheckBox->setChecked(settings->value("ShowFBXDialog").toBool());
 	}
-	if (!m_bSetupMode && !settings->value("ShowAdvancedSettings").isNull())
-	{
-		advancedSettingsGroupBox->setChecked(settings->value("ShowAdvancedSettings").toBool());
-		advancedWidget->setHidden(!advancedSettingsGroupBox->isChecked());
-	}
-	else
+	if (m_bSetupMode)
 	{
 		advancedSettingsGroupBox->setChecked(true);
 		advancedWidget->setHidden(false);
+	}
+	//else if (!settings->value("ShowAdvancedSettings").isNull())
+	//{
+	//	advancedSettingsGroupBox->setChecked(settings->value("ShowAdvancedSettings").toBool());
+	//	advancedWidget->setHidden(!advancedSettingsGroupBox->isChecked());
+	//}
+	else
+	{
+		advancedSettingsGroupBox->setChecked(false);
+		advancedWidget->setHidden(true);
 	}
 	if (!settings->value("FBXExportVersion").isNull())
 	{
