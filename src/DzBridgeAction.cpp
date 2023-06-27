@@ -83,8 +83,9 @@ DzBridgeAction::DzBridgeAction(const QString& text, const QString& desc) :
 	 m_bUndoNormalMaps = true;
 #endif
 
-	 m_bPostProcessFbx = false;
-	 m_bRemoveDuplicateGeografts = false;
+	 m_bPostProcessFbx = true;
+	 m_bRemoveDuplicateGeografts = true;
+	 m_bExperimental_FbxPostProcessing = false;
 }
 
 DzBridgeAction::~DzBridgeAction()
@@ -4099,9 +4100,6 @@ void FindAndProcessTwistBones(FbxNode* pNode)
 // import process is started in target software
 bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 {
-	// DEBUG
-	m_bPostProcessFbx = true;
-
 	if (m_bPostProcessFbx == false)
 		return false;
 
@@ -4140,43 +4138,46 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 		}
 	}
 
-	// Find the root bone.  There should only be one bone off the scene root
-	FbxNode* RootNode = pScene->GetRootNode();
-	FbxNode* RootBone = nullptr;
-	QString RootBoneName("");
-	for (int ChildIndex = 0; ChildIndex < RootNode->GetChildCount(); ++ChildIndex)
+	if (m_bExperimental_FbxPostProcessing)
 	{
-		FbxNode* ChildNode = RootNode->GetChild(ChildIndex);
-		FbxNodeAttribute* Attr = ChildNode->GetNodeAttribute();
-		if (Attr && Attr->GetAttributeType() == FbxNodeAttribute::eSkeleton)
+		// Find the root bone.  There should only be one bone off the scene root
+		FbxNode* RootNode = pScene->GetRootNode();
+		FbxNode* RootBone = nullptr;
+		QString RootBoneName("");
+		for (int ChildIndex = 0; ChildIndex < RootNode->GetChildCount(); ++ChildIndex)
 		{
-			RootBone = ChildNode;
-			RootBoneName = RootBone->GetName();
-			RootBone->SetName("root");
-			Attr->SetName("root");
-			break;
+			FbxNode* ChildNode = RootNode->GetChild(ChildIndex);
+			FbxNodeAttribute* Attr = ChildNode->GetNodeAttribute();
+			if (Attr && Attr->GetAttributeType() == FbxNodeAttribute::eSkeleton)
+			{
+				RootBone = ChildNode;
+				RootBoneName = RootBone->GetName();
+				RootBone->SetName("root");
+				Attr->SetName("root");
+				break;
+			}
+		}
+
+		//// Daz characters sometimes have additional skeletons inside the character for accesories
+		//if (AssetType == DazAssetType::SkeletalMesh)
+		//{
+		//	FDazToUnrealFbx::ParentAdditionalSkeletalMeshes(Scene);
+		//}
+		// Daz Studio puts the base bone rotations in a different place than Unreal expects them.
+		//if (CachedSettings->FixBoneRotationsOnImport && AssetType == DazAssetType::SkeletalMesh && RootBone)
+		//{
+		//	FDazToUnrealFbx::RemoveBindPoses(Scene);
+		//	FDazToUnrealFbx::FixClusterTranformLinks(Scene, RootBone);
+		//}
+		if (RootBone)
+		{
+			// remove pre and post rotations
+			RemovePrePostRotations(RootBone);
+	//		FindAndProcessTwistBones(RootBone);
+	//		RemoveBindPoses(pScene);
+	//		FixClusterTranformLinks(pScene, RootBone);
 		}
 	}
-	//// Daz characters sometimes have additional skeletons inside the character for accesories
-	//if (AssetType == DazAssetType::SkeletalMesh)
-	//{
-	//	FDazToUnrealFbx::ParentAdditionalSkeletalMeshes(Scene);
-	//}
-	// Daz Studio puts the base bone rotations in a different place than Unreal expects them.
-	//if (CachedSettings->FixBoneRotationsOnImport && AssetType == DazAssetType::SkeletalMesh && RootBone)
-	//{
-	//	FDazToUnrealFbx::RemoveBindPoses(Scene);
-	//	FDazToUnrealFbx::FixClusterTranformLinks(Scene, RootBone);
-	//}
-	if (RootBone)
-	{
-		// remove pre and post rotations
-		RemovePrePostRotations(RootBone);
-//		FindAndProcessTwistBones(RootBone);
-//		RemoveBindPoses(pScene);
-//		FixClusterTranformLinks(pScene, RootBone);
-	}
-
 
 	if (openFBX->SaveScene(pScene, fbxFilePath.toLocal8Bit().data()) == false)
 	{

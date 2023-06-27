@@ -141,6 +141,7 @@ namespace DzBridgeNameSpace
 		// post-process FBX
 		bool m_bPostProcessFbx;
 		bool m_bRemoveDuplicateGeografts;
+		bool m_bExperimental_FbxPostProcessing;
 		QStringList m_aGeografts;
 
 		// Morph Settings;
