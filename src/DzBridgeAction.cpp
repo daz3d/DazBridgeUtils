@@ -4799,14 +4799,30 @@ void DzBridgeAction::writePoseData(DzNode* Node, DzJsonWriter& writer, bool bIsF
 	if (Node == nullptr)
 		return;
 
+	// Top Nodes List
+	auto aTopNodes = Node->getNodeChildren(false);
+	if (aTopNodes.length() == 0 && !bIsFigure)
+	{
+		aTopNodes.push_back(Node);
+	}
+
 	// Create Node List
 	DzNodeList aNodeList;
 
 	aNodeList.append(Node);
-	for (auto item : Node->getNodeChildren(true))
+	for (auto item : aTopNodes)
 	{
 		DzNode* nodeItem = qobject_cast<DzNode*>(item);
+		if (bIsFigure && !nodeItem->inherits("DzBone"))
+		{
+			continue;
+		}
 		aNodeList.append(nodeItem);
+		for (auto child : nodeItem->getNodeChildren(true))
+		{
+			DzNode* nodeChild = qobject_cast<DzNode*>(child);
+			aNodeList.append(nodeChild);
+		}
 	}
 
 	writer.startMemberObject("PoseData");
@@ -4820,8 +4836,9 @@ void DzBridgeAction::writePoseData(DzNode* Node, DzJsonWriter& writer, bool bIsF
 		QString sObjectName = "EMPTY";
 		if (sObjectType == "MESH")
 			sObjectName = node->getObject()->getName();
-		DzVec3 vecPosition = node->getLocalPos();
-		DzMatrix3 matrixScale = node->getLocalScale();
+		DzTime currentTime = dzScene->getTime();
+		DzVec3 vecPosition = node->getLocalPos(currentTime, false);
+		DzMatrix3 matrixScale = node->getLocalScale(currentTime, false);
 
 		writer.startMemberObject(sNodeName);
 		writer.addMember("Name", sNodeName);
