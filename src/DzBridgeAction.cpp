@@ -3297,14 +3297,16 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 		if (checkForIrreversibleOperations_in_disconnectOverrideControllers() == true)
 		{
 			// warn user
-			auto userChoice = QMessageBox::warning(0, "Daz Bridge",
-				tr("You are exporting morph controllers that directly control other morphs that are also \n\
-being exported. To prevent morph values from incorrect exponential growth in these cases, \n\
-we must now disconnect all linked morph controllers. This may cause irrersible changes to \n\
-your scene. Please save changes to the scene before proceeding."),
-QMessageBox::Ignore | QMessageBox::Abort,
-				QMessageBox::Abort);
-			if (userChoice == QMessageBox::StandardButton::Abort)
+			auto userChoice = QMessageBox::question(0, "Daz Bridge",
+				tr("You are exporting morph controllers that are \"connected\" or controlling \n\
+the strength of other morphs that are also being exported. \n\n\
+To prevent morph values from exponential growth to 200% or more \n\
+(aka \"Double-Dipping\"), we must now disconnect all linked morph \n\
+controllers. This may cause irreversible changes to your scene.\n\n\
+Are you ready to proceed, or do you want to Cancel to save your changes?"),
+QMessageBox::Yes | QMessageBox::Cancel,
+				QMessageBox::Yes);
+			if (userChoice == QMessageBox::StandardButton::Cancel)
 				return false;
 		}
 	}

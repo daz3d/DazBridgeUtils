@@ -99,6 +99,7 @@ namespace DzBridgeNameSpace
 
 		Q_INVOKABLE bool IsAutoJCMEnabled() { return autoJCMCheckBox->isChecked(); }
 		Q_INVOKABLE bool IsFakeDualQuatEnabled() { return fakeDualQuatCheckBox->isChecked(); }
+		Q_INVOKABLE bool IsAllowMorphDoubleDippingEnabled() { return allowMorphDoubleDippingCheckBox->isChecked(); }
 
 		// Recursive function for finding all active JCM morphs for a node
 		Q_INVOKABLE QList<JointLinkInfo> GetActiveJointControlledMorphs(DzNode* Node = nullptr);
@@ -114,6 +115,9 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE MorphInfo GetMorphInfoFromName(QString morphName);
 		Q_INVOKABLE void SetAutoJCMVisible(bool bVisible);
 		Q_INVOKABLE void SetAutoJCMEnabled(bool bEnabled);
+		// DB 2023-July-10
+		Q_INVOKABLE void SetAllowMorphDoubleDippingVisible(bool bVisible);
+		Q_INVOKABLE void SetAllowMorphDoubleDippingEnabled(bool bEnabled);
 
 		// get morph property name
 		Q_INVOKABLE static QString getMorphPropertyName(DzProperty* pMorphProperty);
@@ -200,6 +204,9 @@ namespace DzBridgeNameSpace
 		QTreeWidgetItem* charactersTreeItem;
 		QCheckBox* autoJCMCheckBox;
 		QCheckBox* fakeDualQuatCheckBox;
+		QPushButton* AddConnectedMorphsButton;
+
+		QCheckBox* allowMorphDoubleDippingCheckBox;
 
 		QSettings* settings;
 	};

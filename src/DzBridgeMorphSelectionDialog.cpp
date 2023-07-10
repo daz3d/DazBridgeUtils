@@ -162,7 +162,21 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	fakeDualQuatCheckBox->setVisible(false);
 	fakeDualQuatCheckBox->setWhatsThis("Adds additional JCMs that fake the difference between Linear Blending and Dual Quaternion Skinning.");
 
+	allowMorphDoubleDippingCheckBox = new QCheckBox(tr("Allow Morph Double-Dipping."));
+	allowMorphDoubleDippingCheckBox->setChecked(false);
+	allowMorphDoubleDippingCheckBox->setVisible(true);
+	QString sAllowDoubleDippingHelpText = QString(tr("Allow Connected Morphs such as Victoria 9 and Victoria 9 Head \
+and Victoria 9 Body to all fully contribute to the exported blendshape when they are exported simultaneously.  \
+WARNING: this will cause 200% or similar morph distortion when they are all applied together and may break \
+functionallity for some Morph and JCM products."));
+	allowMorphDoubleDippingCheckBox->setWhatsThis(sAllowDoubleDippingHelpText);
+	allowMorphDoubleDippingCheckBox->setToolTip(sAllowDoubleDippingHelpText);
+
 	QPushButton* AddConnectedMorphsButton = new QPushButton("Add Connected Morphs");
+	AddConnectedMorphsButton->setVisible(false);
+	QString sAddConnectedMorphsHelpText = QString(tr("Add any morphs or property sliders which can contribute to strength of exported morphs."));
+	AddConnectedMorphsButton->setWhatsThis(sAddConnectedMorphsHelpText);
+	AddConnectedMorphsButton->setToolTip(sAddConnectedMorphsHelpText);
 
 	((QGridLayout*)JCMGroupBox->layout())->addWidget(ArmsJCMButton, 0, 0);
 	((QGridLayout*)JCMGroupBox->layout())->addWidget(LegsJCMButton, 0, 1);
@@ -175,6 +189,7 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	MorphGroupBox->layout()->addWidget(autoJCMCheckBox);
 	MorphGroupBox->layout()->addWidget(fakeDualQuatCheckBox);
 	MorphGroupBox->layout()->addWidget(AddConnectedMorphsButton);
+	MorphGroupBox->layout()->addWidget(allowMorphDoubleDippingCheckBox);
 
 	if (!settings->value("AutoJCMEnabled").isNull())
 	{
@@ -1361,28 +1376,32 @@ QList<QString> DzBridgeMorphSelectionDialog::getMorphNamesToDisconnectList()
 {
 	QList<QString> morphsToDisconnect;
 
-	foreach (MorphInfo exportMorph, m_morphsToExport_finalized)
+	// DB 2023-July-10, Allow Morph Double-Dipping
+	if (this->allowMorphDoubleDippingCheckBox->isChecked() == false)
 	{
-		DzProperty* morphProperty = exportMorph.Property;
-		// DB (2022-Sept-26): crashfix
-		if (morphProperty == nullptr)
-			continue;
-
-		// DB, 2022-June-07: NOTE: using iterator may be more efficient due to potentially large number of controllers
-		for (auto iterator = morphProperty->controllerListIterator(); iterator.hasNext(); )
+		foreach (MorphInfo exportMorph, m_morphsToExport_finalized)
 		{
-			DzERCLink* ercLink = qobject_cast<DzERCLink*>(iterator.next());
-			if (ercLink == nullptr)
+			DzProperty* morphProperty = exportMorph.Property;
+			// DB (2022-Sept-26): crashfix
+			if (morphProperty == nullptr)
 				continue;
-			auto controllerProperty = ercLink->getProperty();
-			QString sControllerName = getMorphPropertyName(controllerProperty);
-			// iterate through each exported morph
-			foreach (MorphInfo compareMorph, m_morphsToExport_finalized)
+
+			// DB, 2022-June-07: NOTE: using iterator may be more efficient due to potentially large number of controllers
+			for (auto iterator = morphProperty->controllerListIterator(); iterator.hasNext(); )
 			{
-				if (compareMorph.Name == sControllerName)
+				DzERCLink* ercLink = qobject_cast<DzERCLink*>(iterator.next());
+				if (ercLink == nullptr)
+					continue;
+				auto controllerProperty = ercLink->getProperty();
+				QString sControllerName = getMorphPropertyName(controllerProperty);
+				// iterate through each exported morph
+				foreach (MorphInfo compareMorph, m_morphsToExport_finalized)
 				{
-					morphsToDisconnect.append(exportMorph.Name);
-					break;
+					if (compareMorph.Name == sControllerName)
+					{
+						morphsToDisconnect.append(exportMorph.Name);
+						break;
+					}
 				}
 			}
 		}
@@ -1407,6 +1426,7 @@ void DzBridgeMorphSelectionDialog::SetAutoJCMVisible(bool bVisible)
 		return;
 	autoJCMCheckBox->setVisible(bVisible);
 	fakeDualQuatCheckBox->setVisible(bVisible);
+	AddConnectedMorphsButton->setVisible(bVisible);
 	update();
 }
 
@@ -1434,5 +1454,22 @@ void DzBridgeMorphSelectionDialog::SetAutoJCMEnabled(bool bEnabled)
 	autoJCMCheckBox->setChecked(bEnabled);
 	update();
 }
+
+void DzBridgeMorphSelectionDialog::SetAllowMorphDoubleDippingEnabled(bool bEnabled)
+{
+	if (allowMorphDoubleDippingCheckBox == nullptr)
+		return;
+	allowMorphDoubleDippingCheckBox->setChecked(bEnabled);
+	update();
+}
+
+void DzBridgeMorphSelectionDialog::SetAllowMorphDoubleDippingVisible(bool bVisible)
+{
+	if (allowMorphDoubleDippingCheckBox == nullptr)
+		return;
+	allowMorphDoubleDippingCheckBox->setVisible(bVisible);
+	update();
+}
+
 
 #include "moc_DzBridgeMorphSelectionDialog.cpp"
