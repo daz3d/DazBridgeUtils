@@ -4284,31 +4284,32 @@ void DzBridgeAction::writeSkeletonData(DzNode* Node, DzJsonWriter& writer)
 	return;
 }
 
+// DB 2023-July-9: bugfix for rest pose, all getValue() replaced with getDoubleDefaultValue(), etc.
 DzVec3 calculatePrimaryAxis(DzBone* pBone, DzVec3 &vecEndVector, double nBoneLength)
 {
 	DzVec3 vecFirstAxis(0.0f, 0.0f, 0.0f);
-	double nNodeScale = pBone->getScaleControl()->getValue();
+	double nNodeScale = pBone->getScaleControl()->getDoubleDefaultValue();
 	int nSign = 1;
 	double nAxisScale = 1.0;
 	switch (pBone->getRotationOrder()[0])
 	{
 	case 0:
 		nSign = (vecEndVector.m_x >= 0) ? 1 : -1;
-		nAxisScale = pBone->getXScaleControl()->getValue();
+		nAxisScale = pBone->getXScaleControl()->getDoubleDefaultValue();
 		vecFirstAxis.m_x = nBoneLength * nSign * nAxisScale * nNodeScale;
 		break;
 	case 1:
 		nSign = (vecEndVector.m_y >= 0) ? 1 : -1;
-		nAxisScale = pBone->getYScaleControl()->getValue();
+		nAxisScale = pBone->getYScaleControl()->getDoubleDefaultValue();
 		vecFirstAxis.m_y = nBoneLength * nSign * nAxisScale * nNodeScale;
 		break;
 	case 2:
 		nSign = (vecEndVector.m_z >= 0) ? 1 : -1;
-		nAxisScale = pBone->getZScaleControl()->getValue();
+		nAxisScale = pBone->getZScaleControl()->getDoubleDefaultValue();
 		vecFirstAxis.m_z = nBoneLength * nSign * nAxisScale * nNodeScale;
 		break;
 	}
-	DzQuat quatOrientation = pBone->getOrientation();
+	DzQuat quatOrientation = pBone->getOrientation(true);
 	DzVec3 vecPrimaryAxis = quatOrientation.multVec(vecFirstAxis);
 
 	return vecPrimaryAxis;
@@ -4342,13 +4343,20 @@ DzVec3 calculateSecondaryAxis(DzBone* pBone, DzVec3& vecEndVector)
 		vecSecondAxis.m_z = nSign;
 		break;
 	}
-
-	DzQuat quatOrientation = pBone->getOrientation();
+	// DB 2023-July-9: bugfix for rest pose
+	DzQuat quatOrientation = pBone->getOrientation(true);
 	vecSecondAxis = quatOrientation.multVec(vecSecondAxis);
 
 	return vecSecondAxis;
 }
 
+
+/**
+ * \Summates ERC Y-translations to bone, iterates through all of the bones' controllers
+ * \TODO: consider renaming function to calculateERCOffsetForBone()?
+ * \param DzBone* pBone - bone of interest
+ * \return DzVec3 vecBoneOffset - final vector summation of all ERC y-translations
+ */
 DzVec3 calculateBoneOffset(DzBone* pBone)
 {
 	DzVec3 vecBoneOffset(0.0f, 0.0f, 0.0f);
@@ -4443,6 +4451,12 @@ DzPropertyList getAllProperties(DzBone* pBone)
 	return aPropertyList;
 }
 
+/**
+ * \Write DzBone head and tail data, along with orientation.  NOTE: This is used by BlenderBridge to overwrite the bindpose
+ * \so the skeleton configuration must be in in rest/zero configuration AND any baked morphs must have ERC bone values applied.
+ * \param Node 
+ * \param writer 
+ */
 void DzBridgeAction::writeHeadTailData(DzNode* Node, DzJsonWriter& writer)
 {
 	if (Node == nullptr)
@@ -4505,7 +4519,7 @@ void DzBridgeAction::writeHeadTailData(DzNode* Node, DzJsonWriter& writer)
 
 	}
 
-	// Calculate Bone Offset
+	// Calculate Bone Offset (aka ERC y-translate offset)
 	DzVec3 vecBoneOffset = calculateBoneOffset(qobject_cast<DzBone*>(aBoneList[0]));
 
 	double nSkeletonScale = pSkeleton->getScaleControl()->getValue();
@@ -4517,12 +4531,8 @@ void DzBridgeAction::writeHeadTailData(DzNode* Node, DzJsonWriter& writer)
 		DzBone* pBone = qobject_cast<DzBone*>(pObject);
 		if (pBone)
 		{
-			//// Calculate Bone Offset
-			//DzVec3 vecBoneOffset = calculateBoneOffset(pBone);
-
-
 			// Assign Head
-			DzVec3 vecHead = pBone->getOrigin(false);
+			DzVec3 vecHead = pBone->getOrigin(true);
 			if (Node->className() == "DzFigure")
 			{
 				DzFigure* figure = qobject_cast<DzFigure*>(pSkeleton);
@@ -4536,7 +4546,8 @@ void DzBridgeAction::writeHeadTailData(DzNode* Node, DzJsonWriter& writer)
 				}
 			}
 			// Calculate Bone Length
-			DzVec3 vecEndVector = pBone->getEndPoint() - pBone->getOrigin(false);
+			// DB 2023-July-9: bugfix for restpose
+			DzVec3 vecEndVector = pBone->getEndPoint(true) - pBone->getOrigin(true);
 			double nBoneLength = vecEndVector.length();
 			// Calculate Primary Axis
 			DzVec3 vecPrimaryAxis = calculatePrimaryAxis(pBone, vecEndVector, nBoneLength);
@@ -4580,16 +4591,32 @@ void DzBridgeAction::writeHeadTailData(DzNode* Node, DzJsonWriter& writer)
 				for (int i = 0; i < 3; i++)
 				{
 					QString searchLabel = QString(aAxisString[i] + QString("Translate"));
-					if (propertyItem->getName() == searchLabel && propertyItem->isHidden() == false) {
-						vecBonePosition[i] = 1;
+					if (propertyItem->getName() == searchLabel && propertyItem->isHidden() == false)
+					{
+						QString sPropertyLabel = propertyItem->getLabel().toLower().replace(" ", "");
+						searchLabel = searchLabel.toLower().replace(" ", "");
+						// Only set to 1 if label doesn't not match name (except whitespace)
+						// Example: name=xrotate but label=bend, twist, etc.
+						if (searchLabel.startsWith(sPropertyLabel) == false)
+						{
+							vecBonePosition[i] = 1;
+						}
 					}
 				}
 				// Rotation
 				for (int i = 0; i < 3; i++)
 				{
 					QString searchLabel = QString(aAxisString[i] + QString("Rotate"));
-					if (propertyItem->getName() == searchLabel && propertyItem->isHidden() == false) {
-						vecBoneRotation[i] = 1;
+					if (propertyItem->getName() == searchLabel && propertyItem->isHidden() == false)
+					{
+						QString sPropertyLabel = propertyItem->getLabel().toLower().replace(" ", "");
+						searchLabel = searchLabel.toLower().replace(" ", "");
+						// Only set to 1 if label doesn't not match name (except whitespace)
+						// Example: name=xrotate but label=bend, twist, etc.
+						if (searchLabel.startsWith(sPropertyLabel) == false)
+						{
+							vecBoneRotation[i] = 1;
+						}
 					}
 				}
 				// Scale
@@ -4619,11 +4646,12 @@ void DzBridgeAction::writeJointOrientation(DzBoneList& aBoneList, DzJsonWriter& 
 	for (DzBone* pBone : aBoneList)
 	{
 		QString sBoneName = pBone->getName();
+		// DB 2023-July-9: bugfix for restpose
 		QString sRotationOrder = pBone->getRotationOrder().toString();
-		double nXOrientation = pBone->getOrientXControl()->getValue();
-		double nYOrientation = pBone->getOrientYControl()->getValue();
-		double nZOrientation = pBone->getOrientZControl()->getValue();
-		DzQuat quatOrientation = pBone->getOrientation();
+		double nXOrientation = pBone->getOrientXControl()->getDoubleDefaultValue();
+		double nYOrientation = pBone->getOrientYControl()->getDoubleDefaultValue();
+		double nZOrientation = pBone->getOrientZControl()->getDoubleDefaultValue();
+		DzQuat quatOrientation = pBone->getOrientation(true);
 
 		writer.startMemberArray(sBoneName, true);
 		writer.addItem(sRotationOrder);
