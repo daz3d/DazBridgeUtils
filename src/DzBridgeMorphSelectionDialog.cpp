@@ -162,21 +162,23 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	fakeDualQuatCheckBox->setVisible(false);
 	fakeDualQuatCheckBox->setWhatsThis("Adds additional JCMs that fake the difference between Linear Blending and Dual Quaternion Skinning.");
 
-	allowMorphDoubleDippingCheckBox = new QCheckBox(tr("Allow Morph Double-Dipping."));
+	allowMorphDoubleDippingCheckBox = new QCheckBox(tr("Allow Morph Double-Dipping"));
 	allowMorphDoubleDippingCheckBox->setChecked(false);
 	allowMorphDoubleDippingCheckBox->setVisible(true);
-	QString sAllowDoubleDippingHelpText = QString(tr("Allow Connected Morphs such as Victoria 9 and Victoria 9 Head \
-and Victoria 9 Body to all fully contribute to the exported blendshape when they are exported simultaneously.  \
-WARNING: this will cause 200% or similar morph distortion when they are all applied together and may break \
-functionallity for some Morph and JCM products."));
+	QString sAllowDoubleDippingHelpText = QString(tr("\
+Allow Connected Morphs such as Victoria 9 and Victoria 9 Head and Victoria 9 Body to all fully contribute \n\
+to the exported blendshape when they are exported simultaneously. \n\n\
+WARNING: this will cause 200% or similar morph distortion when they are all applied together and may break \n\
+functionality for some Morph and JCM products.\
+"));
 	allowMorphDoubleDippingCheckBox->setWhatsThis(sAllowDoubleDippingHelpText);
 	allowMorphDoubleDippingCheckBox->setToolTip(sAllowDoubleDippingHelpText);
 
-	QPushButton* AddConnectedMorphsButton = new QPushButton("Add Connected Morphs");
-	AddConnectedMorphsButton->setVisible(false);
+	addConnectedMorphsButton = new QPushButton("Add Connected Morphs");
+	addConnectedMorphsButton->setVisible(false);
 	QString sAddConnectedMorphsHelpText = QString(tr("Add any morphs or property sliders which can contribute to strength of exported morphs."));
-	AddConnectedMorphsButton->setWhatsThis(sAddConnectedMorphsHelpText);
-	AddConnectedMorphsButton->setToolTip(sAddConnectedMorphsHelpText);
+	addConnectedMorphsButton->setWhatsThis(sAddConnectedMorphsHelpText);
+	addConnectedMorphsButton->setToolTip(sAddConnectedMorphsHelpText);
 
 	((QGridLayout*)JCMGroupBox->layout())->addWidget(ArmsJCMButton, 0, 0);
 	((QGridLayout*)JCMGroupBox->layout())->addWidget(LegsJCMButton, 0, 1);
@@ -188,7 +190,7 @@ functionallity for some Morph and JCM products."));
 	MorphGroupBox->layout()->addWidget(FaceGroupBox);
 	MorphGroupBox->layout()->addWidget(autoJCMCheckBox);
 	MorphGroupBox->layout()->addWidget(fakeDualQuatCheckBox);
-	MorphGroupBox->layout()->addWidget(AddConnectedMorphsButton);
+	MorphGroupBox->layout()->addWidget(addConnectedMorphsButton);
 	MorphGroupBox->layout()->addWidget(allowMorphDoubleDippingCheckBox);
 
 	if (!settings->value("AutoJCMEnabled").isNull())
@@ -208,7 +210,7 @@ functionallity for some Morph and JCM products."));
 	connect(FaceFX8Button, SIGNAL(released()), this, SLOT(HandleFaceFXGenesis8Button()));
 	connect(autoJCMCheckBox, SIGNAL(clicked(bool)), this, SLOT(HandleAutoJCMCheckBoxChange(bool)));
 	connect(fakeDualQuatCheckBox, SIGNAL(clicked(bool)), this, SLOT(HandleFakeDualQuatCheckBoxChange(bool)));
-	connect(AddConnectedMorphsButton, SIGNAL(clicked(bool)), this, SLOT(HandleAddConnectedMorphs()));
+	connect(addConnectedMorphsButton, SIGNAL(clicked(bool)), this, SLOT(HandleAddConnectedMorphs()));
 
 	treeLayout->addWidget(MorphGroupBox);
 	morphsLayout->addLayout(treeLayout);
@@ -1426,7 +1428,7 @@ void DzBridgeMorphSelectionDialog::SetAutoJCMVisible(bool bVisible)
 		return;
 	autoJCMCheckBox->setVisible(bVisible);
 	fakeDualQuatCheckBox->setVisible(bVisible);
-	AddConnectedMorphsButton->setVisible(bVisible);
+	addConnectedMorphsButton->setVisible(bVisible);
 	update();
 }
 

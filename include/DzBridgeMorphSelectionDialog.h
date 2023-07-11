@@ -204,7 +204,7 @@ namespace DzBridgeNameSpace
 		QTreeWidgetItem* charactersTreeItem;
 		QCheckBox* autoJCMCheckBox;
 		QCheckBox* fakeDualQuatCheckBox;
-		QPushButton* AddConnectedMorphsButton;
+		QPushButton* addConnectedMorphsButton;
 
 		QCheckBox* allowMorphDoubleDippingCheckBox;
 
