@@ -195,6 +195,7 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	connect(exportMaterialPropertyCSVCheckBox, SIGNAL(stateChanged(int)), this, SLOT(HandleExportMaterialPropertyCSVCheckBoxChange(int)));
 
 	// Install Destination Software Bridge
+#ifndef VODSVERSION
 	m_wTargetPluginInstaller = new QWidget();
 	QHBoxLayout* targetPluginInstallerLayout = new QHBoxLayout();
 	m_TargetSoftwareVersionCombo = new QComboBox(m_wTargetPluginInstaller);
@@ -204,6 +205,7 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	targetPluginInstallerLayout->addWidget(m_TargetSoftwareVersionCombo, 2);
 	targetPluginInstallerLayout->addWidget(m_TargetPluginInstallerButton, 1);
 	m_wTargetPluginInstaller->setLayout(targetPluginInstallerLayout);
+#endif
 
 	// Bridge Software Version Label
 	QString sBridgeVersionString = QString(tr("Daz Bridge Library %1 v%2.%3.%4")).arg(COMMON_MAJOR).arg(COMMON_MINOR).arg(revision).arg(COMMON_BUILD);
@@ -221,7 +223,9 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 
 	// Advanced Settings Layout
 	advancedLayout->addRow("", m_BridgeVersionLabel);
+#ifndef VODSVERSION
 	advancedLayout->addRow("Install Destination Plugin", m_wTargetPluginInstaller);
+#endif
 	advancedLayout->addRow("", m_OpenIntermediateFolderButton);
 	showTargetPluginInstaller(false);
 	advancedLayout->addRow("FBX Version", fbxVersionCombo);
