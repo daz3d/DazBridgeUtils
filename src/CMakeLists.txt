@@ -127,8 +127,15 @@ target_compile_definitions(dzbridge-shared
 
 endif(NOT USE_DZBRIDGE_SUBMODULE)
 
-target_compile_definitions(dzbridge-static
-	PUBLIC
-	DZ_BRIDGE_STATIC
-	$<$<CONFIG:DEBUG>:UNITTEST_DZBRIDGE>
-)
+if (WIN32)
+	target_compile_definitions(dzbridge-static
+		PUBLIC
+		DZ_BRIDGE_STATIC
+		$<$<CONFIG:DEBUG>:UNITTEST_DZBRIDGE>
+	)
+elseif (APPLE)
+	target_compile_definitions(dzbridge-static
+		PUBLIC
+		DZ_BRIDGE_STATIC
+	)
+endif()

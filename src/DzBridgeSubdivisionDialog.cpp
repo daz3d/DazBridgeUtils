@@ -293,7 +293,7 @@ DzNode* DzBridgeSubdivisionDialog::FindObject(DzNode* Node, QString Name)
 bool DzBridgeSubdivisionDialog::setSubdivisionLevelByNode(DzNode* Node, int level)
 {
 	if (Node == nullptr)
-		return nullptr;
+		return false;
 
 	DzNode* selection = dzScene->getPrimarySelection();
 	QString searchName = Node->getName();
