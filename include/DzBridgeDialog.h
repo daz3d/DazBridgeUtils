@@ -2,6 +2,7 @@
 #include "dzbasicdialog.h"
 #include <QtGui/qcombobox.h>
 #include <QtCore/qsettings.h>
+#include <QtGui/qcheckbox.h>
 
 class QPushButton;
 class QLineEdit;
@@ -30,6 +31,7 @@ namespace DzBridgeNameSpace
 		Q_PROPERTY(QWidget* wExportMaterialPropertyCSVCheckBox READ getExportMaterialPropertyCSVCheckBox)
 		Q_PROPERTY(QWidget* wTargetPluginInstallerButton READ getTargetPluginInstallerButton)
 		Q_PROPERTY(QWidget* wTargetSoftwareVersionCombo READ getTargetSoftwareVersionCombo)
+        Q_PROPERTY(bool bEnableExperimentalOptions READ getEnableExperimentalOptions)
 	public:
 		Q_INVOKABLE QLineEdit* getAssetNameEdit() { return assetNameEdit; }
 		Q_INVOKABLE QComboBox* getAssetTypeCombo() { return assetTypeCombo; }
@@ -49,6 +51,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE QCheckBox* getAnimationExportActiveCurvesCheckBox() { return animationExportActiveCurvesCheckBox; }
 		Q_INVOKABLE QCheckBox* getAnimationApplyBoneScaleCheckBox() { return animationApplyBoneScaleCheckBox; }
 		Q_INVOKABLE QCheckBox* getMorphLockBoneTranslationCheckBox() { return morphLockBoneTranslationCheckBox; }
+        Q_INVOKABLE bool getEnableExperimentalOptions() { return m_enableExperimentalOptionsCheckBox->isChecked(); }
 
 		/** Constructor **/
 		DzBridgeDialog(QWidget* parent = nullptr, const QString& windowTitle = "");
@@ -89,7 +92,8 @@ namespace DzBridgeNameSpace
 		virtual void HandleOpenIntermediateFolderButton(QString sFolderPath="");
 		virtual void HandleAssetTypeComboChange(const QString& assetType);
 		virtual void HandleAssetTypeComboChange(int state);
-
+        virtual void HandleExperimentalOptionsCheckBoxClicked();
+        
 	protected:
 		QSettings* settings;
 
@@ -105,6 +109,9 @@ namespace DzBridgeNameSpace
 		QCheckBox* morphsEnabledCheckBox;
 		QPushButton* subdivisionButton;
 		QCheckBox* subdivisionEnabledCheckBox;
+        QLabel* m_WelcomeLabel;
+
+        // Advanced settings
 		QGroupBox* advancedSettingsGroupBox;
 		QWidget* advancedWidget;
 		QComboBox* fbxVersionCombo;
@@ -115,8 +122,8 @@ namespace DzBridgeNameSpace
 		QPushButton* m_TargetPluginInstallerButton;
 		QComboBox* m_TargetSoftwareVersionCombo;
 		QLabel* m_BridgeVersionLabel;
-		QLabel* m_WelcomeLabel;
 		QPushButton* m_OpenIntermediateFolderButton;
+        QCheckBox* m_enableExperimentalOptionsCheckBox;
 
 		// Animation settings
 		QGroupBox* animationSettingsGroupBox;
@@ -129,7 +136,7 @@ namespace DzBridgeNameSpace
 		// Morph settings
 		QGroupBox* morphSettingsGroupBox;
 		QCheckBox* morphLockBoneTranslationCheckBox;
-
+        
 		QString m_sEmbeddedFilesPath = ":/DazBridge";
 		bool m_bDontSaveSettings = false;
 		bool m_bSetupMode = false;

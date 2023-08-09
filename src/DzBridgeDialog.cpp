@@ -121,7 +121,11 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	connect(assetTypeCombo, SIGNAL(activated(int)), this, SLOT(HandleAssetTypeComboChange(int)));
 
 	// Animation Settings
-	animationSettingsGroupBox = new QGroupBox("Animation Settings", this);
+#ifdef VODSVERSION
+    animationSettingsGroupBox = new QGroupBox("Animation Settings", this);
+#else
+    animationSettingsGroupBox = new QGroupBox("Experimental Animation Settings", this);
+#endif
 	QFormLayout* animationSettingsLayout = new QFormLayout();
 	animationSettingsGroupBox->setLayout(animationSettingsLayout);
 	experimentalAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
@@ -136,6 +140,23 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	animationApplyBoneScaleCheckBox = new QCheckBox("", animationSettingsGroupBox);
 	animationSettingsLayout->addRow("Apply Bone Scale", animationApplyBoneScaleCheckBox);
 	animationSettingsGroupBox->setVisible(false);
+                                  
+    // Animation Help Text
+    const char* AnimationExportHelpText = "New custom animation export pathway which may produce better animations.  Does not export the mesh.";
+    experimentalAnimationExportCheckBox->setWhatsThis(tr(AnimationExportHelpText));
+    experimentalAnimationExportCheckBox->setToolTip(tr(AnimationExportHelpText));
+    const char* BakeAnimationHelpText ="Bake complex animations to their base componenents.";
+    bakeAnimationExportCheckBox->setWhatsThis(tr(BakeAnimationHelpText));
+    bakeAnimationExportCheckBox->setToolTip(tr(BakeAnimationHelpText));
+	const char* FaceAnimationHelpText = "Export animated face bones.";
+    faceAnimationExportCheckBox->setWhatsThis(tr(FaceAnimationHelpText));
+	faceAnimationExportCheckBox->setToolTip(tr(FaceAnimationHelpText));
+	const char* ActiveCurvesHelpText = "Export animated properties.";
+    animationExportActiveCurvesCheckBox->setWhatsThis(tr(ActiveCurvesHelpText));
+	animationExportActiveCurvesCheckBox->setToolTip(tr(ActiveCurvesHelpText));
+	const char* ApplyBoneScaleHelpText = "Apply bone scale values to animations.";
+    animationApplyBoneScaleCheckBox->setWhatsThis(tr(ApplyBoneScaleHelpText));
+	animationApplyBoneScaleCheckBox->setToolTip(tr(ApplyBoneScaleHelpText));
 
 	// Morphs
 	QHBoxLayout* morphsLayout = new QHBoxLayout();
@@ -213,6 +234,11 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	m_OpenIntermediateFolderButton = new QPushButton(tr("Open Intermediate Folder"));
 	connect(m_OpenIntermediateFolderButton, SIGNAL(clicked(bool)), this, SLOT(HandleOpenIntermediateFolderButton()));
 
+    // Use this->getEnableExperimentalOptions() to query state, see HandleAssetTypeComboChange() for example
+    // Enable Experimental Settings
+    m_enableExperimentalOptionsCheckBox = new QCheckBox("", this);
+	connect(m_enableExperimentalOptionsCheckBox, SIGNAL(clicked(bool)), this, SLOT(HandleExperimentalOptionsCheckBoxClicked()));
+                                  
 	// Add the widget to the basic dialog
 	mainLayout->addRow("Asset Name", assetNameEdit);
 	mainLayout->addRow("Asset Type", assetTypeCombo);
@@ -228,6 +254,7 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	advancedLayout->addRow("Show FBX Dialog", showFbxDialogCheckBox);
 	advancedLayout->addRow("Generate Normal Maps", enableNormalMapGenerationCheckBox);
 	advancedLayout->addRow("Export Material CSV", exportMaterialPropertyCSVCheckBox);
+    advancedLayout->addRow("Enable Experimental Options", m_enableExperimentalOptionsCheckBox);
 
 	addLayout(mainLayout);
 
@@ -757,8 +784,22 @@ void DzBridgeDialog::HandleOpenIntermediateFolderButton(QString sFolderPath)
 
 void DzBridgeDialog::HandleAssetTypeComboChange(const QString& assetType)
 {
+#ifdef VODSVERSION
 	animationSettingsGroupBox->setVisible(assetType == "Animation" || assetType == "Pose");
-	//mlDeformerSettingsGroupBox->setVisible(assetType == "MLDeformer");
+    //mlDeformerSettingsGroupBox->setVisible(assetType == "MLDeformer");
+#else
+    if (this->getEnableExperimentalOptions()) {
+		animationSettingsGroupBox->setVisible(assetType == "Animation" || assetType == "Pose");
+	}
+	else {
+		animationSettingsGroupBox->setVisible(false);
+        experimentalAnimationExportCheckBox->setChecked(false);
+        bakeAnimationExportCheckBox->setChecked(false);
+        faceAnimationExportCheckBox->setChecked(false);
+        animationExportActiveCurvesCheckBox->setChecked(false);
+        animationApplyBoneScaleCheckBox->setChecked(false);
+    }
+#endif
 }
 
 void DzBridgeDialog::HandleAssetTypeComboChange(int state)
@@ -783,6 +824,25 @@ void DzBridgeDialog::HandleAssetTypeComboChange(int state)
 		subdivisionButton->setDisabled(false);
 	}
 
+}
+
+void DzBridgeDialog::HandleExperimentalOptionsCheckBoxClicked()
+{
+	if (m_enableExperimentalOptionsCheckBox->isChecked())
+	{
+		QMessageBox::StandardButton reply;
+		reply = QMessageBox::question(this, "Daz Bridge", "Enabling Experimental Options may cause unexpected results.  Are you sure you want to enable Experimental Options?",
+			QMessageBox::Yes | QMessageBox::No);
+		if (reply == QMessageBox::No)
+		{
+			m_enableExperimentalOptionsCheckBox->setChecked(false);
+			return;
+		}
+	}
+
+    int state = m_enableExperimentalOptionsCheckBox->checkState();
+	if (settings == nullptr || m_bDontSaveSettings) return;
+	settings->setValue("EnableExperimentalOptions", state == Qt::Checked);
 }
 
 #include "moc_DzBridgeDialog.cpp"
