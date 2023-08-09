@@ -131,8 +131,13 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	experimentalAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
 	experimentalAnimationExportCheckBox->setChecked(true);
 	animationSettingsLayout->addRow("Use New Export", experimentalAnimationExportCheckBox);
+
+    // DB 2023-Aug-09: bake animation does not appear to be hooked up to anything, disabling for now
 	bakeAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
-	animationSettingsLayout->addRow("Bake", bakeAnimationExportCheckBox);
+//	animationSettingsLayout->addRow("Bake", bakeAnimationExportCheckBox);
+    bakeAnimationExportCheckBox->setVisible(false);
+    bakeAnimationExportCheckBox->setDisabled(true);
+
 	faceAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
 	animationSettingsLayout->addRow("Transfer Face Bones", faceAnimationExportCheckBox);
 	animationExportActiveCurvesCheckBox = new QCheckBox("", animationSettingsGroupBox);
@@ -142,7 +147,8 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	animationSettingsGroupBox->setVisible(false);
                                   
     // Animation Help Text
-    const char* AnimationExportHelpText = "New custom animation export pathway which may produce better animations.  Does not export the mesh.";
+    const char* AnimationExportHelpText = "New custom animation export pathway which can produce\n\
+better quality.  **DOES NOT EXPORT MESH**";
     experimentalAnimationExportCheckBox->setWhatsThis(tr(AnimationExportHelpText));
     experimentalAnimationExportCheckBox->setToolTip(tr(AnimationExportHelpText));
     const char* BakeAnimationHelpText ="Bake complex animations to their base componenents.";
@@ -840,9 +846,14 @@ void DzBridgeDialog::HandleExperimentalOptionsCheckBoxClicked()
 		}
 	}
 
-    int state = m_enableExperimentalOptionsCheckBox->checkState();
+    // int state = m_enableExperimentalOptionsCheckBox->checkState();
+	// if (settings == nullptr || m_bDontSaveSettings) return;
+	// settings->setValue("EnableExperimentalOptions", state == Qt::Checked);
+
+	// Intentionally saving as unchecked to force users to "opt-in" every time they use experimental features
 	if (settings == nullptr || m_bDontSaveSettings) return;
-	settings->setValue("EnableExperimentalOptions", state == Qt::Checked);
+	settings->setValue("EnableExperimentalOptions", false);
+
 }
 
 #include "moc_DzBridgeDialog.cpp"
