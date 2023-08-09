@@ -1248,8 +1248,12 @@ void DzBridgeAction::exportAnimation()
 	SdkManager->SetIOSettings(ios);
 
 	int FileFormat = -1;
-	FileFormat = SdkManager->GetIOPluginRegistry()->FindWriterIDByDescription("FBX ascii (*.fbx)");
-	//qDebug() << "FileName: " << this->m_sDestinationFBX;
+#ifdef VODSVERSION
+    FileFormat = SdkManager->GetIOPluginRegistry()->FindWriterIDByDescription("FBX ascii (*.fbx)");
+#else
+    FileFormat = SdkManager->GetIOPluginRegistry()->GetNativeWriterFormat();
+#endif
+    //qDebug() << "FileName: " << this->m_sDestinationFBX;
 	FbxExporter* Exporter = FbxExporter::Create(SdkManager, "");
 	if (!Exporter->Initialize(this->m_sDestinationFBX.toLocal8Bit().data(), FileFormat, SdkManager->GetIOSettings()))
 	{
