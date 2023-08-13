@@ -91,44 +91,44 @@ namespace DzBridgeNameSpace
 		virtual void HandleAssetTypeComboChange(int state);
 
 	protected:
-		QSettings* settings;
+		QSettings* settings = nullptr;
 
 		virtual void refreshAsset();
 
-		QFormLayout* mainLayout;
-		QFormLayout* advancedLayout;
-		QLineEdit* assetNameEdit;
-		//	QLineEdit* projectEdit;
-		//	QPushButton* projectButton;
-		QComboBox* assetTypeCombo;
-		QPushButton* morphsButton;
-		QCheckBox* morphsEnabledCheckBox;
-		QPushButton* subdivisionButton;
-		QCheckBox* subdivisionEnabledCheckBox;
-		QGroupBox* advancedSettingsGroupBox;
-		QWidget* advancedWidget;
-		QComboBox* fbxVersionCombo;
-		QCheckBox* showFbxDialogCheckBox;
-		QCheckBox* enableNormalMapGenerationCheckBox;
-		QCheckBox* exportMaterialPropertyCSVCheckBox;
-		QWidget* m_wTargetPluginInstaller;
-		QPushButton* m_TargetPluginInstallerButton;
-		QComboBox* m_TargetSoftwareVersionCombo;
-		QLabel* m_BridgeVersionLabel;
-		QLabel* m_WelcomeLabel;
-		QPushButton* m_OpenIntermediateFolderButton;
+		QFormLayout* mainLayout = nullptr;
+		QFormLayout* advancedLayout = nullptr;
+		QLineEdit* assetNameEdit = nullptr;
+		//	QLineEdit* projectEdit = nullptr;
+		//	QPushButton* projectButton = nullptr;
+		QComboBox* assetTypeCombo = nullptr;
+		QPushButton* morphsButton = nullptr;
+		QCheckBox* morphsEnabledCheckBox = nullptr;
+		QPushButton* subdivisionButton = nullptr;
+		QCheckBox* subdivisionEnabledCheckBox = nullptr;
+		QGroupBox* advancedSettingsGroupBox = nullptr;
+		QWidget* advancedWidget = nullptr;
+		QComboBox* fbxVersionCombo = nullptr;
+		QCheckBox* showFbxDialogCheckBox = nullptr;
+		QCheckBox* enableNormalMapGenerationCheckBox = nullptr;
+		QCheckBox* exportMaterialPropertyCSVCheckBox = nullptr;
+		QWidget* m_wTargetPluginInstaller = nullptr;
+		QPushButton* m_TargetPluginInstallerButton = nullptr;
+		QComboBox* m_TargetSoftwareVersionCombo = nullptr;
+		QLabel* m_BridgeVersionLabel = nullptr;
+		QLabel* m_WelcomeLabel = nullptr;
+		QPushButton* m_OpenIntermediateFolderButton = nullptr;
 
 		// Animation settings
-		QGroupBox* animationSettingsGroupBox;
-		QCheckBox* experimentalAnimationExportCheckBox;
-		QCheckBox* bakeAnimationExportCheckBox;
-		QCheckBox* faceAnimationExportCheckBox;
-		QCheckBox* animationExportActiveCurvesCheckBox;
-		QCheckBox* animationApplyBoneScaleCheckBox;
+		QGroupBox* animationSettingsGroupBox = nullptr;
+		QCheckBox* experimentalAnimationExportCheckBox = nullptr;
+		QCheckBox* bakeAnimationExportCheckBox = nullptr;
+		QCheckBox* faceAnimationExportCheckBox = nullptr;
+		QCheckBox* animationExportActiveCurvesCheckBox = nullptr;
+		QCheckBox* animationApplyBoneScaleCheckBox = nullptr;
 
 		// Morph settings
-		QGroupBox* morphSettingsGroupBox;
-		QCheckBox* morphLockBoneTranslationCheckBox;
+		QGroupBox* morphSettingsGroupBox = nullptr;
+		QCheckBox* morphLockBoneTranslationCheckBox = nullptr;
 
 		QString m_sEmbeddedFilesPath = ":/DazBridge";
 		bool m_bDontSaveSettings = false;
