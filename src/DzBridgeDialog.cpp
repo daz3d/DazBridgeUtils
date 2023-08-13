@@ -48,6 +48,10 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 		m_bSetupMode = true;
 	}
 
+#ifdef VODSVERSION
+	m_bSetupMode = false;
+#endif
+
 	 assetNameEdit = nullptr;
 //	 projectEdit = nullptr;
 //	 projectButton = nullptr;
@@ -338,11 +342,11 @@ bool DzBridgeDialog::loadSavedSettings()
 		advancedSettingsGroupBox->setChecked(true);
 		advancedWidget->setHidden(false);
 	}
-	//else if (!settings->value("ShowAdvancedSettings").isNull())
-	//{
-	//	advancedSettingsGroupBox->setChecked(settings->value("ShowAdvancedSettings").toBool());
-	//	advancedWidget->setHidden(!advancedSettingsGroupBox->isChecked());
-	//}
+	else if (!settings->value("ShowAdvancedSettings").isNull())
+	{
+		advancedSettingsGroupBox->setChecked(settings->value("ShowAdvancedSettings").toBool());
+		advancedWidget->setHidden(!advancedSettingsGroupBox->isChecked());
+	}
 	else
 	{
 		advancedSettingsGroupBox->setChecked(false);
