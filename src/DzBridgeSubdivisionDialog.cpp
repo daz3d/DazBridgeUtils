@@ -36,6 +36,7 @@
 #include "dzsettings.h"
 #include "dzmorph.h"
 #include "dzgeometry.h"
+#include "dzenumproperty.h"
 
 #include "DzBridgeSubdivisionDialog.h"
 
@@ -335,27 +336,39 @@ void DzBridgeSubdivisionDialog::LockSubdivisionProperties(bool subdivisionEnable
 				{
 					DzProperty* property = Shape->getProperty(index);
 					DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
+					DzEnumProperty* enumProperty = qobject_cast<DzEnumProperty*>(property);
 					QString propName = property->getName();
 
 					// DB 2023-May-26: fix for native subdivision in target software
-					if (propName == "lodlevel" && numericProperty)
+					if (propName == "lodlevel" && enumProperty)
 					{
 						UndoData undo_data;
-						undo_data.originalNumericLockState = numericProperty->isLocked();
-						undo_data.originalNumericValue = numericProperty->getDoubleValue();
-						UndoSubdivisionOverrides.insert(numericProperty, undo_data);
+						undo_data.originalNumericLockState = enumProperty->isLocked();
+						undo_data.originalNumericValue = enumProperty->getValue();
+						UndoSubdivisionOverrides.insert(enumProperty, undo_data);
 
-						numericProperty->lock(false);
+						// DB 2023-August-12: bugfix lodlevel, set to correct value for Base Level
+						int numKeys = enumProperty->getNumItems();
+						int baseValue = enumProperty->findItemString("Base");
+						int hdValue = enumProperty->findItemString("High Resolution");
+						if (baseValue == -1)
+						{
+							baseValue = 0;
+						}
+						//// DEBUGGING: enumerate all keys
+ 						//QString lodString = enumProperty->getStringValue();
+						//for (int i = 0; i < numKeys; i++)
+						//{
+						//	lodString = enumProperty->getItem(i);
+						//	dzApp->log(QString("lodlevel[%1]=[%2]").arg(i).arg(lodString));
+						//	printf("DEBUG: lodlevel[%d]=[%s]", i, lodString.toLocal8Bit().constData());
+						//}
 						if (targetValue == 0.0)
 						{
 							// use base mesh resolution
-							numericProperty->setDoubleValue(0.0f);
+							enumProperty->setValue(baseValue);
 						}
-						else
-						{
-							// use high resolution mesh
-							numericProperty->setDoubleValue(1.0f);
-						}
+
 					}
 					if (propName == "SubDIALevel" && numericProperty)
 					{
