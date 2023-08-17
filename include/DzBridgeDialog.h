@@ -18,6 +18,8 @@ class UnitTest_DzBridgeDialog;
 
 namespace DzBridgeNameSpace
 {
+	class DzBridgeAction;
+
 	class CPP_Export DzBridgeDialog : public DzBasicDialog {
 		Q_OBJECT
 		Q_PROPERTY(QWidget* wAssetNameEdit READ getAssetNameEdit)
@@ -34,6 +36,7 @@ namespace DzBridgeNameSpace
         Q_PROPERTY(bool bEnableExperimentalOptions READ getEnableExperimentalOptions)
 		Q_PROPERTY(QWidget* wEnableLodCheckBox READ getEnableLodCheckBox)
 	public:
+		Q_INVOKABLE bool setBridgeActionObject(QObject* arg);
 		Q_INVOKABLE QLineEdit* getAssetNameEdit() { return assetNameEdit; }
 		Q_INVOKABLE QComboBox* getAssetTypeCombo() { return assetTypeCombo; }
 		Q_INVOKABLE QCheckBox* getMorphsEnabledCheckBox() { return morphsEnabledCheckBox; }
@@ -99,6 +102,7 @@ namespace DzBridgeNameSpace
 		virtual void HandleEnableLodCheckBoxChange(int state);
 
 	protected:
+		DzBridgeAction* m_BridgeAction = nullptr;
 		QSettings* settings;
 
 		virtual void refreshAsset();

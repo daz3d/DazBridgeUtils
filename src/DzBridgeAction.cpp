@@ -3330,6 +3330,7 @@ QMessageBox::Yes | QMessageBox::Cancel,
 
 	m_bMorphLockBoneTranslation = BridgeDialog->getMorphLockBoneTranslationCheckBox()->isChecked();
 
+	// LOD settings
 	m_bEnableLodGeneration = BridgeDialog->getEnableLodCheckBox()->isChecked();
 
 	return true;
@@ -5337,6 +5338,16 @@ void DzBridgeAction::writeAllLodSettings(DzJsonWriter& writer)
 
 	writer.finishObject();
 
+}
+
+QString DzBridgeAction::getLodMethodString()
+{
+	return QString();
+}
+
+void DzBridgeAction::setLodMethod(QString arg)
+{
+	return;
 }
 
 #include "moc_DzBridgeAction.cpp"

@@ -25,6 +25,7 @@ namespace DzBridgeNameSpace
 	class DzBridgeDialog;
 	class DzBridgeMorphSelectionDialog;
 	class DzBridgeSubdivisionDialog;
+	class DzBridgeLodSettingsDialog;
 
 	/// <summary>
 	/// Abstract base class that manages exporting of assets to Target Software via FBX/DTU
@@ -56,6 +57,11 @@ namespace DzBridgeNameSpace
 		Q_PROPERTY(DzBasicDialog* wBridgeDialog READ getBridgeDialog WRITE setBridgeDialog)
 		Q_PROPERTY(DzBasicDialog* wSubdivisionDialog READ getSubdivisionDialog WRITE setSubdivisionDialog)
 		Q_PROPERTY(DzBasicDialog* wMorphSelectionDialog READ getMorphSelectionDialog WRITE setMorphSelectionDialog)
+		Q_PROPERTY(DzBasicDialog* wLodSettingsDialog READ getLodSettingsDialog WRITE setLodSettingsDialog)
+		Q_PROPERTY(bool bEnableLodGeneration READ getEnableLodGeneration WRITE setEnableLodGeneration)
+		Q_PROPERTY(int nLodMethodIndex READ getLodMethodIndex WRITE setLodMethod)
+		Q_PROPERTY(QString sLodMethod READ getLodMethodString WRITE setLodMethod)
+		Q_PROPERTY(int nNumberOfLods READ getNumberOfLods WRITE setNumberOfLods)
 
 	public:
 
@@ -88,6 +94,17 @@ namespace DzBridgeNameSpace
 		// perform post-processing of Fbx after export
 		Q_INVOKABLE virtual bool postProcessFbx(QString fbxFilePath);
 
+		Q_INVOKABLE DzBasicDialog* getLodSettingsDialog() { return (DzBasicDialog*) m_wLodSettingsDialog; }
+		Q_INVOKABLE void setLodSettingsDialog(DzBasicDialog* arg) { m_wLodSettingsDialog = (DzBridgeLodSettingsDialog*) arg; }
+		Q_INVOKABLE bool getEnableLodGeneration() { return m_bEnableLodGeneration; }
+		Q_INVOKABLE void setEnableLodGeneration(bool arg) { m_bEnableLodGeneration = arg; }
+		Q_INVOKABLE int getLodMethodIndex() { return (int) m_eLodMethod; }
+		Q_INVOKABLE void setLodMethod(int arg) { m_eLodMethod = (ELodMethod) arg; }
+		Q_INVOKABLE QString getLodMethodString();
+		Q_INVOKABLE void setLodMethod(QString arg);
+		Q_INVOKABLE int getNumberOfLods() { return m_nNumberOfLods; }
+		Q_INVOKABLE void setNumberOfLods(int arg) { m_nNumberOfLods = arg; }
+
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo
@@ -99,6 +116,7 @@ namespace DzBridgeNameSpace
 		DzBridgeDialog* m_bridgeDialog;
 		DzBridgeSubdivisionDialog* m_subdivisionDialog;
 		DzBridgeMorphSelectionDialog* m_morphSelectionDialog;
+		DzBridgeLodSettingsDialog* m_wLodSettingsDialog;
 
 		int m_nNonInteractiveMode;
 		QString m_sAssetName; // Exported Asset Name, may be separate from export filename

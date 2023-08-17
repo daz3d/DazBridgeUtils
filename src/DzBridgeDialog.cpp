@@ -29,6 +29,7 @@
 #include "DzBridgeDialog.h"
 #include "DzBridgeMorphSelectionDialog.h"
 #include "DzBridgeSubdivisionDialog.h"
+#include "DzBridgeLodSettingsDialog.h"
 #include "common_version.h"
 
 #include "zip.h"
@@ -39,6 +40,16 @@ Local definitions
 #define DAZ_BRIDGE_LIBRARY_NAME "Daz Bridge"
 
 using namespace DzBridgeNameSpace;
+
+bool DzBridgeDialog::setBridgeActionObject(QObject* arg) {
+	DzBridgeAction* action = qobject_cast<DzBridgeAction*>(arg);
+	if (action)
+	{
+		m_BridgeAction = (DzBridgeAction*)arg;
+		return true;
+	}
+	return false;
+}
 
 DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	DzBasicDialog(parent, DAZ_BRIDGE_LIBRARY_NAME)
@@ -197,7 +208,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	// LOD Settings
 	QHBoxLayout* lodSettingsLayout = new QHBoxLayout();
-	m_wLodSettingsButton = new QPushButton(tr("LOD Settings"), this);
+	m_wLodSettingsButton = new QPushButton(tr("Configure LOD Settings"), this);
 	connect(m_wLodSettingsButton, SIGNAL(released()), this, SLOT(HandleLodSettingsButton()));
 	m_wEnableLodCheckBox = new QCheckBox("", this);
 	m_wEnableLodCheckBox->setMaximumWidth(25);
@@ -305,6 +316,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	exportMaterialPropertyCSVCheckBox->setWhatsThis("Checking this will write out a CSV of all the material properties.  Useful for reference when changing materials.");
 	enableNormalMapGenerationCheckBox->setWhatsThis("Checking this will enable generation of Normal Maps for any surfaces that only have Bump Height Maps.");
 	//m_wTargetPluginInstaller->setWhatsThis("Install a plugin to use Daz Bridge with the destination software.");
+	m_wLodSettingsButton->setWhatsThis("Configure how Level of Detail (LOD) meshes are set up or generated in the destination software.");
 
 	// detect scene change
 	connect(dzScene, SIGNAL(nodeSelectionListChanged()), this, SLOT(handleSceneSelectionChanged()));
@@ -764,6 +776,7 @@ void DzBridgeDialog::setDisabled(bool bDisabled)
 	assetTypeCombo->setDisabled(bDisabled);
 	subdivisionButton->setDisabled(bDisabled);
 	morphsButton->setDisabled(bDisabled);
+	m_wLodSettingsButton->setDisabled(bDisabled);
 
 }
 
@@ -873,8 +886,8 @@ void DzBridgeDialog::HandleExperimentalOptionsCheckBoxClicked()
 
 void DzBridgeDialog::HandleLodSettingsButton()
 {
-//	DzBridgeSubdivisionDialog* subdivisionDialog = DzBridgeSubdivisionDialog::Get(this);
-//	subdivisionDialog->exec();
+	DzBridgeLodSettingsDialog* lodSetttingsDialog = DzBridgeLodSettingsDialog::Get(this->m_BridgeAction, this);
+	lodSetttingsDialog->exec();
 }
 
 void DzBridgeDialog::HandleEnableLodCheckBoxChange(int state)
