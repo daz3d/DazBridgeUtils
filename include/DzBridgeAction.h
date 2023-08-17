@@ -147,6 +147,25 @@ namespace DzBridgeNameSpace
 		// Morph Settings;
 		bool m_bMorphLockBoneTranslation;
 
+		// LOD generation settings
+		struct LodInfo {
+			QString pregenerated_lodlevel_string = "";
+			int export_lodgroup_index = -1;
+			QString export_mesh_filename = "";
+			int quality_vertex=-1;
+			float quality_percent=-1.0f;
+			float threshold_screen_height=-1.0f;
+		};
+		bool m_bEnableLodGeneration; // enable level-of-detail generation
+		enum m_eLodMethod {
+			Undefined = 0,
+			PreGenerated = 1,
+			Decimator = 2,
+		}; // 
+		int m_nNumberOfLods; // number of LOD levels to generate
+		QList<LodInfo*> m_aLodInfo;
+		bool m_bCreateLodGroup;
+
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }
 

@@ -86,6 +86,8 @@ DzBridgeAction::DzBridgeAction(const QString& text, const QString& desc) :
 	 m_bPostProcessFbx = true;
 	 m_bRemoveDuplicateGeografts = true;
 	 m_bExperimental_FbxPostProcessing = false;
+	 m_bEnableLodGeneration = false;
+	 m_bCreateLodGroup = false;
 }
 
 DzBridgeAction::~DzBridgeAction()
@@ -101,6 +103,8 @@ void DzBridgeAction::resetToDefaults()
 	m_EnableSubdivisions = false;
 	m_bShowFbxOptions = false;
 	m_bExportMaterialPropertiesCSV = false;
+	m_bEnableLodGeneration = false;
+	m_bCreateLodGroup = false;
 	resetArray_ControllersToDisconnect();
 
 	// Reset all dialog settings and script-exposed properties to Hardcoded Defaults
