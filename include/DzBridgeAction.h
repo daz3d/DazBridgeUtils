@@ -156,15 +156,17 @@ namespace DzBridgeNameSpace
 			float quality_percent=-1.0f;
 			float threshold_screen_height=-1.0f;
 		};
-		bool m_bEnableLodGeneration; // enable level-of-detail generation
-		enum m_eLodMethod {
+		bool m_bEnableLodGeneration = false; // enable level-of-detail generation
+		enum ELodMethod {
 			Undefined = 0,
 			PreGenerated = 1,
 			Decimator = 2,
-		}; // 
-		int m_nNumberOfLods; // number of LOD levels to generate
+		};
+		ELodMethod m_eLodMethod = ELodMethod::Undefined; // 
+		virtual ELodMethod getLodMethod() const { return m_eLodMethod; }
+		int m_nNumberOfLods = -1; // number of LOD levels to generate
 		QList<LodInfo*> m_aLodInfo;
-		bool m_bCreateLodGroup;
+		bool m_bCreateLodGroup = false;
 
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }
@@ -313,6 +315,8 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE bool exportObj(QString filepath);
 		Q_INVOKABLE bool exportGeograftMorphs(DzNode *Node, QString destinationFolder);
 		Q_INVOKABLE bool prepareGeograftMorphsToExport(DzNode* Node, bool bZeroMorphForExport=false);
+
+		Q_INVOKABLE void writeAllLodSettings(DzJsonWriter& Writer);
 
 	private:
 		class MaterialGroupExportOrderMetaData

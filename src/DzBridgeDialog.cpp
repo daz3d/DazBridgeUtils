@@ -60,6 +60,8 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	 fbxVersionCombo = nullptr;
 	 showFbxDialogCheckBox = nullptr;
 	 animationSettingsGroupBox = nullptr;
+	 m_wLodSettingsButton = nullptr;
+	 m_wEnableLodCheckBox = nullptr;
 
 	 settings = nullptr;
 	 m_wTargetPluginInstaller = nullptr;
@@ -193,6 +195,18 @@ better quality.  **DOES NOT EXPORT MESH**";
 	subdivisionLayout->addWidget(subdivisionButton);
 	connect(subdivisionEnabledCheckBox, SIGNAL(stateChanged(int)), this, SLOT(HandleSubdivisionCheckBoxChange(int)));
 
+	// LOD Settings
+	QHBoxLayout* lodSettingsLayout = new QHBoxLayout();
+	m_wLodSettingsButton = new QPushButton(tr("LOD Settings"), this);
+	connect(m_wLodSettingsButton, SIGNAL(released()), this, SLOT(HandleLodSettingsButton()));
+	m_wEnableLodCheckBox = new QCheckBox("", this);
+	m_wEnableLodCheckBox->setMaximumWidth(25);
+	lodSettingsLayout->addWidget(m_wEnableLodCheckBox);
+	lodSettingsLayout->addWidget(m_wLodSettingsButton);
+	connect(m_wEnableLodCheckBox, SIGNAL(stateChanged(int)), this, SLOT(HandleEnableLodCheckBoxChange(int)));
+
+	/////////////////// Advanced Settings Section /////////////////////
+
 	// FBX Version
 	fbxVersionCombo = new QComboBox(this);
 	fbxVersionCombo->addItem("FBX 2014 -- Binary");
@@ -250,6 +264,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	mainLayout->addRow("Asset Type", assetTypeCombo);
 	mainLayout->addRow("Export Morphs", morphsLayout);
 	mainLayout->addRow("Bake Subdivision", subdivisionLayout);
+	mainLayout->addRow("Enable LOD", lodSettingsLayout);
 
 	// Advanced Settings Layout
 	advancedLayout->addRow("", m_BridgeVersionLabel);
@@ -854,6 +869,18 @@ void DzBridgeDialog::HandleExperimentalOptionsCheckBoxClicked()
 	if (settings == nullptr || m_bDontSaveSettings) return;
 	settings->setValue("EnableExperimentalOptions", false);
 
+}
+
+void DzBridgeDialog::HandleLodSettingsButton()
+{
+//	DzBridgeSubdivisionDialog* subdivisionDialog = DzBridgeSubdivisionDialog::Get(this);
+//	subdivisionDialog->exec();
+}
+
+void DzBridgeDialog::HandleEnableLodCheckBoxChange(int state)
+{
+	if (settings == nullptr || m_bDontSaveSettings) return;
+	settings->setValue("LodEnabled", state == Qt::Checked);
 }
 
 #include "moc_DzBridgeDialog.cpp"

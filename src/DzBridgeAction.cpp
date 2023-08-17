@@ -86,8 +86,11 @@ DzBridgeAction::DzBridgeAction(const QString& text, const QString& desc) :
 	 m_bPostProcessFbx = true;
 	 m_bRemoveDuplicateGeografts = true;
 	 m_bExperimental_FbxPostProcessing = false;
+
+	 // LOD settings
 	 m_bEnableLodGeneration = false;
 	 m_bCreateLodGroup = false;
+
 }
 
 DzBridgeAction::~DzBridgeAction()
@@ -3326,6 +3329,9 @@ QMessageBox::Yes | QMessageBox::Cancel,
 	m_bAnimationApplyBoneScale = BridgeDialog->getAnimationApplyBoneScaleCheckBox()->isChecked();
 
 	m_bMorphLockBoneTranslation = BridgeDialog->getMorphLockBoneTranslationCheckBox()->isChecked();
+
+	m_bEnableLodGeneration = BridgeDialog->getEnableLodCheckBox()->isChecked();
+
 	return true;
 }
 
@@ -5300,6 +5306,37 @@ bool DzBridgeAction::isGeograft(const DzNode* pNode)
 		}
 	}
 	return false;
+}
+
+void DzBridgeAction::writeAllLodSettings(DzJsonWriter& writer)
+{
+	// Start LOD subsection
+	writer.startMemberObject("LOD Settings");
+
+	// Global LOD settings
+	writer.addMember("Generate LODs", m_bEnableLodGeneration);
+	int generation_method = (int)getLodMethod();
+	writer.addMember("LOD Generation Method", generation_method);
+	writer.addMember("Number of LODs", m_nNumberOfLods);
+	writer.addMember("Use LODGroup", m_bCreateLodGroup);
+
+	// LOD Info array
+	writer.startMemberArray("LOD Info Array", true);
+	foreach(LodInfo * lodinfo, m_aLodInfo)
+	{
+		if (lodinfo)
+		{
+			writer.startObject(true);
+			writer.addMember("Quality Vertex", lodinfo->quality_vertex);
+			writer.addMember("Quality Percent", lodinfo->quality_percent);
+			writer.addMember("Threshold Screen Height", lodinfo->threshold_screen_height);
+			writer.finishObject();
+		}
+	}
+	writer.finishArray();
+
+	writer.finishObject();
+
 }
 
 #include "moc_DzBridgeAction.cpp"
