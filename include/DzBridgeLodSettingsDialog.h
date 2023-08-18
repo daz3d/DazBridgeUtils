@@ -41,11 +41,17 @@ namespace DzBridgeNameSpace
 		void reject() override;
 
     public slots:
+		virtual void HandleLodMethodComboChange(int state);
+		virtual void HandleNumberOfLodComboChange(int state);
 
 	protected:
 		DzBridgeAction* m_BridgeAction = nullptr;
 		QComboBox* m_wLodMethodComboBox;
 		QComboBox* m_wNumberOfLodComboBox;
+		
+		int getSourceVertexCount();
+		int getSourceVertexCount(DzNode* pNode);
+		float calculateLodGenerationTime();
 
     private:
 		static DzBridgeLodSettingsDialog* singleton;

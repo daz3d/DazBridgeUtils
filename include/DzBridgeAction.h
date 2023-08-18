@@ -68,6 +68,12 @@ namespace DzBridgeNameSpace
 		DzBridgeAction(const QString& text = QString::null, const QString& desc = QString::null);
 		virtual ~DzBridgeAction();
 
+		// TODO: Refactor, current work-around is to make these pointers public but ideally the data should be
+		// separate from the GUI so that we don't need to manipulate the GUI to read data
+		Q_INVOKABLE DzBridgeDialog* getBridgeDialog() { return m_bridgeDialog; }
+		Q_INVOKABLE DzBridgeSubdivisionDialog* getSubdivisionDialog() { return m_subdivisionDialog; }
+		Q_INVOKABLE DzBridgeMorphSelectionDialog* getMorphSelectionDialog() { return m_morphSelectionDialog; }
+
 		Q_INVOKABLE void resetToDefaults();
 		Q_INVOKABLE QString cleanString(QString argString) { return argString.remove(QRegExp("[^A-Za-z0-9_]")); };
 		Q_INVOKABLE QStringList getAvailableMorphs(DzNode* Node);
@@ -104,6 +110,8 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE void setLodMethod(QString arg);
 		Q_INVOKABLE int getNumberOfLods() { return m_nNumberOfLods; }
 		Q_INVOKABLE void setNumberOfLods(int arg) { m_nNumberOfLods = arg; }
+
+		Q_INVOKABLE DzNode* getSelectedNode() { return m_pSelectedNode; }
 
 	protected:
 		// Struct to remember attachment info
@@ -260,11 +268,8 @@ namespace DzBridgeNameSpace
 		void unlockTranform(DzNode* NodeToUnlock);
 
 		// Getter/Setter methods
-		Q_INVOKABLE DzBridgeDialog* getBridgeDialog() { return m_bridgeDialog; }
 		Q_INVOKABLE bool setBridgeDialog(DzBasicDialog* arg_dlg);
-		Q_INVOKABLE DzBridgeSubdivisionDialog* getSubdivisionDialog() { return m_subdivisionDialog; }
 		Q_INVOKABLE bool setSubdivisionDialog(DzBasicDialog* arg_dlg);
-		Q_INVOKABLE DzBridgeMorphSelectionDialog* getMorphSelectionDialog() { return m_morphSelectionDialog; }
 		Q_INVOKABLE bool setMorphSelectionDialog(DzBasicDialog* arg_dlg);
 
 		Q_INVOKABLE QString getAssetType() { return this->m_sAssetType; };

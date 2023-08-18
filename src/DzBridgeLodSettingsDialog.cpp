@@ -1,18 +1,26 @@
 #include <QtGui/QLayout>
 #include <QtGui/QLabel>
 #include <QtGui/QComboBox>
+#include <QtGui/qmessagebox.h>
 
 #include "dzapp.h"
+#include "dzscene.h"
+#include "dznode.h"
+#include "dzobject.h"
+#include "dzshape.h"
+#include "dzgeometry.h"
 
 #include "DzBridgeLodSettingsDialog.h"
 #include "DzBridgeAction.h"
+#include "DzBridgeDialog.h"
+#include "DzBridgeSubdivisionDialog.h"
 
 /*****************************
 Local definitions
 *****************************/
 #define DAZ_BRIDGE_LIBRARY_NAME "Daz Bridge"
 
-using namespace DzBridgeNameSpace;
+using namespace DZ_BRIDGE_NAMESPACE;
 
 CPP_Export DzBridgeLodSettingsDialog* DzBridgeLodSettingsDialog::singleton = nullptr;
 
@@ -54,6 +62,7 @@ interactive realtime 3D applications.") +
 	//m_wLodMethodComboBox->addItem("Use pregenerated LOD mesh", QVariant(0));
 	m_wLodMethodComboBox->addItem("Use Daz Decimator plugin", QVariant(1));
 	m_wLodMethodComboBox->addItem("Use Unreal Engine Built-in LOD generator", QVariant(2));
+	connect(m_wLodMethodComboBox, SIGNAL(activated(int)), this, SLOT(HandleLodMethodComboChange(int)));
 	mainLayout->addWidget(m_wLodMethodComboBox);
 
 	QLabel* spacerWidget1 = new QLabel();
@@ -79,6 +88,7 @@ interactive realtime 3D applications.") +
 	m_wNumberOfLodComboBox->addItem("6");
 	m_wNumberOfLodComboBox->addItem("7");
 	m_wNumberOfLodComboBox->setCurrentIndex(0);
+	connect(m_wNumberOfLodComboBox, SIGNAL(activated(int)), this, SLOT(HandleNumberOfLodComboChange(int)));
 	mainLayout->addWidget(m_wNumberOfLodComboBox);
 
 	QLabel* spacerWidget2 = new QLabel();
@@ -130,6 +140,117 @@ void DzBridgeLodSettingsDialog::accept()
 void DzBridgeLodSettingsDialog::reject()
 {
 	DzBasicDialog::reject();
+}
+
+void DzBridgeLodSettingsDialog::HandleLodMethodComboChange(int state)
+{
+	float fEstimatedLodGenerationTime = calculateLodGenerationTime();
+}
+
+void DzBridgeLodSettingsDialog::HandleNumberOfLodComboChange(int state)
+{
+	float fEstimatedLodGenerationTime = calculateLodGenerationTime();
+
+	if (fEstimatedLodGenerationTime > 5.0)
+	{
+		QString sWarningString = QString(tr("The estimated LOD generation time may be more than %1 minutes.  Times will vary depending on your CPU.")).arg((int) fEstimatedLodGenerationTime);
+		// Warn User with Popup that estimated LOD generation will be more than 5 minutes
+		QMessageBox::warning(0, "Daz Bridge",
+			sWarningString, QMessageBox::Ok);
+	}
+
+}
+
+int DzBridgeLodSettingsDialog::getSourceVertexCount(DzNode* pNode)
+{
+	int numVerts = 0;
+
+	DzObject* object = pNode->getObject();
+	if (object)
+	{
+		//int numShapes = object->getNumShapes();
+		//for (int i = 0; i < numShapes; i++)
+		//{
+		//	DzShape* shape = object->getShape(i);
+		//	numVerts = shape->ge()->getNumVertices();
+		//}
+		DzShape* shape = object->getCurrentShape();
+		numVerts = shape->getGeometry()->getNumVertices();
+
+		// multiply by subd factor
+		// 1. Check if Bake SubD enabled
+		bool bBakeSubDEnabled = false;
+		if (m_BridgeAction && m_BridgeAction->getBridgeDialog())
+		{
+			bBakeSubDEnabled = m_BridgeAction->getBridgeDialog()->getSubdivisionEnabledCheckBox()->isChecked();
+		}
+		if (bBakeSubDEnabled)
+		{
+			// 2. Obtain pointer to SubD window
+			DzBridgeSubdivisionDialog* pSubDDialog = m_BridgeAction->getSubdivisionDialog();
+			if (pSubDDialog)
+			{
+				QObjectList pComboBoxList = pSubDDialog->getSubdivisionCombos();
+				foreach(QObject* pComboBox, pComboBoxList)
+				{
+					// 3. Use pNode to lookup correct combobox pointer in SubD window
+
+					// 4. Retrieve SubD value from combobox pointer
+					// 5. Lookup correct scale factor from SubD value
+					// 6. Multiply
+
+				}
+			}
+		}
+	}
+
+	// call recursively and add up all vertex estimates
+	int numChildren = pNode->getNumNodeChildren();
+	for (int i = 0; i < numChildren; i++)
+	{
+		DzNode* pChildNode = pNode->getNodeChild(i);
+		int childNumVerts = getSourceVertexCount(pChildNode);
+		numVerts += childNumVerts;
+	}
+
+	return numVerts;
+}
+
+int DzBridgeLodSettingsDialog::getSourceVertexCount()
+{
+	int numVerts = -1;
+
+	DzNode* pSelectedNode = m_BridgeAction->getSelectedNode();
+	if (pSelectedNode == nullptr)
+	{
+		pSelectedNode = dzScene->getPrimarySelection();
+	}
+
+	// count all child nodes, find vertex count for the lodlevel or subd level to be exported
+	if (pSelectedNode)
+	{
+		numVerts = getSourceVertexCount(pSelectedNode);
+	}
+	
+	return numVerts;
+}
+
+float DzBridgeLodSettingsDialog::calculateLodGenerationTime()
+{
+	int numLODs = m_wNumberOfLodComboBox->currentIndex();
+	int numVerts = getSourceVertexCount();
+	int lodMethod = m_wLodMethodComboBox->currentIndex();
+	float fTimeScaleFactor = 0;
+	
+	// hardcoded estimate for Unreal Builtin LOD generator and Zen 3 AMD processor.
+	if (lodMethod == 2)
+	{
+		fTimeScaleFactor = 1.0 / 500000.0; // 1 minute for every 500,000 vertices
+	}
+
+	float fEstimatedTime = numVerts * numLODs * fTimeScaleFactor;
+
+	return fEstimatedTime;
 }
 
 #include "moc_DzBridgeLodSettingsDialog.cpp"
