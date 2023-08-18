@@ -9,7 +9,11 @@ namespace DzBridgeNameSpace
 
     class CPP_Export DzBridgeLodSettingsDialog : public DzBasicDialog {
         Q_OBJECT
+		Q_PROPERTY(QWidget* wLodMethodComboBox READ getLodMethodComboBox)
+		Q_PROPERTY(QWidget* wNumberOfLodComboBox READ getNumberOfLodComboBox)
     public:
+		Q_INVOKABLE QWidget* getLodMethodComboBox() { return (QWidget*) m_wLodMethodComboBox; }
+		Q_INVOKABLE QWidget* getNumberOfLodComboBox() { return (QWidget*) m_wNumberOfLodComboBox; }
 
 		/** Constructor **/
 		DzBridgeLodSettingsDialog(DzBridgeAction* action, QWidget* parent = nullptr);
@@ -40,8 +44,8 @@ namespace DzBridgeNameSpace
 
 	protected:
 		DzBridgeAction* m_BridgeAction = nullptr;
-		QComboBox* lodMethodComboBox;
-		QComboBox* numberOfLodComboBox;
+		QComboBox* m_wLodMethodComboBox;
+		QComboBox* m_wNumberOfLodComboBox;
 
     private:
 		static DzBridgeLodSettingsDialog* singleton;

@@ -49,10 +49,12 @@ interactive realtime 3D applications.") +
 	mainLayout->addWidget(helpText_LodMethod);
 
 	// Create Drop-Down to choose LOD generation method
-	lodMethodComboBox = new QComboBox(this);
-	lodMethodComboBox->addItem("Use pregenerated LOD mesh");
-	lodMethodComboBox->addItem("Use Unreal Engine's Built-in LOD generator");
-	mainLayout->addWidget(lodMethodComboBox);
+	m_wLodMethodComboBox = new QComboBox(this);
+	m_wLodMethodComboBox->addItem("Use the currently active Resolution level", QVariant(0));
+	//m_wLodMethodComboBox->addItem("Use pregenerated LOD mesh", QVariant(0));
+	m_wLodMethodComboBox->addItem("Use Daz Decimator plugin", QVariant(1));
+	m_wLodMethodComboBox->addItem("Use Unreal Engine Built-in LOD generator", QVariant(2));
+	mainLayout->addWidget(m_wLodMethodComboBox);
 
 	QLabel* spacerWidget1 = new QLabel();
 	spacerWidget1->setTextFormat(Qt::RichText);
@@ -68,16 +70,16 @@ interactive realtime 3D applications.") +
 	mainLayout->addWidget(helpText_NumberOfLod);
 
 	// Choose Number of LODs to generate
-	numberOfLodComboBox = new QComboBox(this);
-	numberOfLodComboBox->addItem("1");
-	numberOfLodComboBox->addItem("2");
-	numberOfLodComboBox->addItem("3");
-	numberOfLodComboBox->addItem("4");
-	numberOfLodComboBox->addItem("5");
-	numberOfLodComboBox->addItem("6");
-	numberOfLodComboBox->addItem("7");
-	numberOfLodComboBox->setCurrentIndex(0);
-	mainLayout->addWidget(numberOfLodComboBox);
+	m_wNumberOfLodComboBox = new QComboBox(this);
+	m_wNumberOfLodComboBox->addItem("1");
+	m_wNumberOfLodComboBox->addItem("2");
+	m_wNumberOfLodComboBox->addItem("3");
+	m_wNumberOfLodComboBox->addItem("4");
+	m_wNumberOfLodComboBox->addItem("5");
+	m_wNumberOfLodComboBox->addItem("6");
+	m_wNumberOfLodComboBox->addItem("7");
+	m_wNumberOfLodComboBox->setCurrentIndex(0);
+	mainLayout->addWidget(m_wNumberOfLodComboBox);
 
 	QLabel* spacerWidget2 = new QLabel();
 	spacerWidget2->setTextFormat(Qt::RichText);
@@ -96,8 +98,8 @@ void DzBridgeLodSettingsDialog::PrepareDialog()
 {
 	if (m_BridgeAction)
 	{
-		lodMethodComboBox->setCurrentIndex(m_BridgeAction->getLodMethodIndex());
-		numberOfLodComboBox->setCurrentIndex(m_BridgeAction->getNumberOfLods()-1);
+		m_wLodMethodComboBox->setCurrentIndex(m_BridgeAction->getLodMethodIndex());
+		m_wNumberOfLodComboBox->setCurrentIndex(m_BridgeAction->getNumberOfLods()-1);
 	}
 	return;
 }
@@ -114,8 +116,13 @@ void DzBridgeLodSettingsDialog::accept()
 	if (m_BridgeAction)
 	{
 		//m_BridgeAction->setEnableLodGeneration(true);
-		m_BridgeAction->setLodMethod(lodMethodComboBox->currentIndex());
-		m_BridgeAction->setNumberOfLods(numberOfLodComboBox->currentIndex()+1);
+		int comboIndex = m_wLodMethodComboBox->currentIndex();
+		int lodMethodIndex = m_wLodMethodComboBox->itemData(comboIndex).toInt();
+		m_BridgeAction->setLodMethod(lodMethodIndex);
+
+		comboIndex = m_wNumberOfLodComboBox->currentIndex();
+		lodMethodIndex = comboIndex + 1;
+		m_BridgeAction->setNumberOfLods(lodMethodIndex);
 	}
 	DzBasicDialog::accept();
 }

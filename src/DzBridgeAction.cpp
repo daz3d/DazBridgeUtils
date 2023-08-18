@@ -5316,8 +5316,8 @@ void DzBridgeAction::writeAllLodSettings(DzJsonWriter& writer)
 
 	// Global LOD settings
 	writer.addMember("Generate LODs", m_bEnableLodGeneration);
-	int generation_method = (int)getLodMethod();
-	writer.addMember("LOD Generation Method", generation_method);
+	int lod_method = (int)getLodMethod();
+	writer.addMember("LOD Method", lod_method);
 	writer.addMember("Number of LODs", m_nNumberOfLods);
 	writer.addMember("Use LODGroup", m_bCreateLodGroup);
 
@@ -5340,13 +5340,54 @@ void DzBridgeAction::writeAllLodSettings(DzJsonWriter& writer)
 
 }
 
+void DzBridgeAction::setLodMethod(int arg)
+{
+	if (
+		(arg >= getELodMethodMin() ) && 
+		(arg <= getELodMethodMax() )
+		)
+	{
+		m_eLodMethod = (ELodMethod) arg;
+	}
+	else
+	{
+		dzApp->log("ERROR: DzBridgeAction::setLodMethod(): index out of range.");
+	}
+}
+
 QString DzBridgeAction::getLodMethodString()
 {
-	return QString();
+	switch (m_eLodMethod)
+	{
+	case ELodMethod::PreGenerated:
+		return QString("Pregenerated");
+	case ELodMethod::Decimator:
+		return QString("Decimator");
+
+	default:
+	case ELodMethod::Undefined:
+		return QString("Undefined");
+	}
 }
 
 void DzBridgeAction::setLodMethod(QString arg)
 {
+	if (
+		(arg.toLower() == "pregenerated") ||
+		(arg.toLower() == "pre-generated")
+		)
+	{
+		m_eLodMethod = ELodMethod::PreGenerated;
+	}
+	else if (arg.toLower().contains("decimator"))
+	{
+		m_eLodMethod = ELodMethod::Decimator;
+	}
+	else if (arg.toLower() == "undefined")
+	{
+		m_eLodMethod = ELodMethod::Undefined;
+	}
+
 	return;
 }
 

@@ -99,7 +99,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE bool getEnableLodGeneration() { return m_bEnableLodGeneration; }
 		Q_INVOKABLE void setEnableLodGeneration(bool arg) { m_bEnableLodGeneration = arg; }
 		Q_INVOKABLE int getLodMethodIndex() { return (int) m_eLodMethod; }
-		Q_INVOKABLE void setLodMethod(int arg) { m_eLodMethod = (ELodMethod) arg; }
+		Q_INVOKABLE void setLodMethod(int arg);
 		Q_INVOKABLE QString getLodMethodString();
 		Q_INVOKABLE void setLodMethod(QString arg);
 		Q_INVOKABLE int getNumberOfLods() { return m_nNumberOfLods; }
@@ -176,10 +176,12 @@ namespace DzBridgeNameSpace
 		};
 		bool m_bEnableLodGeneration = false; // enable level-of-detail generation
 		enum ELodMethod {
-			Undefined = 0,
-			PreGenerated = 1,
-			Decimator = 2,
+			Undefined = -1,
+			PreGenerated = 0,
+			Decimator = 1,
 		};
+		Q_INVOKABLE virtual int getELodMethodMin() { return 0; }
+		Q_INVOKABLE virtual int getELodMethodMax() { return 1; }
 		ELodMethod m_eLodMethod = ELodMethod::Undefined; // 
 		virtual ELodMethod getLodMethod() const { return m_eLodMethod; }
 		int m_nNumberOfLods = -1; // number of LOD levels to generate
