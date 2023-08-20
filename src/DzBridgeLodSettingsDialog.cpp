@@ -191,14 +191,22 @@ int DzBridgeLodSettingsDialog::getSourceVertexCount(DzNode* pNode)
 			if (pSubDDialog)
 			{
 				QObjectList pComboBoxList = pSubDDialog->getSubdivisionCombos();
-				foreach(QObject* pComboBox, pComboBoxList)
+				foreach(QObject* pObject, pComboBoxList)
 				{
+					QComboBox *pComboBox = qobject_cast<QComboBox*>(pObject);
 					// 3. Use pNode to lookup correct combobox pointer in SubD window
-
-					// 4. Retrieve SubD value from combobox pointer
-					// 5. Lookup correct scale factor from SubD value
-					// 6. Multiply
-
+					QString sComboName = pComboBox->property("Object").toString();
+					if (pNode->getName() == sComboName)
+					{
+						// 4. Retrieve SubD value from combobox pointer
+						int nSubDLevel = pComboBox->currentText().toInt();
+						// 5. Lookup correct scale factor from SubD value
+						int nSubDMultiplier = 1;
+						for (int i = 0; i < nSubDLevel; i++) nSubDMultiplier *= 4;
+						// 6. Multiply
+						numVerts *= nSubDMultiplier;
+						break;
+					}
 				}
 			}
 		}
@@ -245,7 +253,7 @@ float DzBridgeLodSettingsDialog::calculateLodGenerationTime()
 	// hardcoded estimate for Unreal Builtin LOD generator and Zen 3 AMD processor.
 	if (lodMethod == 2)
 	{
-		fTimeScaleFactor = 1.0 / 500000.0; // 1 minute for every 500,000 vertices
+		fTimeScaleFactor = 1.0f / 500000.0f; // 1 minute for every 500,000 vertices
 	}
 
 	float fEstimatedTime = numVerts * numLODs * fTimeScaleFactor;

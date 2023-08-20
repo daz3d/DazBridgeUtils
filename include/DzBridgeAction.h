@@ -70,9 +70,9 @@ namespace DzBridgeNameSpace
 
 		// TODO: Refactor, current work-around is to make these pointers public but ideally the data should be
 		// separate from the GUI so that we don't need to manipulate the GUI to read data
-		Q_INVOKABLE DzBridgeDialog* getBridgeDialog() { return m_bridgeDialog; }
-		Q_INVOKABLE DzBridgeSubdivisionDialog* getSubdivisionDialog() { return m_subdivisionDialog; }
-		Q_INVOKABLE DzBridgeMorphSelectionDialog* getMorphSelectionDialog() { return m_morphSelectionDialog; }
+		Q_INVOKABLE DzBridgeDialog* getBridgeDialog();
+		Q_INVOKABLE DzBridgeSubdivisionDialog* getSubdivisionDialog();
+		Q_INVOKABLE DzBridgeMorphSelectionDialog* getMorphSelectionDialog();
 
 		Q_INVOKABLE void resetToDefaults();
 		Q_INVOKABLE QString cleanString(QString argString) { return argString.remove(QRegExp("[^A-Za-z0-9_]")); };

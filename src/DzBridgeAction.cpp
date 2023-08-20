@@ -3575,6 +3575,42 @@ QStringList DzBridgeAction::getActiveMorphs(DzNode* Node)
 	return newMorphList;
 }
 
+DzBridgeDialog* DzBridgeAction::getBridgeDialog() 
+{
+	if (m_bridgeDialog == nullptr)
+	{
+		DzMainWindow* mw = dzApp->getInterface();
+		if (!mw)
+		{
+			return nullptr;
+		}
+		m_bridgeDialog = new DzBridgeDialog(mw);
+		m_bridgeDialog->setBridgeActionObject(this);
+	}
+
+	return m_bridgeDialog;
+}
+
+DzBridgeSubdivisionDialog* DzBridgeAction::getSubdivisionDialog() 
+{ 
+	if (m_subdivisionDialog == nullptr)
+	{
+		m_subdivisionDialog = DzBridgeSubdivisionDialog::Get(this->getBridgeDialog());
+	}
+
+	return m_subdivisionDialog;
+}
+
+DzBridgeMorphSelectionDialog* DzBridgeAction::getMorphSelectionDialog() 
+{ 
+	if (m_morphSelectionDialog == nullptr)
+	{
+		m_morphSelectionDialog = DzBridgeMorphSelectionDialog::Get(this->getBridgeDialog());
+	}
+
+	return m_morphSelectionDialog;
+}
+
 bool DzBridgeAction::setBridgeDialog(DzBasicDialog* arg_dlg)
 {
 	m_bridgeDialog = qobject_cast<DzBridgeDialog*>(arg_dlg);
