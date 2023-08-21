@@ -27,6 +27,15 @@ namespace DzBridgeNameSpace
 	class DzBridgeSubdivisionDialog;
 	class DzBridgeLodSettingsDialog;
 
+	struct LodInfo {
+		QString pregenerated_lodlevel_string = "";
+		int export_lodgroup_index = -1;
+		QString export_mesh_filename = "";
+		int quality_vertex = -1;
+		float quality_percent = -1.0f;
+		float threshold_screen_height = -1.0f;
+	};
+
 	/// <summary>
 	/// Abstract base class that manages exporting of assets to Target Software via FBX/DTU
 	/// intermediate files.  Manages destination filepaths, morphs, subdivisions, animations, etc.
@@ -113,6 +122,8 @@ namespace DzBridgeNameSpace
 
 		Q_INVOKABLE DzNode* getSelectedNode() { return m_pSelectedNode; }
 
+		QList<LodInfo*> m_aLodInfo;
+
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo
@@ -174,14 +185,6 @@ namespace DzBridgeNameSpace
 		bool m_bMorphLockBoneTranslation;
 
 		// LOD generation settings
-		struct LodInfo {
-			QString pregenerated_lodlevel_string = "";
-			int export_lodgroup_index = -1;
-			QString export_mesh_filename = "";
-			int quality_vertex=-1;
-			float quality_percent=-1.0f;
-			float threshold_screen_height=-1.0f;
-		};
 		bool m_bEnableLodGeneration = false; // enable level-of-detail generation
 		enum ELodMethod {
 			Undefined = -1,
@@ -193,7 +196,6 @@ namespace DzBridgeNameSpace
 		ELodMethod m_eLodMethod = ELodMethod::Undefined; // 
 		virtual ELodMethod getLodMethod() const { return m_eLodMethod; }
 		int m_nNumberOfLods = -1; // number of LOD levels to generate
-		QList<LodInfo*> m_aLodInfo;
 		bool m_bCreateLodGroup = false;
 
 		virtual QString getActionGroup() const { return tr("Bridges"); }

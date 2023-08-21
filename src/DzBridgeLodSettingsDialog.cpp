@@ -131,8 +131,11 @@ void DzBridgeLodSettingsDialog::accept()
 		m_BridgeAction->setLodMethod(lodMethodIndex);
 
 		comboIndex = m_wNumberOfLodComboBox->currentIndex();
-		lodMethodIndex = comboIndex + 1;
-		m_BridgeAction->setNumberOfLods(lodMethodIndex);
+		int numLODs = comboIndex + 1;
+		m_BridgeAction->setNumberOfLods(numLODs);
+
+		//applyLodPresetDefault();
+		applyLodPresetHighPerformance();
 	}
 	DzBasicDialog::accept();
 }
@@ -259,6 +262,72 @@ float DzBridgeLodSettingsDialog::calculateLodGenerationTime()
 	float fEstimatedTime = numVerts * numLODs * fTimeScaleFactor;
 
 	return fEstimatedTime;
+}
+
+void DzBridgeLodSettingsDialog::generateLodLerp(LodInfo start, LodInfo end, int numberOfPoints)
+{
+	for (int i = 0; i <= numberOfPoints; i++)
+	{
+		// add new LOD info object
+		struct LodInfo* newLodInfo = new LodInfo;
+		// interpolate between start and finish values
+		double interpolation = (double)i / numberOfPoints;
+		if (end.quality_vertex != -1)
+		{
+			newLodInfo->quality_vertex = (start.quality_vertex * (1.0-interpolation)) + (end.quality_vertex * interpolation);
+		}
+		if (end.quality_percent != -1)
+		{
+			newLodInfo->quality_percent = (start.quality_percent * (1.0 - interpolation)) + (end.quality_percent * interpolation);
+		}
+		if (end.threshold_screen_height != -1)
+		{
+			newLodInfo->threshold_screen_height = (start.threshold_screen_height * (1.0 - interpolation)) + (end.threshold_screen_height * interpolation);
+		}
+		m_BridgeAction->m_aLodInfo.append(newLodInfo);
+	}
+}
+
+void DzBridgeLodSettingsDialog::applyLodPresetHighPerformance()
+{
+	m_BridgeAction->m_aLodInfo.clear();
+	int numLODs = m_wNumberOfLodComboBox->currentIndex();
+
+	LodInfo lod0, lod1;
+	lod0.quality_vertex = getSourceVertexCount();
+	lod0.threshold_screen_height = 3.0f;
+	lod1.quality_vertex = 5000;
+	lod1.threshold_screen_height = 2.0f;
+	LodInfo* newLodInfo = new LodInfo;
+	*newLodInfo = lod0;
+	m_BridgeAction->m_aLodInfo.append(newLodInfo);
+	newLodInfo = new LodInfo;
+	*newLodInfo = lod1;
+	m_BridgeAction->m_aLodInfo.append(newLodInfo);
+
+	// set first and last lod quality and screen height targets
+	LodInfo start, end;
+	start.quality_vertex = 4000;
+	start.threshold_screen_height = 1.0f;
+	end.quality_vertex = 500;
+	end.threshold_screen_height = 0.05f; 
+
+	generateLodLerp(start, end, numLODs-2);
+}
+
+void DzBridgeLodSettingsDialog::applyLodPresetDefault()
+{
+	m_BridgeAction->m_aLodInfo.clear();
+	int numLODs = m_wNumberOfLodComboBox->currentIndex();
+	
+	// set first and last lod quality and screen height targets
+	LodInfo start, end;
+	start.quality_percent = 1.0f; // 100% quality
+	start.threshold_screen_height = 2.0f; // head shot is full screen
+	end.quality_percent = 0.05f; // 10% quality
+	end.threshold_screen_height = 0.10f; // full-body is 10% of screen
+	
+	generateLodLerp(start, end, numLODs);
 }
 
 #include "moc_DzBridgeLodSettingsDialog.cpp"

@@ -6,6 +6,7 @@
 namespace DzBridgeNameSpace
 {
 	class DzBridgeAction;
+	struct LodInfo;
 
     class CPP_Export DzBridgeLodSettingsDialog : public DzBasicDialog {
         Q_OBJECT
@@ -52,6 +53,10 @@ namespace DzBridgeNameSpace
 		int getSourceVertexCount();
 		int getSourceVertexCount(DzNode* pNode);
 		float calculateLodGenerationTime();
+
+		virtual void generateLodLerp(LodInfo start, LodInfo end, int numberOfPoints);
+		virtual void applyLodPresetDefault();
+		virtual void applyLodPresetHighPerformance();
 
     private:
 		static DzBridgeLodSettingsDialog* singleton;
