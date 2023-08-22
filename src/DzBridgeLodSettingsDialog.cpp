@@ -58,9 +58,9 @@ interactive realtime 3D applications.") +
 
 	// Create Drop-Down to choose LOD generation method
 	m_wLodMethodComboBox = new QComboBox(this);
-	m_wLodMethodComboBox->addItem("Use the currently active Resolution level", QVariant(0));
+	//m_wLodMethodComboBox->addItem("Use the currently active Resolution level", QVariant(0));
 	//m_wLodMethodComboBox->addItem("Use pregenerated LOD mesh", QVariant(0));
-	m_wLodMethodComboBox->addItem("Use Daz Decimator plugin", QVariant(1));
+	//m_wLodMethodComboBox->addItem("Use Daz Decimator plugin", QVariant(1));
 	m_wLodMethodComboBox->addItem("Use Unreal Engine Built-in LOD generator", QVariant(2));
 	connect(m_wLodMethodComboBox, SIGNAL(activated(int)), this, SLOT(HandleLodMethodComboChange(int)));
 	mainLayout->addWidget(m_wLodMethodComboBox);
@@ -108,7 +108,9 @@ void DzBridgeLodSettingsDialog::PrepareDialog()
 {
 	if (m_BridgeAction)
 	{
-		m_wLodMethodComboBox->setCurrentIndex(m_BridgeAction->getLodMethodIndex());
+		// Set ComboBox based on ItemData value, not ComboBox Index
+		int comboIndex = m_wLodMethodComboBox->findData(m_BridgeAction->getLodMethodIndex());
+		m_wLodMethodComboBox->setCurrentIndex(comboIndex);
 		m_wNumberOfLodComboBox->setCurrentIndex(m_BridgeAction->getNumberOfLods()-1);
 	}
 	return;
