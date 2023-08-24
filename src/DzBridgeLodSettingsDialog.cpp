@@ -80,13 +80,13 @@ interactive realtime 3D applications.") +
 
 	// Choose Number of LODs to generate
 	m_wNumberOfLodComboBox = new QComboBox(this);
-	m_wNumberOfLodComboBox->addItem("1");
-	m_wNumberOfLodComboBox->addItem("2");
-	m_wNumberOfLodComboBox->addItem("3");
-	m_wNumberOfLodComboBox->addItem("4");
-	m_wNumberOfLodComboBox->addItem("5");
-	m_wNumberOfLodComboBox->addItem("6");
-	m_wNumberOfLodComboBox->addItem("7");
+	//m_wNumberOfLodComboBox->addItem("1", QVariant(1));
+	m_wNumberOfLodComboBox->addItem("2", QVariant(2));
+	m_wNumberOfLodComboBox->addItem("3", QVariant(3));
+	m_wNumberOfLodComboBox->addItem("4", QVariant(4));
+	m_wNumberOfLodComboBox->addItem("5", QVariant(5));
+	m_wNumberOfLodComboBox->addItem("6", QVariant(6));
+	m_wNumberOfLodComboBox->addItem("7", QVariant(7));
 	m_wNumberOfLodComboBox->setCurrentIndex(0);
 	connect(m_wNumberOfLodComboBox, SIGNAL(activated(int)), this, SLOT(HandleNumberOfLodComboChange(int)));
 	mainLayout->addWidget(m_wNumberOfLodComboBox);
@@ -133,7 +133,7 @@ void DzBridgeLodSettingsDialog::accept()
 		m_BridgeAction->setLodMethod(lodMethodIndex);
 
 		comboIndex = m_wNumberOfLodComboBox->currentIndex();
-		int numLODs = comboIndex + 1;
+		int numLODs = m_wNumberOfLodComboBox->itemData(comboIndex).toInt() + 1;
 		m_BridgeAction->setNumberOfLods(numLODs);
 
 		//applyLodPresetDefault();
