@@ -111,7 +111,8 @@ void DzBridgeLodSettingsDialog::PrepareDialog()
 		// Set ComboBox based on ItemData value, not ComboBox Index
 		int comboIndex = m_wLodMethodComboBox->findData(m_BridgeAction->getLodMethodIndex());
 		m_wLodMethodComboBox->setCurrentIndex(comboIndex);
-		m_wNumberOfLodComboBox->setCurrentIndex(m_BridgeAction->getNumberOfLods()-1);
+		comboIndex = m_wNumberOfLodComboBox->findData(m_BridgeAction->getNumberOfLods());
+		m_wNumberOfLodComboBox->setCurrentIndex(comboIndex);
 	}
 	return;
 }
@@ -133,7 +134,7 @@ void DzBridgeLodSettingsDialog::accept()
 		m_BridgeAction->setLodMethod(lodMethodIndex);
 
 		comboIndex = m_wNumberOfLodComboBox->currentIndex();
-		int numLODs = m_wNumberOfLodComboBox->itemData(comboIndex).toInt() + 1;
+		int numLODs = m_wNumberOfLodComboBox->itemData(comboIndex).toInt();
 		m_BridgeAction->setNumberOfLods(numLODs);
 
 		//applyLodPresetDefault();
