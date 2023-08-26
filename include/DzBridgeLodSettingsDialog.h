@@ -49,6 +49,7 @@ namespace DzBridgeNameSpace
 		DzBridgeAction* m_BridgeAction = nullptr;
 		QComboBox* m_wLodMethodComboBox;
 		QComboBox* m_wNumberOfLodComboBox;
+		QComboBox* m_wLodSettingPresetComboBox;
 		
 		int getSourceVertexCount();
 		int getSourceVertexCount(DzNode* pNode);

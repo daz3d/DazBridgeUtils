@@ -96,6 +96,12 @@ interactive realtime 3D applications.") +
 	spacerWidget2->setText("<p>");
 	mainLayout->addWidget(spacerWidget2);
 
+	// LOD settings preset dropdown
+	m_wLodSettingPresetComboBox = new QComboBox(this);
+	m_wLodSettingPresetComboBox->addItem("Default", "#default");
+	m_wLodSettingPresetComboBox->addItem("UEFN / Fab Marketplace", "#uefn");
+	mainLayout->addWidget(m_wLodSettingPresetComboBox);
+
 	this->addLayout(mainLayout);
 
 	setMinimumWidth(300);
@@ -138,7 +144,17 @@ void DzBridgeLodSettingsDialog::accept()
 		m_BridgeAction->setNumberOfLods(numLODs);
 
 		//applyLodPresetDefault();
-		applyLodPresetHighPerformance();
+		comboIndex = m_wLodSettingPresetComboBox->currentIndex();
+		QString sLodPreset = m_wLodSettingPresetComboBox->itemData(comboIndex).toString();
+		if (sLodPreset.toLower().contains("#uefn"))
+		{
+			applyLodPresetHighPerformance();
+		}
+		else if (sLodPreset.toLower().contains("#default"))
+		{
+			applyLodPresetDefault();
+		}
+		//applyLodPresetHighPerformance();
 	}
 	DzBasicDialog::accept();
 }
@@ -269,7 +285,7 @@ float DzBridgeLodSettingsDialog::calculateLodGenerationTime()
 
 void DzBridgeLodSettingsDialog::generateLodLerp(LodInfo start, LodInfo end, int numberOfPoints)
 {
-	for (int i = 0; i <= numberOfPoints; i++)
+	for (int i = 0; i < numberOfPoints; i++)
 	{
 		// add new LOD info object
 		struct LodInfo* newLodInfo = new LodInfo;
@@ -294,7 +310,8 @@ void DzBridgeLodSettingsDialog::generateLodLerp(LodInfo start, LodInfo end, int 
 void DzBridgeLodSettingsDialog::applyLodPresetHighPerformance()
 {
 	m_BridgeAction->m_aLodInfo.clear();
-	int numLODs = m_wNumberOfLodComboBox->currentIndex();
+	int comboIndex = m_wNumberOfLodComboBox->currentIndex();
+	int numLODs = m_wNumberOfLodComboBox->itemData(comboIndex).toInt();
 
 	LodInfo lod0, lod1;
 	lod0.quality_vertex = getSourceVertexCount();
@@ -315,14 +332,16 @@ void DzBridgeLodSettingsDialog::applyLodPresetHighPerformance()
 	end.quality_vertex = 500;
 	end.threshold_screen_height = 0.05f; 
 
+	// numLODs-2 because two already added to array above
 	generateLodLerp(start, end, numLODs-2);
 }
 
 void DzBridgeLodSettingsDialog::applyLodPresetDefault()
 {
 	m_BridgeAction->m_aLodInfo.clear();
-	int numLODs = m_wNumberOfLodComboBox->currentIndex();
-	
+	int comboIndex = m_wNumberOfLodComboBox->currentIndex();
+	int numLODs = m_wNumberOfLodComboBox->itemData(comboIndex).toInt();
+
 	// set first and last lod quality and screen height targets
 	LodInfo start, end;
 	start.quality_percent = 1.0f; // 100% quality
