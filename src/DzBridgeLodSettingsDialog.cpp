@@ -35,7 +35,7 @@ DzBridgeLodSettingsDialog::DzBridgeLodSettingsDialog(DzBridgeAction* action, QWi
 	QVBoxLayout* mainLayout = new QVBoxLayout();
 	mainLayout->setMargin(5);
 
-	// Bake Subdivision Levels Explanation
+	// Level of Detail (LOD) Explanation
 	QLabel* helpBox = new QLabel();
 	helpBox->setTextFormat(Qt::RichText);
 	helpBox->setWordWrap(true);
@@ -50,10 +50,12 @@ interactive realtime 3D applications.") +
 
 	QLabel* helpText_LodMethod = new QLabel();
 	helpText_LodMethod->setTextFormat(Qt::RichText);
+	helpText_LodMethod->setWordWrap(true);
 	helpText_LodMethod->setText(
 		"<p>" + 
-		tr("<b>STEP 1</b>: Select the method for generating LODs.")
-	);
+//		tr("<b>STEP 1</b>: Select the method for generating LODs.")
+		tr("Current method for generating LODs:")
+);
 	mainLayout->addWidget(helpText_LodMethod);
 
 	// Create Drop-Down to choose LOD generation method
@@ -72,9 +74,11 @@ interactive realtime 3D applications.") +
 
 	QLabel* helpText_NumberOfLod = new QLabel();
 	helpText_NumberOfLod->setTextFormat(Qt::RichText);
+	helpText_NumberOfLod->setWordWrap(true);
 	helpText_NumberOfLod->setText(
 		"<p>" +
-		tr("<b>STEP 2</b>: Specify the number of detail levels to generate.") 
+		tr("<b>STEP 1</b>: Specify the number of detail levels to generate.  The base mesh resolution counts \
+as the first level of detail.") 
 	);
 	mainLayout->addWidget(helpText_NumberOfLod);
 
@@ -95,6 +99,17 @@ interactive realtime 3D applications.") +
 	spacerWidget2->setTextFormat(Qt::RichText);
 	spacerWidget2->setText("<p>");
 	mainLayout->addWidget(spacerWidget2);
+
+	QLabel* helpText_LodPreset = new QLabel();
+	helpText_LodPreset->setTextFormat(Qt::RichText);
+	helpText_LodPreset->setWordWrap(true);
+	helpText_LodPreset->setText(
+		"<p>" +
+		tr("<b>STEP 2</b>: Specify the LOD preset.<br><br>\
+The <b>Default</b> preset will use base resolution for closeups and gradually decrease the percent mesh resolution with distance.<br><br>\
+The <b>UEFN</b> preset will use base resolution for closeups, then 5000 vertex resolution for full body and gradually decrease further with distance.")
+);
+	mainLayout->addWidget(helpText_LodPreset);
 
 	// LOD settings preset dropdown
 	m_wLodSettingPresetComboBox = new QComboBox(this);
@@ -290,7 +305,11 @@ void DzBridgeLodSettingsDialog::generateLodLerp(LodInfo start, LodInfo end, int 
 		// add new LOD info object
 		struct LodInfo* newLodInfo = new LodInfo;
 		// interpolate between start and finish values
-		double interpolation = (double)i / numberOfPoints;
+		double interpolation;
+		if (numberOfPoints > 1)
+			interpolation = (double)i / (numberOfPoints-1);
+		else
+			interpolation = 1.0;
 		if (end.quality_vertex != -1)
 		{
 			newLodInfo->quality_vertex = (start.quality_vertex * (1.0-interpolation)) + (end.quality_vertex * interpolation);
@@ -315,9 +334,9 @@ void DzBridgeLodSettingsDialog::applyLodPresetHighPerformance()
 
 	LodInfo lod0, lod1;
 	lod0.quality_vertex = getSourceVertexCount();
-	lod0.threshold_screen_height = 3.0f;
+	lod0.threshold_screen_height = 3.0f; // full-screen view of head is approximately screen height = 2.0-3.0
 	lod1.quality_vertex = 5000;
-	lod1.threshold_screen_height = 2.0f;
+	lod1.threshold_screen_height = 2.0f; // full-screen view of head is approximately screen height = 2.0-3.0
 	LodInfo* newLodInfo = new LodInfo;
 	*newLodInfo = lod0;
 	m_BridgeAction->m_aLodInfo.append(newLodInfo);
@@ -345,9 +364,9 @@ void DzBridgeLodSettingsDialog::applyLodPresetDefault()
 	// set first and last lod quality and screen height targets
 	LodInfo start, end;
 	start.quality_percent = 1.0f; // 100% quality
-	start.threshold_screen_height = 2.0f; // head shot is full screen
+	start.threshold_screen_height = 2.0f; // full-screen view of head is approximately screen height = 2.0-3.0
 	end.quality_percent = 0.05f; // 10% quality
-	end.threshold_screen_height = 0.10f; // full-body is 10% of screen
+	end.threshold_screen_height = 0.10f; 
 	
 	generateLodLerp(start, end, numLODs);
 }
