@@ -79,6 +79,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE bool installEmbeddedArchive(QString sArchiveFilename, QString sDestinationPath);
 		Q_INVOKABLE virtual void setBridgeVersionStringAndLabel(QString sVersionString, QString sLabel="");
 		Q_INVOKABLE virtual void setDisabled(bool bDisable);
+		Q_INVOKABLE virtual void showLodRow(bool bShowWidget = true);
 
 		void accept();
 
@@ -148,6 +149,7 @@ namespace DzBridgeNameSpace
 		// LOD settings
 		QPushButton* m_wLodSettingsButton;
 		QCheckBox* m_wEnableLodCheckBox;
+		QWidget* m_wLodRowLabelWidget = nullptr;
 
 		QString m_sEmbeddedFilesPath = ":/DazBridge";
 		bool m_bDontSaveSettings = false;

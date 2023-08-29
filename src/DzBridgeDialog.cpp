@@ -208,6 +208,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	// LOD Settings
 	QHBoxLayout* lodSettingsLayout = new QHBoxLayout();
+	lodSettingsLayout->setContentsMargins(0,0,0,0);
 	m_wLodSettingsButton = new QPushButton(tr("Configure LOD Settings"), this);
 	connect(m_wLodSettingsButton, SIGNAL(released()), this, SLOT(HandleLodSettingsButton()));
 	m_wEnableLodCheckBox = new QCheckBox("", this);
@@ -275,7 +276,11 @@ better quality.  **DOES NOT EXPORT MESH**";
 	mainLayout->addRow("Asset Type", assetTypeCombo);
 	mainLayout->addRow("Export Morphs", morphsLayout);
 	mainLayout->addRow("Bake Subdivision", subdivisionLayout);
+
+	// Create LOD Row, then store lod row widget, then hide row as default state
 	mainLayout->addRow("Enable LOD", lodSettingsLayout);
+	m_wLodRowLabelWidget = mainLayout->itemAt(mainLayout->rowCount()-1, QFormLayout::LabelRole)->widget();
+	this->showLodRow(false);
 
 	// Advanced Settings Layout
 	advancedLayout->addRow("", m_BridgeVersionLabel);
@@ -316,7 +321,15 @@ better quality.  **DOES NOT EXPORT MESH**";
 	exportMaterialPropertyCSVCheckBox->setWhatsThis("Checking this will write out a CSV of all the material properties.  Useful for reference when changing materials.");
 	enableNormalMapGenerationCheckBox->setWhatsThis("Checking this will enable generation of Normal Maps for any surfaces that only have Bump Height Maps.");
 	//m_wTargetPluginInstaller->setWhatsThis("Install a plugin to use Daz Bridge with the destination software.");
-	m_wLodSettingsButton->setWhatsThis("Configure how Level of Detail (LOD) meshes are set up or generated in the destination software.");
+	QString sEnableLodHelp = tr("Enable Level of Detail (LOD) mesh.  Specific features depend on the destination software.");
+	m_wLodRowLabelWidget->setWhatsThis(sEnableLodHelp);
+	m_wLodRowLabelWidget->setToolTip(sEnableLodHelp);
+	m_wEnableLodCheckBox->setWhatsThis(sEnableLodHelp);
+	m_wEnableLodCheckBox->setToolTip(sEnableLodHelp);
+	QString sLodSettingsHelp = tr("Configure how Level of Detail (LOD) meshes are set up or generated in the destination software.");
+	m_wLodSettingsButton->setWhatsThis(sLodSettingsHelp);
+	m_wLodSettingsButton->setToolTip(sLodSettingsHelp);
+
 
 	// detect scene change
 	connect(dzScene, SIGNAL(nodeSelectionListChanged()), this, SLOT(handleSceneSelectionChanged()));
@@ -328,6 +341,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	{
 		setDisabled(true);
 	}
+
 #ifndef VODSVERSION
 	m_WelcomeLabel->setVisible(true);
 #endif
@@ -840,22 +854,44 @@ void DzBridgeDialog::HandleAssetTypeComboChange(int state)
 {
 	QString assetNameString = assetNameEdit->text();
 
-	// enable/disable Subdivision if Environment selected
-	if (assetTypeCombo->currentText() == "Environment")
+	// TODO: replace string compare with itemData system
+	QString sAssetType = assetTypeCombo->currentText();
+
+	/// Enable morphs if:
+	/// skeletal mesh, static mesh, animation
+	if (sAssetType == "Skeletal Mesh" ||
+		sAssetType == "Static Mesh" ||
+		sAssetType == "Animation" ||
+		sAssetType == "Pose" )
+	{
+		morphsEnabledCheckBox->setDisabled(false);
+		morphsButton->setDisabled(false);
+	}
+	else
 	{
 		morphsEnabledCheckBox->setChecked(false);
 		morphsEnabledCheckBox->setDisabled(true);
 		morphsButton->setDisabled(true);
-		subdivisionEnabledCheckBox->setChecked(false);
-		subdivisionEnabledCheckBox->setDisabled(true);
-		subdivisionButton->setDisabled(true);
+	}
+
+	/// Enable subdivision and lod only if:
+	/// skeletal mesh, static mesh
+	if (sAssetType == "Skeletal Mesh" ||
+		sAssetType == "Static Mesh" )
+	{
+		subdivisionEnabledCheckBox->setDisabled(false);
+		subdivisionButton->setDisabled(false);
+		m_wEnableLodCheckBox->setDisabled(false);
+		m_wLodSettingsButton->setDisabled(false);
 	}
 	else
 	{
-		morphsEnabledCheckBox->setDisabled(false);
-		morphsButton->setDisabled(false);
-		subdivisionEnabledCheckBox->setDisabled(false);
-		subdivisionButton->setDisabled(false);
+		subdivisionEnabledCheckBox->setChecked(false);
+		subdivisionEnabledCheckBox->setDisabled(true);
+		subdivisionButton->setDisabled(true);
+		m_wEnableLodCheckBox->setChecked(false);
+		m_wEnableLodCheckBox->setDisabled(true);
+		m_wLodSettingsButton->setDisabled(true);
 	}
 
 }
@@ -894,6 +930,16 @@ void DzBridgeDialog::HandleEnableLodCheckBoxChange(int state)
 {
 	if (settings == nullptr || m_bDontSaveSettings) return;
 	settings->setValue("LodEnabled", state == Qt::Checked);
+}
+
+void DzBridgeDialog::showLodRow(bool bShowWidget)
+{
+	if (m_wLodRowLabelWidget == nullptr) return;
+
+	m_wEnableLodCheckBox->setVisible(bShowWidget);
+	m_wLodSettingsButton->setVisible(bShowWidget);
+	m_wLodRowLabelWidget->setVisible(bShowWidget);
+
 }
 
 #include "moc_DzBridgeDialog.cpp"
