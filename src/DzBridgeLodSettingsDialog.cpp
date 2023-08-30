@@ -54,7 +54,7 @@ interactive realtime 3D applications.") +
 	helpText_LodMethod->setText(
 		"<p>" + 
 //		tr("<b>STEP 1</b>: Select the method for generating LODs.")
-		tr("Current method for generating LODs:")
+		tr("Method for generating LODs:")
 );
 	mainLayout->addWidget(helpText_LodMethod);
 
@@ -63,7 +63,7 @@ interactive realtime 3D applications.") +
 	//m_wLodMethodComboBox->addItem("Use the currently active Resolution level", QVariant(0));
 	//m_wLodMethodComboBox->addItem("Use pregenerated LOD mesh", QVariant(0));
 	//m_wLodMethodComboBox->addItem("Use Daz Decimator plugin", QVariant(1));
-	m_wLodMethodComboBox->addItem("Use Unreal Engine Built-in LOD generator", QVariant(2));
+	m_wLodMethodComboBox->addItem("Unreal Engine Built-in LOD generator", QVariant(2));
 	connect(m_wLodMethodComboBox, SIGNAL(activated(int)), this, SLOT(HandleLodMethodComboChange(int)));
 	mainLayout->addWidget(m_wLodMethodComboBox);
 
@@ -107,21 +107,21 @@ as the first level of detail.")
 		"<p>" +
 		tr("<b>STEP 2</b>: Specify the LOD preset.<br><br>\
 The <b>Default</b> preset will use base resolution for closeups and gradually decrease the percent mesh resolution with distance.<br><br>\
-The <b>UEFN</b> preset will use base resolution for closeups, then 5000 vertex resolution for full body and gradually decrease further with distance.")
+The <b>Competitive Multiplayer</b> preset will use base resolution for closeups, then 5000 vertex resolution for full body and gradually decrease further with distance.")
 );
 	mainLayout->addWidget(helpText_LodPreset);
 
 	// LOD settings preset dropdown
 	m_wLodSettingPresetComboBox = new QComboBox(this);
 	m_wLodSettingPresetComboBox->addItem("Default", "#default");
-	m_wLodSettingPresetComboBox->addItem("UEFN / Fab Marketplace", "#uefn");
+	m_wLodSettingPresetComboBox->addItem("Competitive Multiplayer", "#high_performance");
 	mainLayout->addWidget(m_wLodSettingPresetComboBox);
 
 	this->addLayout(mainLayout);
 
-	setMinimumWidth(300);
-	setMinimumHeight(250);
-
+	setMinimumWidth(400);
+	setMinimumHeight(400);
+                                
 	PrepareDialog();
 }
 
@@ -140,7 +140,7 @@ void DzBridgeLodSettingsDialog::PrepareDialog()
 
 void DzBridgeLodSettingsDialog::showEvent(QShowEvent* event)
 {
-	resize(100, 100);
+    resize(sizeHint());
 
 	DzBasicDialog::showEvent(event);
 }
@@ -161,7 +161,7 @@ void DzBridgeLodSettingsDialog::accept()
 		//applyLodPresetDefault();
 		comboIndex = m_wLodSettingPresetComboBox->currentIndex();
 		QString sLodPreset = m_wLodSettingPresetComboBox->itemData(comboIndex).toString();
-		if (sLodPreset.toLower().contains("#uefn"))
+		if (sLodPreset.toLower().contains("#high_performance"))
 		{
 			applyLodPresetHighPerformance();
 		}
