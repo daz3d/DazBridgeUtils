@@ -59,6 +59,10 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 		m_bSetupMode = true;
 	}
 
+#ifdef VODSVERSION
+	m_bSetupMode = false;
+#endif
+
 	 assetNameEdit = nullptr;
 //	 projectEdit = nullptr;
 //	 projectButton = nullptr;
@@ -248,6 +252,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	connect(exportMaterialPropertyCSVCheckBox, SIGNAL(stateChanged(int)), this, SLOT(HandleExportMaterialPropertyCSVCheckBoxChange(int)));
 
 	// Install Destination Software Bridge
+#ifndef VODSVERSION
 	m_wTargetPluginInstaller = new QWidget();
 	QHBoxLayout* targetPluginInstallerLayout = new QHBoxLayout();
 	m_TargetSoftwareVersionCombo = new QComboBox(m_wTargetPluginInstaller);
@@ -257,6 +262,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	targetPluginInstallerLayout->addWidget(m_TargetSoftwareVersionCombo, 2);
 	targetPluginInstallerLayout->addWidget(m_TargetPluginInstallerButton, 1);
 	m_wTargetPluginInstaller->setLayout(targetPluginInstallerLayout);
+#endif
 
 	// Bridge Software Version Label
 	QString sBridgeVersionString = QString(tr("Daz Bridge Library %1 v%2.%3.%4")).arg(COMMON_MAJOR).arg(COMMON_MINOR).arg(revision).arg(COMMON_BUILD);
@@ -284,7 +290,9 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	// Advanced Settings Layout
 	advancedLayout->addRow("", m_BridgeVersionLabel);
+#ifndef VODSVERSION
 	advancedLayout->addRow("Install Destination Plugin", m_wTargetPluginInstaller);
+#endif
 	advancedLayout->addRow("", m_OpenIntermediateFolderButton);
 	showTargetPluginInstaller(false);
 	advancedLayout->addRow("FBX Version", fbxVersionCombo);
@@ -408,11 +416,11 @@ bool DzBridgeDialog::loadSavedSettings()
 		advancedSettingsGroupBox->setChecked(true);
 		advancedWidget->setHidden(false);
 	}
-	//else if (!settings->value("ShowAdvancedSettings").isNull())
-	//{
-	//	advancedSettingsGroupBox->setChecked(settings->value("ShowAdvancedSettings").toBool());
-	//	advancedWidget->setHidden(!advancedSettingsGroupBox->isChecked());
-	//}
+	else if (!settings->value("ShowAdvancedSettings").isNull())
+	{
+		advancedSettingsGroupBox->setChecked(settings->value("ShowAdvancedSettings").toBool());
+		advancedWidget->setHidden(!advancedSettingsGroupBox->isChecked());
+	}
 	else
 	{
 		advancedSettingsGroupBox->setChecked(false);

@@ -132,10 +132,10 @@ namespace DzBridgeNameSpace
 			DzNode* Child;
 		};
 
-		DzBridgeDialog* m_bridgeDialog;
-		DzBridgeSubdivisionDialog* m_subdivisionDialog;
-		DzBridgeMorphSelectionDialog* m_morphSelectionDialog;
-		DzBridgeLodSettingsDialog* m_wLodSettingsDialog;
+		DzBridgeDialog* m_bridgeDialog = nullptr;
+		DzBridgeSubdivisionDialog* m_subdivisionDialog = nullptr;
+		DzBridgeMorphSelectionDialog* m_morphSelectionDialog = nullptr;
+		DzBridgeLodSettingsDialog* m_wLodSettingsDialog = nullptr;
 
 		int m_nNonInteractiveMode;
 		QString m_sAssetName; // Exported Asset Name, may be separate from export filename

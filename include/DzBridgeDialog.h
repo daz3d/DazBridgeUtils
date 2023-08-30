@@ -104,51 +104,51 @@ namespace DzBridgeNameSpace
 
 	protected:
 		DzBridgeAction* m_BridgeAction = nullptr;
-		QSettings* settings;
+		QSettings* settings = nullptr;
 
 		virtual void refreshAsset();
 
-		QFormLayout* mainLayout;
-		QFormLayout* advancedLayout;
-		QLineEdit* assetNameEdit;
-		//	QLineEdit* projectEdit;
-		//	QPushButton* projectButton;
-		QComboBox* assetTypeCombo;
-		QPushButton* morphsButton;
-		QCheckBox* morphsEnabledCheckBox;
-		QPushButton* subdivisionButton;
-		QCheckBox* subdivisionEnabledCheckBox;
-        QLabel* m_WelcomeLabel;
+		QFormLayout* mainLayout = nullptr;
+		QFormLayout* advancedLayout = nullptr;
+		QLineEdit* assetNameEdit = nullptr;
+		//	QLineEdit* projectEdit = nullptr;
+		//	QPushButton* projectButton = nullptr;
+		QComboBox* assetTypeCombo = nullptr;
+		QPushButton* morphsButton = nullptr;
+		QCheckBox* morphsEnabledCheckBox = nullptr;
+		QPushButton* subdivisionButton = nullptr;
+		QCheckBox* subdivisionEnabledCheckBox = nullptr;
+        QLabel* m_WelcomeLabel = nullptr;
 
         // Advanced settings
-		QGroupBox* advancedSettingsGroupBox;
-		QWidget* advancedWidget;
-		QComboBox* fbxVersionCombo;
-		QCheckBox* showFbxDialogCheckBox;
-		QCheckBox* enableNormalMapGenerationCheckBox;
-		QCheckBox* exportMaterialPropertyCSVCheckBox;
-		QWidget* m_wTargetPluginInstaller;
-		QPushButton* m_TargetPluginInstallerButton;
-		QComboBox* m_TargetSoftwareVersionCombo;
-		QLabel* m_BridgeVersionLabel;
-		QPushButton* m_OpenIntermediateFolderButton;
-        QCheckBox* m_enableExperimentalOptionsCheckBox;
+		QGroupBox* advancedSettingsGroupBox = nullptr;
+		QWidget* advancedWidget = nullptr;
+		QComboBox* fbxVersionCombo = nullptr;
+		QCheckBox* showFbxDialogCheckBox = nullptr;
+		QCheckBox* enableNormalMapGenerationCheckBox = nullptr;
+		QCheckBox* exportMaterialPropertyCSVCheckBox = nullptr;
+		QWidget* m_wTargetPluginInstaller = nullptr;
+		QPushButton* m_TargetPluginInstallerButton = nullptr;
+		QComboBox* m_TargetSoftwareVersionCombo = nullptr;
+		QLabel* m_BridgeVersionLabel = nullptr;
+		QPushButton* m_OpenIntermediateFolderButton = nullptr;
+        QCheckBox* m_enableExperimentalOptionsCheckBox = nullptr;
 
 		// Animation settings
-		QGroupBox* animationSettingsGroupBox;
-		QCheckBox* experimentalAnimationExportCheckBox;
-		QCheckBox* bakeAnimationExportCheckBox;
-		QCheckBox* faceAnimationExportCheckBox;
-		QCheckBox* animationExportActiveCurvesCheckBox;
-		QCheckBox* animationApplyBoneScaleCheckBox;
+		QGroupBox* animationSettingsGroupBox = nullptr;
+		QCheckBox* experimentalAnimationExportCheckBox = nullptr;
+		QCheckBox* bakeAnimationExportCheckBox = nullptr;
+		QCheckBox* faceAnimationExportCheckBox = nullptr;
+		QCheckBox* animationExportActiveCurvesCheckBox = nullptr;
+		QCheckBox* animationApplyBoneScaleCheckBox = nullptr;
 
 		// Morph settings
-		QGroupBox* morphSettingsGroupBox;
-		QCheckBox* morphLockBoneTranslationCheckBox;
+		QGroupBox* morphSettingsGroupBox = nullptr;
+		QCheckBox* morphLockBoneTranslationCheckBox = nullptr;
 
 		// LOD settings
-		QPushButton* m_wLodSettingsButton;
-		QCheckBox* m_wEnableLodCheckBox;
+		QPushButton* m_wLodSettingsButton = nullptr;
+		QCheckBox* m_wEnableLodCheckBox = nullptr;
 		QWidget* m_wLodRowLabelWidget = nullptr;
 
 		QString m_sEmbeddedFilesPath = ":/DazBridge";
