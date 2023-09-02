@@ -61,6 +61,7 @@ namespace DzBridgeNameSpace
 
     private:
 		static DzBridgeLodSettingsDialog* singleton;
+		bool bWarningShown = false;
 
 	};
 

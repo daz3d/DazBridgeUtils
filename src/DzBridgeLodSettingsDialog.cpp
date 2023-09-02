@@ -143,6 +143,7 @@ void DzBridgeLodSettingsDialog::showEvent(QShowEvent* event)
     resize(sizeHint());
 
 	DzBasicDialog::showEvent(event);
+	bWarningShown = false;
 }
 
 void DzBridgeLodSettingsDialog::accept()
@@ -171,6 +172,18 @@ void DzBridgeLodSettingsDialog::accept()
 		}
 		//applyLodPresetHighPerformance();
 	}
+
+	float fEstimatedLodGenerationTime = calculateLodGenerationTime();
+
+	if (fEstimatedLodGenerationTime > 5.0 && !bWarningShown)
+	{
+		QString sWarningString = QString(tr("The estimated LOD generation time may be more than %1 minutes.  Times will vary depending on your CPU.")).arg((int)fEstimatedLodGenerationTime);
+		// Warn User with Popup that estimated LOD generation will be more than 5 minutes
+		QMessageBox::warning(0, "Daz Bridge",
+			sWarningString, QMessageBox::Ok);
+		bWarningShown = true;
+	}
+
 	DzBasicDialog::accept();
 }
 
@@ -182,18 +195,29 @@ void DzBridgeLodSettingsDialog::reject()
 void DzBridgeLodSettingsDialog::HandleLodMethodComboChange(int state)
 {
 	float fEstimatedLodGenerationTime = calculateLodGenerationTime();
+
+	if (fEstimatedLodGenerationTime > 5.0 && !bWarningShown)
+	{
+		QString sWarningString = QString(tr("The estimated LOD generation time may be more than %1 minutes.  Times will vary depending on your CPU.")).arg((int)fEstimatedLodGenerationTime);
+		// Warn User with Popup that estimated LOD generation will be more than 5 minutes
+		QMessageBox::warning(0, "Daz Bridge",
+			sWarningString, QMessageBox::Ok);
+		bWarningShown = true;
+	}
+
 }
 
 void DzBridgeLodSettingsDialog::HandleNumberOfLodComboChange(int state)
 {
 	float fEstimatedLodGenerationTime = calculateLodGenerationTime();
 
-	if (fEstimatedLodGenerationTime > 5.0)
+	if (fEstimatedLodGenerationTime > 5.0 && !bWarningShown)
 	{
 		QString sWarningString = QString(tr("The estimated LOD generation time may be more than %1 minutes.  Times will vary depending on your CPU.")).arg((int) fEstimatedLodGenerationTime);
 		// Warn User with Popup that estimated LOD generation will be more than 5 minutes
 		QMessageBox::warning(0, "Daz Bridge",
 			sWarningString, QMessageBox::Ok);
+		bWarningShown = true;
 	}
 
 }
@@ -282,9 +306,9 @@ int DzBridgeLodSettingsDialog::getSourceVertexCount()
 
 float DzBridgeLodSettingsDialog::calculateLodGenerationTime()
 {
-	int numLODs = m_wNumberOfLodComboBox->currentIndex();
+	int numLODs = m_wNumberOfLodComboBox->itemData(m_wNumberOfLodComboBox->currentIndex()).toInt();
 	int numVerts = getSourceVertexCount();
-	int lodMethod = m_wLodMethodComboBox->currentIndex();
+	int lodMethod = m_wLodMethodComboBox->itemData(m_wLodMethodComboBox->currentIndex()).toInt();
 	float fTimeScaleFactor = 0;
 	
 	// hardcoded estimate for Unreal Builtin LOD generator and Zen 3 AMD processor.

@@ -195,7 +195,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual int getELodMethodMax() { return 1; }
 		ELodMethod m_eLodMethod = ELodMethod::Undefined; // WARNING: May need to change this to type int to support additional values in subclasses, depending on compiler handling of enum
 		virtual ELodMethod getLodMethod() const { return m_eLodMethod; }
-		int m_nNumberOfLods = 2; // total number of LOD levels (including Base LOD)
+		int m_nNumberOfLods = 3; // total number of LOD levels (including Base LOD)
 		bool m_bCreateLodGroup = false;
 
 		virtual QString getActionGroup() const { return tr("Bridges"); }
