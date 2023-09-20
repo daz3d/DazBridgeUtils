@@ -500,7 +500,13 @@ QList<JointLinkInfo> DzBridgeMorphSelectionDialog::GetJointControlledMorphInfo(D
 	QString propName = property->getName();
 	QString propLabel = property->getLabel();
 	DzPresentation* presentation = property->getPresentation();
-	if (presentation && presentation->getType() == "Modifier/Corrective")
+	// DB 2023-Sep-20: 
+	// This code prematurely filters out morphs based on their categorization.  However, it assumes that the categorization
+	// is always correct.  Work-around to account for miscategorized DzMorphs with ERC Links: just filter specifically by
+	// ERC bone link presence and ignore presentation type altogether.
+	// TODO: consider filtering property Owner by DzMorph inheritance, but this may also prematurely exclude some JCMs
+//	if (presentation && presentation->getType() == "Modifier/Corrective")
+	if (true)
 	{
 		QString linkLabel;
 		QString linkDescription;
