@@ -2745,6 +2745,21 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 				dtuTextureName = TextureName = pngFilename;
 			}
 		}
+		if (m_bResizeTextures)
+		{
+			DzImageMgr* imageMgr = dzApp->getImageMgr();
+			QImage image = imageMgr->loadImage(TextureName);
+			if (image.size().width() > m_qTargetTextureSize.width() ||
+				image.size().height() > m_qTargetTextureSize.height())
+			{
+				image = image.scaled(m_qTargetTextureSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+				QString cleanedTempPath = dzApp->getTempPath().toLower().replace("\\", "/");
+				QString filestem = QFileInfo(TextureName).fileName();
+				QString resizedFilename = cleanedTempPath + "/" + filestem;
+				imageMgr->saveImage(resizedFilename, image);
+				dtuTextureName = TextureName = resizedFilename;
+			}
+		}
 		if (m_bExportAllTextures)
 		{
 			dtuTextureName = exportAssetWithDtu(TextureName, Node->getLabel() + "_" + Material->getName());

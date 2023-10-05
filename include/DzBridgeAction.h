@@ -153,6 +153,8 @@ namespace DzBridgeNameSpace
 		bool m_bConvertToPng = true;
 		bool m_bExportAllTextures = true;
 		bool m_bCombineDiffuseAndAlphaMaps = true;
+		bool m_bResizeTextures = true;
+		QSize m_qTargetTextureSize = QSize(4096, 4096);
 
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }
