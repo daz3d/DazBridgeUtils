@@ -16,6 +16,8 @@ class DzProgress;
 class DzGeometry;
 class DzFigure;
 class DzSkinBinding;
+class DzColorProperty;
+class DzNumericProeprty;
 
 class UnitTest_DzBridgeAction;
 
@@ -146,6 +148,11 @@ namespace DzBridgeNameSpace
 
 		// Morph Settings;
 		bool m_bMorphLockBoneTranslation;
+
+		// Texture Settings
+		bool m_bConvertToPng = true;
+		bool m_bExportAllTextures = true;
+		bool m_bCombineDiffuseAndAlphaMaps = true;
 
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }
@@ -295,6 +302,9 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE bool exportGeograftMorphs(DzNode *Node, QString destinationFolder);
 		Q_INVOKABLE bool prepareGeograftMorphsToExport(DzNode* Node, bool bZeroMorphForExport=false);
 
+		Q_INVOKABLE bool combineDiffuseAndAlphaMaps(DzMaterial* Material);
+		Q_INVOKABLE bool undoCombineDiffuseAndAlphaMaps();
+
 	private:
 		class MaterialGroupExportOrderMetaData
 		{
@@ -324,10 +334,20 @@ namespace DzBridgeNameSpace
 
 		};
 
+		class DiffuseAndAlphaMapsUndoData
+		{
+		public:
+			DzColorProperty* diffuseProperty;
+			DzNumericProperty* cutoutProperty;
+			QString colorMapName;
+			QString cutoutMapName;
+		};
+
 		// Undo data structures
 		QMap<DzMaterial*, QString> m_undoTable_DuplicateMaterialRename;
 		QMap<DzMaterial*, DzProperty*> m_undoTable_GenerateMissingNormalMap;
 		QMap<DzFigure*, QString> m_undoTable_DuplicateClothingRename;
+		QList<DiffuseAndAlphaMapsUndoData> m_undoList_CombineDiffuseAndAlphaMaps;
 
 		// NormalMap utility methods
 		double getPixelIntensity(const  QRgb& pixel);
