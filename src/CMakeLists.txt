@@ -35,6 +35,7 @@ set(LIB_SRCS
 	DzBridgeMorphSelectionDialog.cpp
 	DzBridgeSubdivisionDialog.cpp
 	DzBridgeDialog.cpp
+	ImageTools.cpp
 	${QA_SRCS}
 )
 

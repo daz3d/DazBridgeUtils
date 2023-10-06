@@ -155,6 +155,7 @@ namespace DzBridgeNameSpace
 		bool m_bCombineDiffuseAndAlphaMaps = true;
 		bool m_bResizeTextures = true;
 		QSize m_qTargetTextureSize = QSize(4096, 4096);
+		bool m_bMultiplyTextureValues = true;
 
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }
@@ -307,6 +308,10 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE bool combineDiffuseAndAlphaMaps(DzMaterial* Material);
 		Q_INVOKABLE bool undoCombineDiffuseAndAlphaMaps();
 
+		Q_INVOKABLE bool multiplyTextureValues(DzMaterial* Material);
+		Q_INVOKABLE bool undoMultiplyTextureValues();
+		Q_INVOKABLE bool deleteDir(QString folderPath);
+
 	private:
 		class MaterialGroupExportOrderMetaData
 		{
@@ -345,11 +350,20 @@ namespace DzBridgeNameSpace
 			QString cutoutMapName;
 		};
 
+		class MultiplyTextureValuesUndoData
+		{
+		public:
+			DzProperty* textureProperty;
+			QString textureMapName;
+			QVariant textureValue;
+		};
+
 		// Undo data structures
 		QMap<DzMaterial*, QString> m_undoTable_DuplicateMaterialRename;
 		QMap<DzMaterial*, DzProperty*> m_undoTable_GenerateMissingNormalMap;
 		QMap<DzFigure*, QString> m_undoTable_DuplicateClothingRename;
 		QList<DiffuseAndAlphaMapsUndoData> m_undoList_CombineDiffuseAndAlphaMaps;
+		QList<MultiplyTextureValuesUndoData> m_undoList_MultilpyTextureValues;
 
 		// NormalMap utility methods
 		double getPixelIntensity(const  QRgb& pixel);

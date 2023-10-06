@@ -63,6 +63,7 @@
 #include "DzBridgeMorphSelectionDialog.h"
 
 #include <qimage.h>
+#include "ImageTools.h"
 
 using namespace DzBridgeNameSpace;
 
@@ -223,6 +224,15 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 					if (m_bGenerateNormalMaps)
 						generateMissingNormalMap(material);
 
+					///////////////////
+					// Multiply Texture Values
+					// This should be performed before Combine Diffuse + Alpha so that the correctly modulated alpha map is added to diffuse
+					//////////////////
+					if (m_bMultiplyTextureValues)
+					{
+						multiplyTextureValues(material);
+					}
+
 					////////////////////
 					// Combine Diffuse and Alpha Maps
 					////////////////////
@@ -371,115 +381,6 @@ bool DzBridgeAction::generateMissingNormalMap(DzMaterial* material)
 
 	return bNormalMapWasGenerated;
 }
-
-bool DzBridgeAction::combineDiffuseAndAlphaMaps(DzMaterial* Material)
-{
-	DiffuseAndAlphaMapsUndoData undoData;
-
-	if (!Material) return false;
-
-	if (Material)
-	{
-		// DB 2023-Oct-5: Analyze Material, combine diffuse and alpha (cutout)
-		bool bHasCutout = false;
-		DzProperty* cutoutProp = Material->findProperty("Cutout Opacity");
-		DzImageProperty* imageProp = qobject_cast<DzImageProperty*>(cutoutProp);
-		DzNumericProperty* numericProp = qobject_cast<DzNumericProperty*>(cutoutProp);
-		QString sAlphaFilename = "";
-		if (imageProp)
-		{
-			sAlphaFilename = imageProp->getValue()->getFilename();
-			if (sAlphaFilename != "")
-			{
-				bHasCutout = true;
-			}
-		}
-		else if (numericProp)
-		{
-			if (numericProp->getMapValue())
-			{
-				sAlphaFilename = numericProp->getMapValue()->getFilename();
-				if (sAlphaFilename != "")
-				{
-					bHasCutout = true;
-				}
-			}
-		}
-		if (bHasCutout == false)
-		{
-			return false;
-		}
-
-		// get diffuse
-		DzProperty* diffuseProp = Material->findProperty("Diffuse Color");
-		DzColorProperty* colorProp = qobject_cast<DzColorProperty*>(diffuseProp);
-		QString sDiffuseFilename = "";
-		if (colorProp && colorProp->getMapValue())
-		{
-			sDiffuseFilename = colorProp->getMapValue()->getFilename();
-		}
-		QString sOriginalDiffuseFilename = sDiffuseFilename;
-
-		if (bHasCutout)
-		{
-			// load diffuse
-			if (sDiffuseFilename == "")
-				sDiffuseFilename = sAlphaFilename;
-			QImage diffuseImage = dzApp->getImageMgr()->loadImage(sDiffuseFilename);
-
-			// load alpha
-			QImage alphaImage = dzApp->getImageMgr()->loadImage(sAlphaFilename);
-
-			// combine diffuse and alpha
-			QImage outputImage;
-			outputImage = diffuseImage;
-			outputImage.convertToFormat(QImage::Format_ARGB32_Premultiplied);
-			if (outputImage.height() != 4096)
-			{
-				outputImage = outputImage.scaled(4096, 4096, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-			}
-			if (alphaImage.isGrayscale() == false)
-			{
-				alphaImage.convertToFormat(QImage::Format_Mono);
-			}
-			outputImage.setAlphaChannel(alphaImage);
-			outputImage.convertToFormat(QImage::Format_ARGB32_Premultiplied);
-
-			// save out file
-			QString tempPath = dzApp->getTempPath().replace("\\", "/");
-			QString stem = QFileInfo(sDiffuseFilename).fileName();
-			QString outfile = tempPath + "/" + stem + "+alpha.png";
-			dzApp->getImageMgr()->saveImage(outfile, outputImage);
-
-			// create Undo Data
-			DiffuseAndAlphaMapsUndoData undoData;
-			undoData.diffuseProperty = colorProp;
-			undoData.colorMapName = sOriginalDiffuseFilename;
-			undoData.cutoutProperty = numericProp;
-			undoData.cutoutMapName = sAlphaFilename;
-			m_undoList_CombineDiffuseAndAlphaMaps.append(undoData);
-
-			// assign to diffuse property and cutout property
-			colorProp->setMap(outfile);
-			numericProp->setMap(outfile);
-		}
-	}
-
-	return true;
-}
-
-
-bool DzBridgeAction::undoCombineDiffuseAndAlphaMaps()
-{
-	foreach (DiffuseAndAlphaMapsUndoData undoData, m_undoList_CombineDiffuseAndAlphaMaps)
-	{
-		undoData.diffuseProperty->setMap(undoData.colorMapName);
-		undoData.cutoutProperty->setMap(undoData.cutoutMapName);
-	}
-	m_undoList_CombineDiffuseAndAlphaMaps.clear();
-	return true;
-}
-
 
 /// <summary>
 /// Revert changes to materials made by GenerateMissingNormalMaps().
@@ -5457,6 +5358,256 @@ bool DzBridgeAction::isGeograft(const DzNode* pNode)
 		}
 	}
 	return false;
+}
+
+bool DzBridgeAction::combineDiffuseAndAlphaMaps(DzMaterial* Material)
+{
+	DiffuseAndAlphaMapsUndoData undoData;
+
+	if (!Material) return false;
+
+	if (Material)
+	{
+		// DB 2023-Oct-5: Analyze Material, combine diffuse and alpha (cutout)
+		bool bHasCutout = false;
+		DzProperty* cutoutProp = Material->findProperty("Cutout Opacity");
+		DzImageProperty* imageProp = qobject_cast<DzImageProperty*>(cutoutProp);
+		DzNumericProperty* numericProp = qobject_cast<DzNumericProperty*>(cutoutProp);
+		QString sAlphaFilename = "";
+		if (imageProp)
+		{
+			sAlphaFilename = imageProp->getValue()->getFilename();
+			if (sAlphaFilename != "")
+			{
+				bHasCutout = true;
+			}
+		}
+		else if (numericProp)
+		{
+			if (numericProp->getMapValue())
+			{
+				sAlphaFilename = numericProp->getMapValue()->getFilename();
+				if (sAlphaFilename != "")
+				{
+					bHasCutout = true;
+				}
+			}
+		}
+		if (bHasCutout == false)
+		{
+			return false;
+		}
+
+		// get diffuse
+		DzProperty* diffuseProp = Material->findProperty("Diffuse Color");
+		DzColorProperty* colorProp = qobject_cast<DzColorProperty*>(diffuseProp);
+		QString sDiffuseFilename = "";
+		if (colorProp && colorProp->getMapValue())
+		{
+			sDiffuseFilename = colorProp->getMapValue()->getFilename();
+		}
+		QString sOriginalDiffuseFilename = sDiffuseFilename;
+
+		if (bHasCutout)
+		{
+			// load diffuse
+			QImage diffuseImage;
+			if (sDiffuseFilename == "")
+			{
+				sDiffuseFilename = sAlphaFilename + "_EMPTY";
+				diffuseImage = dzApp->getImageMgr()->loadImage(sAlphaFilename);
+				multiplyImageByColorMultithreaded(diffuseImage, colorProp->getColorValue());
+			}
+			else
+			{
+				diffuseImage = dzApp->getImageMgr()->loadImage(sDiffuseFilename);
+			}
+
+			// load alpha
+			QImage alphaImage = dzApp->getImageMgr()->loadImage(sAlphaFilename);
+
+			// combine diffuse and alpha
+			QImage outputImage;
+			outputImage = diffuseImage;
+			outputImage.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+			if (outputImage.height() != 4096)
+			{
+				outputImage = outputImage.scaled(4096, 4096, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+			}
+			if (alphaImage.isGrayscale() == false)
+			{
+				alphaImage.convertToFormat(QImage::Format_Mono);
+			}
+			outputImage.setAlphaChannel(alphaImage);
+			outputImage.convertToFormat(QImage::Format_ARGB32_Premultiplied);
+
+			// save out file
+			QString tempPath = dzApp->getTempPath().replace("\\", "/");
+			QString stem = QFileInfo(sDiffuseFilename).fileName();
+			QString outfile = tempPath + "/" + stem + "+alpha.png";
+			dzApp->getImageMgr()->saveImage(outfile, outputImage);
+
+			// create Undo Data
+			DiffuseAndAlphaMapsUndoData undoData;
+			undoData.diffuseProperty = colorProp;
+			undoData.colorMapName = sOriginalDiffuseFilename;
+			undoData.cutoutProperty = numericProp;
+			undoData.cutoutMapName = sAlphaFilename;
+			m_undoList_CombineDiffuseAndAlphaMaps.append(undoData);
+
+			// assign to diffuse property and cutout property
+			colorProp->setMap(outfile);
+			numericProp->setMap(outfile);
+		}
+	}
+
+	return true;
+}
+
+bool DzBridgeAction::undoCombineDiffuseAndAlphaMaps()
+{
+	foreach(DiffuseAndAlphaMapsUndoData undoData, m_undoList_CombineDiffuseAndAlphaMaps)
+	{
+		undoData.diffuseProperty->setMap(undoData.colorMapName);
+		undoData.cutoutProperty->setMap(undoData.cutoutMapName);
+	}
+	m_undoList_CombineDiffuseAndAlphaMaps.clear();
+	return true;
+}
+
+bool DzBridgeAction::multiplyTextureValues(DzMaterial* material)
+{
+	if (!material) return false;
+
+	MultiplyTextureValuesUndoData undoData;
+
+	foreach(QObject *propertyObject, material->getPropertyList())
+	{
+		DzColorProperty* colorProperty = qobject_cast<DzColorProperty*>(propertyObject);
+		DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(propertyObject);
+
+
+		if (colorProperty && colorProperty->getMapValue())
+		{
+			// multiply value
+			QColor colorValue = colorProperty->getColorValue();
+			QString textureFilename = colorProperty->getMapValue()->getFilename();
+
+			if (colorValue != QColor(255, 255, 255) && textureFilename != "")
+			{
+				QImage image = dzApp->getImageMgr()->loadImage(textureFilename);
+
+				// multiply image
+				multiplyImageByColorMultithreaded(image, colorValue);
+
+				// save out file
+				QString tempPath = dzApp->getTempPath().replace("\\", "/");
+				QString stem = QFileInfo(textureFilename).fileName();
+				QString outfile = tempPath + "/" + stem + QString("_%1.png").arg( colorToHexString(colorValue) );
+				dzApp->getImageMgr()->saveImage(outfile, image);
+
+				// create undo record
+				undoData.textureProperty = colorProperty;
+				undoData.textureValue = colorValue.rgba();
+				undoData.textureMapName = textureFilename;
+
+				m_undoList_MultilpyTextureValues.append(undoData);
+
+				// modify property
+				colorProperty->setColorValue(QColor(255,255,255));
+				colorProperty->setMap(outfile);
+			}
+
+		}
+		else if (numericProperty && numericProperty->getMapValue())
+		{
+			// multiply value
+			double numericValue = numericProperty->getDoubleValue();
+			QString textureFilename = numericProperty->getMapValue()->getFilename();
+
+			if (numericValue != 1.0 && textureFilename != "")
+			{
+				QImage image = dzApp->getImageMgr()->loadImage(textureFilename);
+
+				// multiply image
+				multiplyImageByStrengthMultithreaded(image, numericValue);
+
+				// save out file
+				QString tempPath = dzApp->getTempPath().replace("\\", "/");
+				QString stem = QFileInfo(textureFilename).fileName();
+				QString outfile = tempPath + "/" + stem + QString("_%1.png").arg(numericValue);
+				dzApp->getImageMgr()->saveImage(outfile, image);
+
+
+				// create undo record
+				undoData.textureProperty = numericProperty;
+				undoData.textureValue = numericValue;
+				undoData.textureMapName = textureFilename;
+
+				m_undoList_MultilpyTextureValues.append(undoData);
+
+			}
+		}
+	}
+
+	return true;
+}
+
+bool DzBridgeAction::undoMultiplyTextureValues()
+{
+
+	foreach(MultiplyTextureValuesUndoData undoData, m_undoList_MultilpyTextureValues)
+	{
+		DzColorProperty* colorProperty = qobject_cast<DzColorProperty*>(undoData.textureProperty);
+		DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(undoData.textureProperty);
+
+		if (colorProperty)
+		{
+			// undo color multiply
+			QColor colorValue( undoData.textureValue.toInt() );
+			colorProperty->setColorValue(colorValue);
+			colorProperty->setMap(undoData.textureMapName);
+		}
+		else if (numericProperty)
+		{
+			// undo numeric multiply
+			double numericValue = undoData.textureValue.toDouble();
+			numericProperty->setDoubleValue(numericValue);
+			numericProperty->setMap(undoData.textureMapName);
+		}
+	}
+	m_undoList_MultilpyTextureValues.clear();
+
+	return true;
+}
+
+bool DzBridgeAction::deleteDir(QString folderPath)
+{
+	QDir qDir(folderPath);
+	QList<QString> aFolderPaths;
+
+	// Delete all files
+	foreach(QFileInfo fileInfo, QDir(folderPath).entryInfoList())
+	{
+		QString filePath = fileInfo.filePath();
+		if (fileInfo.fileName() == "." || fileInfo.fileName() == "..")
+			continue;
+		if (fileInfo.isDir())
+		{
+			aFolderPaths.push_front(filePath);
+			continue;
+		}
+		qDir.remove(filePath);
+	}
+
+	foreach(QString subFolderPath, aFolderPaths)
+	{
+		deleteDir(subFolderPath);
+	}
+
+	qDir.rmdir(folderPath);
+
+	return true;
 }
 
 #include "moc_DzBridgeAction.cpp"
