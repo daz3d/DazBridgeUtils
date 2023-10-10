@@ -27,6 +27,16 @@ namespace DzBridgeNameSpace
 	class DzBridgeDialog;
 	class DzBridgeMorphSelectionDialog;
 	class DzBridgeSubdivisionDialog;
+	class DzBridgeLodSettingsDialog;
+
+	struct LodInfo {
+		QString pregenerated_lodlevel_string = "";
+		int export_lodgroup_index = -1;
+		QString export_mesh_filename = "";
+		int quality_vertex = -1;
+		float quality_percent = -1.0f;
+		float threshold_screen_height = -1.0f;
+	};
 
 	/// <summary>
 	/// Abstract base class that manages exporting of assets to Target Software via FBX/DTU
@@ -58,11 +68,22 @@ namespace DzBridgeNameSpace
 		Q_PROPERTY(DzBasicDialog* wBridgeDialog READ getBridgeDialog WRITE setBridgeDialog)
 		Q_PROPERTY(DzBasicDialog* wSubdivisionDialog READ getSubdivisionDialog WRITE setSubdivisionDialog)
 		Q_PROPERTY(DzBasicDialog* wMorphSelectionDialog READ getMorphSelectionDialog WRITE setMorphSelectionDialog)
+		Q_PROPERTY(DzBasicDialog* wLodSettingsDialog READ getLodSettingsDialog WRITE setLodSettingsDialog)
+		Q_PROPERTY(bool bEnableLodGeneration READ getEnableLodGeneration WRITE setEnableLodGeneration)
+		Q_PROPERTY(int nLodMethodIndex READ getLodMethodIndex WRITE setLodMethod)
+		Q_PROPERTY(QString sLodMethod READ getLodMethodString WRITE setLodMethod)
+		Q_PROPERTY(int nNumberOfLods READ getNumberOfLods WRITE setNumberOfLods)
 
 	public:
 
 		DzBridgeAction(const QString& text = QString::null, const QString& desc = QString::null);
 		virtual ~DzBridgeAction();
+
+		// TODO: Refactor, current work-around is to make these pointers public but ideally the data should be
+		// separate from the GUI so that we don't need to manipulate the GUI to read data
+		Q_INVOKABLE DzBridgeDialog* getBridgeDialog();
+		Q_INVOKABLE DzBridgeSubdivisionDialog* getSubdivisionDialog();
+		Q_INVOKABLE DzBridgeMorphSelectionDialog* getMorphSelectionDialog();
 
 		Q_INVOKABLE void resetToDefaults();
 		Q_INVOKABLE QString cleanString(QString argString) { return argString.remove(QRegExp("[^A-Za-z0-9_]")); };
@@ -90,6 +111,21 @@ namespace DzBridgeNameSpace
 		// perform post-processing of Fbx after export
 		Q_INVOKABLE virtual bool postProcessFbx(QString fbxFilePath);
 
+		Q_INVOKABLE DzBasicDialog* getLodSettingsDialog() { return (DzBasicDialog*) m_wLodSettingsDialog; }
+		Q_INVOKABLE void setLodSettingsDialog(DzBasicDialog* arg) { m_wLodSettingsDialog = (DzBridgeLodSettingsDialog*) arg; }
+		Q_INVOKABLE bool getEnableLodGeneration() { return m_bEnableLodGeneration; }
+		Q_INVOKABLE void setEnableLodGeneration(bool arg) { m_bEnableLodGeneration = arg; }
+		Q_INVOKABLE int getLodMethodIndex() { return (int) m_eLodMethod; }
+		Q_INVOKABLE void setLodMethod(int arg);
+		Q_INVOKABLE QString getLodMethodString();
+		Q_INVOKABLE void setLodMethod(QString arg);
+		Q_INVOKABLE int getNumberOfLods() { return m_nNumberOfLods; }
+		Q_INVOKABLE void setNumberOfLods(int arg) { m_nNumberOfLods = arg; }
+
+		Q_INVOKABLE DzNode* getSelectedNode() { return m_pSelectedNode; }
+
+		QList<LodInfo*> m_aLodInfo;
+
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo
@@ -98,9 +134,10 @@ namespace DzBridgeNameSpace
 			DzNode* Child;
 		};
 
-		DzBridgeDialog* m_bridgeDialog;
-		DzBridgeSubdivisionDialog* m_subdivisionDialog;
-		DzBridgeMorphSelectionDialog* m_morphSelectionDialog;
+		DzBridgeDialog* m_bridgeDialog = nullptr;
+		DzBridgeSubdivisionDialog* m_subdivisionDialog = nullptr;
+		DzBridgeMorphSelectionDialog* m_morphSelectionDialog = nullptr;
+		DzBridgeLodSettingsDialog* m_wLodSettingsDialog = nullptr;
 
 		int m_nNonInteractiveMode;
 		QString m_sAssetName; // Exported Asset Name, may be separate from export filename
@@ -148,6 +185,20 @@ namespace DzBridgeNameSpace
 
 		// Morph Settings;
 		bool m_bMorphLockBoneTranslation;
+
+		// LOD generation settings
+		bool m_bEnableLodGeneration = false; // enable level-of-detail generation
+		enum ELodMethod {
+			Undefined = -1,
+			PreGenerated = 0,
+			Decimator = 1,
+		};
+		Q_INVOKABLE virtual int getELodMethodMin() { return 0; }
+		Q_INVOKABLE virtual int getELodMethodMax() { return 1; }
+		ELodMethod m_eLodMethod = ELodMethod::Undefined; // WARNING: May need to change this to type int to support additional values in subclasses, depending on compiler handling of enum
+		virtual ELodMethod getLodMethod() const { return m_eLodMethod; }
+		int m_nNumberOfLods = 3; // total number of LOD levels (including Base LOD)
+		bool m_bCreateLodGroup = false;
 
 		// Texture Settings
 		bool m_bConvertToPng = true;
@@ -229,11 +280,8 @@ namespace DzBridgeNameSpace
 		void unlockTranform(DzNode* NodeToUnlock);
 
 		// Getter/Setter methods
-		Q_INVOKABLE DzBridgeDialog* getBridgeDialog() { return m_bridgeDialog; }
 		Q_INVOKABLE bool setBridgeDialog(DzBasicDialog* arg_dlg);
-		Q_INVOKABLE DzBridgeSubdivisionDialog* getSubdivisionDialog() { return m_subdivisionDialog; }
 		Q_INVOKABLE bool setSubdivisionDialog(DzBasicDialog* arg_dlg);
-		Q_INVOKABLE DzBridgeMorphSelectionDialog* getMorphSelectionDialog() { return m_morphSelectionDialog; }
 		Q_INVOKABLE bool setMorphSelectionDialog(DzBasicDialog* arg_dlg);
 
 		Q_INVOKABLE QString getAssetType() { return this->m_sAssetType; };
@@ -304,6 +352,8 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE bool exportObj(QString filepath);
 		Q_INVOKABLE bool exportGeograftMorphs(DzNode *Node, QString destinationFolder);
 		Q_INVOKABLE bool prepareGeograftMorphsToExport(DzNode* Node, bool bZeroMorphForExport=false);
+
+		Q_INVOKABLE void writeAllLodSettings(DzJsonWriter& Writer);
 
 		Q_INVOKABLE bool combineDiffuseAndAlphaMaps(DzMaterial* Material);
 		Q_INVOKABLE bool undoCombineDiffuseAndAlphaMaps();

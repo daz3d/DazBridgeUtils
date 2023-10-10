@@ -89,6 +89,11 @@ DzBridgeAction::DzBridgeAction(const QString& text, const QString& desc) :
 	 m_bPostProcessFbx = true;
 	 m_bRemoveDuplicateGeografts = true;
 	 m_bExperimental_FbxPostProcessing = false;
+
+	 // LOD settings
+	 m_bEnableLodGeneration = false;
+	 m_bCreateLodGroup = false;
+
 }
 
 DzBridgeAction::~DzBridgeAction()
@@ -104,6 +109,8 @@ void DzBridgeAction::resetToDefaults()
 	m_EnableSubdivisions = false;
 	m_bShowFbxOptions = false;
 	m_bExportMaterialPropertiesCSV = false;
+	m_bEnableLodGeneration = false;
+	m_bCreateLodGroup = false;
 	resetArray_ControllersToDisconnect();
 
 	// Reset all dialog settings and script-exposed properties to Hardcoded Defaults
@@ -3392,6 +3399,10 @@ QMessageBox::Yes | QMessageBox::Cancel,
 	m_bAnimationApplyBoneScale = BridgeDialog->getAnimationApplyBoneScaleCheckBox()->isChecked();
 
 	m_bMorphLockBoneTranslation = BridgeDialog->getMorphLockBoneTranslationCheckBox()->isChecked();
+
+	// LOD settings
+	m_bEnableLodGeneration = BridgeDialog->getEnableLodCheckBox()->isChecked();
+
 	return true;
 }
 
@@ -3632,6 +3643,42 @@ QStringList DzBridgeAction::getActiveMorphs(DzNode* Node)
 	}
 
 	return newMorphList;
+}
+
+DzBridgeDialog* DzBridgeAction::getBridgeDialog() 
+{
+	if (m_bridgeDialog == nullptr)
+	{
+		DzMainWindow* mw = dzApp->getInterface();
+		if (!mw)
+		{
+			return nullptr;
+		}
+		m_bridgeDialog = new DzBridgeDialog(mw);
+		m_bridgeDialog->setBridgeActionObject(this);
+	}
+
+	return m_bridgeDialog;
+}
+
+DzBridgeSubdivisionDialog* DzBridgeAction::getSubdivisionDialog() 
+{ 
+	if (m_subdivisionDialog == nullptr)
+	{
+		m_subdivisionDialog = DzBridgeSubdivisionDialog::Get(this->getBridgeDialog());
+	}
+
+	return m_subdivisionDialog;
+}
+
+DzBridgeMorphSelectionDialog* DzBridgeAction::getMorphSelectionDialog() 
+{ 
+	if (m_morphSelectionDialog == nullptr)
+	{
+		m_morphSelectionDialog = DzBridgeMorphSelectionDialog::Get(this->getBridgeDialog());
+	}
+
+	return m_morphSelectionDialog;
 }
 
 bool DzBridgeAction::setBridgeDialog(DzBasicDialog* arg_dlg)
@@ -5366,6 +5413,88 @@ bool DzBridgeAction::isGeograft(const DzNode* pNode)
 		}
 	}
 	return false;
+}
+
+void DzBridgeAction::writeAllLodSettings(DzJsonWriter& writer)
+{
+	// Start LOD subsection
+	writer.startMemberObject("LOD Settings");
+
+	// Global LOD settings
+	writer.addMember("Generate LODs", m_bEnableLodGeneration);
+	int lod_method = (int)getLodMethod();
+	writer.addMember("LOD Method", lod_method);
+	writer.addMember("Number of LODs", m_nNumberOfLods);
+	writer.addMember("Use LODGroup", m_bCreateLodGroup);
+
+	// LOD Info array
+	writer.startMemberArray("LOD Info Array", true);
+	foreach(LodInfo * lodinfo, m_aLodInfo)
+	{
+		if (lodinfo)
+		{
+			writer.startObject(true);
+			writer.addMember("Quality Vertex", lodinfo->quality_vertex);
+			writer.addMember("Quality Percent", lodinfo->quality_percent);
+			writer.addMember("Threshold Screen Height", lodinfo->threshold_screen_height);
+			writer.finishObject();
+		}
+	}
+	writer.finishArray();
+
+	writer.finishObject();
+
+}
+
+void DzBridgeAction::setLodMethod(int arg)
+{
+	if (
+		(arg >= getELodMethodMin() ) && 
+		(arg <= getELodMethodMax() )
+		)
+	{
+		m_eLodMethod = (ELodMethod) arg;
+	}
+	else
+	{
+		dzApp->log("ERROR: DzBridgeAction::setLodMethod(): index out of range.");
+	}
+}
+
+QString DzBridgeAction::getLodMethodString()
+{
+	switch (m_eLodMethod)
+	{
+	case ELodMethod::PreGenerated:
+		return QString("Pregenerated");
+	case ELodMethod::Decimator:
+		return QString("Decimator");
+
+	default:
+	case ELodMethod::Undefined:
+		return QString("Undefined");
+	}
+}
+
+void DzBridgeAction::setLodMethod(QString arg)
+{
+	if (
+		(arg.toLower() == "pregenerated") ||
+		(arg.toLower() == "pre-generated")
+		)
+	{
+		m_eLodMethod = ELodMethod::PreGenerated;
+	}
+	else if (arg.toLower().contains("decimator"))
+	{
+		m_eLodMethod = ELodMethod::Decimator;
+	}
+	else if (arg.toLower() == "undefined")
+	{
+		m_eLodMethod = ELodMethod::Undefined;
+	}
+
+	return;
 }
 
 bool DzBridgeAction::combineDiffuseAndAlphaMaps(DzMaterial* Material)
