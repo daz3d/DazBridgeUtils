@@ -3356,7 +3356,18 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 	if (m_nNonInteractiveMode == 0)
 	{
 		// TODO: consider removing once findData( ) method above is completely implemented
-		m_sAssetType = cleanString(BridgeDialog->getAssetTypeCombo()->currentText());
+		//m_sAssetType = cleanString(BridgeDialog->getAssetTypeCombo()->currentText());
+		// TEMP WORKAROUND FOR NEW ASSET TYPES
+		QComboBox* wAssetCombo = BridgeDialog->getAssetTypeCombo();
+		int nIndex = wAssetCombo->currentIndex();
+		if (wAssetCombo->itemData(nIndex).isNull())
+		{
+			m_sAssetType = cleanString(wAssetCombo->currentText());
+		}
+		else
+		{
+			m_sAssetType = cleanString(wAssetCombo->itemData(nIndex).toString());
+		}
 
 		m_bEnableMorphs = BridgeDialog->getMorphsEnabledCheckBox()->isChecked();
 		m_sMorphSelectionRule = BridgeDialog->GetMorphString();
