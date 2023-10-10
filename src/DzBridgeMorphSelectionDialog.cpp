@@ -56,6 +56,25 @@ using namespace DzBridgeNameSpace;
 
 CPP_Export DzBridgeMorphSelectionDialog* DzBridgeMorphSelectionDialog::singleton = nullptr;
 
+DzBridgeMorphSelectionDialog* DzBridgeMorphSelectionDialog::Get(QWidget* Parent)
+{
+	if (singleton == nullptr)
+	{
+		// Crash fix
+		if (dzApp->isClosing())
+		{
+			dzApp->log("WARNING: DzBridgeMorphSelectionDialog::Get() called during Daz Studio shutdown.");
+			return nullptr;
+		}
+		singleton = new DzBridgeMorphSelectionDialog(Parent);
+	}
+	else
+	{
+		singleton->PrepareDialog();
+	}
+	return singleton;
+}
+
 // For sorting the lists
 class SortingListItem : public QListWidgetItem {
 
@@ -1478,6 +1497,5 @@ void DzBridgeMorphSelectionDialog::SetAllowMorphDoubleDippingVisible(bool bVisib
 	allowMorphDoubleDippingCheckBox->setVisible(bVisible);
 	update();
 }
-
 
 #include "moc_DzBridgeMorphSelectionDialog.cpp"

@@ -74,18 +74,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE void PrepareDialog();
 
 		// Singleton access
-		Q_INVOKABLE static DzBridgeMorphSelectionDialog* Get(QWidget* Parent)
-		{
-			if (singleton == nullptr)
-			{
-				singleton = new DzBridgeMorphSelectionDialog(Parent);
-			}
-			else
-			{
-				singleton->PrepareDialog();
-			}
-			return singleton;
-		}
+		Q_INVOKABLE static DzBridgeMorphSelectionDialog* Get(QWidget* Parent);
 
 		// Get the morph string (aka m_morphsToExport) in the format for the Daz FBX Export
 		Q_INVOKABLE QString GetMorphString();
