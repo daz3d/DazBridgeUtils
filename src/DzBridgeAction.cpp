@@ -195,6 +195,7 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 	QList<QString> existingMaterialNameList;
 	for (int i = 0; i < nodeJobList.length(); i++)
 	{
+		preProcessProgress.step();
 		DzNode *node = nodeJobList[i];
 		DzObject* object = node->getObject();
 		DzShape* shape = object ? object->getCurrentShape() : NULL;
@@ -208,6 +209,7 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 					//////////////////
 					// Rename Duplicate Material
 					/////////////////
+					preProcessProgress.setInfo("Renaming Duplicate Materials: " + material->getLabel());
 					renameDuplicateMaterial(material, &existingMaterialNameList);
 
 					//////////////////
@@ -215,6 +217,7 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 					/////////////////
 					if (m_sAssetType == "SkeletalMesh")
 					{
+						preProcessProgress.setInfo("Renaming Duplicate Clothing...");
 						renameDuplicateClothing();
 					}
 
@@ -222,7 +225,10 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 					// Generate Missing Normal Maps
 					/////////////////
 					if (m_bGenerateNormalMaps)
+					{
+						preProcessProgress.setInfo("Generating Missing Normal Maps: " + material->getLabel());
 						generateMissingNormalMap(material);
+					}
 
 					///////////////////
 					// Multiply Texture Values
@@ -230,6 +236,7 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 					//////////////////
 					if (m_bMultiplyTextureValues)
 					{
+						preProcessProgress.setInfo("Multiplying Texture Values: " + material->getLabel());
 						multiplyTextureValues(material);
 					}
 
@@ -238,6 +245,7 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 					////////////////////
 					if (m_bCombineDiffuseAndAlphaMaps)
 					{
+						preProcessProgress.setInfo("Combining Diffuse and Alpha Maps: " + material->getLabel());
 						combineDiffuseAndAlphaMaps(material);
 					}
 				}
