@@ -5418,11 +5418,14 @@ bool DzBridgeAction::combineDiffuseAndAlphaMaps(DzMaterial* Material)
 
 		if (bHasCutout)
 		{
+			QString stemDiffuse = QFileInfo(sDiffuseFilename).fileName();
+			QString stemAlpha = QFileInfo(sAlphaFilename).fileName();
+
 			// load diffuse
 			QImage diffuseImage;
 			if (sDiffuseFilename == "")
 			{
-				sDiffuseFilename = sAlphaFilename + "_EMPTY";
+				stemDiffuse = "EMPTY";
 				diffuseImage = dzApp->getImageMgr()->loadImage(sAlphaFilename);
 				multiplyImageByColorMultithreaded(diffuseImage, colorProp->getColorValue());
 			}
@@ -5434,25 +5437,38 @@ bool DzBridgeAction::combineDiffuseAndAlphaMaps(DzMaterial* Material)
 			// load alpha
 			QImage alphaImage = dzApp->getImageMgr()->loadImage(sAlphaFilename);
 
-			// combine diffuse and alpha
+			// prepare output image
 			QImage outputImage;
 			outputImage = diffuseImage;
 			outputImage.convertToFormat(QImage::Format_ARGB32_Premultiplied);
-			if (outputImage.height() != 4096)
+
+			// Resize Diffuse and Alpha
+			if (outputImage.height() != alphaImage.height() ||
+				outputImage.width() != alphaImage.width())
 			{
-				outputImage = outputImage.scaled(4096, 4096, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+				// scale diffuse to power of 2
+				if (outputImage.height() != 4096)
+				{
+					outputImage = outputImage.scaled(4096, 4096, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+				}
+
+				// scale alpha to size of diffuse
+				int w = outputImage.width();
+				int h = outputImage.height();
+				alphaImage = alphaImage.scaled(w, h, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+
+				if (alphaImage.isGrayscale() == false)
+				{
+					alphaImage.convertToFormat(QImage::Format_Mono);
+				}
 			}
-			if (alphaImage.isGrayscale() == false)
-			{
-				alphaImage.convertToFormat(QImage::Format_Mono);
-			}
+			// combine diffuse and alpha
 			outputImage.setAlphaChannel(alphaImage);
 			outputImage.convertToFormat(QImage::Format_ARGB32_Premultiplied);
 
 			// save out file
 			QString tempPath = dzApp->getTempPath().replace("\\", "/");
-			QString stem = QFileInfo(sDiffuseFilename).fileName();
-			QString outfile = tempPath + "/" + stem + "+alpha.png";
+			QString outfile = tempPath + "/" + stemDiffuse + "+alpha_"+ stemAlpha + ".png";
 			dzApp->getImageMgr()->saveImage(outfile, outputImage);
 
 			// create Undo Data
@@ -5545,7 +5561,6 @@ bool DzBridgeAction::multiplyTextureValues(DzMaterial* material)
 				QString stem = QFileInfo(textureFilename).fileName();
 				QString outfile = tempPath + "/" + stem + QString("_%1.png").arg(numericValue);
 				dzApp->getImageMgr()->saveImage(outfile, image);
-
 
 				// create undo record
 				undoData.textureProperty = numericProperty;
