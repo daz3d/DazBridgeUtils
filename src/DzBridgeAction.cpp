@@ -5519,8 +5519,14 @@ bool DzBridgeAction::combineDiffuseAndAlphaMaps(DzMaterial* Material)
 		// DB 2023-Oct-5: Analyze Material, combine diffuse and alpha (cutout)
 		bool bHasCutout = false;
 		DzProperty* cutoutProp = Material->findProperty("Cutout Opacity");
+		DzProperty* opacityStrengthProp = Material->findProperty("Opacity Strength");
 		DzImageProperty* imageProp = qobject_cast<DzImageProperty*>(cutoutProp);
 		DzNumericProperty* numericProp = qobject_cast<DzNumericProperty*>(cutoutProp);
+		if (!cutoutProp && opacityStrengthProp)
+		{
+			imageProp = qobject_cast<DzImageProperty*>(opacityStrengthProp);
+			numericProp = qobject_cast<DzNumericProperty*>(opacityStrengthProp);
+		}
 		QString sAlphaFilename = "";
 		if (imageProp)
 		{
