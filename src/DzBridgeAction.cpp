@@ -3386,7 +3386,7 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 	// Check for irreversible operations, warn user and give opportunity to cancel
 	if (m_bEnableMorphs)
 	{
-		if (checkForIrreversibleOperations_in_disconnectOverrideControllers() == true)
+		if (checkForIrreversibleOperations_in_disconnectOverrideControllers() == true && m_nNonInteractiveMode == 0)
 		{
 			// warn user
 			auto userChoice = QMessageBox::question(0, "Daz Bridge",
