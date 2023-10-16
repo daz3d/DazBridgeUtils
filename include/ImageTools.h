@@ -84,3 +84,5 @@ private:
 void multiplyImageByColorMultithreaded(QImage& image, QColor color);
 void multiplyImageByStrengthMultithreaded(QImage& image, double strength);
 QString colorToHexString(const QColor& color);
+bool isPowerOfTwo(int n);
+int nearestPowerOfTwo(int n);

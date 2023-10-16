@@ -1,5 +1,44 @@
 #include "ImageTools.h"
 
+
+// Bitwise check if number is a power of two
+bool isPowerOfTwo(int n)
+{
+    // must be positive
+    if (n <= 0) return false;
+   
+    // bitwise AND of n with n-1
+    int bitwiseCalculation = n & (n-1);
+    
+    // if no other bits are set to 1, then n is power of 2
+    if (bitwiseCalculation == 0) return true;
+
+    // otherwise return false
+    return false;
+}
+
+// Bitwise function to find the nearest power of two
+// NOTE: will fail in edge case were n is equal or greater than the largest power of 2 that can be held by an int
+int nearestPowerOfTwo(int n)
+{
+    // must be positive
+    if (n < 1) return 0;
+
+    // iterate through each bit position to generate a power of 2,
+    // stop when power of 2 is greater than n
+    // linear time dependent upon the number of bits in n (aka, fixed iterations limited to the bit-length of an int)
+    int power = 1;
+    while (power < n) {
+        power <<= 1;
+    }
+
+    // calculate the previous power of 2
+    int prevPower = power >> 1;
+    
+    // return the smallest difference
+    return (power - n) < (n - prevPower) ? power : prevPower;
+}
+
 void multiplyImageByColorMultithreaded(QImage& image, QColor color)
 {
 	int height = image.height();
