@@ -1,4 +1,19 @@
+#define USE_DAZ_LOG 1
+
 #include "ImageTools.h"
+
+#if USE_DAZ_LOG
+#include <dzapp.h>	
+#endif
+
+void log(QString message)
+{
+#if USE_DAZ_LOG
+	dzApp->log(message);
+#else
+	printf(message.toLocal8Bit().constData());
+#endif
+}
 
 
 // Bitwise check if number is a power of two
@@ -41,7 +56,18 @@ int nearestPowerOfTwo(int n)
 
 void multiplyImageByColorMultithreaded(QImage& image, QColor color)
 {
+	// Crash Check
+	int width = image.width();
 	int height = image.height();
+	int lineLength = image.bytesPerLine();
+	QImage::Format pixelFormat = image.format();
+	if (pixelFormat != QImage::Format_ARGB32 &&
+		pixelFormat != QImage::Format_RGB32)
+	{
+		log(QString("WARNING: multiplyImageByColorMultithreaded(): incompatible pixel format: %1, converting to ARGB32...").arg(pixelFormat));
+		image = image.convertToFormat(QImage::Format_ARGB32);
+	}
+
 	int numThreads = QThreadPool::globalInstance()->maxThreadCount();
 	int step = height / numThreads;
 
@@ -49,7 +75,7 @@ void multiplyImageByColorMultithreaded(QImage& image, QColor color)
 	{
 		int startY = i * step;
 		int endY = (i == numThreads - 1) ? height : startY + step;
-		MultiplyImageByColorTask* task = new MultiplyImageByColorTask(&image, color, startY, endY);
+		MultiplyImageByColorTask* task = new MultiplyImageByColorTask(&image, color, startY, endY, width, height, pixelFormat);
 		QThreadPool::globalInstance()->start(task);
 	}
 
@@ -58,7 +84,18 @@ void multiplyImageByColorMultithreaded(QImage& image, QColor color)
 
 void multiplyImageByStrengthMultithreaded(QImage& image, double strength)
 {
+	// Crash Check
+	int width = image.width();
 	int height = image.height();
+	int lineLength = image.bytesPerLine();
+	QImage::Format pixelFormat = image.format();
+	if (pixelFormat != QImage::Format_ARGB32 &&
+		pixelFormat != QImage::Format_RGB32)
+	{
+		log(QString("WARNING: multiplyImageByStrengthMultithreaded(): incompatible pixel format: %1, converting to ARGB32...").arg(pixelFormat));
+		image = image.convertToFormat(QImage::Format_ARGB32);
+	}
+
 	int numThreads = QThreadPool::globalInstance()->maxThreadCount();
 	int step = height / numThreads;
 
@@ -66,7 +103,7 @@ void multiplyImageByStrengthMultithreaded(QImage& image, double strength)
 	{
 		int startY = i * step;
 		int endY = (i == numThreads - 1) ? height : startY + step;
-		MultiplyImageByStrengthTask* task = new MultiplyImageByStrengthTask(&image, strength, startY, endY);
+		MultiplyImageByStrengthTask* task = new MultiplyImageByStrengthTask(&image, strength, startY, endY, width, height, pixelFormat);
 		QThreadPool::globalInstance()->start(task);
 	}
 

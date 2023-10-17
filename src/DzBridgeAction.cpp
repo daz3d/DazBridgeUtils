@@ -5692,14 +5692,15 @@ bool DzBridgeAction::multiplyTextureValues(DzMaterial* material)
 			if (colorValue != QColor(255, 255, 255) && textureFilename != "")
 			{
 				QImage image = dzApp->getImageMgr()->loadImage(textureFilename);
+				QString tempPath = dzApp->getTempPath().replace("\\", "/");
+				QString stem = QFileInfo(textureFilename).fileName();
+				QString outfile = tempPath + "/" + stem + QString("_%1.png").arg(colorToHexString(colorValue));
 
 				// multiply image
+				dzApp->log(QString("DazBridge: Baking material strength into image: %1").arg(outfile));
 				multiplyImageByColorMultithreaded(image, colorValue);
 
 				// save out file
-				QString tempPath = dzApp->getTempPath().replace("\\", "/");
-				QString stem = QFileInfo(textureFilename).fileName();
-				QString outfile = tempPath + "/" + stem + QString("_%1.png").arg( colorToHexString(colorValue) );
 				dzApp->getImageMgr()->saveImage(outfile, image);
 
 				// create undo record
@@ -5724,14 +5725,15 @@ bool DzBridgeAction::multiplyTextureValues(DzMaterial* material)
 			if (numericValue != 1.0 && textureFilename != "")
 			{
 				QImage image = dzApp->getImageMgr()->loadImage(textureFilename);
-
-				// multiply image
-				multiplyImageByStrengthMultithreaded(image, numericValue);
-
-				// save out file
 				QString tempPath = dzApp->getTempPath().replace("\\", "/");
 				QString stem = QFileInfo(textureFilename).fileName();
 				QString outfile = tempPath + "/" + stem + QString("_%1.png").arg(numericValue);
+
+				// multiply image
+				dzApp->log(QString("DazBridge: Baking material strength into image: %1").arg(outfile));
+				multiplyImageByStrengthMultithreaded(image, numericValue);
+
+				// save out file
 				dzApp->getImageMgr()->saveImage(outfile, image);
 
 				// create undo record

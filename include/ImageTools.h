@@ -8,8 +8,8 @@
 class MultiplyImageByColorTask : public QRunnable
 {
 public:
-	MultiplyImageByColorTask(QImage* image, QColor color, int startY, int endY)
-		: m_image(image), m_color(color), m_startY(startY), m_endY(endY)
+	MultiplyImageByColorTask(QImage* image, QColor color, int startY, int endY, int debug_width, int debug_height, QImage::Format debug_format)
+		: m_image(image), m_color(color), m_startY(startY), m_endY(endY), m_expectedWidth(debug_width), m_expectedHeight(debug_height), m_pixelFormat(debug_format)
 	{
 	}
 
@@ -41,13 +41,17 @@ private:
 	QColor m_color;
 	int m_startY;
 	int m_endY;
+	// Crash Checks
+	int m_expectedWidth;
+	int m_expectedHeight;
+	QImage::Format m_pixelFormat;
 };
 
 class MultiplyImageByStrengthTask : public QRunnable
 {
 public:
-	MultiplyImageByStrengthTask(QImage* image, double strength, int startY, int endY)
-		: m_image(image), m_strength(strength), m_startY(startY), m_endY(endY)
+	MultiplyImageByStrengthTask(QImage* image, double strength, int startY, int endY, int debug_width, int debug_height, QImage::Format debug_format)
+		: m_image(image), m_strength(strength), m_startY(startY), m_endY(endY), m_expectedWidth(debug_width), m_expectedHeight(debug_height), m_pixelFormat(debug_format)
 	{
 	}
 
@@ -79,6 +83,10 @@ private:
 	double m_strength;
 	int m_startY;
 	int m_endY;
+	// Crash Checks
+	int m_expectedWidth;
+	int m_expectedHeight;
+	QImage::Format m_pixelFormat;
 };
 
 void multiplyImageByColorMultithreaded(QImage& image, QColor color);
