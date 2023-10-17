@@ -272,6 +272,7 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 		}
 	}
 
+    preProcessProgress.setInfo("DazBridge: Pre-Processing Completed.");
 	preProcessProgress.finish();
 
 	return true;
@@ -404,6 +405,8 @@ bool DzBridgeAction::generateMissingNormalMap(DzMaterial* material)
 /// <returns>true if the undo process completed successfully.</returns>
 bool DzBridgeAction::undoGenerateMissingNormalMaps()
 {
+    DzProgress::setCurrentInfo("Daz Bridge: Undoing Missing Normal Map Generation...");
+
 	QMap<DzMaterial*, DzProperty*>::iterator iter;
 	for (iter = m_undoTable_GenerateMissingNormalMap.begin(); iter != m_undoTable_GenerateMissingNormalMap.end(); ++iter)
 	{
@@ -421,6 +424,8 @@ bool DzBridgeAction::undoGenerateMissingNormalMaps()
 		}
 	}
 	m_undoTable_GenerateMissingNormalMap.clear();
+
+    DzProgress::setCurrentInfo("Daz Bridge: Undo Missing Normal Map Generation Complete.");
 
 	return true;
 }
@@ -605,6 +610,8 @@ bool DzBridgeAction::isHeightMapPresent(DzMaterial* material)
 /// <returns>true if all undo procedures are successful</returns>
 bool DzBridgeAction::undoPreProcessScene()
 {
+    DzProgress::setCurrentInfo("Daz Bridge: Undoing Export Processing...");
+    
 	bool bResult = true;
 
 	if (undoRenameDuplicateMaterials() == false)
@@ -624,7 +631,9 @@ bool DzBridgeAction::undoPreProcessScene()
 		bResult = false;
 	}
 
-	return bResult;
+    DzProgress::setCurrentInfo("Daz Bridge: Undo Export Processing Complete.");
+
+    return bResult;
 }
 
 /// <summary>
@@ -661,15 +670,18 @@ bool DzBridgeAction::renameDuplicateMaterial(DzMaterial *material, QList<QString
 /// <returns>true if successful</returns>
 bool DzBridgeAction::undoRenameDuplicateMaterials()
 {
-	QMap<DzMaterial*, QString>::iterator iter;
+    DzProgress::setCurrentInfo("Daz Bridge: Undoing Duplicate Material Renaming...");
+
+    QMap<DzMaterial*, QString>::iterator iter;
 	for (iter = m_undoTable_DuplicateMaterialRename.begin(); iter != m_undoTable_DuplicateMaterialRename.end(); ++iter)
 	{
 		iter.key()->setName(iter.value());
 	}
 	m_undoTable_DuplicateMaterialRename.clear();
 
-	return true;
+    DzProgress::setCurrentInfo("Daz Bridge: Undo Duplicate Material Renaming Complete.");
 
+    return true;
 }
 
 /// <summary>
@@ -743,7 +755,9 @@ bool DzBridgeAction::undoRenameDuplicateClothing()
 /// <param name="exportProgress">if null, exportHD will handle UI progress updates</param>
 void DzBridgeAction::exportHD(DzProgress* exportProgress)
 {
-	if (m_subdivisionDialog == nullptr)
+    DzProgress::setCurrentInfo("Preparing asset for export via Daz Bridge Library...");
+
+    if (m_subdivisionDialog == nullptr)
 		return;
 
 	// Update the dialog so subdivision locks later find all the meshes
@@ -770,7 +784,7 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 	{
 		if (exportProgress)
 		{
-			exportProgress->setInfo(tr("Exporting Base Mesh..."));
+			exportProgress->setInfo(tr("Exporting Asset as Base Mesh..."));
 			exportProgress->step();
 			QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 		}
@@ -791,9 +805,9 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 	{
 		exportProgress->step();
 		if (m_EnableSubdivisions)
-			exportProgress->setInfo(tr("Exporting HD Mesh..."));
+			exportProgress->setInfo(tr("Exporting Asset as HD Mesh..."));
 		else
-			exportProgress->setInfo(tr("Exporting Mesh..."));
+			exportProgress->setInfo(tr("Exporting Asset..."));
 		QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 	}
 	m_subdivisionDialog->LockSubdivisionProperties(m_EnableSubdivisions);
@@ -803,13 +817,13 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 	if (exportProgress)
 	{
 		exportProgress->step();
-		exportProgress->setInfo(tr("Mesh exported."));
+		exportProgress->setInfo(tr("Exporting Asset: Completed."));
 	}
 
 	// Export any geograft morphs if exist
 	if (m_bEnableMorphs)
 	{
-		if (exportGeograftMorphs(dzScene->getPrimarySelection(), m_sDestinationPath))
+        if (exportGeograftMorphs(dzScene->getPrimarySelection(), m_sDestinationPath))
 		{
 			exportProgress->step();
 			exportProgress->setInfo(tr("Geograft morphs exported."));
@@ -821,7 +835,7 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 		if (exportProgress)
 		{
 			exportProgress->step();
-			exportProgress->setInfo(tr("Fixing weightmaps on HD Mesh..."));
+			exportProgress->setInfo(tr("Fixing bone weightmaps on HD Mesh..."));
 			QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 		}
 
@@ -830,7 +844,7 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 		QString BaseCharacterFBX = this->m_sDestinationFBX;
 		BaseCharacterFBX.replace(".fbx", "_base.fbx");
 		// DB 2021-10-02: Upgrade HD
-		if (upgradeToHD(BaseCharacterFBX, m_sDestinationFBX, m_sDestinationFBX, pLookupTable) == false)
+        if (upgradeToHD(BaseCharacterFBX, m_sDestinationFBX, m_sDestinationFBX, pLookupTable) == false)
 		{
 			if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, tr("Error"),
 				tr("There was an error during the Subdivision Surface refinement operation, the exported Daz model may not work correctly."), QMessageBox::Ok);
@@ -934,7 +948,8 @@ void DzBridgeAction::exportAsset()
 			Node->setWSTransform(DzVec3(0.0f, 0.0f, 0.0f), DzQuat(), DzMatrix3(true));
 
 			// Export
-			exportNode(Node);
+            DzProgress::setCurrentInfo("Environment Export: Exporting Node: " + Node->getLabel());
+            exportNode(Node);
 
 			// Put the item back where it was
 			Node->setWSTransform(Location, Rotation, Scale);
@@ -1033,6 +1048,7 @@ void DzBridgeAction::exportAsset()
 		dzScene->setAnimRange(DzTimeRange(0, poseIndex * dzScene->getTimeStep()));
 		dzScene->setPlayRange(DzTimeRange(0, poseIndex * dzScene->getTimeStep()));
 
+        DzProgress::setCurrentInfo("Pose Export: Exporting Selection: " + Selection->getLabel());
 		exportNode(Selection);
 	}
 	else if (m_sAssetType == "SkeletalMesh")
@@ -1044,10 +1060,12 @@ void DzBridgeAction::exportAsset()
 			{
 				exportJCMDualQuatDiff();
 			}
+            DzProgress::setCurrentInfo("SkeletalMesh Export: Disconnecting Override Controllers... ");
 			DisconnectedModifiers = disconnectOverrideControllers();
 		}
 		DzNode* Selection = dzScene->getPrimarySelection();
-		exportNode(Selection);
+        DzProgress::setCurrentInfo("SkeletalMesh Export: Exporting Selection: " + Selection->getLabel());
+        exportNode(Selection);
 		if (m_bEnableMorphs)
 		{
 			reconnectOverrideControllers(DisconnectedModifiers);
@@ -1056,6 +1074,7 @@ void DzBridgeAction::exportAsset()
 	else
 	{
 		DzNode* Selection = dzScene->getPrimarySelection();
+        DzProgress::setCurrentInfo("SkeletalMesh Export: Exporting Selection: " + Selection->getLabel());
 		exportNode(Selection);
 	}
 }
@@ -5638,13 +5657,18 @@ bool DzBridgeAction::combineDiffuseAndAlphaMaps(DzMaterial* Material)
 
 bool DzBridgeAction::undoCombineDiffuseAndAlphaMaps()
 {
+    DzProgress::setCurrentInfo("Daz Bridge: Undoing Combine Diffuse and Alpha Maps...");
+                
 	foreach(DiffuseAndAlphaMapsUndoData undoData, m_undoList_CombineDiffuseAndAlphaMaps)
 	{
 		undoData.diffuseProperty->setMap(undoData.colorMapName);
 		undoData.cutoutProperty->setMap(undoData.cutoutMapName);
 	}
 	m_undoList_CombineDiffuseAndAlphaMaps.clear();
-	return true;
+
+    DzProgress::setCurrentInfo("Daz Bridge: Undo Combine Diffuse and Alpha Maps Complete.");
+
+    return true;
 }
 
 bool DzBridgeAction::multiplyTextureValues(DzMaterial* material)
