@@ -201,12 +201,12 @@ namespace DzBridgeNameSpace
 		bool m_bCreateLodGroup = false;
 
 		// Texture Settings
-		bool m_bConvertToPng = true;
-		bool m_bExportAllTextures = true;
-		bool m_bCombineDiffuseAndAlphaMaps = true;
-		bool m_bResizeTextures = true;
+		bool m_bConvertToPng = false;
+		bool m_bExportAllTextures = false;
+		bool m_bCombineDiffuseAndAlphaMaps = false;
+		bool m_bResizeTextures = false;
 		QSize m_qTargetTextureSize = QSize(4096, 4096);
-		bool m_bMultiplyTextureValues = true;
+		bool m_bMultiplyTextureValues = false;
 
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }
