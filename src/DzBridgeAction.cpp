@@ -2412,6 +2412,8 @@ QString DzBridgeAction::exportAssetWithDtu(QString sFilename, QString sAssetMate
 
 }
 
+// TODO: This method will fail because uncompressed textures of the same dimension
+// will have the same file size.  Instead, must use a file content hash function.
 QString DzBridgeAction::makeUniqueFilename(QString sFilename)
 {
 	if (QFileInfo(sFilename).exists() != true)
@@ -2675,9 +2677,10 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 	if (TextureName != "")
 	{
 		// DB 2023-Oct-5: Save to PNG, Export all Textures
-		if (m_bConvertToPng)
+		if (m_bConvertToPng || m_bConvertToJpg)
 		{
-			if (TextureName.endsWith(".png", Qt::CaseInsensitive) == false && 
+			if ( m_bConvertToJpg || 
+				TextureName.endsWith(".png", Qt::CaseInsensitive) == false && 
 				TextureName.endsWith(".jpg", Qt::CaseInsensitive) == false &&
 				TextureName.endsWith(".jpeg", Qt::CaseInsensitive) == false)
 			{
@@ -2687,7 +2690,15 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 				QString cleanedTempPath = dzApp->getTempPath().toLower().replace("\\", "/");
 				QString filestem = QFileInfo(TextureName).fileName();
 				QString pngFilename = cleanedTempPath + "/" + filestem + ".png";
-				imageMgr->saveImage(pngFilename, image);
+				if (m_bConvertToJpg)
+				{
+					pngFilename = cleanedTempPath + "/" + filestem + ".jpg";
+					image.save(pngFilename, "jpg", 95);
+				}
+				else
+				{
+					imageMgr->saveImage(pngFilename, image);
+				}
 				dtuTextureName = TextureName = pngFilename;
 			}
 		}

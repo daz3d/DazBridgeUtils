@@ -202,6 +202,7 @@ namespace DzBridgeNameSpace
 
 		// Texture Settings
 		bool m_bConvertToPng = false;
+		bool m_bConvertToJpg = false; // m_bConvertToJpg will override m_bConvertToPng
 		bool m_bExportAllTextures = false;
 		bool m_bCombineDiffuseAndAlphaMaps = false;
 		bool m_bResizeTextures = false;
