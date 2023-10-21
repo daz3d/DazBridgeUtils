@@ -2375,6 +2375,17 @@ QString DzBridgeAction::exportAssetWithDtu(QString sFilename, QString sAssetMate
 
 	QString exportPath = this->m_sRootFolder.replace("\\","/") + "/" + this->m_sExportSubfolder.replace("\\", "/");
 	QString fileStem = QFileInfo(sFilename).fileName();
+	// DB 2023-Oct-20: FIX for non-unique filenames
+	if (isTemporaryFile(sFilename) == false)
+	{
+		QStringList filePathArray = cleanedFilename.replace(" ", "").split("/");
+		int len = filePathArray.count();
+		for (int i = 2; i < 5; i++)
+		{
+			if (i > len) break;
+			fileStem = filePathArray[len - i] + "_" + fileStem;
+		}
+	}
 
 	exportPath += "/ExportTextures/";
 	QDir().mkpath(exportPath);
