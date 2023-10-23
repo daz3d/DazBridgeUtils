@@ -65,6 +65,12 @@
 #include <qimage.h>
 #include "ImageTools.h"
 
+// miniz-lib
+extern "C"
+{
+	unsigned long mz_crc32(unsigned long crc, const unsigned char* ptr, size_t buf_len);
+}
+
 using namespace DzBridgeNameSpace;
 
 /// <summary>
@@ -2375,10 +2381,13 @@ QString DzBridgeAction::exportAssetWithDtu(QString sFilename, QString sAssetMate
 
 	QString exportPath = this->m_sRootFolder.replace("\\","/") + "/" + this->m_sExportSubfolder.replace("\\", "/");
 	QString fileStem = QFileInfo(sFilename).fileName();
-	// DB 2023-Oct-20: FIX for non-unique filenames
-	if (isTemporaryFile(sFilename) == false)
+	// DB 2023-Oct-20: add partial path for short filenames
+	QString sNameTest = QFileInfo(sFilename).baseName().remove(QRegExp("[^A-Za-z]")).remove("base").remove("color").remove("normal").remove("roughness").remove("metallic").remove("height").remove("opengl");
+	if (isTemporaryFile(sFilename) == false &&
+		sNameTest.length() < 3 &&
+		QFileInfo(sFilename).baseName().length() < 20)
 	{
-		QStringList filePathArray = cleanedFilename.replace(" ", "").split("/");
+		QStringList filePathArray = cleanedFilename.remove(" ").split("/");
 		int len = filePathArray.count();
 		for (int i = 2; i < 5; i++)
 		{
@@ -2392,7 +2401,7 @@ QString DzBridgeAction::exportAssetWithDtu(QString sFilename, QString sAssetMate
 //	QString exportFilename = exportPath + cleanedAssetMaterialName + "_" + fileStem;
 	QString exportFilename = exportPath + fileStem;
 
-	exportFilename = makeUniqueFilename(exportFilename);
+	exportFilename = makeUniqueFilename(exportFilename, sFilename);
 
 	if (QFile(sFilename).copy(exportFilename) == true)
 	{
@@ -2401,33 +2410,80 @@ QString DzBridgeAction::exportAssetWithDtu(QString sFilename, QString sAssetMate
 
 	// copy method may fail if file already exists,
 	// if exists and same file size, then proceed as if successful
+	ulong crc32_Source = calcCRC32(sFilename);
+	int bFirstCRCResult = getCalcCRC32ResultCode();
+	if (bFirstCRCResult != CalcCRC32ResultCodes::SUCCESS)
+	{
+		dzApp->log("ERROR: exportAssetWithDTU(): CalcCRC32 was not successful for: " + sFilename);
+	}
+	ulong crc32_Dest = calcCRC32(exportFilename);
+	int bSecondCRCResult = getCalcCRC32ResultCode();
+	if (bSecondCRCResult != CalcCRC32ResultCodes::SUCCESS)
+	{
+		dzApp->log("ERROR: exportAssetWithDTU(): CalcCRC32 was not successful for: " + exportFilename);
+	}
 	if ( QFileInfo(exportFilename).exists() &&
-		QFileInfo(sFilename).size() == QFileInfo(exportFilename).size())
+		QFileInfo(sFilename).size() == QFileInfo(exportFilename).size() &&
+		bFirstCRCResult == CalcCRC32ResultCodes::SUCCESS &&
+		bSecondCRCResult == CalcCRC32ResultCodes::SUCCESS &&
+		crc32_Source == crc32_Dest )
 	{
 		return exportFilename;
 	}
 
 	// return original source string if failed
+	dzApp->log("ERROR: exportAssetWithDTU(): Unexpected error occured while preparing file: " + sFilename);
 	return sFilename;
 
 }
 
+unsigned int DzBridgeAction::calcCRC32(QString sFilename)
+{
+	ulong crc32Result = 0;
+	m_nCalcCRC32ResultCode = CalcCRC32ResultCodes::SUCCESS;
+
+	QFile oFile(sFilename);
+	if (oFile.open(QIODevice::OpenModeFlag::ReadOnly) == false)
+	{
+		m_nCalcCRC32ResultCode = CalcCRC32ResultCodes::ERROR_OPENING_FILE;
+		return 0;
+	}
+
+	QByteArray byteArray = oFile.readAll();
+	crc32Result = (ulong) ::mz_crc32((ulong)crc32Result, (const unsigned char*) byteArray.constData(), byteArray.size());
+
+	oFile.close();
+
+	return crc32Result;
+}
+
 // TODO: This method will fail because uncompressed textures of the same dimension
 // will have the same file size.  Instead, must use a file content hash function.
-QString DzBridgeAction::makeUniqueFilename(QString sFilename)
+QString DzBridgeAction::makeUniqueFilename(QString sTargetFilename, QString sOriginalFilename)
 {
-	if (QFileInfo(sFilename).exists() != true)
-		return sFilename;
+	if (QFileInfo(sTargetFilename).exists() != true)
+		return sTargetFilename;
 
-	QString newFilename = sFilename;
-	int duplicate_count = 0;
+	QString newFilename = sTargetFilename;
+	int duplicate_count = 0;	
 
-	while (
-		QFileInfo(newFilename).exists() &&
-		QFileInfo(sFilename).size() != QFileInfo(newFilename).size()
-		)
+	while (QFileInfo(newFilename).exists())
 	{
-		newFilename = sFilename + QString("_%i").arg(duplicate_count++);
+		if (sOriginalFilename != "")
+		{
+			if ( QFileInfo(sOriginalFilename).size() == QFileInfo(newFilename).size() &&
+				calcCRC32(sOriginalFilename) == calcCRC32(newFilename) )
+			{
+				// OK to use as unique, because original and new file are equivalent (per CRC32)
+				// TODO: replace with MD5 or SHA to reduce frequency of false positive
+				break;
+			}
+		}
+		QFileInfo fileInfo(sTargetFilename);
+		QString sExt = fileInfo.suffix();
+		QString sNameWtihoutExt = fileInfo.completeBaseName();
+		QString sPath = fileInfo.path();
+		newFilename = sPath + "/" + sNameWtihoutExt + QString("_%1").arg(duplicate_count++) + "." + sExt;
 	}
 
 	return newFilename;
@@ -2674,13 +2730,46 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 	}
 
 	QString dtuTextureName = TextureName;
-	if (TextureName != "")
+	if (TextureName != "" || TextureName.count() != 0)
 	{
-		// DB 2023-Oct-5: Save to PNG, Export all Textures
+		// DB 2023-Oct-23: Recompress if filesize too big
+		if (m_bRecompressIfFileSizeTooBig)
+		{
+			// only re-compress to jpeg if file is large
+			if (QFileInfo(TextureName).size() > m_nFileSizeThresholdToInitiateRecompression)
+			{
+				// load image and resave as PNG
+				DzImageMgr* imageMgr = dzApp->getImageMgr();
+				QImage image = imageMgr->loadImage(TextureName);
+				QString cleanedTempPath = dzApp->getTempPath().toLower().replace("\\", "/");
+				QString filestem = QFileInfo(TextureName).fileName();
+				QString recompressedFilename;
+				QString fileTypeExtension = ".jpg";
+				if (!m_bConvertToJpg && m_bConvertToPng) // default to jpg, unless png=true and jpg=false
+					fileTypeExtension = ".png";
+				recompressedFilename = cleanedTempPath + "/" + filestem + fileTypeExtension;
+				if (fileTypeExtension == ".png")
+				{
+					if (image.save(recompressedFilename, "png", 95) == false) // 95% quality
+					{
+						dzApp->log("ERROR: saving file failed: " + recompressedFilename);
+					}
+				}
+				else
+				{
+					if (image.save(recompressedFilename, "jpg", 95) == false) // 95% quality
+					{
+						dzApp->log("ERROR: saving file failed: " + recompressedFilename);
+					}
+
+				}
+				dtuTextureName = TextureName = recompressedFilename;
+			}
+		}
+		// DB 2023-Oct-5: Save to PNG or JPG, Export all Textures
 		if (m_bConvertToPng || m_bConvertToJpg)
 		{
-			if ( m_bConvertToJpg || 
-				TextureName.endsWith(".png", Qt::CaseInsensitive) == false && 
+			if (TextureName.endsWith(".png", Qt::CaseInsensitive) == false && 
 				TextureName.endsWith(".jpg", Qt::CaseInsensitive) == false &&
 				TextureName.endsWith(".jpeg", Qt::CaseInsensitive) == false)
 			{
@@ -2689,16 +2778,11 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 				QImage image = imageMgr->loadImage(TextureName);
 				QString cleanedTempPath = dzApp->getTempPath().toLower().replace("\\", "/");
 				QString filestem = QFileInfo(TextureName).fileName();
-				QString pngFilename = cleanedTempPath + "/" + filestem + ".png";
-				if (m_bConvertToJpg)
-				{
-					pngFilename = cleanedTempPath + "/" + filestem + ".jpg";
-					image.save(pngFilename, "jpg", 95);
-				}
-				else
-				{
-					imageMgr->saveImage(pngFilename, image);
-				}
+				QString fileTypeExtension = ".png";
+				if (m_bConvertToJpg) // jpg conversion takes priority over png
+					fileTypeExtension = ".jpg";
+				QString pngFilename = cleanedTempPath + "/" + filestem + fileTypeExtension;
+				imageMgr->saveImage(pngFilename, image);
 				dtuTextureName = TextureName = pngFilename;
 			}
 		}

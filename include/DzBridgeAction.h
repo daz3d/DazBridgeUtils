@@ -123,6 +123,13 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual void setNumberOfLods(int arg) { m_nNumberOfLods = arg; }
 
 		Q_INVOKABLE virtual DzNode* getSelectedNode() { return m_pSelectedNode; }
+		Q_INVOKABLE virtual unsigned int calcCRC32(QString sFilename);
+		Q_INVOKABLE virtual int getCalcCRC32ResultCode() { return (int) m_nCalcCRC32ResultCode; }
+		enum CalcCRC32ResultCodes
+		{
+			SUCCESS = 0,
+			ERROR_OPENING_FILE = -1,
+		} m_nCalcCRC32ResultCode = CalcCRC32ResultCodes::SUCCESS;
 
 		QList<LodInfo*> m_aLodInfo;
 
@@ -208,6 +215,8 @@ namespace DzBridgeNameSpace
 		bool m_bResizeTextures = false;
 		QSize m_qTargetTextureSize = QSize(4096, 4096);
 		bool m_bMultiplyTextureValues = false;
+		bool m_bRecompressIfFileSizeTooBig = false;
+		int m_nFileSizeThresholdToInitiateRecompression = 1024*1024*10; // size in bytes
 
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }
@@ -310,7 +319,7 @@ namespace DzBridgeNameSpace
 		virtual QString exportAssetWithDtu(QString sFilename, QString sAssetMaterialName = "");
 		virtual void writePropertyTexture(DzJsonWriter& Writer, QString sName, QString sLabel, QString sValue, QString sType, QString sTexture);
 		virtual void writePropertyTexture(DzJsonWriter& Writer, QString sName, QString sLabel, double dValue, QString sType, QString sTexture);
-		virtual QString makeUniqueFilename(QString sFilename);
+		virtual QString makeUniqueFilename(QString sTargetFilename, QString sOriginalFilename="");
 
 		Q_INVOKABLE bool getGenerateNormalMaps() { return this->m_bGenerateNormalMaps; };
 		Q_INVOKABLE void setGenerateNormalMaps(bool arg_GenerateNormalMaps) { this->m_bGenerateNormalMaps = arg_GenerateNormalMaps; };
