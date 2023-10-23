@@ -2457,8 +2457,7 @@ unsigned int DzBridgeAction::calcCRC32(QString sFilename)
 	return crc32Result;
 }
 
-// TODO: This method will fail because uncompressed textures of the same dimension
-// will have the same file size.  Instead, must use a file content hash function.
+// 2023-Oct-23: Method now works (mostly), size file check supplemented with CRC32 as file content hash.
 QString DzBridgeAction::makeUniqueFilename(QString sTargetFilename, QString sOriginalFilename)
 {
 	if (QFileInfo(sTargetFilename).exists() != true)
@@ -4373,7 +4372,6 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 	}
 
 	// Remove Extra Geograft nodes and geometry
-	// TODO: replace with list generated during export
 	if (m_bRemoveDuplicateGeografts)
 	{
 		for (QString searchString : m_aGeografts)
