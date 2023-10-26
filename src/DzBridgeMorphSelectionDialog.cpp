@@ -169,7 +169,7 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	QPushButton* ArmsJCMButton = new QPushButton("Arms");
 	QPushButton* LegsJCMButton = new QPushButton("Legs");
 	QPushButton* TorsoJCMButton = new QPushButton("Torso");
-	QPushButton* ARKit81Button = new QPushButton("ARKit (Genesis8.1)");
+	QPushButton* ARKit81Button = new QPushButton("ARKit/FACS (Genesis8.1+9)");
 	QPushButton* FaceFX8Button = new QPushButton("FaceFX (Genesis8)");
 
 	autoJCMCheckBox = new QCheckBox("Auto JCM");
@@ -1029,6 +1029,209 @@ void DzBridgeMorphSelectionDialog::HandleTorsoJCMMorphsButton()
 	RefreshExportMorphList();
 }
 
+// Genesis 9 FACS blendshapes, blendshape selection for use with WonderStudio
+void DzBridgeMorphSelectionDialog::addGenesis9FACS(QStringList& MorphsToAdd)
+{
+	MorphsToAdd.append("facs_bs_BrowInnerUpLeft");
+	MorphsToAdd.append("facs_bs_BrowInnerUpRight");
+	MorphsToAdd.append("facs_bs_BrowOuterUpLeft");
+	MorphsToAdd.append("facs_bs_BrowOuterUpRight");
+	MorphsToAdd.append("facs_bs_BrowSqueezeLeft");
+	MorphsToAdd.append("facs_bs_BrowSqueezeRight");
+	MorphsToAdd.append("facs_bs_CheekPuffLeft");
+	MorphsToAdd.append("facs_bs_CheekPuffRight");
+	MorphsToAdd.append("facs_bs_CheekSquintLeft");
+	MorphsToAdd.append("facs_bs_CheekSquintRight");
+	MorphsToAdd.append("facs_bs_EyeBlinkLeft");
+	MorphsToAdd.append("facs_bs_EyeBlinkRight");
+	MorphsToAdd.append("facs_bs_EyelidOpenLowerLeft");
+	MorphsToAdd.append("facs_bs_EyelidOpenLowerRight");
+	MorphsToAdd.append("facs_bs_EyelidOpenUpperLeft");
+	MorphsToAdd.append("facs_bs_EyelidOpenUpperRight");
+	MorphsToAdd.append("facs_bs_EyeLookUpLeft");
+	MorphsToAdd.append("facs_bs_EyeLookUpRight");
+	MorphsToAdd.append("facs_bs_EyeSquintLeft");
+	MorphsToAdd.append("facs_bs_EyeSquintRight");
+	MorphsToAdd.append("facs_bs_JawForward");
+	MorphsToAdd.append("facs_bs_JawLeft");
+	MorphsToAdd.append("facs_bs_JawOpen");
+	MorphsToAdd.append("facs_bs_JawRecess");
+	MorphsToAdd.append("facs_bs_JawRight");
+	MorphsToAdd.append("facs_bs_MouthCornerMoveSide-SideLeft");
+	MorphsToAdd.append("facs_bs_MouthCornerMoveSide-SideRight");
+	MorphsToAdd.append("facs_bs_MouthDimpleLeft");
+	MorphsToAdd.append("facs_bs_MouthDimpleRight");
+	MorphsToAdd.append("facs_bs_MouthFrownLeft");
+	MorphsToAdd.append("facs_bs_MouthFrownRight");
+	MorphsToAdd.append("facs_bs_MouthLeft");
+	MorphsToAdd.append("facs_bs_MouthLowerDownLeft");
+	MorphsToAdd.append("facs_bs_MouthLowerDownRight");
+	MorphsToAdd.append("facs_bs_MouthRight");
+	MorphsToAdd.append("facs_bs_MouthRollLowerLeft");
+	MorphsToAdd.append("facs_bs_MouthRollLowerRight");
+	MorphsToAdd.append("facs_bs_MouthSmileLeft");
+	MorphsToAdd.append("facs_bs_MouthSmileLeft");
+	MorphsToAdd.append("facs_bs_MouthSmileRight");
+	MorphsToAdd.append("facs_bs_MouthSmileRight");
+	MorphsToAdd.append("facs_bs_MouthUpperUpLeft");
+	MorphsToAdd.append("facs_bs_MouthUpperUpRight");
+	MorphsToAdd.append("facs_bs_NoseSneerLeft");
+	MorphsToAdd.append("facs_bs_NoseSneerRight");
+	MorphsToAdd.append("facs_cbs_EyeFullCompressionLeft");
+	MorphsToAdd.append("facs_cbs_EyeFullCompressionRight");
+	MorphsToAdd.append("facs_ctrl_MouthPressLeft");
+	MorphsToAdd.append("facs_ctrl_MouthPressLeft");
+	MorphsToAdd.append("facs_ctrl_MouthPressRight");
+	MorphsToAdd.append("facs_ctrl_MouthPressRight");
+	MorphsToAdd.append("facs_ctrl_MouthPucker");
+	MorphsToAdd.append("facs_ctrl_MouthRollLower");
+	MorphsToAdd.append("facs_ctrl_MouthRollUpper");
+	MorphsToAdd.append("facs_ctrl_MouthStickyControlLeft");
+	MorphsToAdd.append("facs_ctrl_MouthStickyControlRight");
+	MorphsToAdd.append("facs_ctrl_NasalCompress");
+	MorphsToAdd.append("facs_ctrl_NasalFlare");
+	MorphsToAdd.append("facs_bs_BrowDownLeft");
+	MorphsToAdd.append("facs_bs_BrowDownLeft");
+	MorphsToAdd.append("facs_bs_BrowDownRight");
+	MorphsToAdd.append("facs_bs_BrowDownRight");
+	MorphsToAdd.append("facs_bs_EyeLookDownLeft");
+	MorphsToAdd.append("facs_bs_EyeLookDownRight");
+	MorphsToAdd.append("facs_bs_EyeLookInLeft");
+	MorphsToAdd.append("facs_bs_EyeLookOutRight");
+	MorphsToAdd.append("facs_bs_EyeLookInRight");
+	MorphsToAdd.append("facs_bs_EyeLookOutLeft");
+	MorphsToAdd.append("facs_bs_JawChinCompression");
+	MorphsToAdd.append("facs_bs_JawChinCompression");
+	MorphsToAdd.append("facs_bs_MouthCloseLowerLeft");
+	MorphsToAdd.append("facs_bs_MouthCloseLowerRight");
+	MorphsToAdd.append("facs_bs_MouthCloseUpperLeft");
+	MorphsToAdd.append("facs_bs_MouthCloseUpperRight");
+	MorphsToAdd.append("facs_bs_MouthCloseUpperLeft");
+	MorphsToAdd.append("facs_bs_MouthForward-BackMiddleUpper");
+	MorphsToAdd.append("facs_bs_MouthForwardUpperLeft");
+	MorphsToAdd.append("facs_bs_MouthCloseUpperRight");
+	MorphsToAdd.append("facs_bs_MouthForward-BackMiddleUpper");
+	MorphsToAdd.append("facs_bs_MouthForwardUpperRight");
+	MorphsToAdd.append("facs_bs_MouthCornerTightnessLowerLeft");
+	MorphsToAdd.append("facs_bs_MouthCornerTightnessLowerRight");
+	MorphsToAdd.append("facs_bs_MouthForwardLowerLeft");
+	MorphsToAdd.append("facs_bs_MouthForwardLowerRight");
+	MorphsToAdd.append("facs_bs_MouthForwardUpperLeft");
+	MorphsToAdd.append("facs_bs_MouthForwardUpperRight");
+	MorphsToAdd.append("facs_bs_MouthFunnelLowerLeft");
+	MorphsToAdd.append("facs_bs_MouthFunnelLowerRight");
+	MorphsToAdd.append("facs_bs_MouthFunnelLowerLeft");
+	MorphsToAdd.append("facs_bs_MouthLowerDownLeft");
+	MorphsToAdd.append("facs_bs_MouthFunnelLowerRight");
+	MorphsToAdd.append("facs_bs_MouthLowerDownRight");
+	MorphsToAdd.append("facs_bs_MouthFunnelUpperLeft");
+	MorphsToAdd.append("facs_bs_MouthFunnelUpperRight");
+	MorphsToAdd.append("facs_bs_MouthLipsSide-SideLower");
+	MorphsToAdd.append("facs_bs_MouthLipsSide-SideUpper");
+	MorphsToAdd.append("facs_bs_MouthLipsSide-SideLower");
+	MorphsToAdd.append("facs_bs_MouthLipsSide-SideUpper");
+	MorphsToAdd.append("facs_bs_MouthPurseLowerLeft");
+	MorphsToAdd.append("facs_bs_MouthPurseUpperLeft");
+	MorphsToAdd.append("facs_bs_MouthPurseLowerRight");
+	MorphsToAdd.append("facs_bs_MouthPurseUpperRight");
+	MorphsToAdd.append("facs_bs_MouthShrugUpperLeft");
+	MorphsToAdd.append("facs_bs_MouthUpperUpLeft");
+	MorphsToAdd.append("facs_bs_MouthShrugUpperRight");
+	MorphsToAdd.append("facs_bs_MouthUpperUpRight");
+	MorphsToAdd.append("facs_bs_MouthSmileLeft");
+	MorphsToAdd.append("facs_bs_MouthSmileWidenLeft");
+	MorphsToAdd.append("facs_bs_MouthLowerDownLeft");
+	MorphsToAdd.append("facs_bs_MouthUpperUpLeft");
+	MorphsToAdd.append("facs_bs_MouthSmileRight");
+	MorphsToAdd.append("facs_bs_MouthSmileWidenRight");
+	MorphsToAdd.append("facs_bs_MouthLowerDownRight");
+	MorphsToAdd.append("facs_bs_MouthUpperUpRight");
+	MorphsToAdd.append("facs_bs_MouthSmileWidenLeft");
+	MorphsToAdd.append("facs_bs_MouthCornerMoveUp-DownLeft");
+	MorphsToAdd.append("facs_bs_MouthSmileWidenRight");
+	MorphsToAdd.append("facs_bs_MouthCornerMoveUp-DownRight");
+	MorphsToAdd.append("facs_bs_NasalFlareLeft");
+	MorphsToAdd.append("facs_bs_NoseSneerLeft");
+	MorphsToAdd.append("facs_bs_NasalCreaseFlexLeft");
+	MorphsToAdd.append("facs_bs_NasalFlareRight");
+	MorphsToAdd.append("facs_bs_NoseSneerRight");
+	MorphsToAdd.append("facs_bs_NasalCreaseFlexRight");
+	MorphsToAdd.append("facs_ctrl_MouthRollLower");
+	MorphsToAdd.append("facs_ctrl_MouthForward-BackLowerLeft");
+	MorphsToAdd.append("facs_ctrl_MouthForward-BackLowerRight");
+	MorphsToAdd.append("facs_bs_MouthForward-BackMiddleLower");
+	MorphsToAdd.append("facs_ctrl_MouthRollUpper");
+	MorphsToAdd.append("facs_bs_MouthForward-BackMiddleUpper");
+	MorphsToAdd.append("facs_ctrl_MouthForward-BackUpperLeft");
+	MorphsToAdd.append("facs_ctrl_MouthForward-BackUpperRight");
+
+}
+
+// Add Genesis8 FACS controls for use by WonderStudio conversion
+void DzBridgeMorphSelectionDialog::addGenesis81FACS(QStringList& MorphsToAdd)
+{
+	MorphsToAdd.append("facs_bs_BrowInnerUpLeft_div2");
+	MorphsToAdd.append("facs_bs_BrowInnerUpRight_div2");
+	MorphsToAdd.append("facs_bs_BrowOuterUpLeft_div2");
+	MorphsToAdd.append("facs_bs_BrowOuterUpRight_div2");
+	MorphsToAdd.append("facs_bs_CheekPuffLeft_div2");
+	MorphsToAdd.append("facs_bs_CheekPuffRight_div2");
+	MorphsToAdd.append("facs_bs_CheekSquintLeft_div2");
+	MorphsToAdd.append("facs_bs_CheekSquintRight_div2");
+	MorphsToAdd.append("facs_bs_EyeSquintLeft_div2");
+	MorphsToAdd.append("facs_bs_EyeSquintRight_div2");
+	MorphsToAdd.append("facs_bs_MouthDimpleLeft_div2");
+	MorphsToAdd.append("facs_bs_MouthDimpleRight_div2");
+	MorphsToAdd.append("facs_bs_MouthFrownLeft_div2");
+	MorphsToAdd.append("facs_bs_MouthFrownRight_div2");
+	MorphsToAdd.append("facs_bs_MouthLeft_div2");
+	MorphsToAdd.append("facs_bs_MouthLowerDownRight_div2");
+	MorphsToAdd.append("facs_bs_MouthLowerDownRight_div2");
+	MorphsToAdd.append("facs_bs_MouthPressLeft_div2");
+	MorphsToAdd.append("facs_bs_MouthPressLeft_div2");
+	MorphsToAdd.append("facs_bs_MouthPressRight_div2");
+	MorphsToAdd.append("facs_bs_MouthPressRight_div2");
+	MorphsToAdd.append("facs_bs_MouthPucker_div2");
+	MorphsToAdd.append("facs_bs_MouthRight_div2");
+	MorphsToAdd.append("facs_bs_MouthRollLower_div2");
+	MorphsToAdd.append("facs_bs_MouthRollUpper_div2");
+	MorphsToAdd.append("facs_bs_MouthSmileLeft_div2");
+	MorphsToAdd.append("facs_bs_MouthSmileLeft_div2");
+	MorphsToAdd.append("facs_bs_MouthSmileRight_div2");
+	MorphsToAdd.append("facs_bs_MouthSmileRight_div2");
+	MorphsToAdd.append("facs_bs_MouthUpperUpLeft_div2");
+	MorphsToAdd.append("facs_bs_MouthUpperUpRight_div2");
+	MorphsToAdd.append("facs_bs_NasalFlare_div2");
+	MorphsToAdd.append("facs_bs_NoseSneerLeft_div2");
+	MorphsToAdd.append("facs_bs_NoseSneerRight_div2");
+	MorphsToAdd.append("facs_cbs_EyeBlinkLeft_div2");
+	MorphsToAdd.append("facs_cbs_EyeBlinkRight_div2");
+	MorphsToAdd.append("facs_jnt_EyeBlinkRight");
+	MorphsToAdd.append("facs_jnt_EyeLookDownLeft");
+	MorphsToAdd.append("facs_jnt_JawLeft");
+	MorphsToAdd.append("facs_jnt_JawOpen");
+	MorphsToAdd.append("facs_jnt_JawOpen");
+	MorphsToAdd.append("facs_jnt_JawRecess");
+	MorphsToAdd.append("facs_jnt_JawRight");
+
+	MorphsToAdd.append("facs_bs_BrowDownLeft_div2");
+	MorphsToAdd.append("facs_bs_BrowDownRight_div2");
+	MorphsToAdd.append("facs_bs_MouthClose_div2");
+	MorphsToAdd.append("facs_bs_MouthFunnel_div2");
+	MorphsToAdd.append("facs_bs_MouthRollLower_div2");
+	MorphsToAdd.append("facs_ctrl_EyeLookDownLeft");
+	MorphsToAdd.append("facs_ctrl_EyeLookDownRight");
+	MorphsToAdd.append("facs_ctrl_EyeLookInLeft");
+	MorphsToAdd.append("facs_ctrl_EyeLookOutRight");
+	MorphsToAdd.append("facs_ctrl_EyeLookInRight");
+	MorphsToAdd.append("facs_ctrl_EyeLookOutLeft");
+	MorphsToAdd.append("facs_ctrl_EyeLookUpLeft");
+	MorphsToAdd.append("facs_ctrl_EyeLookUpRight");
+	MorphsToAdd.append("facs_jnt_EyeWideLeft");
+	MorphsToAdd.append("facs_jnt_EyeWideRight");
+
+}
+
 // Hard coded list of morphs for Genesis 8.1 and ARKit
 // It just adds them all, the other functions will ignore any that don't fit the character
 void DzBridgeMorphSelectionDialog::HandleARKitGenesis81MorphsButton()
@@ -1090,6 +1293,9 @@ void DzBridgeMorphSelectionDialog::HandleARKitGenesis81MorphsButton()
 	MorphsToAdd.append("facs_bs_NoseSneerRight_div2");
 	MorphsToAdd.append("facs_bs_TongueOut");
 
+	// add additional FACS morphs for both 8.1 and 9 to MorphsToAdd
+	addGenesis81FACS(MorphsToAdd);
+	addGenesis9FACS(MorphsToAdd);
 
 	// Add the list for export
 	foreach(QString MorphName, MorphsToAdd)
