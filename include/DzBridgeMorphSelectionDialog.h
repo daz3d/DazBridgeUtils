@@ -143,6 +143,10 @@ namespace DzBridgeNameSpace
 		void HandleAddConnectedMorphs();
 		void HandleDialogAccepted(bool bSavePreset = true);
 
+	protected:
+		virtual void addGenesis9FACS(QStringList& MorphsToAdd); // similar to ARKit G81 method, but adds a set of FACS specifically for WonderStudio
+		virtual void addGenesis81FACS(QStringList& MorphsToAdd); // similar to ARKit G81 method, but adds a set of FACS specifically for WonderStudio
+
 	private:
 		// check if Morph is Valid
 		bool isValidMorph(DzProperty* pMorphProperty);
