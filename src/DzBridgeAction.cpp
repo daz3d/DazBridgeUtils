@@ -2558,7 +2558,10 @@ void DzBridgeAction::writeAllMaterials(DzNode* Node, DzJsonWriter& Writer, QText
 		return;
 
 	if (!bRecursive)
+	{
+		m_aProcessedFiles.clear();
 		Writer.startMemberArray("Materials", true);
+	}
 
 	DzObject* Object = Node->getObject();
 	DzShape* Shape = Object ? Object->getCurrentShape() : nullptr;
@@ -2614,7 +2617,10 @@ void DzBridgeAction::writeAllMaterials(DzNode* Node, DzJsonWriter& Writer, QText
 	}
 
 	if (!bRecursive)
+	{
 		Writer.finishArray();
+	}
+
 }
 
 void DzBridgeAction::startMaterialBlock(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCSVstream, DzMaterial* Material)
@@ -2729,8 +2735,124 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 	}
 
 	QString dtuTextureName = TextureName;
-	if (TextureName != "" || TextureName.count() != 0)
+	if ( !TextureName.isEmpty() && m_aProcessedFiles.contains(TextureName, Qt::CaseInsensitive)==false)
 	{
+
+		// DB, 2023-10-27: New integrated resizing/re-encoding integrated save pathway
+		// Execution Flow:
+		// 1. Check if any re-encoding operation is enabled (m_bResizeTextures || m_bRecompressIfFileSizeTooBig || m_bConverToPng || m_bConverToJpg)
+		// 2. If so then use the following order of operations:
+		// 3. ResizeTextures takes highest priority
+		// 4. RecompressIfFileSizeTooBig is second
+		// 5. Convert non-PNG/JPG to PNG/JPG takes third
+		if (m_bForceReEncoding || m_bResizeTextures || m_bRecompressIfFileSizeTooBig || m_bConvertToPng || m_bConvertToJpg)
+		{
+			DzImageMgr* imageMgr = dzApp->getImageMgr();
+			QImage image = imageMgr->loadImage(TextureName);
+			QString cleanedTempPath = dzApp->getTempPath().toLower().replace("\\", "/");
+			QFileInfo fileInfo(TextureName);
+			QString filestem = fileInfo.fileName();
+			QString fileTypeExtension = fileInfo.suffix().toLower();
+			int customEncodingQuality = 95;
+			QSize customImageSize = m_qTargetTextureSize;
+			bool bHasAlpha = image.hasAlphaChannel();
+			bool bSkip = true;
+
+			if (m_bForceReEncoding) bSkip = false;
+			if (fileTypeExtension == "jpeg") fileTypeExtension = "jpg";
+			if (fileTypeExtension == "jpg") customEncodingQuality = 95;
+			if (fileTypeExtension == "png") customEncodingQuality = 75;
+
+			// adjust on target quality/compression level if needed
+			if (m_bRecompressIfFileSizeTooBig &&
+				(QFileInfo(TextureName).size() > m_nFileSizeThresholdToInitiateRecompression)
+				)
+			{
+				fileTypeExtension = "jpg";
+				if (bHasAlpha && m_bConvertToPng) // default to jpg, unless png=true and jpg=false
+					fileTypeExtension = "png";
+				// if image.size is already <= m_qTargetTextureSize, then reduce even further
+				if (image.size().width() <= m_qTargetTextureSize.width() &&
+					image.size().height() <= m_qTargetTextureSize.height())
+				{
+					customImageSize = m_qTargetTextureSize / 2;
+				}
+				// decrease encoding quality if file was originally JPG, note: check against original name/ext
+				customEncodingQuality -= 25;
+				bSkip = false;
+			}
+
+			// resize image if needed
+			if (customImageSize != m_qTargetTextureSize ||
+					m_bResizeTextures && 
+					(image.size().width() > m_qTargetTextureSize.width() ||
+					image.size().height() > m_qTargetTextureSize.height())
+				)
+			{
+				image = image.scaled(customImageSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+				bSkip = false;
+			}
+
+			// decide on target encoding
+			if (m_bConvertToPng &&
+					(fileTypeExtension.compare("png", Qt::CaseInsensitive) != 0)
+				)
+			{
+				fileTypeExtension = "png";
+				bSkip = false;
+			}
+
+			// decide on target encoding (JPG will override PNG above)
+			if (m_bConvertToJpg &&
+					(fileTypeExtension.compare("jpg", Qt::CaseInsensitive) != 0)
+				)
+			{
+				fileTypeExtension = "jpg";
+				if (m_bConvertToPng && bHasAlpha) // png+alpha takes priority over jpg
+					fileTypeExtension = "png";
+				bSkip = false;
+			}
+
+			if (!bSkip)
+			{
+				// finally, save out file with final resized image, quality level and encoding format
+				QString recompressedFilename = cleanedTempPath + "/" + filestem + "." + fileTypeExtension;
+				if (recompressedFilename.split(".").count() > 3)
+				{
+					dzApp->log("WARNING: multiple file extensions possibly detected: " + recompressedFilename);
+				}
+				if (image.save(recompressedFilename, 0, customEncodingQuality) == true)
+				{
+					// only perform if save was successful
+					dtuTextureName = TextureName = recompressedFilename;
+				}
+				else
+				{
+					dzApp->log("ERROR: saving file failed: " + recompressedFilename);
+				}
+
+			}
+
+		///////////////////////
+		}
+
+// DB, 2023-10-27: Above code block replaces this commented out section
+/****
+		if (m_bResizeTextures)
+		{
+			DzImageMgr* imageMgr = dzApp->getImageMgr();
+			QImage image = imageMgr->loadImage(TextureName);
+			if (image.size().width() > m_qTargetTextureSize.width() ||
+				image.size().height() > m_qTargetTextureSize.height())
+			{
+				image = image.scaled(m_qTargetTextureSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+				QString cleanedTempPath = dzApp->getTempPath().toLower().replace("\\", "/");
+				QString filestem = QFileInfo(TextureName).fileName();
+				QString resizedFilename = cleanedTempPath + "/" + filestem;
+				imageMgr->saveImage(resizedFilename, image);
+				dtuTextureName = TextureName = resizedFilename;
+			}
+		}
 		// DB 2023-Oct-23: Recompress if filesize too big
 		if (m_bRecompressIfFileSizeTooBig)
 		{
@@ -2740,11 +2862,12 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 				// load image and resave as PNG
 				DzImageMgr* imageMgr = dzApp->getImageMgr();
 				QImage image = imageMgr->loadImage(TextureName);
+				bool bHasAlpha = image.hasAlphaChannel();
 				QString cleanedTempPath = dzApp->getTempPath().toLower().replace("\\", "/");
 				QString filestem = QFileInfo(TextureName).fileName();
 				QString recompressedFilename;
 				QString fileTypeExtension = ".jpg";
-				if (!m_bConvertToJpg && m_bConvertToPng) // default to jpg, unless png=true and jpg=false
+				if (bHasAlpha || !m_bConvertToJpg && m_bConvertToPng) // default to jpg, unless png=true and jpg=false
 					fileTypeExtension = ".png";
 				recompressedFilename = cleanedTempPath + "/" + filestem + fileTypeExtension;
 				if (fileTypeExtension == ".png")
@@ -2768,38 +2891,27 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 		// DB 2023-Oct-5: Save to PNG or JPG, Export all Textures
 		if (m_bConvertToPng || m_bConvertToJpg)
 		{
-			if (TextureName.endsWith(".png", Qt::CaseInsensitive) == false && 
+			if (TextureName.endsWith(".png", Qt::CaseInsensitive) == false &&
 				TextureName.endsWith(".jpg", Qt::CaseInsensitive) == false &&
 				TextureName.endsWith(".jpeg", Qt::CaseInsensitive) == false)
 			{
 				// load image and resave as PNG
 				DzImageMgr* imageMgr = dzApp->getImageMgr();
 				QImage image = imageMgr->loadImage(TextureName);
+				bool bHasAlpha = image.hasAlphaChannel();
 				QString cleanedTempPath = dzApp->getTempPath().toLower().replace("\\", "/");
 				QString filestem = QFileInfo(TextureName).fileName();
 				QString fileTypeExtension = ".png";
-				if (m_bConvertToJpg) // jpg conversion takes priority over png
+				if (m_bConvertToJpg && !bHasAlpha) // jpg conversion takes priority over png
 					fileTypeExtension = ".jpg";
 				QString pngFilename = cleanedTempPath + "/" + filestem + fileTypeExtension;
 				imageMgr->saveImage(pngFilename, image);
 				dtuTextureName = TextureName = pngFilename;
 			}
 		}
-		if (m_bResizeTextures)
-		{
-			DzImageMgr* imageMgr = dzApp->getImageMgr();
-			QImage image = imageMgr->loadImage(TextureName);
-			if (image.size().width() > m_qTargetTextureSize.width() ||
-				image.size().height() > m_qTargetTextureSize.height())
-			{
-				image = image.scaled(m_qTargetTextureSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-				QString cleanedTempPath = dzApp->getTempPath().toLower().replace("\\", "/");
-				QString filestem = QFileInfo(TextureName).fileName();
-				QString resizedFilename = cleanedTempPath + "/" + filestem;
-				imageMgr->saveImage(resizedFilename, image);
-				dtuTextureName = TextureName = resizedFilename;
-			}
-		}
+****/
+
+
 		if (m_bExportAllTextures)
 		{
 			dtuTextureName = exportAssetWithDtu(TextureName, Node->getLabel() + "_" + Material->getName());
@@ -2812,6 +2924,7 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 		{
 			dtuTextureName = exportAssetWithDtu(TextureName, Node->getLabel() + "_" + Material->getName());
 		}
+		m_aProcessedFiles.append(TextureName);
 	}
 	if (bUseNumeric)
 		writePropertyTexture(Writer, Name, sLabel, dtuPropNumericValue, dtuPropType, dtuTextureName);
