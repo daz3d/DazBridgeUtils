@@ -5853,7 +5853,9 @@ bool DzBridgeAction::combineDiffuseAndAlphaMaps(DzMaterial* Material)
 			// save out file
 			QString tempPath = dzApp->getTempPath().replace("\\", "/");
 			QString outfile = tempPath + "/" + stemDiffuse + "+alpha_"+ stemAlpha + ".png";
-			dzApp->getImageMgr()->saveImage(outfile, outputImage);
+			//dzApp->getImageMgr()->saveImage(outfile, outputImage);
+			// DB, 2023-10-27: Save with fastest settings
+			outputImage.save(outfile, 0, 100);
 
 			// create Undo Data
 			DiffuseAndAlphaMapsUndoData undoData;
@@ -5918,7 +5920,9 @@ bool DzBridgeAction::multiplyTextureValues(DzMaterial* material)
 				multiplyImageByColorMultithreaded(image, colorValue);
 
 				// save out file
-				dzApp->getImageMgr()->saveImage(outfile, image);
+//				dzApp->getImageMgr()->saveImage(outfile, image);
+				// DB, 2023-10-27: Save with fastest settings
+				image.save(outfile, 0, 100);
 
 				// create undo record
 				undoData.textureProperty = colorProperty;
@@ -5951,7 +5955,9 @@ bool DzBridgeAction::multiplyTextureValues(DzMaterial* material)
 				multiplyImageByStrengthMultithreaded(image, numericValue);
 
 				// save out file
-				dzApp->getImageMgr()->saveImage(outfile, image);
+//				dzApp->getImageMgr()->saveImage(outfile, image);
+				// DB, 2023-10-27: Save with fastest settings
+				image.save(outfile, 0, 100);
 
 				// create undo record
 				undoData.textureProperty = numericProperty;
