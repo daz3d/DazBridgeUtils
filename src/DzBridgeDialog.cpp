@@ -534,6 +534,9 @@ void DzBridgeDialog::resetToDefaults()
 
 void DzBridgeDialog::handleSceneSelectionChanged()
 {
+	// crashfix
+	if (dzApp->isClosing()) return;
+
 	refreshAsset();
 
 	if (dzScene->getPrimarySelection() == nullptr)
