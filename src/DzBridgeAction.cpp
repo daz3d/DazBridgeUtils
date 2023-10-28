@@ -1300,6 +1300,15 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 {
 	DzTimeRange PlayRange = dzScene->getPlayRange();
 
+	DzProgress exportProgress = DzProgress("DazBridge: Exporting Animation", PlayRange.getEnd() - PlayRange.getStart(), false, true);
+	exportProgress.setCloseOnFinish(true);
+	exportProgress.enable(true);
+	exportProgress.step();
+	QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+
+	// Get a tick size for the progress bar
+	int progressTickSize = (PlayRange.getEnd() - PlayRange.getStart() + 50) / 50;
+
 	QString Name = Bone->getName();
 
 	FbxNode* Node = BoneMap.value(Bone);
@@ -1314,6 +1323,14 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 	for (DzTime CurrentTime = PlayRange.getStart(); CurrentTime <= PlayRange.getEnd(); CurrentTime += dzScene->getTimeStep())
 	{
 		DzTime Frame = CurrentTime / dzScene->getTimeStep();
+
+		// Need this for the UI to update, but it's very slow, so run every 100th frame.
+		if (Frame % progressTickSize == 0)
+		{
+			exportProgress.update(Frame);
+			QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+		}
+
 		DzVec3 DefaultPosition;
 		DefaultPosition.m_x = Bone->getOriginXControl()->getValue(CurrentTime);
 		DefaultPosition.m_y = Bone->getOriginYControl()->getValue(CurrentTime);
@@ -1321,12 +1338,12 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 		DzMatrix3 Scale = Bone->getWSScale();
 		//qDebug() << Bone->getName() << " Scale: " << Scale.row(0).length() << "," << Scale.row(1).length() << "," << Scale.row(2).length();
 
-		qDebug() << Bone->getName() << " Default Position: " << DefaultPosition.m_x << "," << DefaultPosition.m_y << "," << DefaultPosition.m_z;
+		//qDebug() << Bone->getName() << " Default Position: " << DefaultPosition.m_x << "," << DefaultPosition.m_y << "," << DefaultPosition.m_z;
 		DzVec3 Position;
 		Position.m_x = Bone->getXPosControl()->getValue(CurrentTime);
 		Position.m_y = Bone->getYPosControl()->getValue(CurrentTime);
 		Position.m_z = Bone->getZPosControl()->getValue(CurrentTime);
-		qDebug() << Bone->getName() << " Position: " << Position.m_x << "," << Position.m_y << "," << Position.m_z;
+		//qDebug() << Bone->getName() << " Position: " << Position.m_x << "," << Position.m_y << "," << Position.m_z;
 
 		// Get an initial rotation via the controls
 		DzVec3 ControlRotation;
@@ -1396,7 +1413,7 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 			//qDebug() << Bone->getName() << " RelativeDefaultPosition: " << OrientedRelativeDefaultPosition.m_x << "," << OrientedRelativeDefaultPosition.m_y << "," << OrientedRelativeDefaultPosition.m_z;
 			DzVec3 RelativeMovement = Position - ParentPosition;
 			//qDebug() << Bone->getName() << " RelativeMovement: " << RelativeMovement.m_x << "," << RelativeMovement.m_y << "," << RelativeMovement.m_z;
-			qDebug() << Bone->getName() << " Position: " << Position.m_x << "," << Position.m_y << "," << Position.m_z;
+			//qDebug() << Bone->getName() << " Position: " << Position.m_x << "," << Position.m_y << "," << Position.m_z;
 			if (ParentBone->isRootNode())
 			{
 				Position = (Position + OrientedRelativeDefaultPosition) * FigureScale;
@@ -1405,20 +1422,7 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 			{
 				Position = OrientedRelativeDefaultPosition + RelativeMovement;
 			}
-			qDebug() << Bone->getName() << " Position: " << Position.m_x << "," << Position.m_y << "," << Position.m_z;
-			//Position = Position * FigureScale;
-			/*Position.m_x = Position.m_x * ControlScale.m_x;
-			Position.m_y = Position.m_y * ControlScale.m_y;
-			Position.m_z = Position.m_z * ControlScale.m_z;*/
-			//Position = Position * ControlScale;
-
-			if (ParentBone->getName() == "head")
-			{
-				ControlScale = ControlScale * FigureScale;
-			}
 		}
-
-
 
 		// Set the frame
 		FbxTime Time;
@@ -1467,21 +1471,21 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 		PosZCurve->KeySet(KeyIndex, Time, Position.m_z);
 		PosZCurve->KeyModifyEnd();
 
-		// Write X Pos
+		// Write X Scale
 		FbxAnimCurve* ScaleXCurve = Node->LclScaling.GetCurve(AnimBaseLayer, "X", true);
 		ScaleXCurve->KeyModifyBegin();
 		KeyIndex = ScaleXCurve->KeyAdd(Time);
 		ScaleXCurve->KeySet(KeyIndex, Time, ControlScale.m_x);
 		ScaleXCurve->KeyModifyEnd();
 
-		// Write Y Pos
+		// Write Y Scale
 		FbxAnimCurve* ScaleYCurve = Node->LclScaling.GetCurve(AnimBaseLayer, "Y", true);
 		ScaleYCurve->KeyModifyBegin();
 		KeyIndex = ScaleYCurve->KeyAdd(Time);
 		ScaleYCurve->KeySet(KeyIndex, Time, ControlScale.m_y);
 		ScaleYCurve->KeyModifyEnd();
 
-		// Write Z Pos
+		// Write Z Scale
 		FbxAnimCurve* ScaleZCurve = Node->LclScaling.GetCurve(AnimBaseLayer, "Z", true);
 		ScaleZCurve->KeyModifyBegin();
 		KeyIndex = ScaleZCurve->KeyAdd(Time);
@@ -1492,8 +1496,8 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 
 void DzBridgeAction::exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzNode*, FbxNode*>& BoneMap)
 {
-	// Only transfer face bones if requested
-	if (Parent != nullptr && Parent->getName() == "head" && m_bAnimationTransferFace == false) return;
+	// Only transfer face bones if requested.  MLDeformer doesn't like missing bones though
+	if (m_sAssetType != "MLDeformer" && Parent != nullptr && Parent->getName() == "head" && m_bAnimationTransferFace == false) return;
 
 	FbxNode* BoneNode;
 
