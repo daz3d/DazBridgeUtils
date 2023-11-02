@@ -320,6 +320,45 @@ void DzBridgeMorphSelectionDialog::PrepareDialog()
 	HandleDialogAccepted(false);
 }
 
+// add icons, tooltips, whatsthis, font changes to items in the center and right morph list columns
+bool DzBridgeMorphSelectionDialog::decorateMorphListItem(SortingListItem* item, MorphInfo morphInfo)
+{
+	if (item == NULL)
+	{
+		return false;
+	}
+
+	// colorize item based on presentation type
+	QFont normalFont = this->font();
+	int normalFontSize = normalFont.pointSize() == -1 ? 8 : normalFont.pointSize();
+	QString normalFontFamily = normalFont.family();
+	if (morphInfo.Type.contains("pose", Qt::CaseInsensitive))
+	{
+		item->setBackground(QBrush(Qt::red, Qt::SolidPattern));
+		item->setForeground(QBrush(Qt::white));
+		item->setFont(QFont(normalFontFamily, -1, -1, true));
+		item->setIcon(style()->standardIcon(QStyle::SP_MessageBoxWarning));
+	}
+	else if (morphInfo.Type.contains("shape", Qt::CaseInsensitive))
+	{
+		item->setBackground(QBrush(Qt::green, Qt::SolidPattern));
+		item->setFont(QFont(normalFontFamily, -1, QFont::Bold, false));
+		item->setIcon(style()->standardIcon(QStyle::SP_FileIcon));
+	}
+	else
+	{
+		item->setBackground(QBrush(Qt::red, Qt::SolidPattern));
+		item->setForeground(QBrush(Qt::white));
+		item->setFont(QFont(normalFontFamily, -1, -1, true));
+		item->setIcon(style()->standardIcon(QStyle::SP_MessageBoxQuestion));
+	}
+	item->setToolTip(morphInfo.Type);
+	item->setWhatsThis(morphInfo.Path);
+
+	return true;
+}
+
+
 // When the filter text is changed, update the center list
 void DzBridgeMorphSelectionDialog::FilterChanged(const QString& filter)
 {
@@ -334,6 +373,8 @@ void DzBridgeMorphSelectionDialog::FilterChanged(const QString& filter)
 			SortingListItem* item = new SortingListItem();// modLabel, morphListWidget);
 			item->setText(morphInfo.Label);
 			item->setData(Qt::UserRole, morphInfo.Name);
+
+			decorateMorphListItem(item, morphInfo);
 
 			m_morphListWidget->addItem(item);
 		}
@@ -1347,11 +1388,14 @@ void DzBridgeMorphSelectionDialog::HandleFakeDualQuatCheckBoxChange(bool checked
 void DzBridgeMorphSelectionDialog::RefreshExportMorphList()
 {
 	m_morphExportListWidget->clear();
+	m_morphExportListWidget->setIconSize(QSize(16,16));
 	foreach(MorphInfo morphInfo, m_morphsToExport)
 	{
 		SortingListItem* item = new SortingListItem();
 		item->setText(morphInfo.Label);
 		item->setData(Qt::UserRole, morphInfo.Name);
+
+		decorateMorphListItem(item, morphInfo);
 
 		m_morphExportListWidget->addItem(item);
 	}

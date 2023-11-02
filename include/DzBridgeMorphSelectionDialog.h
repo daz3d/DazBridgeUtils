@@ -15,6 +15,9 @@ class QComboBox;
 class QCheckBox;
 
 #include "dzbridge.h"
+
+class SortingListItem;
+
 namespace DzBridgeNameSpace
 {
 	// Data structure containing DzProperty-DzNode information
@@ -136,6 +139,8 @@ namespace DzBridgeNameSpace
 	protected:
 		virtual void addGenesis9FACS(QStringList& MorphsToAdd); // similar to ARKit G81 method, but adds a set of FACS specifically for WonderStudio
 		virtual void addGenesis81FACS(QStringList& MorphsToAdd); // similar to ARKit G81 method, but adds a set of FACS specifically for WonderStudio
+
+		virtual bool decorateMorphListItem(SortingListItem* item, MorphInfo morphInfo);
 
 	private:
 		// check if Morph is Valid
