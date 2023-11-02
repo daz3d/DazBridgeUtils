@@ -75,7 +75,7 @@ DzBridgeMorphSelectionDialog* DzBridgeMorphSelectionDialog::Get(QWidget* Parent)
 	return singleton;
 }
 
-// For sorting the lists
+// Subclass of QListWidgetItem for sorting the lists
 class SortingListItem : public QListWidgetItem {
 
 public:
@@ -107,9 +107,9 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 
 	presetsFolder = QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation) + QDir::separator() + "DAZ 3D" + QDir::separator() + "Bridges" + QDir::separator() + "Morph Selection Presets";
 
-	 morphListWidget = NULL;
-	 morphExportListWidget = NULL;
-	 morphTreeWidget = NULL;
+	 m_morphListWidget = NULL;
+	 m_morphExportListWidget = NULL;
+	 m_morphTreeWidget = NULL;
 	 filterEdit = NULL;
 	 presetCombo = NULL;
 	 fullBodyMorphTreeItem = NULL;
@@ -121,16 +121,16 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	QVBoxLayout* mainLayout = new QVBoxLayout();
 
 	// Left tree with morph structure
-	morphTreeWidget = new QTreeWidget(this);
-	morphTreeWidget->setHeaderHidden(true);
+	m_morphTreeWidget = new QTreeWidget(this);
+	m_morphTreeWidget->setHeaderHidden(true);
 
 	// Center list showing morhps for selected tree items
-	morphListWidget = new QListWidget(this);
-	morphListWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
+	m_morphListWidget = new QListWidget(this);
+	m_morphListWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
 	// Right list showing morphs that will export
-	morphExportListWidget = new QListWidget(this);
-	morphExportListWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
+	m_morphExportListWidget = new QListWidget(this);
+	m_morphExportListWidget->setSelectionMode(QAbstractItemView::ExtendedSelection);
 
 	// Quick filter box
 	QHBoxLayout* filterLayout = new QHBoxLayout();
@@ -156,7 +156,7 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	QVBoxLayout* treeLayout = new QVBoxLayout();
 	treeLayout->addWidget(new QLabel("Morph Groups"));
 	treeLayout->addWidget(new QLabel("Select to see available morphs"));
-	treeLayout->addWidget(morphTreeWidget);
+	treeLayout->addWidget(m_morphTreeWidget);
 
 	// Buttons for quickly adding certain JCMs
 	QGroupBox* MorphGroupBox = new QGroupBox("Morph Utilities", this);
@@ -239,7 +239,7 @@ functionality for some Morph and JCM products.\
 	morphListLayout->addWidget(new QLabel("Morphs in Group"));
 	morphListLayout->addWidget(new QLabel("Select and click Add for Export"));
 	morphListLayout->addLayout(filterLayout);
-	morphListLayout->addWidget(morphListWidget);
+	morphListLayout->addWidget(m_morphListWidget);
 
 	// Button for adding morphs
 	QPushButton* addMorphsButton = new QPushButton("Add For Export", this);
@@ -250,7 +250,7 @@ functionality for some Morph and JCM products.\
 	// Right List of morphs that will export
 	QVBoxLayout* selectedListLayout = new QVBoxLayout();
 	selectedListLayout->addWidget(new QLabel("Morphs to Export"));
-	selectedListLayout->addWidget(morphExportListWidget);
+	selectedListLayout->addWidget(m_morphExportListWidget);
 
 	// Button for clearing morphs from export
 	QPushButton* removeMorphsButton = new QPushButton("Remove From Export", this);
@@ -269,7 +269,7 @@ functionality for some Morph and JCM products.\
 
 //	connect(morphListWidget, SIGNAL(itemChanged(QListWidgetItem*)), this, SLOT(ItemChanged(QListWidgetItem*)));
 
-	connect(morphTreeWidget, SIGNAL(itemSelectionChanged()),
+	connect(m_morphTreeWidget, SIGNAL(itemSelectionChanged()),
 		this, SLOT(ItemSelectionChanged()));
 
 	PrepareDialog();
@@ -323,10 +323,11 @@ void DzBridgeMorphSelectionDialog::PrepareDialog()
 // When the filter text is changed, update the center list
 void DzBridgeMorphSelectionDialog::FilterChanged(const QString& filter)
 {
-	morphListWidget->clear();
+	m_morphListWidget->clear();
 	QString newFilter = filter;
-	morphListWidget->clear();
-	foreach(MorphInfo morphInfo, selectedInTree)
+	m_morphListWidget->clear();
+	m_morphListWidget->setIconSize(QSize(16, 16));
+	foreach(MorphInfo morphInfo, m_selectedInTree)
 	{
 		if (newFilter == NULL || newFilter.isEmpty() || morphInfo.Label.contains(newFilter, Qt::CaseInsensitive))
 		{
@@ -334,11 +335,11 @@ void DzBridgeMorphSelectionDialog::FilterChanged(const QString& filter)
 			item->setText(morphInfo.Label);
 			item->setData(Qt::UserRole, morphInfo.Name);
 
-			morphListWidget->addItem(item);
+			m_morphListWidget->addItem(item);
 		}
 	}
 
-	morphListWidget->sortItems();
+	m_morphListWidget->sortItems();
 }
 
 // Build a list of availaboe morphs for the node
@@ -631,22 +632,22 @@ QList<JointLinkInfo> DzBridgeMorphSelectionDialog::GetJointControlledMorphInfo(D
 // Build out the left tree
 void DzBridgeMorphSelectionDialog::UpdateMorphsTree()
 {
-	morphTreeWidget->clear();
-	morphsForNode.clear();
-	foreach(QString morph, m_morphInfoMap.keys())
+	m_morphTreeWidget->clear();
+	m_morphsForNode.clear();
+	foreach(QString morphName, m_morphInfoMap.keys())
 	{
-		QString path = m_morphInfoMap[morph].Path;
+		QString path = m_morphInfoMap[morphName].Path;
 		QTreeWidgetItem* parentItem = nullptr;
 		foreach(QString pathPart, path.split("/"))
 		{
 			if (pathPart == "") continue;
 			parentItem = FindTreeItem(parentItem, pathPart);
 
-			if (!morphsForNode.keys().contains(parentItem))
+			if (!m_morphsForNode.keys().contains(parentItem))
 			{
-				morphsForNode.insert(parentItem, QList<MorphInfo>());
+				m_morphsForNode.insert(parentItem, QList<MorphInfo>());
 			}
-			morphsForNode[parentItem].append(m_morphInfoMap[morph]);
+			m_morphsForNode[parentItem].append(m_morphInfoMap[morphName]);
 		}
 	}
 }
@@ -657,19 +658,19 @@ QTreeWidgetItem* DzBridgeMorphSelectionDialog::FindTreeItem(QTreeWidgetItem* par
 {
 	if (parent == nullptr)
 	{
-		for(int i = 0; i < morphTreeWidget->topLevelItemCount(); i++)
+		for(int i = 0; i < m_morphTreeWidget->topLevelItemCount(); i++)
 		{
-			QTreeWidgetItem* item = morphTreeWidget->topLevelItem(i);
+			QTreeWidgetItem* item = m_morphTreeWidget->topLevelItem(i);
 			if (item->text(0) == name)
 			{
 				return item;
 			}
 		}
 
-		QTreeWidgetItem* newItem = new QTreeWidgetItem(morphTreeWidget);
+		QTreeWidgetItem* newItem = new QTreeWidgetItem(m_morphTreeWidget);
 		newItem->setText(0, name);
 		newItem->setExpanded(true);
-		morphTreeWidget->addTopLevelItem(newItem);
+		m_morphTreeWidget->addTopLevelItem(newItem);
 		return newItem;
 	}
 	else
@@ -694,8 +695,8 @@ QTreeWidgetItem* DzBridgeMorphSelectionDialog::FindTreeItem(QTreeWidgetItem* par
 // For selection changes in the Left Tree
 void DzBridgeMorphSelectionDialog::ItemSelectionChanged()
 {
-	selectedInTree.clear();
-	foreach(QTreeWidgetItem* selectedItem, morphTreeWidget->selectedItems())
+	m_selectedInTree.clear();
+	foreach(QTreeWidgetItem* selectedItem, m_morphTreeWidget->selectedItems())
 	{
 		SelectMorphsInNode(selectedItem);
 	}
@@ -707,16 +708,16 @@ void DzBridgeMorphSelectionDialog::ItemSelectionChanged()
 // including any children
 void DzBridgeMorphSelectionDialog::SelectMorphsInNode(QTreeWidgetItem* item)
 {
-	if (morphsForNode.keys().contains(item))
+	if (m_morphsForNode.keys().contains(item))
 	{
-		selectedInTree.append(morphsForNode[item]);
+		m_selectedInTree.append(m_morphsForNode[item]);
 	}
 }
 
 // Add Morphs for export
 void DzBridgeMorphSelectionDialog::HandleAddMorphsButton()
 {
-	foreach(QListWidgetItem* selectedItem, morphListWidget->selectedItems())
+	foreach(QListWidgetItem* selectedItem, m_morphListWidget->selectedItems())
 	{
 		QString morphName = selectedItem->data(Qt::UserRole).toString();
 		if (m_morphInfoMap.contains(morphName) && !m_morphsToExport.contains(m_morphInfoMap[morphName]))
@@ -730,7 +731,7 @@ void DzBridgeMorphSelectionDialog::HandleAddMorphsButton()
 // Remove morph from export list
 void DzBridgeMorphSelectionDialog::HandleRemoveMorphsButton()
 {
-	foreach(QListWidgetItem* selectedItem, morphExportListWidget->selectedItems())
+	foreach(QListWidgetItem* selectedItem, m_morphExportListWidget->selectedItems())
 	{
 		QString morphName = selectedItem->data(Qt::UserRole).toString();
 		if (m_morphInfoMap.keys().contains(morphName))
@@ -1345,14 +1346,14 @@ void DzBridgeMorphSelectionDialog::HandleFakeDualQuatCheckBoxChange(bool checked
 // Refresh the Right export list
 void DzBridgeMorphSelectionDialog::RefreshExportMorphList()
 {
-	morphExportListWidget->clear();
+	m_morphExportListWidget->clear();
 	foreach(MorphInfo morphInfo, m_morphsToExport)
 	{
 		SortingListItem* item = new SortingListItem();
 		item->setText(morphInfo.Label);
 		item->setData(Qt::UserRole, morphInfo.Name);
 
-		morphExportListWidget->addItem(item);
+		m_morphExportListWidget->addItem(item);
 	}
 }
 

@@ -17,6 +17,7 @@ class QCheckBox;
 #include "dzbridge.h"
 namespace DzBridgeNameSpace
 {
+	// Data structure containing DzProperty-DzNode information
 	struct MorphInfo {
 		QString Name;
 		QString Label;
@@ -165,7 +166,7 @@ namespace DzBridgeNameSpace
 		void RefreshExportMorphList();
 
 		// Morphs currently selected in the left tree box
-		QList<MorphInfo> selectedInTree;
+		QList<MorphInfo> m_selectedInTree;
 
 		// List of morphs moved to the export box
 		QList<MorphInfo> m_morphsToExport;
@@ -181,15 +182,15 @@ namespace DzBridgeNameSpace
 
 		// List of morphs (recursive) under each tree node
 		// For convenience populating the middle box.
-		QMap<QTreeWidgetItem*, QList<MorphInfo>> morphsForNode;
+		QMap<QTreeWidgetItem*, QList<MorphInfo>> m_morphsForNode;
 
 		// Force the size of the dialog
 		QSize minimumSizeHint() const override;
 
 		// Widgets the dialog will access after construction
-		QListWidget* morphListWidget;
-		QListWidget* morphExportListWidget;
-		QTreeWidget* morphTreeWidget;
+		QListWidget* m_morphListWidget; // Center Column (Morphs in Group)
+		QListWidget* m_morphExportListWidget; // Right Column (Morphs to Export)
+		QTreeWidget* m_morphTreeWidget;  // Left Column (Morph Groups)
 		QLineEdit* filterEdit;
 		QComboBox* presetCombo;
 
