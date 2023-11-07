@@ -18,36 +18,38 @@ class QCheckBox;
 
 class SortingListItem;
 
+#include "MorphTools.h"
+
 namespace DzBridgeNameSpace
 {
-	// Data structure containing DzProperty-DzNode information
-	struct MorphInfo {
-		QString Name;
-		QString Label;
-		QString Type;
-		QString Path;
-		DzProperty *Property;
-		DzNode *Node;
+	//// Data structure containing DzProperty-DzNode information
+	//struct MorphInfo {
+	//	QString Name;
+	//	QString Label;
+	//	QString Type;
+	//	QString Path;
+	//	DzProperty *Property;
+	//	DzNode *Node;
 
-		inline bool operator==(MorphInfo other)
-		{
-			if (Name == other.Name)
-			{
-				return true;
-			}
-			return false;
-		}
+	//	inline bool operator==(MorphInfo other)
+	//	{
+	//		if (Name == other.Name)
+	//		{
+	//			return true;
+	//		}
+	//		return false;
+	//	}
 
-		MorphInfo()
-		{
-			Name = QString();
-			Label = QString();
-			Type = QString();
-			Path = QString();
-			Property = nullptr;
-			Node = nullptr;
-		}
-	};
+	//	MorphInfo()
+	//	{
+	//		Name = QString();
+	//		Label = QString();
+	//		Type = QString();
+	//		Path = QString();
+	//		Property = nullptr;
+	//		Node = nullptr;
+	//	}
+	//};
 
 	struct JointLinkKey
 	{
@@ -139,8 +141,7 @@ namespace DzBridgeNameSpace
 	protected:
 		virtual void addGenesis9FACS(QStringList& MorphsToAdd); // similar to ARKit G81 method, but adds a set of FACS specifically for WonderStudio
 		virtual void addGenesis81FACS(QStringList& MorphsToAdd); // similar to ARKit G81 method, but adds a set of FACS specifically for WonderStudio
-
-		virtual bool decorateMorphListItem(SortingListItem* item, MorphInfo morphInfo);
+		virtual bool decorateMorphListItem(SortingListItem* item, MorphInfo morphInfo, bool bAnalyzeErc=false);
 
 	private:
 		// check if Morph is Valid

@@ -47,6 +47,8 @@
 #include "DzBridgeAction.h"
 #include "DzBridgeDialog.h"
 
+#include "MorphTools.h"
+
 /*****************************
 Local definitions
 *****************************/
@@ -321,7 +323,7 @@ void DzBridgeMorphSelectionDialog::PrepareDialog()
 }
 
 // add icons, tooltips, whatsthis, font changes to items in the center and right morph list columns
-bool DzBridgeMorphSelectionDialog::decorateMorphListItem(SortingListItem* item, MorphInfo morphInfo)
+bool DzBridgeMorphSelectionDialog::decorateMorphListItem(SortingListItem* item, MorphInfo morphInfo, bool bAnalyzeErc)
 {
 	if (item == NULL)
 	{
@@ -332,14 +334,46 @@ bool DzBridgeMorphSelectionDialog::decorateMorphListItem(SortingListItem* item, 
 	QFont normalFont = this->font();
 	int normalFontSize = normalFont.pointSize() == -1 ? 8 : normalFont.pointSize();
 	QString normalFontFamily = normalFont.family();
+
+	bool bIsMorph = false;
+//	if (morphInfo.Type.contains("shape", Qt::CaseInsensitive))
+	if (morphInfo.Property->getOwner()->inherits("DzMorph"))
+	{
+		bIsMorph = true;
+	}
+	bool bIsPose = false;
 	if (morphInfo.Type.contains("pose", Qt::CaseInsensitive))
+//	if (morphInfo.Property->getOwner()->inherits("DzBone"))
+	{
+		bIsPose = true;
+	}
+	bool bHasMorphs = false;
+	if (bAnalyzeErc && morphInfo.hasMorphErc())
+	{
+		bHasMorphs = true;
+	}
+	bool bHasPoses = false;
+	if (bAnalyzeErc && morphInfo.hasPoseErc())
+	{
+		bHasPoses = true;
+	}
+	bool bHasErc = false;
+	if (morphInfo.m_ErcList && morphInfo.m_ErcList->count() > 0)
+	{
+		bHasErc = true;
+	}
+
+
+//	if (morphInfo.Type.contains("pose", Qt::CaseInsensitive))
+	if (bHasPoses || !bIsMorph && bIsPose)
 	{
 		item->setBackground(QBrush(Qt::red, Qt::SolidPattern));
 		item->setForeground(QBrush(Qt::white));
 		item->setFont(QFont(normalFontFamily, -1, -1, true));
 		item->setIcon(style()->standardIcon(QStyle::SP_MessageBoxWarning));
 	}
-	else if (morphInfo.Type.contains("shape", Qt::CaseInsensitive))
+//	else if (morphInfo.Type.contains("shape", Qt::CaseInsensitive))
+	else if (bHasMorphs || bIsMorph)
 	{
 		item->setBackground(QBrush(Qt::green, Qt::SolidPattern));
 		item->setFont(QFont(normalFontFamily, -1, QFont::Bold, false));
@@ -352,7 +386,20 @@ bool DzBridgeMorphSelectionDialog::decorateMorphListItem(SortingListItem* item, 
 		item->setFont(QFont(normalFontFamily, -1, -1, true));
 		item->setIcon(style()->standardIcon(QStyle::SP_MessageBoxQuestion));
 	}
-	item->setToolTip(morphInfo.Type);
+	QString toolTip = "MorphName: " + morphInfo.Name + ", path=" + morphInfo.Type + ", owner=" + morphInfo.Node->getLabel();
+	if (bHasErc)
+	{
+		toolTip += ", HasERC";
+	}
+	if (bHasMorphs)
+	{
+		toolTip += ", HasMorphs";
+	}
+	if (bHasPoses)
+	{
+		toolTip += ", HasPoses";
+	}
+	item->setToolTip(toolTip);
 	item->setWhatsThis(morphInfo.Path);
 
 	return true;
@@ -1395,7 +1442,7 @@ void DzBridgeMorphSelectionDialog::RefreshExportMorphList()
 		item->setText(morphInfo.Label);
 		item->setData(Qt::UserRole, morphInfo.Name);
 
-		decorateMorphListItem(item, morphInfo);
+		decorateMorphListItem(item, morphInfo, true);
 
 		m_morphExportListWidget->addItem(item);
 	}
@@ -1580,7 +1627,7 @@ bool DzBridgeMorphSelectionDialog::isValidMorph(DzProperty* pMorphProperty)
 	if (pMorphProperty == nullptr)
 	{
 		// issue error message or alternatively: throw exception
-		printf("ERROR: DazBridge: DzBridgeMorphSelectionDialog.cpp, isValidMorph(): nullptr passed as argument.");
+		dzApp->log("ERROR: DazBridge: DzBridgeMorphSelectionDialog.cpp, isValidMorph(): nullptr passed as argument.");
 		return false;
 	}
 	QString sMorphName = getMorphPropertyName(pMorphProperty);
