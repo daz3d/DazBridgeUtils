@@ -10,6 +10,17 @@
 #include "dzmorph.h"
 #include "dznumericproperty.h"
 #include "dzerclink.h"
+#include "dzfacetmesh.h"
+#include "dzvertexmesh.h"
+#include "dzfigure.h"
+#include "dzmainwindow.h"
+#include "dzactionmgr.h"
+#include "dzscene.h"
+#include "dzaction.h"
+#include "dzfloatproperty.h"
+#include "dzscript.h"
+#include "dzshape.h"
+#include "dzenumproperty.h"
 
 #if USE_DAZ_LOG
 #include <dzapp.h>	
@@ -21,7 +32,7 @@ void MorphInfo::log(QString message)
 	dzApp->log(message);
 #else
 	printf(message.toLocal8Bit().constData());
-#endif // USE_DAZ_LOG
+#endif
 }
 
 QString MorphInfo::getMorphPropertyName(DzProperty* pMorphProperty)
@@ -420,4 +431,99 @@ QMap<QString, MorphInfo> enumerateMorphInfoMap(DzNode* Node)
 	}
 
 	return m_morphInfoMap;
+}
+
+QString bakePoseMorph(DzFloatProperty* morphProperty)
+{
+	DzObject* Object;
+
+	// assign selection node to Object
+	DzNode* Selection = dzScene->getPrimarySelection();
+	if (Selection == nullptr)
+		return "";
+	Object = Selection->getObject();
+
+	// if selection inherits dzfigure, then recast to dzfigure and zero out the pose
+	DzFigure* figure = qobject_cast<DzFigure*>(Selection);
+	DzActionMgr *actionMgr = dzApp->getInterface()->getActionMgr();
+	DzAction *restoreAction = actionMgr->findAction("DzRestoreFigurePoseAction");
+	if (figure && restoreAction)
+	{
+		restoreAction->trigger();
+	}
+
+	int origResolution = setMeshResolution(0);
+
+	float zero = morphProperty->getDefaultValue();
+	float max = morphProperty->getMax();
+
+	morphProperty->setValue(max);
+	Object->forceCacheUpdate(Selection);
+
+	DzVertexMesh* DualQuaternionMesh = Object->getCachedGeom();
+	DzFacetMesh* CachedDualQuaternionMesh = new DzFacetMesh();
+	CachedDualQuaternionMesh->copyFrom(DualQuaternionMesh, false, false);
+
+	morphProperty->setValue(zero);
+	Object->forceCacheUpdate(Selection);
+
+	QString newMorphName = MorphInfo::getMorphPropertyName(morphProperty) + "_baked";
+	createMorph(newMorphName, CachedDualQuaternionMesh, Selection);
+
+	setMeshResolution(origResolution);
+
+	return newMorphName;
+}
+
+void createMorph(const QString NewMorphName, DzVertexMesh* Mesh, DzNode* Node)
+{
+	DzScript* Script = new DzScript();
+
+	Script->addLine("function myFunction(oNode, oSavedGeom, sName) {");
+	Script->addLine("var oMorphLoader = new DzMorphLoader();");
+	Script->addLine("oMorphLoader.setMorphName(sName);");
+	Script->addLine("oMorphLoader.setDeltaTolerance(0.01);");
+//	Script->addLine("oMorphLoader.setCreateControlProperty(true);");
+	Script->addLine("oMorphLoader.setPropertyGroupPath(\"Morphs/Morph Loader\");");
+	Script->addLine("oMorphLoader.setReverseDeformations(true);");
+//	Script->addLine("oMorphLoader.setReverseDeformations(false);");
+	Script->addLine("oMorphLoader.setOverwriteExisting(DzMorphLoader.MakeUnique);");
+	Script->addLine("oMorphLoader.setCleanUpOrphans(true);");
+	Script->addLine("oMorphLoader.setMorphMirroring(DzMorphLoader.DoNotMirror);");
+	Script->addLine("var result = oMorphLoader.createMorphFromMesh(oSavedGeom, oNode);");
+	Script->addLine("App.log(\"RESULT: \" + result); ");
+	Script->addLine("};");
+
+	QVariantList Args;
+	QVariant v(QMetaType::QObjectStar, &Node);
+	Args.append(QVariant(QMetaType::QObjectStar, &Node));
+	Args.append(QVariant(QMetaType::QObjectStar, &Mesh));
+	Args.append(QVariant(NewMorphName));
+	Script->call("myFunction", Args);
+}
+
+int setMeshResolution(int desiredResolutionIndex)
+{
+	DzNode* Selection = dzScene->getPrimarySelection();
+	if (Selection == nullptr)
+		return -1;
+	DzObject* Object = Selection->getObject();
+
+	// Set the resolution level to Base
+	int ResolutionLevel = 1; // High Resolution
+	DzEnumProperty* ResolutionLevelProperty = NULL;
+	if (Object && Object->getCurrentShape())
+	{
+		DzShape* Shape = Object->getCurrentShape();
+		if (DzProperty* Property = Shape->findProperty("lodlevel"))
+		{
+			if (ResolutionLevelProperty = qobject_cast<DzEnumProperty*>(Property))
+			{
+				ResolutionLevel = ResolutionLevelProperty->getValue();
+				ResolutionLevelProperty->setValue(0); // Base
+			}
+		}
+	}
+
+	return ResolutionLevel;
 }

@@ -5,6 +5,8 @@
 
 class DzProperty;
 class DzNode;
+class DzVertexMesh;
+class DzFloatProperty;
 
 // Data structure containing DzProperty-DzNode information
 class MorphInfo 
@@ -51,3 +53,6 @@ public:
 };
 
 QMap<QString, MorphInfo> enumerateMorphInfoMap(DzNode* Node);
+void createMorph(const QString NewMorphName, DzVertexMesh* Mesh, DzNode* Node);
+QString bakePoseMorph(DzFloatProperty* morphProperty);
+int setMeshResolution(int desiredResolutionIndex);

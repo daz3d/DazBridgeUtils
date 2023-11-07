@@ -367,26 +367,25 @@ bool DzBridgeMorphSelectionDialog::decorateMorphListItem(SortingListItem* item, 
 //	if (morphInfo.Type.contains("pose", Qt::CaseInsensitive))
 	if (bHasPoses || !bIsMorph && bIsPose)
 	{
-		item->setBackground(QBrush(Qt::red, Qt::SolidPattern));
-		item->setForeground(QBrush(Qt::white));
+		//item->setBackground(QBrush(Qt::red, Qt::SolidPattern));
+		//item->setForeground(QBrush(Qt::white));
 		item->setFont(QFont(normalFontFamily, -1, -1, true));
 		item->setIcon(style()->standardIcon(QStyle::SP_MessageBoxWarning));
 	}
 //	else if (morphInfo.Type.contains("shape", Qt::CaseInsensitive))
 	else if (bHasMorphs || bIsMorph)
 	{
-		item->setBackground(QBrush(Qt::green, Qt::SolidPattern));
+		//item->setBackground(QBrush(Qt::green, Qt::SolidPattern));
 		item->setFont(QFont(normalFontFamily, -1, QFont::Bold, false));
 		item->setIcon(style()->standardIcon(QStyle::SP_FileIcon));
 	}
 	else
 	{
-		item->setBackground(QBrush(Qt::red, Qt::SolidPattern));
-		item->setForeground(QBrush(Qt::white));
+		//item->setBackground(QBrush(Qt::red, Qt::SolidPattern));
+		//item->setForeground(QBrush(Qt::white));
 		item->setFont(QFont(normalFontFamily, -1, -1, true));
 		item->setIcon(style()->standardIcon(QStyle::SP_MessageBoxQuestion));
 	}
-//	QString toolTip = "MorphName: " + morphInfo.Name + ", path=" + morphInfo.Type + ", owner=" + morphInfo.Node->getLabel();
 	QString flagString = "";
 	if (bHasErc)
 	{
@@ -406,9 +405,26 @@ bool DzBridgeMorphSelectionDialog::decorateMorphListItem(SortingListItem* item, 
 		sToolTip += "<br>" + flagString;
 	}
 	item->setToolTip(sToolTip);
-	item->setWhatsThis(morphInfo.Path);
+	QString sWhatsThis = QString("<b>%1</b><br>").arg(morphInfo.Label);
+	QString whatsThisErc = "<b>+ERC:</b> ERC Links allow this element to modify the value of other controls. An example is Victoria 9 controlling Victoria 9 Head and Victoria 9 Body.<br>";
+	QString whatsThisMorphs = "<b>+Morphs:</b> This element has ERC Links to control other Morph controls.  This may cause double-dipping in programs outside Daz Studio, where the final morph effect is applied multiple times (once for each linked morph).<br>";
+	QString whatsThisPoses = "<b>+Poses:</b> This element has ERC Links to control Pose controls.  This will require the bone poses to be baked into the exported morph.<br>";
+	if (bHasErc)
+	{
+		sWhatsThis += "<br>" + whatsThisErc;
+	}
+	if (bHasMorphs)
+	{
+		sWhatsThis += "<br>" + whatsThisMorphs;
+	}
+	if (bHasPoses)
+	{
+		sWhatsThis += "<br>" + whatsThisPoses;
+	}
+	item->setWhatsThis(sWhatsThis);
 
 	return true;
+
 }
 
 
