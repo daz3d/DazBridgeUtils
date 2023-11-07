@@ -386,20 +386,26 @@ bool DzBridgeMorphSelectionDialog::decorateMorphListItem(SortingListItem* item, 
 		item->setFont(QFont(normalFontFamily, -1, -1, true));
 		item->setIcon(style()->standardIcon(QStyle::SP_MessageBoxQuestion));
 	}
-	QString toolTip = "MorphName: " + morphInfo.Name + ", path=" + morphInfo.Type + ", owner=" + morphInfo.Node->getLabel();
+//	QString toolTip = "MorphName: " + morphInfo.Name + ", path=" + morphInfo.Type + ", owner=" + morphInfo.Node->getLabel();
+	QString flagString = "";
 	if (bHasErc)
 	{
-		toolTip += ", HasERC";
+		flagString += " +ERC";
 	}
 	if (bHasMorphs)
 	{
-		toolTip += ", HasMorphs";
+		flagString += " +Morphs";
 	}
 	if (bHasPoses)
 	{
-		toolTip += ", HasPoses";
+		flagString += " +Poses";
 	}
-	item->setToolTip(toolTip);
+	QString sToolTip = QString("<b>%2</b><br><i>\"%1\"</i><br>(%3)").arg(morphInfo.Name).arg(morphInfo.Type).arg(morphInfo.Node->getLabel());
+	if (flagString.isEmpty() == false)
+	{
+		sToolTip += "<br>" + flagString;
+	}
+	item->setToolTip(sToolTip);
 	item->setWhatsThis(morphInfo.Path);
 
 	return true;
