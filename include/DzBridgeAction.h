@@ -155,7 +155,13 @@ namespace DzBridgeNameSpace
 		QString m_sAssetType; // Asset Types: "SkeletalMesh", "StaticMesh", "Animation", "Pose", "Environment"
 		QString m_sMorphSelectionRule; // Selection Rule used by FbxExporter to choose morphs to export
 		QString m_sFbxVersion; // FBX file format version to export
+
+		// DB 2023-11-02: WARNING: m_mMorphNameToLabel is used as a proxy (stand-in) for the finalized list of morphs to export.
+		// It is used to filter morphs when generating the MorphString filter for the Daz FbxExporter.  Modifying this table will
+		// result in undesired morphs being exported or not exported with the FBX.
+		// The actual lookup table is used by the DTU writing functions.
 		QMap<QString, QString> m_mMorphNameToLabel; // Internal name to Friendly label (from MorphSelectionDialog->m_morphsToExport)
+
 		QList<QString> m_aPoseList; // Control Pose names
 		QList<QString> m_aPoseExportList; // Poses chosen in the export dialog
 		QMap<DzImageProperty*, double> m_imgPropertyTable_NormalMapStrength; // Image Property to Normal Map Strength

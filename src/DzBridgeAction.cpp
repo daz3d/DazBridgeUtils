@@ -64,6 +64,7 @@
 
 #include <qimage.h>
 #include "ImageTools.h"
+#include "MorphTools.h"
 
 // miniz-lib
 extern "C"
@@ -2084,11 +2085,16 @@ void DzBridgeAction::getScenePropList(DzNode* Node, QMap<QString, DzNode*>& Type
 	}
 }
 
+// DB 2023-11-02: TODO: Fix method so that it is not dependent on member variables being set by readGUI() --
+// in other words, it should be able to function prior to readGUI() being called or being completed.
 bool DzBridgeAction::checkForIrreversibleOperations_in_disconnectOverrideControllers()
 {
 	DzNode* Selection = dzScene->getPrimarySelection();
 	if (Selection == nullptr)
 		return false;
+
+	int debug_NumControllersToDisconnect = m_ControllersToDisconnect.count();
+	int deub_NumMorphsToExport = m_mMorphNameToLabel.count();
 
 	DzNumericProperty* previousProperty = nullptr;
 	for (int index = 0; index < Selection->getNumProperties(); index++)
@@ -3581,6 +3587,42 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 		m_morphSelectionDialog = DzBridgeMorphSelectionDialog::Get(BridgeDialog);
 	}
 
+	// DB 2023-11-02: Moved pre-check Warning User Choice to beginning of method, so that cancelling operation
+	// will not alter any member variables.
+	// Check for irreversible operations, warn user and give opportunity to cancel
+	bool preCheckEnableMorphs = BridgeDialog->getMorphsEnabledCheckBox()->isChecked();
+	// DB, 2023-11-02: should not need variable below, since its state is already used to generate data being checked in function below
+	bool preCheckMorphDoubleDipping = m_morphSelectionDialog->IsAllowMorphDoubleDippingEnabled();
+	resetArray_ControllersToDisconnect();
+	int debug_NumControllersToDisconnect = m_ControllersToDisconnect.count();
+	m_ControllersToDisconnect.append(m_morphSelectionDialog->getMorphNamesToDisconnectList());
+	int debug_NewNumControllersToDisconnect = m_ControllersToDisconnect.count();
+	m_mMorphNameToLabel = BridgeDialog->GetMorphMappingFromMorphSelectionDialog();
+	if (preCheckEnableMorphs)
+	{
+		if (checkForIrreversibleOperations_in_disconnectOverrideControllers() == true && m_nNonInteractiveMode == 0)
+		{
+			// Sanity Check:  should always be false in this execution pathway
+			if (preCheckMorphDoubleDipping == true)
+			{
+				dzApp->log("WARNING: DazBridge: unexpected value for preCheckMorphDoubleDipping(=true).");
+			}
+
+			// warn user
+			auto userChoice = QMessageBox::question(0, "Daz Bridge",
+				tr("You are exporting morph controllers that are \"connected\" or controlling \n\
+the strength of other morphs that are also being exported. \n\n\
+To prevent morph values from exponential growth to 200% or more \n\
+(aka \"Double-Dipping\"), we must now disconnect all linked morph \n\
+controllers. This may cause irreversible changes to your scene.\n\n\
+Are you ready to proceed, or do you want to Cancel to save your changes?"),
+QMessageBox::Yes | QMessageBox::Cancel,
+QMessageBox::Yes);
+			if (userChoice == QMessageBox::StandardButton::Cancel)
+				return false;
+		}
+	}
+
 	// Collect the values from the dialog fields
 	if (m_sAssetName == "" || m_nNonInteractiveMode == 0) m_sAssetName = BridgeDialog->getAssetNameEdit()->text();
 	if (m_sExportFilename == "" || m_nNonInteractiveMode == 0) m_sExportFilename = m_sAssetName;
@@ -3608,10 +3650,9 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 
 		m_bEnableMorphs = BridgeDialog->getMorphsEnabledCheckBox()->isChecked();
 		m_sMorphSelectionRule = BridgeDialog->GetMorphString();
-		resetArray_ControllersToDisconnect();
-		m_ControllersToDisconnect.append(m_morphSelectionDialog->getMorphNamesToDisconnectList());
-		m_mMorphNameToLabel = BridgeDialog->GetMorphMappingFromMorphSelectionDialog();
-		m_bEnableMorphs = BridgeDialog->getMorphsEnabledCheckBox()->isChecked();
+//		resetArray_ControllersToDisconnect();
+//		m_ControllersToDisconnect.append(m_morphSelectionDialog->getMorphNamesToDisconnectList());
+//		m_mMorphNameToLabel = BridgeDialog->GetMorphMappingFromMorphSelectionDialog();
 		m_aPoseExportList = BridgeDialog->GetPoseList();
 	}
 
@@ -3619,26 +3660,6 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 	m_bShowFbxOptions = BridgeDialog->getShowFbxDialogCheckBox()->isChecked();
 	m_sFbxVersion = BridgeDialog->getFbxVersionCombo()->currentText();
 	m_bGenerateNormalMaps = BridgeDialog->getEnableNormalMapGenerationCheckBox()->isChecked();
-
-	// Check for irreversible operations, warn user and give opportunity to cancel
-	if (m_bEnableMorphs)
-	{
-		if (checkForIrreversibleOperations_in_disconnectOverrideControllers() == true && m_nNonInteractiveMode == 0)
-		{
-			// warn user
-			auto userChoice = QMessageBox::question(0, "Daz Bridge",
-				tr("You are exporting morph controllers that are \"connected\" or controlling \n\
-the strength of other morphs that are also being exported. \n\n\
-To prevent morph values from exponential growth to 200% or more \n\
-(aka \"Double-Dipping\"), we must now disconnect all linked morph \n\
-controllers. This may cause irreversible changes to your scene.\n\n\
-Are you ready to proceed, or do you want to Cancel to save your changes?"),
-QMessageBox::Yes | QMessageBox::Cancel,
-				QMessageBox::Yes);
-			if (userChoice == QMessageBox::StandardButton::Cancel)
-				return false;
-		}
-	}
 
 	m_bAnimationUseExperimentalTransfer = BridgeDialog->getExperimentalAnimationExportCheckBox()->isChecked();
 	m_bAnimationBake = BridgeDialog->getBakeAnimationExportCheckBox()->isChecked();
@@ -3783,6 +3804,7 @@ QImage DzBridgeAction::makeNormalMapFromHeightMap(QString heightMapFilename, dou
 	return result;
 }
 
+// DB, 2023-11-02: This may be an unused method.  TODO: re-evaluate the usage of this method by other projects.
 QStringList DzBridgeAction::getAvailableMorphs(DzNode* Node)
 {
 	QStringList newMorphList;
@@ -3834,6 +3856,8 @@ QStringList DzBridgeAction::getAvailableMorphs(DzNode* Node)
 	return newMorphList;
 }
 
+// DB, 2023-11-02: This may be an unused method.  TODO: re-evaluate the usage of this method by other projects.
+// If is being used, then address issue on the TODO comment line below.
 QStringList DzBridgeAction::getActiveMorphs(DzNode* Node)
 {
 	QStringList newMorphList;
@@ -3851,6 +3875,9 @@ QStringList DzBridgeAction::getActiveMorphs(DzNode* Node)
 		QString propName = property->getName();
 		QString propLabel = property->getLabel();
 		DzPresentation* presentation = property->getPresentation();
+		// DB, 2023-11-02: TODO: assumes the presentation metadata presented by getType() is always correct, but this is just
+		// user-facing information and can be arbitrarily defined or reassigned.  Make new method to query the actual data
+		// connected to the property.
 		if (presentation && presentation->getType() == "Modifier/Shape")
 		{
 			DzNumericProperty *numericProp = qobject_cast<DzNumericProperty*>(property);
@@ -5367,7 +5394,8 @@ DzNodeList DzBridgeAction::buildRootNodeList()
 void DzBridgeAction::resetArray_ControllersToDisconnect()
 {
 	m_ControllersToDisconnect.clear();
-	m_ControllersToDisconnect.append("facs_bs_MouthClose_div2");
+	// DB 2023-11-02: Uncertain why this is hardcoded to be here, it is breaking face exports
+//	m_ControllersToDisconnect.append("facs_bs_MouthClose_div2");
 	m_undoTable_ControllersToDisconnect.clear();
 }
 
