@@ -55,4 +55,5 @@ public:
 QMap<QString, MorphInfo> enumerateMorphInfoMap(DzNode* Node);
 void createMorph(const QString NewMorphName, DzVertexMesh* Mesh, DzNode* Node);
 QString bakePoseMorph(DzFloatProperty* morphProperty);
-int setMeshResolution(int desiredResolutionIndex);
+int setMeshResolution(DzNode* node, int desiredResolutionIndex);
+void bakePoseMorphPerNode(DzFloatProperty* morphProperty, DzNode* node);

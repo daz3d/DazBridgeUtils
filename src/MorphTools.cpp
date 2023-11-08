@@ -433,45 +433,60 @@ QMap<QString, MorphInfo> enumerateMorphInfoMap(DzNode* Node)
 	return m_morphInfoMap;
 }
 
-QString bakePoseMorph(DzFloatProperty* morphProperty)
+void bakePoseMorphPerNode(DzFloatProperty* morphProperty, DzNode* node)
 {
-	DzObject* Object;
+	if (node == nullptr)
+		return;
+	DzObject* Object = node->getObject();
+	if (Object == nullptr)
+		return;
 
-	// assign selection node to Object
-	DzNode* Selection = dzScene->getPrimarySelection();
-	if (Selection == nullptr)
-		return "";
-	Object = Selection->getObject();
-
-	// if selection inherits dzfigure, then recast to dzfigure and zero out the pose
-	DzFigure* figure = qobject_cast<DzFigure*>(Selection);
-	DzActionMgr *actionMgr = dzApp->getInterface()->getActionMgr();
-	DzAction *restoreAction = actionMgr->findAction("DzRestoreFigurePoseAction");
-	if (figure && restoreAction)
+	// apply recursively to children
+	for (int index = 0; index < node->getNumNodeChildren(); index++)
 	{
-		restoreAction->trigger();
+		DzNode* childNode = node->getNodeChild(index);
+		bakePoseMorphPerNode(morphProperty, childNode);
 	}
 
-	int origResolution = setMeshResolution(0);
+	int origResolution = setMeshResolution(node, 0);
 
 	float zero = morphProperty->getDefaultValue();
 	float max = morphProperty->getMax();
 
 	morphProperty->setValue(max);
-	Object->forceCacheUpdate(Selection);
+	Object->forceCacheUpdate(node);
 
 	DzVertexMesh* DualQuaternionMesh = Object->getCachedGeom();
 	DzFacetMesh* CachedDualQuaternionMesh = new DzFacetMesh();
 	CachedDualQuaternionMesh->copyFrom(DualQuaternionMesh, false, false);
 
 	morphProperty->setValue(zero);
-	Object->forceCacheUpdate(Selection);
+	Object->forceCacheUpdate(node);
 
 	QString newMorphName = MorphInfo::getMorphPropertyName(morphProperty) + "_baked";
-	createMorph(newMorphName, CachedDualQuaternionMesh, Selection);
+	createMorph(newMorphName, CachedDualQuaternionMesh, node);
 
-	setMeshResolution(origResolution);
+	setMeshResolution(node, origResolution);
 
+}
+
+
+QString bakePoseMorph(DzFloatProperty* morphProperty)
+{
+	DzNode* Selection = dzScene->getPrimarySelection();
+	if (Selection == nullptr)
+		return "";
+
+	// if selection inherits dzfigure, then recast to dzfigure and zero out the pose
+	DzActionMgr *actionMgr = dzApp->getInterface()->getActionMgr();
+	DzAction *restoreAction = actionMgr->findAction("DzRestoreFigurePoseAction");
+	if (restoreAction)
+	{
+		restoreAction->trigger();
+	}
+
+	bakePoseMorphPerNode(morphProperty, Selection);
+	QString newMorphName = MorphInfo::getMorphPropertyName(morphProperty) + "_baked";
 	return newMorphName;
 }
 
@@ -502,12 +517,11 @@ void createMorph(const QString NewMorphName, DzVertexMesh* Mesh, DzNode* Node)
 	Script->call("myFunction", Args);
 }
 
-int setMeshResolution(int desiredResolutionIndex)
+int setMeshResolution(DzNode* node, int desiredResolutionIndex)
 {
-	DzNode* Selection = dzScene->getPrimarySelection();
-	if (Selection == nullptr)
+	if (node == nullptr)
 		return -1;
-	DzObject* Object = Selection->getObject();
+	DzObject* Object = node->getObject();
 
 	// Set the resolution level to Base
 	int ResolutionLevel = 1; // High Resolution
