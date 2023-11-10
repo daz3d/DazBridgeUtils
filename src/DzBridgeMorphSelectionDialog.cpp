@@ -1520,6 +1520,12 @@ void DzBridgeMorphSelectionDialog::HandlePresetChanged(const QString& presetName
 	file.close();
 }
 
+// TODO: fill with data
+MorphExportSettings DzBridgeMorphSelectionDialog::getMorphExportSettings()
+{
+	return MorphExportSettings();
+}
+
 // Get the morph string (aka m_morphsToExport_finalized) in the format for the Daz FBX Export
 QString DzBridgeMorphSelectionDialog::GetMorphString()
 {

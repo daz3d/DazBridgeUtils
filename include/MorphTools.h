@@ -54,6 +54,15 @@ public:
 	}
 };
 
+class MorphExportSettings
+{
+public:
+	QList<MorphInfo> m_MorphsToExport;
+	bool m_bDoubleDipping;
+	bool m_bAutoJCM;
+	bool m_bBakeFaceMorphs;
+};
+
 QMap<QString, MorphInfo> enumerateMorphInfoMap(DzNode* Node);
 void createMorph(const QString NewMorphName, DzVertexMesh* Mesh, DzNode* Node);
 QString bakePoseMorph(DzFloatProperty* morphProperty, QString);

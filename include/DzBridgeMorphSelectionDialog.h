@@ -23,6 +23,7 @@ class SortingListItem;
 namespace DzBridgeNameSpace
 {
 	class DzBridgeAction;
+
 	//// Data structure containing DzProperty-DzNode information
 	//struct MorphInfo {
 	//	QString Name;
@@ -143,6 +144,7 @@ namespace DzBridgeNameSpace
 		virtual void addGenesis9FACS(QStringList& MorphsToAdd); // similar to ARKit G81 method, but adds a set of FACS specifically for WonderStudio
 		virtual void addGenesis81FACS(QStringList& MorphsToAdd); // similar to ARKit G81 method, but adds a set of FACS specifically for WonderStudio
 		virtual bool decorateMorphListItem(SortingListItem* item, MorphInfo morphInfo, bool bAnalyzeErc=false);
+		virtual MorphExportSettings getMorphExportSettings();
 
 	private:
 		// check if Morph is Valid
@@ -210,6 +212,8 @@ namespace DzBridgeNameSpace
 		QCheckBox* allowMorphDoubleDippingCheckBox;
 
 		QSettings* settings;
+
+		friend DzBridgeAction;
 	};
 
 }
