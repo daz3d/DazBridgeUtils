@@ -434,6 +434,9 @@ namespace DzBridgeNameSpace
 		// DB, 2023-11-10: Morph Selection Overhaul
 		QMap<DzBase*, QString> m_undoTable_MorphRename;
 
+		// Override data structures
+		QMap<DzProperty*, QString> m_overrideTable_MaterialImageMaps;
+
 		// NormalMap utility methods
 		double getPixelIntensity(const  QRgb& pixel);
 		uint8_t getNormalMapComponent(double pX);

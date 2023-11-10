@@ -681,6 +681,7 @@ bool DzBridgeAction::undoPreProcessScene()
 	}
 
 	// Clear Override Tables
+	m_overrideTable_MaterialImageMaps.clear();
 	m_undoTable_MorphRename.clear();
 
     DzProgress::setCurrentInfo("Daz Bridge: Undo Export Processing Complete.");
@@ -2800,6 +2801,11 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 	{
 		// unsupported property type
 		return;
+	}
+	// Check for Override Image Map
+	if (m_overrideTable_MaterialImageMaps.contains(Property))
+	{
+		TextureName = m_overrideTable_MaterialImageMaps[Property];
 	}
 
 	QString dtuTextureName = TextureName;
@@ -6068,8 +6074,11 @@ bool DzBridgeAction::combineDiffuseAndAlphaMaps(DzMaterial* Material)
 			m_undoList_CombineDiffuseAndAlphaMaps.append(undoData);
 
 			// assign to diffuse property and cutout property
-			colorProp->setMap(outfile);
-			numericProp->setMap(outfile);
+			//colorProp->setMap(outfile);
+			//numericProp->setMap(outfile);
+			// DB, 2023-11-10: Do not modify internal daz data, but just add to DTU overrides
+			m_overrideTable_MaterialImageMaps.insert(colorProp, outfile);
+			m_overrideTable_MaterialImageMaps.insert(numericProp, outfile);
 		}
 	}
 
