@@ -12,6 +12,7 @@ class DzFloatProperty;
 class MorphInfo 
 {
 public:
+	QString ExportString;
 	QString Name;
 	QString Label;
 	QString Type;
@@ -23,6 +24,7 @@ public:
 
 	MorphInfo()
 	{
+		ExportString = QString();
 		Name = QString();
 		Label = QString();
 		Type = QString();
@@ -54,7 +56,7 @@ public:
 
 QMap<QString, MorphInfo> enumerateMorphInfoMap(DzNode* Node);
 void createMorph(const QString NewMorphName, DzVertexMesh* Mesh, DzNode* Node);
-QString bakePoseMorph(DzFloatProperty* morphProperty);
+QString bakePoseMorph(DzFloatProperty* morphProperty, QString);
 int setMeshResolution(DzNode* node, int desiredResolutionIndex);
-void bakePoseMorphPerNode(DzFloatProperty* morphProperty, DzNode* node);
+void bakePoseMorphPerNode(DzFloatProperty* morphProperty, DzNode* node, QString);
 QString getMorphString(QList<MorphInfo> m_morphsToExport);

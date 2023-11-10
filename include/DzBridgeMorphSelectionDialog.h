@@ -22,6 +22,7 @@ class SortingListItem;
 
 namespace DzBridgeNameSpace
 {
+	class DzBridgeAction;
 	//// Data structure containing DzProperty-DzNode information
 	//struct MorphInfo {
 	//	QString Name;

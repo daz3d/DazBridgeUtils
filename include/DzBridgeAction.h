@@ -170,7 +170,6 @@ namespace DzBridgeNameSpace
 		QString m_sExportSubfolder; // Destination subfolder within Root Folder for exporting. [Default is <m_sExportFilename>]
 		QString m_sProductName; // Daz Store Product Name, can contain spaces and special characters
 		QString m_sProductComponentName; // Friendly name of Component of Daz Store Product, can contain spaces and special characters
-		QStringList m_aMorphListOverride; // overrides Morph Selection Dialog
 		bool m_bUseRelativePaths; // use relative paths in DTU instead of absolute paths
 		bool m_bGenerateNormalMaps; // generate normal maps from height maps
 		bool m_bUndoNormalMaps;  // remove generated normal maps after export
@@ -432,6 +431,8 @@ namespace DzBridgeNameSpace
 		QMap<DzFigure*, QString> m_undoTable_DuplicateClothingRename;
 		QList<DiffuseAndAlphaMapsUndoData> m_undoList_CombineDiffuseAndAlphaMaps;
 		QList<MultiplyTextureValuesUndoData> m_undoList_MultilpyTextureValues;
+		// DB, 2023-11-10: Morph Selection Overhaul
+		QMap<DzBase*, QString> m_undoTable_MorphRename;
 
 		// NormalMap utility methods
 		double getPixelIntensity(const  QRgb& pixel);

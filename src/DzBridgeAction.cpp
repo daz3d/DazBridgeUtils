@@ -279,6 +279,40 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 		}
 	}
 
+	// PreProcess MorphsToExport
+//	foreach (MorphInfo &morphInfo, m_MorphsToExport)
+	foreach (QString key, m_MorphsToExport.keys())
+	{
+		// rename Morph Property with prefix, if prefix is not already present
+		if (m_MorphsToExport[key].Name.contains("export____") == false)
+		{
+			QString sExportName = "export____" + m_MorphsToExport[key].Name;
+			m_MorphsToExport[key].ExportString = sExportName;
+			DzElement* owner = m_MorphsToExport[key].Property->getOwner();
+			if (owner->inherits("DzModifier"))
+			{
+				owner->setName(sExportName);
+				m_undoTable_MorphRename.insert(owner, m_MorphsToExport[key].Name);
+			}
+			else
+			{
+				m_MorphsToExport[key].Property->setName(sExportName);
+				// add to undo table
+				m_undoTable_MorphRename.insert(m_MorphsToExport[key].Property, m_MorphsToExport[key].Name);
+			}
+		}
+
+		// check to see if has pose
+		//if (m_MorphsToExport[key].hasPoseErc())
+		//{
+		//	QString sNewBakedName = sExportName + "_baked";
+		//	preProcessProgress.setInfo("Baking Pose Morph: " + m_MorphsToExport[key].Name);
+		//	sNewBakedName = bakePoseMorph(qobject_cast<DzFloatProperty*>(m_MorphsToExport[key].Property), sNewBakedName);
+		//	// replace morphinfo name with new baked name
+		//	m_MorphsToExport[key].Name = sNewBakedName;
+		//}
+	}
+
     preProcessProgress.setInfo("DazBridge: Pre-Processing Completed.");
 	preProcessProgress.finish();
 
@@ -637,6 +671,17 @@ bool DzBridgeAction::undoPreProcessScene()
 	{
 		bResult = false;
 	}
+
+	// Undo Morph Rename
+	for (int i=0; i < m_undoTable_MorphRename.size(); i++)
+	{
+		DzBase* morph = m_undoTable_MorphRename.keys()[i];
+		QString originalName = m_undoTable_MorphRename.values()[i];
+		morph->setName(originalName);
+	}
+
+	// Clear Override Tables
+	m_undoTable_MorphRename.clear();
 
     DzProgress::setCurrentInfo("Daz Bridge: Undo Export Processing Complete.");
 
@@ -1138,6 +1183,40 @@ void DzBridgeAction::reconnectNodes(QList<AttachmentInfo>& AttachmentList)
 	}
 }
 
+void overrideExportOptions(DzFileIOSettings &ExportOptions)
+{
+
+	//// TODO: REMOVE OVERRIDE WHEN WORKING
+	//// DEBUG: Override
+	ExportOptions.setBoolValue("doSelected", false);
+	ExportOptions.setBoolValue("doVisible", true);
+	ExportOptions.setBoolValue("doFigures", true);
+	ExportOptions.setBoolValue("doProps", false);
+	ExportOptions.setBoolValue("doLights", false);
+	ExportOptions.setBoolValue("doCameras", false);
+	ExportOptions.setBoolValue("doAnims", false);
+	ExportOptions.setBoolValue("doMorphs", true);
+	ExportOptions.setBoolValue("doFps", true);
+//	ExportOptions.setStringValue("rules", m_sMorphSelectionRule);
+	ExportOptions.setStringValue("format", "FBX 2014 -- Binary");
+	ExportOptions.setIntValue("RunSilent", true);
+	ExportOptions.setBoolValue("doEmbed", false);
+	ExportOptions.setBoolValue("doCopyTextures", false);
+	ExportOptions.setBoolValue("doDiffuseOpacity", false);
+	ExportOptions.setBoolValue("doMergeClothing", true);
+	ExportOptions.setBoolValue("doStaticClothing", false);
+	ExportOptions.setBoolValue("degradedSkinning", false);
+	ExportOptions.setBoolValue("degradedScaling", false);
+	ExportOptions.setBoolValue("doSubD", false);
+	//ExportOptions.setBoolValue("doCollapseUVTiles", false);
+	ExportOptions.setBoolValue("doLocks", false);
+	ExportOptions.setBoolValue("doLimits", false);
+	ExportOptions.setBoolValue("doBaseFigurePoseOnly", false);
+	ExportOptions.setBoolValue("doHelperScriptScripts", false);
+	ExportOptions.setBoolValue("doMentalRayMaterials", false);
+	//// DEBUG: Override
+
+}
 
 void DzBridgeAction::exportNode(DzNode* Node)
 {
@@ -1145,159 +1224,134 @@ void DzBridgeAction::exportNode(DzNode* Node)
 		return;
 
 	dzScene->selectAllNodes(false);
-	 dzScene->setPrimarySelection(Node);
+	dzScene->setPrimarySelection(Node);
 
-	 if (m_sAssetType == "Environment")
-	 {
-		 QDir dir;
-		 dir.mkpath(m_sDestinationPath);
-		 writeConfiguration();
-		 return;
-	 }
+	if (m_sAssetType == "Environment")
+	{
+		QDir dir;
+		dir.mkpath(m_sDestinationPath);
+		writeConfiguration();
+		return;
+	}
 
-	 if ((m_sAssetType == "Animation" || m_sAssetType == "Pose") && m_bAnimationUseExperimentalTransfer)
-	 {
-		 QDir dir;
-		 dir.mkpath(m_sDestinationPath);
-		 exportAnimation(/*bExportingForMLDeformer*/);
-		 writeConfiguration();
-		 return;
-	 }
+	if ((m_sAssetType == "Animation" || m_sAssetType == "Pose") && m_bAnimationUseExperimentalTransfer)
+	{
+		QDir dir;
+		dir.mkpath(m_sDestinationPath);
+		exportAnimation(/*bExportingForMLDeformer*/);
+		writeConfiguration();
+		return;
+	}
 
-	 DzExportMgr* ExportManager = dzApp->getExportMgr();
-	 DzExporter* Exporter = ExportManager->findExporterByClassName("DzFbxExporter");
+	DzExportMgr* ExportManager = dzApp->getExportMgr();
+	DzExporter* Exporter = ExportManager->findExporterByClassName("DzFbxExporter");
 
-	 if (Exporter)
-	 {
-		  DzFileIOSettings ExportOptions;
-		  ExportOptions.setBoolValue("doSelected", true);
-		  ExportOptions.setBoolValue("doVisible", false);
-		  if (m_sAssetType == "SkeletalMesh" || m_sAssetType == "StaticMesh" || m_sAssetType == "Environment")
-		  {
-				ExportOptions.setBoolValue("doFigures", true);
-				ExportOptions.setBoolValue("doProps", true);
-		  }
-		  else
-		  {
-				ExportOptions.setBoolValue("doFigures", true);
-				ExportOptions.setBoolValue("doProps", false);
-		  }
-		  ExportOptions.setBoolValue("doLights", false);
-		  ExportOptions.setBoolValue("doCameras", false);
-		  if (m_sAssetType == "Animation")
-		  {
-			  ExportOptions.setBoolValue("doAnims", true);
-		  }
-		  else
-		  {
-			  ExportOptions.setBoolValue("doAnims", false);
-		  }
-		  if ((m_sAssetType == "Animation" || m_sAssetType == "SkeletalMesh") && m_bEnableMorphs && m_sMorphSelectionRule != "")
-		  {
-				ExportOptions.setBoolValue("doMorphs", true);
-				ExportOptions.setStringValue("rules", m_sMorphSelectionRule);
-		  }
-		  else
-		  {
-				ExportOptions.setBoolValue("doMorphs", false);
-				ExportOptions.setStringValue("rules", "");
-		  }
+	if (Exporter)
+	{
+		// get the top level node for things like clothing so we don't get dupe material names
+		DzNode* Parent = Node;
+		if (m_sAssetType != "Environment")
+		{
+			while (Parent->getNodeParent() != NULL)
+			{
+				Parent = Parent->getNodeParent();
+			}
+		}
 
-		  ExportOptions.setStringValue("format", m_sFbxVersion);
-		  ExportOptions.setIntValue("RunSilent", !m_bShowFbxOptions);
+		// DB, 2023-11-08: Morph Selection Overhaul, defer generation of Morph Selection Rule string
+		//  until after preprocessing stage.
+		preProcessScene(Parent);
+		if (m_bMorphLockBoneTranslation)
+		{
+			lockBoneControls(Parent);
+		}
 
-		  ExportOptions.setBoolValue("doEmbed", false);
-		  ExportOptions.setBoolValue("doCopyTextures", false);
-		  ExportOptions.setBoolValue("doDiffuseOpacity", false);
-		  ExportOptions.setBoolValue("doMergeClothing", true);
-		  ExportOptions.setBoolValue("doStaticClothing", false);
-		  ExportOptions.setBoolValue("degradedSkinning", true);
-		  ExportOptions.setBoolValue("degradedScaling", true);
-		  // DB 5-26-2023: enable doSubD to export crease-info
-		  ExportOptions.setBoolValue("doSubD", true);
-		  ExportOptions.setBoolValue("doCollapseUVTiles", false);
+		QDir dir;
+		dir.mkpath(m_sDestinationPath);
 
-		  if (m_sAssetType == "SkeletalMesh" && m_EnableSubdivisions)
-		  {
-			  ExportOptions.setBoolValue("doCollapseUVTiles", true);
-		  }
+		DzFileIOSettings ExportOptions;
+		ExportOptions.setBoolValue("doSelected", true);
+		ExportOptions.setBoolValue("doVisible", false);
+		if (m_sAssetType == "SkeletalMesh" || m_sAssetType == "StaticMesh" || m_sAssetType == "Environment")
+		{
+			ExportOptions.setBoolValue("doFigures", true);
+			ExportOptions.setBoolValue("doProps", true);
+		}
+		else
+		{
+			ExportOptions.setBoolValue("doFigures", true);
+			ExportOptions.setBoolValue("doProps", false);
+		}
+		ExportOptions.setBoolValue("doLights", false);
+		ExportOptions.setBoolValue("doCameras", false);
+		if (m_sAssetType == "Animation")
+		{
+			ExportOptions.setBoolValue("doAnims", true);
+		}
+		else
+		{
+			ExportOptions.setBoolValue("doAnims", false);
+		}
+		m_sMorphSelectionRule = getMorphString(m_MorphsToExport.values());
+		if ((m_sAssetType == "Animation" || m_sAssetType == "SkeletalMesh") && m_bEnableMorphs && m_sMorphSelectionRule != "")
+		{
+			ExportOptions.setBoolValue("doMorphs", true);
+			ExportOptions.setStringValue("rules", m_sMorphSelectionRule);
+		}
+		else
+		{
+			ExportOptions.setBoolValue("doMorphs", false);
+			ExportOptions.setStringValue("rules", "");
+		}
 
-		  // get the top level node for things like clothing so we don't get dupe material names
-		  DzNode* Parent = Node;
-		  if (m_sAssetType != "Environment")
-		  {
-			  while (Parent->getNodeParent() != NULL)
-			  {
-				  Parent = Parent->getNodeParent();
-			  }
-		  }
+		ExportOptions.setStringValue("format", m_sFbxVersion);
+		ExportOptions.setIntValue("RunSilent", !m_bShowFbxOptions);
 
-/*
-		  //// TODO: REMOVE OVERRIDE WHEN WORKING
-		  //// DEBUG: Override
-		  ExportOptions.setBoolValue("doSelected", false);
-		  ExportOptions.setBoolValue("doVisible", true);
-		  ExportOptions.setBoolValue("doFigures", true);
-		  ExportOptions.setBoolValue("doProps", false);
-		  ExportOptions.setBoolValue("doLights", false);
-		  ExportOptions.setBoolValue("doCameras", false);
-		  ExportOptions.setBoolValue("doAnims", false);
-		  ExportOptions.setBoolValue("doMorphs", true);
-		  ExportOptions.setBoolValue("doFps", true);
-		  ExportOptions.setStringValue("rules", m_sMorphSelectionRule);
-		  ExportOptions.setStringValue("format", "FBX 2014 -- Binary");
-		  ExportOptions.setIntValue("RunSilent", true);
-		  ExportOptions.setBoolValue("doEmbed", false);
-		  ExportOptions.setBoolValue("doCopyTextures", false);
-		  ExportOptions.setBoolValue("doDiffuseOpacity", false);
-		  ExportOptions.setBoolValue("doMergeClothing", true);
-		  ExportOptions.setBoolValue("doStaticClothing", false);
-		  ExportOptions.setBoolValue("degradedSkinning", false);
-		  ExportOptions.setBoolValue("degradedScaling", false);
-		  ExportOptions.setBoolValue("doSubD", false);
-		  //ExportOptions.setBoolValue("doCollapseUVTiles", false);
-		  ExportOptions.setBoolValue("doLocks", false);
-		  ExportOptions.setBoolValue("doLimits", false);
-		  ExportOptions.setBoolValue("doBaseFigurePoseOnly", false);
-		  ExportOptions.setBoolValue("doHelperScriptScripts", false);
-		  ExportOptions.setBoolValue("doMentalRayMaterials", false);
-		  //// DEBUG: Override
-*/
+		ExportOptions.setBoolValue("doEmbed", false);
+		ExportOptions.setBoolValue("doCopyTextures", false);
+		ExportOptions.setBoolValue("doDiffuseOpacity", false);
+		ExportOptions.setBoolValue("doMergeClothing", true);
+		ExportOptions.setBoolValue("doStaticClothing", false);
+		ExportOptions.setBoolValue("degradedSkinning", true);
+		ExportOptions.setBoolValue("degradedScaling", true);
+		// DB 5-26-2023: enable doSubD to export crease-info
+		ExportOptions.setBoolValue("doSubD", true);
+		ExportOptions.setBoolValue("doCollapseUVTiles", false);
 
-		  preProcessScene(Parent);
-		  if (m_bMorphLockBoneTranslation)
-		  {
-			  lockBoneControls(Parent);
-		  }
+		if (m_sAssetType == "SkeletalMesh" && m_EnableSubdivisions)
+		{
+			ExportOptions.setBoolValue("doCollapseUVTiles", true);
+		}
 
-		  QDir dir;
-		  dir.mkpath(m_sDestinationPath);
+		setExportOptions(ExportOptions);
 
-		  setExportOptions(ExportOptions);
+		if (m_EnableSubdivisions && m_bExportingBaseMesh)
+		{
+			QString CharacterBaseFBX = this->m_sDestinationFBX;
+			CharacterBaseFBX.replace(".fbx", "_base.fbx");
+			// Bugfix for double fbx options dialog
+			ExportOptions.setIntValue("RunSilent", true);
+			Exporter->writeFile(CharacterBaseFBX, &ExportOptions);
+		}
+		else
+		{
+			Exporter->writeFile(m_sDestinationFBX, &ExportOptions);
 
-		  if (m_EnableSubdivisions && m_bExportingBaseMesh)
-		  {
-			  QString CharacterBaseFBX = this->m_sDestinationFBX;
-			  CharacterBaseFBX.replace(".fbx", "_base.fbx");
-			  // Bugfix for double fbx options dialog
-			  ExportOptions.setIntValue("RunSilent", true);
-			  Exporter->writeFile(CharacterBaseFBX, &ExportOptions);
-		  }
-		  else
-		  {
-			  Exporter->writeFile(m_sDestinationFBX, &ExportOptions);
+			// DB 2022-09-26: Post-Process FBX file
+			DzProgress::setCurrentInfo("Daz Bridge: PostProcessing FBX: " + m_sDestinationFBX);
+			postProcessFbx(m_sDestinationFBX);
 
-			  // DB 2022-09-26: Post-Process FBX file
-			  postProcessFbx(m_sDestinationFBX);
-
-			  writeConfiguration();
-		  }
-		  if (m_bMorphLockBoneTranslation)
-		  {
-			  unlockBoneControl(Parent);
-		  }
-		  undoPreProcessScene();
-	 }
+			// composing dtu filename string here just to use with set current info
+			QString DTUfilename = m_sDestinationPath + m_sAssetName + ".dtu";
+			DzProgress::setCurrentInfo("Daz Bridge: Writing DTU Configuration File: " + DTUfilename);
+			writeConfiguration();
+		}
+		if (m_bMorphLockBoneTranslation)
+		{
+			unlockBoneControl(Parent);
+		}
+		undoPreProcessScene();
+	}
 }
 
 void DzBridgeAction::exportAnimation()
@@ -4524,6 +4578,88 @@ void FindAndProcessTwistBones(FbxNode* pNode)
 }
 
 
+void RemoveString(FbxString& name, const char* prefix) 
+{
+	name.FindAndReplace(prefix, "", 0);
+}
+
+void RenameShapes(FbxBlendShapeChannel* pChannel, const char* prefix) {
+    int shapeCount = pChannel->GetTargetShapeCount();
+    for (int shapeIndex = 0; shapeIndex < shapeCount; ++shapeIndex) {
+        FbxShape* shape = pChannel->GetTargetShape(shapeIndex);
+        if (shape) {
+            FbxString newName = shape->GetName();
+			RemoveString(newName, prefix);
+            shape->SetName(newName.Buffer());
+
+            // Confirm the name change
+            FbxString confirmedName = shape->GetName();
+            if (confirmedName != newName) {
+                printf("Failed to rename shape from '%s' to '%s'.\n", shape->GetName(), newName.Buffer());
+            } else {
+                printf("Successfully renamed shape to '%s'.\n", confirmedName.Buffer());
+            }
+        }
+    }
+}
+
+void RenameBlendshapes(FbxNode* pNode, const char* prefix) 
+{
+    if (pNode) {
+        // Check if the node has a mesh
+        FbxMesh* pMesh = pNode->GetMesh();
+        if (pMesh) {
+            // Check for blendshape deformer
+            int deformerCount = pMesh->GetDeformerCount(FbxDeformer::eBlendShape);
+            for (int deformerIndex = 0; deformerIndex < deformerCount; ++deformerIndex) {
+                FbxBlendShape* blendShape = static_cast<FbxBlendShape*>(pMesh->GetDeformer(deformerIndex, FbxDeformer::eBlendShape));
+                
+                // Rename blendshape channels
+                int blendShapeChannelCount = blendShape->GetBlendShapeChannelCount();
+                for (int channelIndex = 0; channelIndex < blendShapeChannelCount; ++channelIndex) {
+                    FbxBlendShapeChannel* channel = blendShape->GetBlendShapeChannel(channelIndex);
+                    if (channel) {
+                        FbxString newName = channel->GetNameOnly();
+                        RemoveString(newName, prefix);
+                        channel->SetName(newName.Buffer());
+
+                        // Confirm the name change
+                        FbxString confirmedName = channel->GetNameOnly();
+                        if (confirmedName != newName) {
+                            printf("Failed to rename blendshape channel from '%s' to '%s'.\n", channel->GetNameOnly(), newName.Buffer());
+                        } else {
+                            printf("Successfully renamed blendshape channel to '%s'.\n", confirmedName.Buffer());
+                        }
+                    }
+                }
+            }
+        }
+
+		// After renaming the blend shape channels, rename the shapes
+		if (pMesh) {
+			int deformerCount = pMesh->GetDeformerCount(FbxDeformer::eBlendShape);
+			for (int deformerIndex = 0; deformerIndex < deformerCount; ++deformerIndex) {
+				FbxBlendShape* blendShape = static_cast<FbxBlendShape*>(pMesh->GetDeformer(deformerIndex, FbxDeformer::eBlendShape));
+				
+				int blendShapeChannelCount = blendShape->GetBlendShapeChannelCount();
+				for (int channelIndex = 0; channelIndex < blendShapeChannelCount; ++channelIndex) {
+					FbxBlendShapeChannel* channel = blendShape->GetBlendShapeChannel(channelIndex);
+					if (channel) {
+						// Rename the shapes associated with this channel
+						RenameShapes(channel, prefix);
+					}
+				}
+			}
+		}
+
+        // Recursively process children nodes
+        for (int j = 0; j < pNode->GetChildCount(); j++) {
+            RenameBlendshapes(pNode->GetChild(j), prefix);
+        }
+    }
+}
+
+
 // Perform post-processing of Fbx after export
 // NOTE: must be called prior to writeconfiguration, otherwise can not guarantee that it will be executed before
 // import process is started in target software
@@ -4541,6 +4677,9 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 		printf("\n\nAn error occurred while processing the Fbx file...");
 		return false;
 	}
+
+    // Call the function to rename blendshapes
+    RenameBlendshapes(pScene->GetRootNode(), "export____");
 
 	// Remove Extra Geograft nodes and geometry
 	if (m_bRemoveDuplicateGeografts)

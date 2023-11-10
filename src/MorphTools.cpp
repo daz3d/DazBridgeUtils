@@ -369,7 +369,7 @@ QMap<QString, MorphInfo> enumerateMorphInfoMap(DzNode* Node)
 	QMap<QString, MorphInfo> m_morphInfoMap;
 
 	DzObject* Object = Node->getObject();
-	DzShape* Shape = Object ? Object->getCurrentShape() : NULL;
+//	DzShape* Shape = Object ? Object->getCurrentShape() : NULL;
 
 	for (int index = 0; index < Node->getNumProperties(); index++)
 	{
@@ -433,7 +433,7 @@ QMap<QString, MorphInfo> enumerateMorphInfoMap(DzNode* Node)
 	return m_morphInfoMap;
 }
 
-void bakePoseMorphPerNode(DzFloatProperty* morphProperty, DzNode* node)
+void bakePoseMorphPerNode(DzFloatProperty* morphProperty, DzNode* node, QString newMorphName)
 {
 	if (node == nullptr)
 		return;
@@ -445,7 +445,7 @@ void bakePoseMorphPerNode(DzFloatProperty* morphProperty, DzNode* node)
 	for (int index = 0; index < node->getNumNodeChildren(); index++)
 	{
 		DzNode* childNode = node->getNodeChild(index);
-		bakePoseMorphPerNode(morphProperty, childNode);
+		bakePoseMorphPerNode(morphProperty, childNode, newMorphName);
 	}
 
 	int origResolution = setMeshResolution(node, 0);
@@ -463,15 +463,17 @@ void bakePoseMorphPerNode(DzFloatProperty* morphProperty, DzNode* node)
 	morphProperty->setValue(zero);
 	Object->forceCacheUpdate(node);
 
-	QString newMorphName = MorphInfo::getMorphPropertyName(morphProperty) + "_baked";
+	if (newMorphName.isEmpty())
+	{
+		newMorphName = MorphInfo::getMorphPropertyName(morphProperty) + "_baked";
+	}
 	createMorph(newMorphName, CachedDualQuaternionMesh, node);
 
 	setMeshResolution(node, origResolution);
 
 }
 
-
-QString bakePoseMorph(DzFloatProperty* morphProperty)
+QString bakePoseMorph(DzFloatProperty* morphProperty, QString newMorphName)
 {
 	DzNode* Selection = dzScene->getPrimarySelection();
 	if (Selection == nullptr)
@@ -485,8 +487,11 @@ QString bakePoseMorph(DzFloatProperty* morphProperty)
 		restoreAction->trigger();
 	}
 
-	bakePoseMorphPerNode(morphProperty, Selection);
-	QString newMorphName = MorphInfo::getMorphPropertyName(morphProperty) + "_baked";
+	if (newMorphName.isEmpty())
+	{
+		QString newMorphName = MorphInfo::getMorphPropertyName(morphProperty) + "_baked";
+	}
+	bakePoseMorphPerNode(morphProperty, Selection, newMorphName);
 	return newMorphName;
 }
 
