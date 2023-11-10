@@ -156,11 +156,11 @@ namespace DzBridgeNameSpace
 		QString m_sMorphSelectionRule; // Selection Rule used by FbxExporter to choose morphs to export
 		QString m_sFbxVersion; // FBX file format version to export
 
-		// DB 2023-11-02: WARNING: m_mMorphNameToLabel is used as a proxy (stand-in) for the finalized list of morphs to export.
-		// It is used to filter morphs when generating the MorphString filter for the Daz FbxExporter.  Modifying this table will
-		// result in undesired morphs being exported or not exported with the FBX.
-		// The actual lookup table is used by the DTU writing functions.
-		QMap<QString, QString> m_mMorphNameToLabel; // Internal name to Friendly label (from MorphSelectionDialog->m_morphsToExport)
+		// DB 2023-11-08: Morph Selection Overhaul
+		QMap<QString, MorphInfo> m_MorphsToExport; // contains list of morphs to export, stored as MorphName to MorphInfo lookup
+		QStringList m_aMorphListOverride; // overrides Morph Selection Dialog (for use by Script Interface)
+		// LEGACY MORPH DATA
+//		QMap<QString, QString> m_mMorphNameToLabel; // Internal name to Friendly label (from MorphSelectionDialog->m_morphsToExport)
 
 		QList<QString> m_aPoseList; // Control Pose names
 		QList<QString> m_aPoseExportList; // Poses chosen in the export dialog

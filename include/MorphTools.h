@@ -57,3 +57,4 @@ void createMorph(const QString NewMorphName, DzVertexMesh* Mesh, DzNode* Node);
 QString bakePoseMorph(DzFloatProperty* morphProperty);
 int setMeshResolution(DzNode* node, int desiredResolutionIndex);
 void bakePoseMorphPerNode(DzFloatProperty* morphProperty, DzNode* node);
+QString getMorphString(QList<MorphInfo> m_morphsToExport);

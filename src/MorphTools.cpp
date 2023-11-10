@@ -541,3 +541,39 @@ int setMeshResolution(DzNode* node, int desiredResolutionIndex)
 
 	return ResolutionLevel;
 }
+
+// Get the morph string (aka m_morphsToExport_finalized) in the format for the Daz FBX Export
+QString getMorphString(QList<MorphInfo> m_morphsToExport)
+{
+
+	//if (IsAutoJCMEnabled())
+	//{
+	//	AddActiveJointControlledMorphs();
+	//}
+
+//	QList<JointLinkInfo> jointLinks = GetActiveJointControlledMorphs();
+	QList<int> jointLinks;
+
+	if (m_morphsToExport.length() == 0 && jointLinks.length() == 0)
+	{
+		return "";
+	}
+	QStringList morphNamesToExport;
+	foreach(MorphInfo exportMorph, m_morphsToExport)
+	{
+		QString sExportName = exportMorph.Name;
+		if (exportMorph.ExportString.isEmpty() == false)
+		{
+			sExportName = exportMorph.ExportString;
+		}
+		morphNamesToExport.append(sExportName);
+	}
+	//foreach(JointLinkInfo jointLink, jointLinks)
+	//{
+	//	morphNamesToExport.append(jointLink.Morph);
+	//	morphNamesToExport.append(jointLink.Morph + "_dq2lb");
+	//}
+	QString morphString = morphNamesToExport.join("\n1\n");
+	morphString += "\n1\n.CTRLVS\n2\nAnything\n0";
+	return morphString;
+}
