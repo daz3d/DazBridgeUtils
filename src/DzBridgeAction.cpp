@@ -4584,75 +4584,44 @@ void FindAndProcessTwistBones(FbxNode* pNode)
 }
 
 
-void RemoveString(FbxString& name, const char* prefix) 
+void FbxTools::removeMorphExportPrefixFromBlendShapeChannel(FbxBlendShapeChannel* pChannel, const char* prefix)
 {
-	name.FindAndReplace(prefix, "", 0);
-}
-
-void RenameShapes(FbxBlendShapeChannel* pChannel, const char* prefix) {
     int shapeCount = pChannel->GetTargetShapeCount();
-    for (int shapeIndex = 0; shapeIndex < shapeCount; ++shapeIndex) {
+    for (int shapeIndex = 0; shapeIndex < shapeCount; ++shapeIndex) 
+	{
         FbxShape* shape = pChannel->GetTargetShape(shapeIndex);
-        if (shape) {
+        if (shape) 
+		{
             FbxString newName = shape->GetName();
-			RemoveString(newName, prefix);
+			newName.FindAndReplace(prefix, "", 0);
             shape->SetName(newName.Buffer());
-
-            // Confirm the name change
-            FbxString confirmedName = shape->GetName();
-            if (confirmedName != newName) {
-                printf("Failed to rename shape from '%s' to '%s'.\n", shape->GetName(), newName.Buffer());
-            } else {
-                printf("Successfully renamed shape to '%s'.\n", confirmedName.Buffer());
-            }
         }
     }
 }
 
-void RenameBlendshapes(FbxNode* pNode, const char* prefix) 
+void FbxTools::removeMorphExportPrefixFromNode(FbxNode* pNode, const char* prefix)
 {
-    if (pNode) {
+    if (pNode) 
+	{
         // Check if the node has a mesh
         FbxMesh* pMesh = pNode->GetMesh();
-        if (pMesh) {
-            // Check for blendshape deformer
-            int deformerCount = pMesh->GetDeformerCount(FbxDeformer::eBlendShape);
-            for (int deformerIndex = 0; deformerIndex < deformerCount; ++deformerIndex) {
-                FbxBlendShape* blendShape = static_cast<FbxBlendShape*>(pMesh->GetDeformer(deformerIndex, FbxDeformer::eBlendShape));
-                
-                // Rename blendshape channels
-                int blendShapeChannelCount = blendShape->GetBlendShapeChannelCount();
-                for (int channelIndex = 0; channelIndex < blendShapeChannelCount; ++channelIndex) {
-                    FbxBlendShapeChannel* channel = blendShape->GetBlendShapeChannel(channelIndex);
-                    if (channel) {
-                        FbxString newName = channel->GetNameOnly();
-                        RemoveString(newName, prefix);
-                        channel->SetName(newName.Buffer());
 
-                        // Confirm the name change
-                        FbxString confirmedName = channel->GetNameOnly();
-                        if (confirmedName != newName) {
-                            printf("Failed to rename blendshape channel from '%s' to '%s'.\n", channel->GetNameOnly(), newName.Buffer());
-                        } else {
-                            printf("Successfully renamed blendshape channel to '%s'.\n", confirmedName.Buffer());
-                        }
-                    }
-                }
-            }
-        }
-
-		// After renaming the blend shape channels, rename the shapes
-		if (pMesh) {
+		// Rename Shapes
+		if (pMesh) 
+		{
 			int deformerCount = pMesh->GetDeformerCount(FbxDeformer::eBlendShape);
-			for (int deformerIndex = 0; deformerIndex < deformerCount; ++deformerIndex) {
+			for (int deformerIndex = 0; deformerIndex < deformerCount; ++deformerIndex) 
+			{
 				FbxBlendShape* blendShape = static_cast<FbxBlendShape*>(pMesh->GetDeformer(deformerIndex, FbxDeformer::eBlendShape));
 				
 				int blendShapeChannelCount = blendShape->GetBlendShapeChannelCount();
-				for (int channelIndex = 0; channelIndex < blendShapeChannelCount; ++channelIndex) {
+				for (int channelIndex = 0; channelIndex < blendShapeChannelCount; ++channelIndex) 
+				{
 					FbxBlendShapeChannel* channel = blendShape->GetBlendShapeChannel(channelIndex);
-					if (channel) {
+					if (channel) 
+					{
 						// Rename the shapes associated with this channel
-						RenameShapes(channel, prefix);
+						removeMorphExportPrefixFromBlendShapeChannel(channel, prefix);
 					}
 				}
 			}
@@ -4660,7 +4629,7 @@ void RenameBlendshapes(FbxNode* pNode, const char* prefix)
 
         // Recursively process children nodes
         for (int j = 0; j < pNode->GetChildCount(); j++) {
-            RenameBlendshapes(pNode->GetChild(j), prefix);
+            removeMorphExportPrefixFromNode(pNode->GetChild(j), prefix);
         }
     }
 }
@@ -4684,8 +4653,8 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 		return false;
 	}
 
-    // Call the function to rename blendshapes
-    RenameBlendshapes(pScene->GetRootNode(), "export____");
+    // Remove Morph Export Prefix from FBX
+    FbxTools::removeMorphExportPrefixFromNode(pScene->GetRootNode(), "export____");
 
 	// Remove Extra Geograft nodes and geometry
 	if (m_bRemoveDuplicateGeografts)
