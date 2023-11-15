@@ -166,7 +166,7 @@ namespace DzBridgeNameSpace
 
 		// DB 2023-11-08: Morph Selection Overhaul
 		QMap<QString, MorphInfo> m_AvailableMorphsTable; // MorphName to MorphInfo Lookup
-		QList<QString> m_MorphsToExport; // contains list of morphs to export
+		QList<QString> m_MorphNamesToExport; // contains list of morphs to export
 		QStringList m_aMorphListOverride; // overrides Morph Selection Dialog (for use by Script Interface)
 		// LEGACY MORPH DATA
 //		QMap<QString, QString> m_mMorphNameToLabel; // Internal name to Friendly label (from MorphSelectionDialog->m_morphsToExport)
@@ -237,8 +237,8 @@ namespace DzBridgeNameSpace
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }
 
-		virtual void exportAsset();
-		virtual void exportNode(DzNode* Node);
+		virtual bool exportAsset();
+		virtual bool exportNode(DzNode* Node);
 
 		virtual void exportAnimation();
 		virtual void exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& BoneMap, FbxAnimLayer* AnimBaseLayer, float FigureScale);
@@ -350,7 +350,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE void setExportFbx(QString arg_FbxName) { this->m_sExportFbx = arg_FbxName; };
 
 		Q_INVOKABLE virtual bool readGui(DzBridgeDialog*);
-		Q_INVOKABLE virtual void exportHD(DzProgress* exportProgress = nullptr);
+		Q_INVOKABLE virtual bool exportHD(DzProgress* exportProgress = nullptr);
 		Q_INVOKABLE virtual bool upgradeToHD(QString baseFilePath, QString hdFilePath, QString outFilePath, std::map<std::string, int>* pLookupTable);
 		Q_INVOKABLE virtual void writeWeightMaps(DzNode* Node, DzJsonWriter& Stream);
 

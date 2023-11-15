@@ -548,37 +548,64 @@ int MorphTools::setMeshResolution(DzNode* node, int desiredResolutionIndex)
 	return ResolutionLevel;
 }
 
-// Get the morph string (aka m_morphsToExport_finalized) in the format for the Daz FBX Export
-QString MorphTools::getMorphString(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled)
+QStringList MorphTools::getCombinedMorphList(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled)
 {
+	int debug_num_morphs = m_morphsToExport.count();
 
 	if (bAutoJCMEnabled)
 	{
 		AddActiveJointControlledMorphs(m_morphsToExport, availableMorphsTable, bAutoJCMEnabled);
 	}
 
-	QList<JointLinkInfo> jointLinks = GetActiveJointControlledMorphs(m_morphsToExport, availableMorphsTable, bAutoJCMEnabled);
+	int debug_num_morphs_added = m_morphsToExport.count() - debug_num_morphs;
 
-	if (m_morphsToExport.length() == 0 && jointLinks.length() == 0)
+	return m_morphsToExport;
+}
+
+QStringList MorphTools::getFinalizedMorphList(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled)
+{
+	int debug_num_morphs = m_morphsToExport.count();
+
+	QStringList combinedList = getCombinedMorphList(m_morphsToExport, availableMorphsTable, bAutoJCMEnabled);
+
+	int debug_num_morphs_added = combinedList.count() - debug_num_morphs;
+
+	if (combinedList.count() == 0)
 	{
-		return "";
+		return combinedList;
 	}
+
 	QStringList morphNamesToExport;
-	foreach(QString morphName, m_morphsToExport)
+	foreach(QString morphName, combinedList)
 	{
 		QString sExportName = morphName;
-		MorphInfo morphInfo = availableMorphsTable[morphName];
-		if (morphInfo.ExportString.isEmpty() == false)
+		QString sCorrectedKey = QString(morphName).replace("export____", "");
+		if (availableMorphsTable.contains(sCorrectedKey))
 		{
-			sExportName = morphInfo.ExportString;
+			MorphInfo morphInfo = availableMorphsTable[sCorrectedKey];
+			if (morphInfo.ExportString.isEmpty() == false)
+			{
+				sExportName = morphInfo.ExportString;
+			}
+			morphNamesToExport.append(sExportName);
 		}
-		morphNamesToExport.append(sExportName);
+		else
+		{
+			dzApp->log("ERROR: Morph To Export was not found in available Morphs: " + morphName);
+		}
 	}
-	foreach(JointLinkInfo jointLink, jointLinks)
-	{
-		morphNamesToExport.append(jointLink.Morph);
-		morphNamesToExport.append(jointLink.Morph + "_dq2lb");
-	}
+
+	int debug_num_morphs_final = morphNamesToExport.count();
+
+	return morphNamesToExport;
+}
+
+// Get the morph string (aka m_morphsToExport_finalized) in the format for the Daz FBX Export
+QString MorphTools::getMorphString(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled)
+{
+	QStringList morphNamesToExport = getFinalizedMorphList(m_morphsToExport, availableMorphsTable, bAutoJCMEnabled);
+	if (morphNamesToExport.count() == 0)
+		return "";
 	QString morphString = morphNamesToExport.join("\n1\n");
 	morphString += "\n1\n.CTRLVS\n2\nAnything\n0";
 	return morphString;
@@ -611,7 +638,7 @@ QList<JointLinkInfo> MorphTools::GetActiveJointControlledMorphs(QList<QString> m
 		}
 
 		DzObject* Object = Node->getObject();
-		DzShape* Shape = Object ? Object->getCurrentShape() : NULL;
+//		DzShape* Shape = Object ? Object->getCurrentShape() : NULL;
 
 		for (int index = 0; index < Node->getNumProperties(); index++)
 		{
@@ -728,7 +755,7 @@ QList<JointLinkInfo> MorphTools::GetJointControlledMorphInfo(DzProperty* propert
 			JointLinkInfo linkInfo;
 			linkInfo.Bone = linkBone;
 			linkInfo.Axis = linkAxis;
-			linkInfo.Morph = linkLabel;
+			linkInfo.MorphName = linkLabel;
 			linkInfo.Scalar = linkScalar;
 			linkInfo.Alpha = currentBodyScalar;
 			linkInfo.Keys = linkKeys;
@@ -741,7 +768,13 @@ QList<JointLinkInfo> MorphTools::GetJointControlledMorphInfo(DzProperty* propert
 
 			bool bMorphInfoFound = false;
 			QString sCorrectedKey = QString(linkLabel).replace("export____", "");
-			if (availableMorphsTable.contains(sCorrectedKey))
+
+			if (availableMorphsTable.contains(linkLabel))
+			{
+				linkInfo.LinkMorphInfo = availableMorphsTable[linkLabel];
+				bMorphInfoFound = true;
+			}
+			else if (availableMorphsTable.contains(sCorrectedKey))
 			{
 				linkInfo.LinkMorphInfo = availableMorphsTable[sCorrectedKey];
 				bMorphInfoFound = true;
@@ -774,17 +807,25 @@ QList<JointLinkInfo> MorphTools::GetJointControlledMorphInfo(DzProperty* propert
 	return returnMorphs;
 }
 
-void MorphTools::AddActiveJointControlledMorphs(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node)
+void MorphTools::AddActiveJointControlledMorphs(QList<QString> &m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node)
 {
-	QList<JointLinkInfo> activeMorphs = GetActiveJointControlledMorphs(m_morphsToExport, availableMorphsTable, bAutoJCMEnabled, Node);
-	QStringList availableMorphNames = getAvailableMorphNames(Node);
+	QList<JointLinkInfo> activeJCMs = GetActiveJointControlledMorphs(m_morphsToExport, availableMorphsTable, bAutoJCMEnabled, Node);
 
-	for (JointLinkInfo linkInfo : activeMorphs)
+	for (JointLinkInfo linkInfo : activeJCMs)
 	{
-		QString linkLabel = linkInfo.Morph;
+		QString linkLabel = linkInfo.MorphName;
 		MorphInfo morphInfo = linkInfo.LinkMorphInfo;
 
-		if (availableMorphNames.contains(linkLabel) && !m_morphsToExport.contains(linkLabel))
+		QString sCorrectedKey = QString(linkLabel).replace("export____", "");
+		if (availableMorphsTable.contains(sCorrectedKey) && !m_morphsToExport.contains(linkLabel))
+		{
+			m_morphsToExport.append(linkLabel);
+		}
+
+		// repeat for dq2lb
+		linkLabel += "_dq2lb";
+		sCorrectedKey = QString(linkLabel).replace("export____", "");
+		if (availableMorphsTable.contains(sCorrectedKey) && !m_morphsToExport.contains(linkLabel))
 		{
 			m_morphsToExport.append(linkLabel);
 		}

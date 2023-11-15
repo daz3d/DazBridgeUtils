@@ -64,7 +64,7 @@ struct JointLinkInfo
 {
 	QString Bone;
 	QString Axis;
-	QString Morph;
+	QString MorphName;
 	double Scalar;
 	double Alpha;
 	bool IsBaseJCM = false;
@@ -75,7 +75,7 @@ struct JointLinkInfo
 class MorphExportSettings
 {
 public:
-	QList<MorphInfo> m_MorphsToExport;
+	QList<MorphInfo> m_MorphNamesToExport;
 	bool m_bDoubleDipping;
 	bool m_bAutoJCM;
 	bool m_bBakeFaceMorphs;
@@ -92,8 +92,12 @@ public:
 	static QMap<QString, MorphInfo> enumerateMorphInfoTable(DzNode* Node);
 	static QString getMorphString(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled);
 	static QStringList getAvailableMorphNames(DzNode* Node);
+	static QStringList getFinalizedMorphList(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled);
+	static QStringList getCombinedMorphList(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled);
 
+private:
+	static void AddActiveJointControlledMorphs(QList<QString> &m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node = nullptr);
 	static QList<JointLinkInfo> GetActiveJointControlledMorphs(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node = nullptr);
 	static QList<JointLinkInfo> GetJointControlledMorphInfo(DzProperty* property, QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable);
-	static void AddActiveJointControlledMorphs(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node = nullptr);
+
 };

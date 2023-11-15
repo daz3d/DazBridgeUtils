@@ -569,17 +569,17 @@ void DzBridgeDialog::HandleChooseSubdivisionsButton()
 	subdivisionDialog->exec();
 }
 
-QString DzBridgeDialog::GetMorphString()
-{
-	DzBridgeMorphSelectionDialog* morphDialog = DzBridgeMorphSelectionDialog::Get(this);
-	return morphDialog->GetMorphString();
-}
-
-QMap<QString, QString> DzBridgeDialog::GetMorphMappingFromMorphSelectionDialog()
-{
-	DzBridgeMorphSelectionDialog* morphDialog = DzBridgeMorphSelectionDialog::Get(this);
-	return morphDialog->GetMorphMapping();
-}
+//QString DzBridgeDialog::GetMorphString()
+//{
+//	DzBridgeMorphSelectionDialog* morphDialog = DzBridgeMorphSelectionDialog::Get(this);
+//	return morphDialog->GetMorphString();
+//}
+//
+//QMap<QString, QString> DzBridgeDialog::GetMorphMappingFromMorphSelectionDialog()
+//{
+//	DzBridgeMorphSelectionDialog* morphDialog = DzBridgeMorphSelectionDialog::Get(this);
+//	return morphDialog->GetMorphMapping();
+//}
 
 QList<QString> DzBridgeDialog::GetPoseList()
 {

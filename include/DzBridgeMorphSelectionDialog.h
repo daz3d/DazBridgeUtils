@@ -47,6 +47,8 @@ namespace DzBridgeNameSpace
 		// Used to rename them to the friendly name in Unreal
 		Q_INVOKABLE QMap<QString, QString> GetMorphMapping();
 		Q_INVOKABLE QMap<QString, MorphInfo> GetAvailableMorphsTable();
+		// Morph Selection Overhaul
+		Q_INVOKABLE QList<QString> GetMorphNamesToExport();
 
 		Q_INVOKABLE bool IsAutoJCMEnabled() { return autoJCMCheckBox->isChecked(); }
 		Q_INVOKABLE bool IsFakeDualQuatEnabled() { return fakeDualQuatCheckBox->isChecked(); }
@@ -107,8 +109,8 @@ namespace DzBridgeNameSpace
 		// Refresh the list of possible presets from disk
 		void RefreshPresetsCombo();
 
-		// Recursive function for finding all morphs for a node
-		QStringList GetAvailableMorphs(DzNode* Node);
+		// function for finding all morphs for a node
+		QMap<QString, MorphInfo> GetAvailableMorphs(DzNode* Node);
 
 		//
 		QList<JointLinkInfo> GetJointControlledMorphInfo(DzProperty* property);

@@ -455,10 +455,8 @@ void DzBridgeMorphSelectionDialog::FilterChanged(const QString& filter)
 // Build a list of availaboe morphs for the node
 // TODO: This function evolved a lot as I figured out where to find the morphs.
 // There may be dead code in here.
-QStringList DzBridgeMorphSelectionDialog::GetAvailableMorphs(DzNode* Node)
+QMap<QString, MorphInfo> DzBridgeMorphSelectionDialog::GetAvailableMorphs(DzNode* Node)
 {
-	QStringList newMorphList;
-
 	DzObject* Object = Node->getObject();
 	DzShape* Shape = Object ? Object->getCurrentShape() : NULL;
 
@@ -543,7 +541,7 @@ QStringList DzBridgeMorphSelectionDialog::GetAvailableMorphs(DzNode* Node)
 		}
 	}
 
-	return newMorphList;
+	return m_morphInfoMap;
 }
 
 void DzBridgeMorphSelectionDialog::AddActiveJointControlledMorphs(DzNode* Node)
@@ -552,7 +550,7 @@ void DzBridgeMorphSelectionDialog::AddActiveJointControlledMorphs(DzNode* Node)
 
 	for (JointLinkInfo linkInfo : activeMorphs)
 	{
-		QString linkLabel = linkInfo.Morph;
+		QString linkLabel = linkInfo.MorphName;
 
 		if (m_morphInfoMap.contains(linkLabel) && !m_morphsToExport_finalized.contains(m_morphInfoMap[linkLabel]))
 		{
@@ -706,7 +704,7 @@ QList<JointLinkInfo> DzBridgeMorphSelectionDialog::GetJointControlledMorphInfo(D
 			JointLinkInfo linkInfo;
 			linkInfo.Bone = linkBone;
 			linkInfo.Axis = linkAxis;
-			linkInfo.Morph = linkLabel;
+			linkInfo.MorphName = linkLabel;
 			linkInfo.Scalar = linkScalar;
 			linkInfo.Alpha = currentBodyScalar;
 			linkInfo.Keys = linkKeys;
@@ -1547,8 +1545,8 @@ QString DzBridgeMorphSelectionDialog::GetMorphString()
 	}
 	foreach(JointLinkInfo jointLink, jointLinks)
 	{
-		morphNamesToExport.append(jointLink.Morph);
-		morphNamesToExport.append(jointLink.Morph + "_dq2lb");
+		morphNamesToExport.append(jointLink.MorphName);
+		morphNamesToExport.append(jointLink.MorphName + "_dq2lb");
 	}
 	QString morphString = morphNamesToExport.join("\n1\n");
 	morphString += "\n1\n.CTRLVS\n2\nAnything\n0";
@@ -1595,6 +1593,19 @@ QMap<QString,QString> DzBridgeMorphSelectionDialog::GetMorphMapping()
 	}
 
 	return morphNameMapping;
+}
+
+// DB 2023-11-14: Morph Selection Overhaul
+QList<QString> DzBridgeMorphSelectionDialog::GetMorphNamesToExport()
+{
+	QList<QString> morphNamesToExport;
+
+	foreach(MorphInfo morphInfo, m_morphsToExport_finalized)
+	{
+		morphNamesToExport.append(morphInfo.Name);
+	}
+
+	return morphNamesToExport;
 }
 
 // DB 2023-11-14: Morph Selection Overhaul

@@ -105,14 +105,14 @@ bool UnitTest_DzBridgeDialog::_DzBridgeDialog(UnitTest::TestResult* testResult)
 bool UnitTest_DzBridgeDialog::GetMorphString(UnitTest::TestResult* testResult)
 {
 	bool bResult = true;
-	TRY_METHODCALL(qobject_cast<DzBridgeDialog*>(m_testObject)->GetMorphString());
+//	TRY_METHODCALL(qobject_cast<DzBridgeDialog*>(m_testObject)->GetMorphString());
 	return bResult;
 }
 
 bool UnitTest_DzBridgeDialog::GetMorphMappingFromMorphSelectionDialog(UnitTest::TestResult* testResult)
 {
 	bool bResult = true;
-	TRY_METHODCALL(qobject_cast<DzBridgeDialog*>(m_testObject)->GetMorphMappingFromMorphSelectionDialog());
+//	TRY_METHODCALL(qobject_cast<DzBridgeDialog*>(m_testObject)->GetMorphMappingFromMorphSelectionDialog());
 	return bResult;
 }
 

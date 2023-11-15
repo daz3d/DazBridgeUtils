@@ -279,21 +279,36 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 		}
 	}
 
+	auto availables = m_morphSelectionDialog->GetAvailableMorphs(m_pSelectedNode);
+	int debug_num_availables = availables.count();
+	int debug_num_AvailableMorphsTable = m_AvailableMorphsTable.count();
+	if (debug_num_availables > debug_num_AvailableMorphsTable)
+	{
+		m_AvailableMorphsTable.clear();
+		m_AvailableMorphsTable = availables;
+	}
+	QStringList morphNamesToExport = MorphTools::getCombinedMorphList(m_MorphNamesToExport, m_AvailableMorphsTable, m_morphSelectionDialog->IsAutoJCMEnabled());
+
 	// PreProcess MorphsToExport
 //	foreach (MorphInfo &morphInfo, m_MorphsToExport)
-	foreach (QString key, m_MorphsToExport)
+	foreach (QString key, morphNamesToExport)
 	{
-		if (key.isEmpty() || m_AvailableMorphsTable.contains(key) == false) continue;
+		if (key.isEmpty())
+			continue;
+
+		if (m_AvailableMorphsTable.contains(key) == false) 
+			continue;
+
 		// rename Morph Property with prefix, if prefix is not already present
 		if (m_AvailableMorphsTable[key].Name.contains("export____") == false)
 		{
 			QString sExportName = "export____" + m_AvailableMorphsTable[key].Name;
-			DzProperty* property = m_AvailableMorphsTable[key].Property;
+			DzProperty* morphProperty = m_AvailableMorphsTable[key].Property;
 			DzElement* owner = nullptr;
-			if (property)
+			if (morphProperty)
 			{
 				m_AvailableMorphsTable[key].ExportString = sExportName;
-				owner = property->getOwner();
+				owner = morphProperty->getOwner();
 				if (owner && owner->inherits("DzModifier"))
 				{
 					owner->setName(sExportName);
@@ -301,9 +316,9 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 				}
 				else
 				{
-					m_AvailableMorphsTable[key].Property->setName(sExportName);
+					morphProperty->setName(sExportName);
 					// add to undo table
-					m_undoTable_MorphRename.insert(m_AvailableMorphsTable[key].Property, m_AvailableMorphsTable[key].Name);
+					m_undoTable_MorphRename.insert(morphProperty, m_AvailableMorphsTable[key].Name);
 				}
 			}
 		}
@@ -812,12 +827,12 @@ bool DzBridgeAction::undoRenameDuplicateClothing()
 /// See also: upgradeToHD(), Export().
 /// </summary>
 /// <param name="exportProgress">if null, exportHD will handle UI progress updates</param>
-void DzBridgeAction::exportHD(DzProgress* exportProgress)
+bool DzBridgeAction::exportHD(DzProgress* exportProgress)
 {
     DzProgress::setCurrentInfo("Preparing asset for export via Daz Bridge Library...");
 
     if (m_subdivisionDialog == nullptr)
-		return;
+		return false;
 
 	// Update the dialog so subdivision locks later find all the meshes
 	m_subdivisionDialog->PrepareDialog();
@@ -849,7 +864,7 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 		}
 		m_subdivisionDialog->LockSubdivisionProperties(false);
 		m_bExportingBaseMesh = true;
-		exportAsset();
+		exportAsset(); // basemesh
 		m_subdivisionDialog->UnlockSubdivisionProperties();
 		if (exportProgress)
 		{
@@ -872,7 +887,7 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 	m_subdivisionDialog->LockSubdivisionProperties(m_EnableSubdivisions);
 	m_bExportingBaseMesh = false;
 
-	exportAsset();
+	bool bExportResult = exportAsset();
 	if (exportProgress)
 	{
 		exportProgress->step();
@@ -880,7 +895,7 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 	}
 
 	// Export any geograft morphs if exist
-	if (m_bEnableMorphs)
+	if (m_bEnableMorphs && bExportResult)
 	{
         if (exportGeograftMorphs(dzScene->getPrimarySelection(), m_sDestinationPath))
 		{
@@ -889,7 +904,7 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 		}
 	}
 
-	if (m_EnableSubdivisions && m_sAssetType != "MLDeformer")
+	if (m_EnableSubdivisions && m_sAssetType != "MLDeformer" && bExportResult)
 	{
 		if (exportProgress)
 		{
@@ -939,23 +954,39 @@ void DzBridgeAction::exportHD(DzProgress* exportProgress)
 	if (bLocalDzProgress)
 	{
 		exportProgress->finish();
-		// 2022-02-13 (DB): Generic messagebox "Export Complete"
-		if (m_nNonInteractiveMode == 0)
+
+		if (bExportResult)
 		{
-			QMessageBox::information(0, "DazBridge",
-				tr("Export phase from Daz Studio complete. Please switch to Unity to begin Import phase."), QMessageBox::Ok);
+			// 2022-02-13 (DB): Generic messagebox "Export Complete"
+			if (m_nNonInteractiveMode == 0)
+			{
+				QMessageBox::information(0, "DazBridge",
+					tr("Export phase from Daz Studio complete. Please switch to Unity to begin Import phase."), QMessageBox::Ok);
+			}
+		}
+		else
+		{
+			// 2022-02-13 (DB): Generic messagebox "Export Complete"
+			if (m_nNonInteractiveMode == 0)
+			{
+				QMessageBox::information(0, "DazBridge",
+					tr("Export cancelled."), QMessageBox::Ok);
+			}
 		}
 
 	}
 
+	return bExportResult;
 }
 
-void DzBridgeAction::exportAsset()
+bool DzBridgeAction::exportAsset()
 {
+	bool bReturnResult = false;
+
 	// FBX Export
 	m_pSelectedNode = dzScene->getPrimarySelection();
 	if (m_pSelectedNode == nullptr)
-		return;
+		return false;
 
 	QMap<QString, DzNode*> PropToInstance;
 	if (m_sAssetType == "Environment")
@@ -1008,7 +1039,7 @@ void DzBridgeAction::exportAsset()
 
 			// Export
             DzProgress::setCurrentInfo("Environment Export: Exporting Node: " + Node->getLabel());
-            exportNode(Node);
+			bReturnResult = exportNode(Node);
 
 			// Put the item back where it was
 			Node->setWSTransform(Location, Rotation, Scale);
@@ -1026,7 +1057,7 @@ void DzBridgeAction::exportAsset()
 		m_sDestinationFBX = m_sDestinationPath + m_sExportFbx + ".fbx";
 		m_pSelectedNode = OriginalSelection;
 		m_sAssetType = "Environment";
-		exportNode(m_pSelectedNode);
+		bReturnResult = exportNode(m_pSelectedNode);
 	}
 	else if (m_sAssetType == "Pose")
 	{
@@ -1036,7 +1067,7 @@ void DzBridgeAction::exportAsset()
 				tr("Proceeding will delete keyed values on some properties. Continue?"),
 				QMessageBox::Yes | QMessageBox::No) != QMessageBox::Yes)
 			{
-				return;
+				return false;
 			}
 		}
 
@@ -1057,7 +1088,7 @@ void DzBridgeAction::exportAsset()
 					poseIndex++;
 					numericProperty->setDoubleValue(0.0f, 0.0f);
 //					for (int frame = 0; frame < m_mMorphNameToLabel.count() + 1; frame++)
-					for (int frame = 0; frame < m_MorphsToExport.count() + 1; frame++)
+					for (int frame = 0; frame < m_MorphNamesToExport.count() + 1; frame++)
 					{
 						numericProperty->setDoubleValue(dzScene->getTimeStep() * double(frame), 0.0f);
 					}
@@ -1109,7 +1140,7 @@ void DzBridgeAction::exportAsset()
 		dzScene->setPlayRange(DzTimeRange(0, poseIndex * dzScene->getTimeStep()));
 
         DzProgress::setCurrentInfo("Pose Export: Exporting Selection: " + Selection->getLabel());
-		exportNode(Selection);
+		bReturnResult = exportNode(Selection);
 	}
 	else if (m_sAssetType == "SkeletalMesh")
 	{
@@ -1125,7 +1156,7 @@ void DzBridgeAction::exportAsset()
 		}
 		DzNode* Selection = dzScene->getPrimarySelection();
         DzProgress::setCurrentInfo("SkeletalMesh Export: Exporting Selection: " + Selection->getLabel());
-        exportNode(Selection);
+		bReturnResult = exportNode(Selection);
 		if (m_bEnableMorphs)
 		{
 			reconnectOverrideControllers(DisconnectedModifiers);
@@ -1135,8 +1166,10 @@ void DzBridgeAction::exportAsset()
 	{
 		DzNode* Selection = dzScene->getPrimarySelection();
         DzProgress::setCurrentInfo("SkeletalMesh Export: Exporting Selection: " + Selection->getLabel());
-		exportNode(Selection);
+		bReturnResult = exportNode(Selection);
 	}
+
+	return bReturnResult;
 }
 
 void DzBridgeAction::disconnectNode(DzNode* Node, QList<AttachmentInfo>& AttachmentList)
@@ -1225,10 +1258,12 @@ void overrideExportOptions(DzFileIOSettings &ExportOptions)
 
 }
 
-void DzBridgeAction::exportNode(DzNode* Node)
+bool DzBridgeAction::exportNode(DzNode* Node)
 {
+	bool bReturnResult = false;
+
 	if (Node == nullptr)
-		return;
+		return false;
 
 	dzScene->selectAllNodes(false);
 	dzScene->setPrimarySelection(Node);
@@ -1238,7 +1273,7 @@ void DzBridgeAction::exportNode(DzNode* Node)
 		QDir dir;
 		dir.mkpath(m_sDestinationPath);
 		writeConfiguration();
-		return;
+		return true;
 	}
 
 	if ((m_sAssetType == "Animation" || m_sAssetType == "Pose") && m_bAnimationUseExperimentalTransfer)
@@ -1247,7 +1282,7 @@ void DzBridgeAction::exportNode(DzNode* Node)
 		dir.mkpath(m_sDestinationPath);
 		exportAnimation(/*bExportingForMLDeformer*/);
 		writeConfiguration();
-		return;
+		return true;
 	}
 
 	DzExportMgr* ExportManager = dzApp->getExportMgr();
@@ -1299,7 +1334,7 @@ void DzBridgeAction::exportNode(DzNode* Node)
 		{
 			ExportOptions.setBoolValue("doAnims", false);
 		}
-		m_sMorphSelectionRule = MorphTools::getMorphString(m_MorphsToExport, m_AvailableMorphsTable, getMorphSelectionDialog()->IsAutoJCMEnabled());
+		m_sMorphSelectionRule = MorphTools::getMorphString(m_MorphNamesToExport, m_AvailableMorphsTable, getMorphSelectionDialog()->IsAutoJCMEnabled());
 		if ((m_sAssetType == "Animation" || m_sAssetType == "SkeletalMesh") && m_bEnableMorphs && m_sMorphSelectionRule != "")
 		{
 			ExportOptions.setBoolValue("doMorphs", true);
@@ -1342,16 +1377,27 @@ void DzBridgeAction::exportNode(DzNode* Node)
 		}
 		else
 		{
-			Exporter->writeFile(m_sDestinationFBX, &ExportOptions);
+			DzError result = Exporter->writeFile(m_sDestinationFBX, &ExportOptions);
 
-			// DB 2022-09-26: Post-Process FBX file
-			DzProgress::setCurrentInfo("Daz Bridge: PostProcessing FBX: " + m_sDestinationFBX);
-			postProcessFbx(m_sDestinationFBX);
+			if (result == DZ_USER_CANCELLED_OPERATION || result != DZ_NO_ERROR)
+			{
+				// handle cancel operation
+				dzApp->log("INFO: User cancelled FBX Export for: " + m_sDestinationFBX);
+				bReturnResult = false;
+			}
+			else
+			{
+				bReturnResult = true;
 
-			// composing dtu filename string here just to use with set current info
-			QString DTUfilename = m_sDestinationPath + m_sAssetName + ".dtu";
-			DzProgress::setCurrentInfo("Daz Bridge: Writing DTU Configuration File: " + DTUfilename);
-			writeConfiguration();
+				// DB 2022-09-26: Post-Process FBX file
+				DzProgress::setCurrentInfo("Daz Bridge: PostProcessing FBX: " + m_sDestinationFBX);
+				postProcessFbx(m_sDestinationFBX);
+
+				// composing dtu filename string here just to use with set current info
+				QString DTUfilename = m_sDestinationPath + m_sAssetName + ".dtu";
+				DzProgress::setCurrentInfo("Daz Bridge: Writing DTU Configuration File: " + DTUfilename);
+				writeConfiguration();
+			}
 		}
 		if (m_bMorphLockBoneTranslation)
 		{
@@ -1359,6 +1405,8 @@ void DzBridgeAction::exportNode(DzNode* Node)
 		}
 		undoPreProcessScene();
 	}
+
+	return bReturnResult;
 }
 
 void DzBridgeAction::exportAnimation()
@@ -1907,7 +1955,7 @@ void DzBridgeAction::exportNodeexportJCMDualQuatDiff(const JointLinkInfo& JointI
 
 	setLinearBlending(Binding);
 
-	createDualQuaternionToLinearBlendDiffMorph(JointInfo.Morph, CachedDualQuaternionMesh, dzScene->getPrimarySelection());
+	createDualQuaternionToLinearBlendDiffMorph(JointInfo.MorphName, CachedDualQuaternionMesh, dzScene->getPrimarySelection());
 
 	Bone->getXRotControl()->setValue(0.0f);
 	Bone->getYRotControl()->setValue(0.0f);
@@ -2157,7 +2205,7 @@ bool DzBridgeAction::checkForIrreversibleOperations_in_disconnectOverrideControl
 
 	int debug_NumControllersToDisconnect = m_ControllersToDisconnect.count();
 //	int debug_NumMorphsToExport = m_mMorphNameToLabel.count();
-	int debug_NumMorphsToExport = m_MorphsToExport.count();
+	int debug_NumMorphsToExport = m_MorphNamesToExport.count();
 
 	DzNumericProperty* previousProperty = nullptr;
 	for (int index = 0; index < Selection->getNumProperties(); index++)
@@ -2168,7 +2216,7 @@ bool DzBridgeAction::checkForIrreversibleOperations_in_disconnectOverrideControl
 		{
 			QString propName = property->getName();
 //			if (m_mMorphNameToLabel.contains(propName) && m_ControllersToDisconnect.contains(propName))
-			if (m_MorphsToExport.contains(propName) && m_ControllersToDisconnect.contains(propName))
+			if (m_MorphNamesToExport.contains(propName) && m_ControllersToDisconnect.contains(propName))
 			{
 				double propValue = numericProperty->getDoubleValue();
 				if (propValue != 0)
@@ -2196,7 +2244,7 @@ bool DzBridgeAction::checkForIrreversibleOperations_in_disconnectOverrideControl
 					{
 						QString propName = DzBridgeMorphSelectionDialog::getMorphPropertyName(property);
 //						if (m_mMorphNameToLabel.contains(modifier->getName()) && m_ControllersToDisconnect.contains(modifier->getName()))
-						if (m_MorphsToExport.contains(modifier->getName()) && m_ControllersToDisconnect.contains(modifier->getName()))
+						if (m_MorphNamesToExport.contains(modifier->getName()) && m_ControllersToDisconnect.contains(modifier->getName()))
 						{
 							double propValue = numericProperty->getDoubleValue();
 							if (propValue != 0)
@@ -2231,7 +2279,7 @@ QList<QString> DzBridgeAction::disconnectOverrideControllers()
 		{
 			QString propName = property->getName();
 //			if (m_mMorphNameToLabel.contains(propName) && m_ControllersToDisconnect.contains(propName))
-			if (m_MorphsToExport.contains(propName) && m_ControllersToDisconnect.contains(propName))
+			if (m_MorphNamesToExport.contains(propName) && m_ControllersToDisconnect.contains(propName))
 			{
 				numericProperty->setOverrideControllers(true);
 
@@ -2261,7 +2309,7 @@ QList<QString> DzBridgeAction::disconnectOverrideControllers()
 					{
 						QString propName = DzBridgeMorphSelectionDialog::getMorphPropertyName(property);
 //						if (m_mMorphNameToLabel.contains(modifier->getName()) && m_ControllersToDisconnect.contains(modifier->getName()))
-						if (m_MorphsToExport.contains(modifier->getName()) && m_ControllersToDisconnect.contains(modifier->getName()))
+						if (m_MorphNamesToExport.contains(modifier->getName()) && m_ControllersToDisconnect.contains(modifier->getName()))
 						{
 							numericProperty->setOverrideControllers(true);
 
@@ -2362,7 +2410,7 @@ bool DzBridgeAction::checkIfPoseExportIsDestructive()
 		{
 			QString propName = property->getName();
 //			if (m_mMorphNameToLabel.contains(propName))
-			if (m_MorphsToExport.contains(propName))
+			if (m_MorphNamesToExport.contains(propName))
 			{
 				if (!(numericProperty->getKeyRange().getEnd() == 0.0f && numericProperty->getDoubleValue(0.0f) == 0.0f)) return true;
 			}
@@ -2388,7 +2436,7 @@ bool DzBridgeAction::checkIfPoseExportIsDestructive()
 					{
 						QString propName = property->getName();
 //						if (m_mMorphNameToLabel.contains(modifier->getName()))
-						if (m_MorphsToExport.contains(modifier->getName()))
+						if (m_MorphNamesToExport.contains(modifier->getName()))
 						{
 							if (!(numericProperty->getKeyRange().getEnd() == 0.0f && numericProperty->getDoubleValue(0.0f) == 0.0f)) return true;
 						}
@@ -3132,7 +3180,7 @@ void DzBridgeAction::writeMorphLinks(DzJsonWriter& writer)
 	{
 		// iterate through each exported morph
 //		for (QMap<QString, QString>::iterator morphNameToLabel = m_mMorphNameToLabel.begin(); morphNameToLabel != m_mMorphNameToLabel.end(); ++morphNameToLabel)
-		foreach (QString morphName, m_MorphsToExport)
+		foreach (QString morphName, m_MorphNamesToExport)
 		{
 //			QString sMorphName = morphNameToLabel.key();
 //			QString sMorphLabel = morphNameToLabel.value();
@@ -3275,7 +3323,7 @@ void DzBridgeAction::writeMorphNames(DzJsonWriter& writer)
 //			QString sMorphName = morphNameToLabel.key();
 //			writer.addItem(sMorphName);
 //		}
-		foreach (QString morphName, m_MorphsToExport)
+		foreach (QString morphName, m_MorphNamesToExport)
 		{
 			writer.addItem(morphName);
 		}
@@ -3290,7 +3338,7 @@ void DzBridgeAction::writeAllMorphs(DzJsonWriter& writer)
 	if (m_bEnableMorphs)
 	{
 //		for (QMap<QString, QString>::iterator i = m_mMorphNameToLabel.begin(); i != m_mMorphNameToLabel.end(); ++i)
-		foreach (QString morphName, m_MorphsToExport)
+		foreach (QString morphName, m_MorphNamesToExport)
 		{
 			MorphInfo morphInfo = m_AvailableMorphsTable[morphName];
 			QString sMorphName = morphInfo.Name;
@@ -3330,7 +3378,7 @@ void DzBridgeAction::writeMorphJointLinkInfo(DzJsonWriter& writer, const JointLi
 	writer.startObject(true);
 	writer.addMember("Bone", linkInfo.Bone);
 	writer.addMember("Axis", linkInfo.Axis);
-	writer.addMember("Morph", linkInfo.Morph);
+	writer.addMember("Morph", linkInfo.MorphName);
 	writer.addMember("Scalar", linkInfo.Scalar);
 	writer.addMember("Alpha", linkInfo.Alpha);
 	if (linkInfo.Keys.count() > 0)
@@ -3687,15 +3735,9 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 	m_ControllersToDisconnect.append(m_morphSelectionDialog->getMorphNamesToDisconnectList());
 	int debug_NewNumControllersToDisconnect = m_ControllersToDisconnect.count();
 //	m_mMorphNameToLabel = BridgeDialog->GetMorphMappingFromMorphSelectionDialog();
-	m_MorphsToExport.clear();
+	m_MorphNamesToExport.clear();
 	m_AvailableMorphsTable.clear();
-	//QMap<QString,QString> morphsToExportMap = m_morphSelectionDialog->GetMorphMapping();
-	//foreach(QString MorphName, morphsToExportMap.keys())
-	//{
-	//	MorphInfo morphInfo = m_morphSelectionDialog->GetMorphInfoFromName(MorphName);
-	//	m_MorphsToExport.insert(morphInfo.Name, morphInfo);
-	//}
-	m_MorphsToExport = m_morphSelectionDialog->GetMorphMapping().keys();
+	m_MorphNamesToExport = m_morphSelectionDialog->GetMorphNamesToExport();
 	m_AvailableMorphsTable = m_morphSelectionDialog->GetAvailableMorphsTable();
 
 	if (preCheckEnableMorphs)
@@ -5673,7 +5715,7 @@ bool DzBridgeAction::prepareGeograftMorphsToExport(DzNode* Node, bool bZeroMorph
 			{
 				QString propName = property->getName();
 //				if (m_mMorphNameToLabel.contains(propName))
-				if (m_MorphsToExport.contains(propName))
+				if (m_MorphNamesToExport.contains(propName))
 				{
 					if (bZeroMorphForExport)
 					{
@@ -5700,7 +5742,7 @@ bool DzBridgeAction::prepareGeograftMorphsToExport(DzNode* Node, bool bZeroMorph
 						{
 							QString propName = DzBridgeMorphSelectionDialog::getMorphPropertyName(property);
 //							if (m_mMorphNameToLabel.contains(modifier->getName()))
-							if (m_MorphsToExport.contains(modifier->getName()))
+							if (m_MorphNamesToExport.contains(modifier->getName()))
 							{
 								if (bZeroMorphForExport)
 								{
@@ -5774,7 +5816,7 @@ bool DzBridgeAction::exportGeograftMorphs(DzNode *Node, QString sDestinationFold
 		{
 			QString propName = property->getName();
 //			if (m_mMorphNameToLabel.contains(propName))
-			if (m_MorphsToExport.contains(propName))
+			if (m_MorphNamesToExport.contains(propName))
 			{
 				oGeograftMorphsToExport.append(QPair<QString, DzNumericProperty*>(propName, numericProperty));
 				double propValue = numericProperty->getDoubleValue();
@@ -5799,7 +5841,7 @@ bool DzBridgeAction::exportGeograftMorphs(DzNode *Node, QString sDestinationFold
 					{
 						QString propName = DzBridgeMorphSelectionDialog::getMorphPropertyName(property);
 //						if (m_mMorphNameToLabel.contains(modifier->getName()) )
-						if (m_MorphsToExport.contains(modifier->getName()) )
+						if (m_MorphNamesToExport.contains(modifier->getName()) )
 						{
 							oGeograftMorphsToExport.append(QPair<QString, DzNumericProperty*>(modifier->getName(), numericProperty));
 							double propValue = numericProperty->getDoubleValue();
