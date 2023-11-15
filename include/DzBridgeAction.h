@@ -388,6 +388,13 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool undoMultiplyTextureValues();
 		Q_INVOKABLE virtual bool deleteDir(QString folderPath);
 
+		// DB 2023-11-15: Custom Asset Type Support, override these methods to support custom asset types
+		Q_INVOKABLE virtual bool isAssetMorphCompatible(QString sAssetType);
+		Q_INVOKABLE virtual bool isAssetMeshCompatible(QString sAsseType);
+		Q_INVOKABLE virtual bool isAssetAnimationCompatible(QString sAssetType);
+		Q_INVOKABLE virtual bool isAssetEnvironmentCompatible(QString sAssetType);
+		Q_INVOKABLE virtual bool isAssetPoseCompatible(QString sAssetType);
+
 	private:
 		class MaterialGroupExportOrderMetaData
 		{

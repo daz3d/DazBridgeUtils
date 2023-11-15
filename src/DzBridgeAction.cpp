@@ -1268,7 +1268,8 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 	dzScene->selectAllNodes(false);
 	dzScene->setPrimarySelection(Node);
 
-	if (m_sAssetType == "Environment")
+	// DB 2023-11-15: Custom Asset Type Support
+	if (isAssetEnvironmentCompatible(m_sAssetType))
 	{
 		QDir dir;
 		dir.mkpath(m_sDestinationPath);
@@ -1276,7 +1277,8 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 		return true;
 	}
 
-	if ((m_sAssetType == "Animation" || m_sAssetType == "Pose") && m_bAnimationUseExperimentalTransfer)
+	// DB 2023-11-15: Custom Asset Type Support
+	if ((isAssetAnimationCompatible(m_sAssetType) || isAssetPoseCompatible(m_sAssetType)) && m_bAnimationUseExperimentalTransfer)
 	{
 		QDir dir;
 		dir.mkpath(m_sDestinationPath);
@@ -1314,7 +1316,8 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 		DzFileIOSettings ExportOptions;
 		ExportOptions.setBoolValue("doSelected", true);
 		ExportOptions.setBoolValue("doVisible", false);
-		if (m_sAssetType == "SkeletalMesh" || m_sAssetType == "StaticMesh" || m_sAssetType == "Environment")
+		// DB 2023-11-15: Custom Asset Type Support
+		if (isAssetMeshCompatible(m_sAssetType))
 		{
 			ExportOptions.setBoolValue("doFigures", true);
 			ExportOptions.setBoolValue("doProps", true);
@@ -1326,7 +1329,8 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 		}
 		ExportOptions.setBoolValue("doLights", false);
 		ExportOptions.setBoolValue("doCameras", false);
-		if (m_sAssetType == "Animation")
+		// DB 2023-11-15: Custom Asset Type Support
+		if (isAssetAnimationCompatible(m_sAssetType))
 		{
 			ExportOptions.setBoolValue("doAnims", true);
 		}
@@ -1334,8 +1338,10 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 		{
 			ExportOptions.setBoolValue("doAnims", false);
 		}
+		// DB 2023-11-15: Morph Selection Overhaul
 		m_sMorphSelectionRule = MorphTools::getMorphString(m_MorphNamesToExport, m_AvailableMorphsTable, getMorphSelectionDialog()->IsAutoJCMEnabled());
-		if ((m_sAssetType == "Animation" || m_sAssetType == "SkeletalMesh") && m_bEnableMorphs && m_sMorphSelectionRule != "")
+		// DB 2023-11-15: Custom Asset Type Support
+		if (isAssetMorphCompatible(m_sAssetType) && m_bEnableMorphs && m_sMorphSelectionRule != "")
 		{
 			ExportOptions.setBoolValue("doMorphs", true);
 			ExportOptions.setStringValue("rules", m_sMorphSelectionRule);
@@ -1360,7 +1366,8 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 		ExportOptions.setBoolValue("doSubD", true);
 		ExportOptions.setBoolValue("doCollapseUVTiles", false);
 
-		if (m_sAssetType == "SkeletalMesh" && m_EnableSubdivisions)
+		// DB 2023-11-15: Custom Asset Type Support
+		if (isAssetMeshCompatible(m_sAssetType) && m_EnableSubdivisions)
 		{
 			ExportOptions.setBoolValue("doCollapseUVTiles", true);
 		}
@@ -1373,10 +1380,12 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 			CharacterBaseFBX.replace(".fbx", "_base.fbx");
 			// Bugfix for double fbx options dialog
 			ExportOptions.setIntValue("RunSilent", true);
+			// BASE MESH FBX EXPORT OPERATION
 			Exporter->writeFile(CharacterBaseFBX, &ExportOptions);
 		}
 		else
 		{
+			// MAIN FBX EXPORT OPERATION
 			DzError result = Exporter->writeFile(m_sDestinationFBX, &ExportOptions);
 
 			if (result == DZ_USER_CANCELLED_OPERATION || result != DZ_NO_ERROR)
@@ -6262,6 +6271,46 @@ bool DzBridgeAction::deleteDir(QString folderPath)
 	qDir.rmdir(folderPath);
 
 	return true;
+}
+
+bool DzBridgeAction::isAssetMorphCompatible(QString sAssetType)
+{
+	if (sAssetType == "Animation" || sAssetType == "SkeletalMesh")
+		return true;
+
+	return false;
+}
+
+bool DzBridgeAction::isAssetMeshCompatible(QString sAssetType)
+{
+	if (sAssetType == "SkeletalMesh" || sAssetType == "StaticMesh" || sAssetType == "Environment")
+		return true;
+
+	return false;
+}
+
+bool DzBridgeAction::isAssetAnimationCompatible(QString sAssetType)
+{
+	if (sAssetType == "Animation")
+		return true;
+
+	return false;
+}
+
+bool DzBridgeAction::isAssetEnvironmentCompatible(QString sAssetType)
+{
+	if (sAssetType == "Environment")
+		return true;
+
+	return false;
+}
+
+bool DzBridgeAction::isAssetPoseCompatible(QString sAssetType)
+{
+	if (sAssetType == "Pose")
+		return true;
+
+	return false;
 }
 
 #include "moc_DzBridgeAction.cpp"
