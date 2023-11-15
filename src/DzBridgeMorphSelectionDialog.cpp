@@ -1597,6 +1597,12 @@ QMap<QString,QString> DzBridgeMorphSelectionDialog::GetMorphMapping()
 	return morphNameMapping;
 }
 
+// DB 2023-11-14: Morph Selection Overhaul
+QMap<QString, MorphInfo> DzBridgeMorphSelectionDialog::GetAvailableMorphsTable()
+{
+	return m_morphInfoMap;
+}
+
 // Retrieve label based on morph name
 // DB Dec-21-2021, Created for scripting.
 QString DzBridgeMorphSelectionDialog::GetMorphLabelFromName(QString morphName)

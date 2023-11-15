@@ -21,6 +21,7 @@
 #include "dzscript.h"
 #include "dzshape.h"
 #include "dzenumproperty.h"
+#include "dzbone.h"
 
 #if USE_DAZ_LOG
 #include <dzapp.h>	
@@ -364,7 +365,7 @@ bool checkForIrreversibleOperations_in_disconnectOverrideControllers(DzNode* Sel
 }
 
 
-QMap<QString, MorphInfo> enumerateMorphInfoMap(DzNode* Node)
+QMap<QString, MorphInfo> MorphTools::enumerateMorphInfoTable(DzNode* Node)
 {
 	QMap<QString, MorphInfo> m_morphInfoMap;
 
@@ -433,7 +434,7 @@ QMap<QString, MorphInfo> enumerateMorphInfoMap(DzNode* Node)
 	return m_morphInfoMap;
 }
 
-void bakePoseMorphPerNode(DzFloatProperty* morphProperty, DzNode* node, QString newMorphName)
+void MorphTools::bakePoseMorphPerNode(DzFloatProperty* morphProperty, DzNode* node, QString newMorphName)
 {
 	if (node == nullptr)
 		return;
@@ -473,7 +474,7 @@ void bakePoseMorphPerNode(DzFloatProperty* morphProperty, DzNode* node, QString 
 
 }
 
-QString bakePoseMorph(DzFloatProperty* morphProperty, QString newMorphName)
+QString MorphTools::bakePoseMorph(DzFloatProperty* morphProperty, QString newMorphName)
 {
 	DzNode* Selection = dzScene->getPrimarySelection();
 	if (Selection == nullptr)
@@ -495,7 +496,7 @@ QString bakePoseMorph(DzFloatProperty* morphProperty, QString newMorphName)
 	return newMorphName;
 }
 
-void createMorph(const QString NewMorphName, DzVertexMesh* Mesh, DzNode* Node)
+void MorphTools::createMorph(const QString NewMorphName, DzVertexMesh* Mesh, DzNode* Node)
 {
 	DzScript* Script = new DzScript();
 
@@ -522,7 +523,7 @@ void createMorph(const QString NewMorphName, DzVertexMesh* Mesh, DzNode* Node)
 	Script->call("myFunction", Args);
 }
 
-int setMeshResolution(DzNode* node, int desiredResolutionIndex)
+int MorphTools::setMeshResolution(DzNode* node, int desiredResolutionIndex)
 {
 	if (node == nullptr)
 		return -1;
@@ -548,37 +549,298 @@ int setMeshResolution(DzNode* node, int desiredResolutionIndex)
 }
 
 // Get the morph string (aka m_morphsToExport_finalized) in the format for the Daz FBX Export
-QString getMorphString(QList<MorphInfo> m_morphsToExport)
+QString MorphTools::getMorphString(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled)
 {
 
-	//if (IsAutoJCMEnabled())
-	//{
-	//	AddActiveJointControlledMorphs();
-	//}
+	if (bAutoJCMEnabled)
+	{
+		AddActiveJointControlledMorphs(m_morphsToExport, availableMorphsTable, bAutoJCMEnabled);
+	}
 
-//	QList<JointLinkInfo> jointLinks = GetActiveJointControlledMorphs();
-	QList<int> jointLinks;
+	QList<JointLinkInfo> jointLinks = GetActiveJointControlledMorphs(m_morphsToExport, availableMorphsTable, bAutoJCMEnabled);
 
 	if (m_morphsToExport.length() == 0 && jointLinks.length() == 0)
 	{
 		return "";
 	}
 	QStringList morphNamesToExport;
-	foreach(MorphInfo exportMorph, m_morphsToExport)
+	foreach(QString morphName, m_morphsToExport)
 	{
-		QString sExportName = exportMorph.Name;
-		if (exportMorph.ExportString.isEmpty() == false)
+		QString sExportName = morphName;
+		MorphInfo morphInfo = availableMorphsTable[morphName];
+		if (morphInfo.ExportString.isEmpty() == false)
 		{
-			sExportName = exportMorph.ExportString;
+			sExportName = morphInfo.ExportString;
 		}
 		morphNamesToExport.append(sExportName);
 	}
-	//foreach(JointLinkInfo jointLink, jointLinks)
-	//{
-	//	morphNamesToExport.append(jointLink.Morph);
-	//	morphNamesToExport.append(jointLink.Morph + "_dq2lb");
-	//}
+	foreach(JointLinkInfo jointLink, jointLinks)
+	{
+		morphNamesToExport.append(jointLink.Morph);
+		morphNamesToExport.append(jointLink.Morph + "_dq2lb");
+	}
 	QString morphString = morphNamesToExport.join("\n1\n");
 	morphString += "\n1\n.CTRLVS\n2\nAnything\n0";
 	return morphString;
+}
+
+// Recursive function for finding all active JCM morphs for a node
+QList<JointLinkInfo> MorphTools::GetActiveJointControlledMorphs(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node)
+{
+	QList<JointLinkInfo> returnMorphs;
+	if (bAutoJCMEnabled)
+	{
+		if (Node == nullptr)
+		{
+			Node = dzScene->getPrimarySelection();
+
+			// For items like clothing, create the morph list from the character
+			DzNode* ParentFigureNode = Node;
+			while (ParentFigureNode->getNodeParent())
+			{
+				ParentFigureNode = ParentFigureNode->getNodeParent();
+				if (DzSkeleton* Skeleton = ParentFigureNode->getSkeleton())
+				{
+					if (DzFigure* Figure = qobject_cast<DzFigure*>(Skeleton))
+					{
+						Node = ParentFigureNode;
+						break;
+					}
+				}
+			}
+		}
+
+		DzObject* Object = Node->getObject();
+		DzShape* Shape = Object ? Object->getCurrentShape() : NULL;
+
+		for (int index = 0; index < Node->getNumProperties(); index++)
+		{
+			DzProperty* property = Node->getProperty(index);
+			returnMorphs.append(GetJointControlledMorphInfo(property, m_morphsToExport, availableMorphsTable));
+		}
+
+		if (Object)
+		{
+			for (int index = 0; index < Object->getNumModifiers(); index++)
+			{
+				DzModifier* modifier = Object->getModifier(index);
+				QString modName = modifier->getName();
+				QString modLabel = modifier->getLabel();
+				DzMorph* mod = qobject_cast<DzMorph*>(modifier);
+				if (mod)
+				{
+					for (int propindex = 0; propindex < modifier->getNumProperties(); propindex++)
+					{
+						DzProperty* property = modifier->getProperty(propindex);
+						returnMorphs.append(GetJointControlledMorphInfo(property, m_morphsToExport, availableMorphsTable));
+					}
+
+				}
+
+			}
+		}
+
+	}
+
+	return returnMorphs;
+}
+
+QList<JointLinkInfo> MorphTools::GetJointControlledMorphInfo(DzProperty* property, QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable)
+{
+	QList<JointLinkInfo> returnMorphs;
+
+	QString propName = property->getName();
+	QString propLabel = property->getLabel();
+	DzPresentation* presentation = property->getPresentation();
+	// DB 2023-Sep-20: 
+	// This code prematurely filters out morphs based on their categorization.  However, it assumes that the categorization
+	// is always correct.  Work-around to account for miscategorized DzMorphs with ERC Links: just filter specifically by
+	// ERC bone link presence and ignore presentation type altogether.
+	// TODO: consider filtering property Owner by DzMorph inheritance, but this may also prematurely exclude some JCMs
+//	if (presentation && presentation->getType() == "Modifier/Corrective")
+	if (true)
+	{
+		QString linkLabel;
+		QString linkDescription;
+		QString linkBone;
+		QString linkAxis;
+		QString linkBodyType;
+		double bodyStrength = 0.0f;
+		double currentBodyScalar = 0.0f;
+		double linkScalar = 0.0f;
+		bool isJCM = false;
+		bool isBaseJCM = false;
+		QList<double> keys;
+		QList<double> keysValues;
+		QList<JointLinkKey> linkKeys;
+
+		for (int ControllerIndex = 0; ControllerIndex < property->getNumControllers(); ControllerIndex++)
+		{
+			DzController* controller = property->getController(ControllerIndex);
+
+			DzERCLink* link = qobject_cast<DzERCLink*>(controller);
+			if (link)
+			{
+				double value = link->getScalar();
+				QString linkProperty = link->getProperty()->getName();
+				QString linkObject = link->getProperty()->getOwner()->getName();
+				double currentValue = link->getProperty()->getDoubleValue();
+
+				DzBone* bone = qobject_cast<DzBone*>(link->getProperty()->getOwner());
+				if (bone)
+				{
+					linkLabel = propLabel;
+					linkDescription = controller->description();
+					linkBone = linkObject;
+					linkAxis = linkProperty;
+					linkScalar = value;
+					isJCM = true;
+
+					if (link->getType() == 6)
+					{
+						for (int keyIndex = 0; keyIndex < link->getNumKeyValues(); keyIndex++)
+						{
+							JointLinkKey newKey;
+							newKey.Angle = link->getKey(keyIndex);
+							newKey.Value = link->getKeyValue(keyIndex);
+							linkKeys.append(newKey);
+							keys.append(link->getKey(keyIndex));
+							keysValues.append(link->getKeyValue(keyIndex));
+						}
+					}
+				}
+				else
+				{
+					linkBodyType = linkObject;
+					bodyStrength = value;
+					currentBodyScalar = currentValue;
+					if (linkProperty == "body_ctrl_basejointcorrectives" ||
+						linkProperty == "BaseJointCorrectives")
+					{
+						isBaseJCM = true;
+					}
+				}
+			}
+		}
+
+		if (isJCM && currentBodyScalar > 0.0f)
+		{
+			JointLinkInfo linkInfo;
+			linkInfo.Bone = linkBone;
+			linkInfo.Axis = linkAxis;
+			linkInfo.Morph = linkLabel;
+			linkInfo.Scalar = linkScalar;
+			linkInfo.Alpha = currentBodyScalar;
+			linkInfo.Keys = linkKeys;
+			linkInfo.IsBaseJCM = isBaseJCM;
+
+			//if (m_morphInfoMap.contains(linkLabel))
+			//{
+			//	linkInfo.LinkMorphInfo = m_morphInfoMap[linkLabel];
+			//}
+
+			bool bMorphInfoFound = false;
+			QString sCorrectedKey = QString(linkLabel).replace("export____", "");
+			if (availableMorphsTable.contains(sCorrectedKey))
+			{
+				linkInfo.LinkMorphInfo = availableMorphsTable[sCorrectedKey];
+				bMorphInfoFound = true;
+			}
+
+			if (bMorphInfoFound == false)
+			{
+				dzApp->log("ERROR! MorphInfo for " + linkLabel + " was not found!");
+			}
+
+			//qDebug() << "Label " << linkLabel << " Description " << linkDescription << " Bone " << linkBone << " Axis " << linkAxis << " Alpha " << currentBodyScalar << " Scalar " << linkScalar;
+			if (!keys.isEmpty())
+			{
+				foreach(double key, keys)
+				{
+					//qDebug() << key;
+				}
+
+				foreach(double key, keysValues)
+				{
+					//qDebug() << key;
+				}
+
+			}
+
+			returnMorphs.append(linkInfo);
+
+		}
+	}
+	return returnMorphs;
+}
+
+void MorphTools::AddActiveJointControlledMorphs(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node)
+{
+	QList<JointLinkInfo> activeMorphs = GetActiveJointControlledMorphs(m_morphsToExport, availableMorphsTable, bAutoJCMEnabled, Node);
+	QStringList availableMorphNames = getAvailableMorphNames(Node);
+
+	for (JointLinkInfo linkInfo : activeMorphs)
+	{
+		QString linkLabel = linkInfo.Morph;
+		MorphInfo morphInfo = linkInfo.LinkMorphInfo;
+
+		if (availableMorphNames.contains(linkLabel) && !m_morphsToExport.contains(linkLabel))
+		{
+			m_morphsToExport.append(linkLabel);
+		}
+
+	}
+
+}
+
+// DB, 2023-11-02: This may be an unused method.  TODO: re-evaluate the usage of this method by other projects.
+QStringList MorphTools::getAvailableMorphNames(DzNode* Node)
+{
+	QStringList newMorphList;
+	newMorphList.clear();
+
+	if (Node == nullptr)
+		return newMorphList;
+
+	DzObject* Object = Node->getObject();
+	DzShape* Shape = Object ? Object->getCurrentShape() : NULL;
+
+	for (int index = 0; index < Node->getNumProperties(); index++)
+	{
+		DzProperty* property = Node->getProperty(index);
+		QString propName = property->getName();
+		QString propLabel = property->getLabel();
+		DzPresentation* presentation = property->getPresentation();
+		if (presentation && presentation->getType() == "Modifier/Shape")
+		{
+			newMorphList.append(propName);
+		}
+	}
+
+	if (Object)
+	{
+		for (int index = 0; index < Object->getNumModifiers(); index++)
+		{
+			DzModifier* modifier = Object->getModifier(index);
+			QString modName = modifier->getName();
+			QString modLabel = modifier->getLabel();
+			DzMorph* mod = qobject_cast<DzMorph*>(modifier);
+			if (mod)
+			{
+				for (int propindex = 0; propindex < modifier->getNumProperties(); propindex++)
+				{
+					DzProperty* property = modifier->getProperty(propindex);
+					QString propName = property->getName();
+					QString propLabel = property->getLabel();
+					DzPresentation* presentation = property->getPresentation();
+					if (presentation)
+					{
+						newMorphList.append(modName);
+					}
+				}
+			}
+		}
+	}
+
+	return newMorphList;
 }

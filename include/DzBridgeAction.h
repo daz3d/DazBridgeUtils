@@ -165,7 +165,8 @@ namespace DzBridgeNameSpace
 		QString m_sFbxVersion; // FBX file format version to export
 
 		// DB 2023-11-08: Morph Selection Overhaul
-		QMap<QString, MorphInfo> m_MorphsToExport; // contains list of morphs to export, stored as MorphName to MorphInfo lookup
+		QMap<QString, MorphInfo> m_AvailableMorphsTable; // MorphName to MorphInfo Lookup
+		QList<QString> m_MorphsToExport; // contains list of morphs to export
 		QStringList m_aMorphListOverride; // overrides Morph Selection Dialog (for use by Script Interface)
 		// LEGACY MORPH DATA
 //		QMap<QString, QString> m_mMorphNameToLabel; // Internal name to Friendly label (from MorphSelectionDialog->m_morphsToExport)

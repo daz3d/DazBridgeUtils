@@ -54,6 +54,24 @@ public:
 	}
 };
 
+struct JointLinkKey
+{
+	int Angle;
+	int Value;
+};
+
+struct JointLinkInfo
+{
+	QString Bone;
+	QString Axis;
+	QString Morph;
+	double Scalar;
+	double Alpha;
+	bool IsBaseJCM = false;
+	MorphInfo LinkMorphInfo;
+	QList<JointLinkKey> Keys;
+};
+
 class MorphExportSettings
 {
 public:
@@ -63,9 +81,19 @@ public:
 	bool m_bBakeFaceMorphs;
 };
 
-QMap<QString, MorphInfo> enumerateMorphInfoMap(DzNode* Node);
-void createMorph(const QString NewMorphName, DzVertexMesh* Mesh, DzNode* Node);
-QString bakePoseMorph(DzFloatProperty* morphProperty, QString);
-int setMeshResolution(DzNode* node, int desiredResolutionIndex);
-void bakePoseMorphPerNode(DzFloatProperty* morphProperty, DzNode* node, QString);
-QString getMorphString(QList<MorphInfo> m_morphsToExport);
+class MorphTools
+{
+public:
+	static void createMorph(const QString NewMorphName, DzVertexMesh* Mesh, DzNode* Node);
+	static QString bakePoseMorph(DzFloatProperty* morphProperty, QString);
+	static int setMeshResolution(DzNode* node, int desiredResolutionIndex);
+	static void bakePoseMorphPerNode(DzFloatProperty* morphProperty, DzNode* node, QString);
+
+	static QMap<QString, MorphInfo> enumerateMorphInfoTable(DzNode* Node);
+	static QString getMorphString(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled);
+	static QStringList getAvailableMorphNames(DzNode* Node);
+
+	static QList<JointLinkInfo> GetActiveJointControlledMorphs(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node = nullptr);
+	static QList<JointLinkInfo> GetJointControlledMorphInfo(DzProperty* property, QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable);
+	static void AddActiveJointControlledMorphs(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node = nullptr);
+};

@@ -24,53 +24,6 @@ namespace DzBridgeNameSpace
 {
 	class DzBridgeAction;
 
-	//// Data structure containing DzProperty-DzNode information
-	//struct MorphInfo {
-	//	QString Name;
-	//	QString Label;
-	//	QString Type;
-	//	QString Path;
-	//	DzProperty *Property;
-	//	DzNode *Node;
-
-	//	inline bool operator==(MorphInfo other)
-	//	{
-	//		if (Name == other.Name)
-	//		{
-	//			return true;
-	//		}
-	//		return false;
-	//	}
-
-	//	MorphInfo()
-	//	{
-	//		Name = QString();
-	//		Label = QString();
-	//		Type = QString();
-	//		Path = QString();
-	//		Property = nullptr;
-	//		Node = nullptr;
-	//	}
-	//};
-
-	struct JointLinkKey
-	{
-		int Angle;
-		int Value;
-	};
-
-	struct JointLinkInfo
-	{
-		QString Bone;
-		QString Axis;
-		QString Morph;
-		double Scalar;
-		double Alpha;
-		bool IsBaseJCM = false;
-		MorphInfo LinkMorphInfo;
-		QList<JointLinkKey> Keys;
-	};
-
 	class CPP_Export DzBridgeMorphSelectionDialog : public DzBasicDialog {
 		Q_OBJECT
 	public:
@@ -93,6 +46,7 @@ namespace DzBridgeNameSpace
 		// Get the morph string (aka m_morphsToExport) in an internal name = friendly name format
 		// Used to rename them to the friendly name in Unreal
 		Q_INVOKABLE QMap<QString, QString> GetMorphMapping();
+		Q_INVOKABLE QMap<QString, MorphInfo> GetAvailableMorphsTable();
 
 		Q_INVOKABLE bool IsAutoJCMEnabled() { return autoJCMCheckBox->isChecked(); }
 		Q_INVOKABLE bool IsFakeDualQuatEnabled() { return fakeDualQuatCheckBox->isChecked(); }

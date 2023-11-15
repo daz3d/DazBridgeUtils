@@ -281,24 +281,30 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 
 	// PreProcess MorphsToExport
 //	foreach (MorphInfo &morphInfo, m_MorphsToExport)
-	foreach (QString key, m_MorphsToExport.keys())
+	foreach (QString key, m_MorphsToExport)
 	{
+		if (key.isEmpty() || m_AvailableMorphsTable.contains(key) == false) continue;
 		// rename Morph Property with prefix, if prefix is not already present
-		if (m_MorphsToExport[key].Name.contains("export____") == false)
+		if (m_AvailableMorphsTable[key].Name.contains("export____") == false)
 		{
-			QString sExportName = "export____" + m_MorphsToExport[key].Name;
-			m_MorphsToExport[key].ExportString = sExportName;
-			DzElement* owner = m_MorphsToExport[key].Property->getOwner();
-			if (owner->inherits("DzModifier"))
+			QString sExportName = "export____" + m_AvailableMorphsTable[key].Name;
+			DzProperty* property = m_AvailableMorphsTable[key].Property;
+			DzElement* owner = nullptr;
+			if (property)
 			{
-				owner->setName(sExportName);
-				m_undoTable_MorphRename.insert(owner, m_MorphsToExport[key].Name);
-			}
-			else
-			{
-				m_MorphsToExport[key].Property->setName(sExportName);
-				// add to undo table
-				m_undoTable_MorphRename.insert(m_MorphsToExport[key].Property, m_MorphsToExport[key].Name);
+				m_AvailableMorphsTable[key].ExportString = sExportName;
+				owner = property->getOwner();
+				if (owner && owner->inherits("DzModifier"))
+				{
+					owner->setName(sExportName);
+					m_undoTable_MorphRename.insert(owner, m_AvailableMorphsTable[key].Name);
+				}
+				else
+				{
+					m_AvailableMorphsTable[key].Property->setName(sExportName);
+					// add to undo table
+					m_undoTable_MorphRename.insert(m_AvailableMorphsTable[key].Property, m_AvailableMorphsTable[key].Name);
+				}
 			}
 		}
 
@@ -1293,7 +1299,7 @@ void DzBridgeAction::exportNode(DzNode* Node)
 		{
 			ExportOptions.setBoolValue("doAnims", false);
 		}
-		m_sMorphSelectionRule = getMorphString(m_MorphsToExport.values());
+		m_sMorphSelectionRule = MorphTools::getMorphString(m_MorphsToExport, m_AvailableMorphsTable, getMorphSelectionDialog()->IsAutoJCMEnabled());
 		if ((m_sAssetType == "Animation" || m_sAssetType == "SkeletalMesh") && m_bEnableMorphs && m_sMorphSelectionRule != "")
 		{
 			ExportOptions.setBoolValue("doMorphs", true);
@@ -3126,11 +3132,12 @@ void DzBridgeAction::writeMorphLinks(DzJsonWriter& writer)
 	{
 		// iterate through each exported morph
 //		for (QMap<QString, QString>::iterator morphNameToLabel = m_mMorphNameToLabel.begin(); morphNameToLabel != m_mMorphNameToLabel.end(); ++morphNameToLabel)
-		foreach (MorphInfo morphInfo, m_MorphsToExport.values())
+		foreach (QString morphName, m_MorphsToExport)
 		{
 //			QString sMorphName = morphNameToLabel.key();
 //			QString sMorphLabel = morphNameToLabel.value();
 //			MorphInfo morphInfo = m_morphSelectionDialog->GetMorphInfoFromName(sMorphName);
+			MorphInfo morphInfo = m_AvailableMorphsTable[morphName];
 			QString sMorphName = morphInfo.Name;
 			QString sMorphLabel = morphInfo.Label;
 
@@ -3268,9 +3275,9 @@ void DzBridgeAction::writeMorphNames(DzJsonWriter& writer)
 //			QString sMorphName = morphNameToLabel.key();
 //			writer.addItem(sMorphName);
 //		}
-		foreach (MorphInfo morphInfo, m_MorphsToExport.values())
+		foreach (QString morphName, m_MorphsToExport)
 		{
-			writer.addItem(morphInfo.Name);
+			writer.addItem(morphName);
 		}
 
 	}
@@ -3283,8 +3290,9 @@ void DzBridgeAction::writeAllMorphs(DzJsonWriter& writer)
 	if (m_bEnableMorphs)
 	{
 //		for (QMap<QString, QString>::iterator i = m_mMorphNameToLabel.begin(); i != m_mMorphNameToLabel.end(); ++i)
-		foreach (MorphInfo morphInfo, m_MorphsToExport.values())
+		foreach (QString morphName, m_MorphsToExport)
 		{
+			MorphInfo morphInfo = m_AvailableMorphsTable[morphName];
 			QString sMorphName = morphInfo.Name;
 			QString sMorphLabel = morphInfo.Label;
 			//writeMorphProperties(writer, i.key(), i.value());
@@ -3537,12 +3545,12 @@ void DzBridgeAction::writeDforceMaterialProperties(DzJsonWriter& Writer, DzMater
 void DzBridgeAction::writeAllPoses(DzJsonWriter& writer)
 {
 	writer.startMemberArray("Poses", true);
-	for (QList<QString>::iterator i = m_aPoseList.begin(); i != m_aPoseList.end(); ++i)
+	for (QList<QString>::iterator it = m_aPoseList.begin(); it != m_aPoseList.end(); ++it)
 	{
 		writer.startObject(true);
-		writer.addMember("Name", *i);
+		writer.addMember("Name", *it);
 //		writer.addMember("Label", m_mMorphNameToLabel[*i]);
-		writer.addMember("Label", m_MorphsToExport[*i].Label);
+		writer.addMember("Label", m_AvailableMorphsTable[*it].Label);
 		writer.finishObject();
 	}
 	writer.finishArray();
@@ -3680,12 +3688,16 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 	int debug_NewNumControllersToDisconnect = m_ControllersToDisconnect.count();
 //	m_mMorphNameToLabel = BridgeDialog->GetMorphMappingFromMorphSelectionDialog();
 	m_MorphsToExport.clear();
-	QMap<QString,QString> morphsToExportMap = m_morphSelectionDialog->GetMorphMapping();
-	foreach(QString MorphName, morphsToExportMap.keys())
-	{
-		MorphInfo morphInfo = m_morphSelectionDialog->GetMorphInfoFromName(MorphName);
-		m_MorphsToExport.insert(morphInfo.Name, morphInfo);
-	}
+	m_AvailableMorphsTable.clear();
+	//QMap<QString,QString> morphsToExportMap = m_morphSelectionDialog->GetMorphMapping();
+	//foreach(QString MorphName, morphsToExportMap.keys())
+	//{
+	//	MorphInfo morphInfo = m_morphSelectionDialog->GetMorphInfoFromName(MorphName);
+	//	m_MorphsToExport.insert(morphInfo.Name, morphInfo);
+	//}
+	m_MorphsToExport = m_morphSelectionDialog->GetMorphMapping().keys();
+	m_AvailableMorphsTable = m_morphSelectionDialog->GetAvailableMorphsTable();
+
 	if (preCheckEnableMorphs)
 	{
 		if (checkForIrreversibleOperations_in_disconnectOverrideControllers() == true && m_nNonInteractiveMode == 0)
