@@ -158,6 +158,9 @@ void DzBridgeSubdivisionDialog::PrepareDialog()
 
 void DzBridgeSubdivisionDialog::CreateList(DzNode* Node)
 {
+	if (Node == nullptr)
+		return;
+
 	DzObject* Object = Node->getObject();
 	if (Object)
 	{

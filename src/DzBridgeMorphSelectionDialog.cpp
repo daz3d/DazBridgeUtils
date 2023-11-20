@@ -214,12 +214,13 @@ functionality for some Morph and JCM products.\
 	MorphGroupBox->layout()->addWidget(addConnectedMorphsButton);
 	MorphGroupBox->layout()->addWidget(allowMorphDoubleDippingCheckBox);
 
-	if (!settings->value("AutoJCMEnabled").isNull())
+	// check settings first to avoid race condition crashes
+	if (settings && !settings->value("AutoJCMEnabled").isNull())
 	{
 		autoJCMCheckBox->setChecked(settings->value("AutoJCMEnabled").toBool());
 	}
 
-	if (!settings->value("FakeDualQuatEnabled").isNull())
+	if (settings && !settings->value("FakeDualQuatEnabled").isNull())
 	{
 		fakeDualQuatCheckBox->setChecked(settings->value("FakeDualQuatEnabled").toBool());
 	}
