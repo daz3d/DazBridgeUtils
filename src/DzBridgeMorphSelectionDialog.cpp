@@ -407,6 +407,7 @@ bool DzBridgeMorphSelectionDialog::decorateMorphListItem(SortingListItem* item, 
 	}
 	item->setToolTip(sToolTip);
 	QString sWhatsThis = QString("<b>%1</b><br>").arg(morphInfo.Label);
+	QString sNoChange = sWhatsThis;
 	QString whatsThisErc = "<b>+ERC:</b> ERC Links allow this element to modify the value of other controls. An example is Victoria 9 controlling Victoria 9 Head and Victoria 9 Body.<br>";
 	QString whatsThisMorphs = "<b>+Morphs:</b> This element has ERC Links to control other Morph controls.  This may cause double-dipping in programs outside Daz Studio, where the final morph effect is applied multiple times (once for each linked morph).<br>";
 	QString whatsThisPoses = "<b>+Poses:</b> This element has ERC Links to control Pose controls.  This will require the bone poses to be baked into the exported morph.<br>";
@@ -422,7 +423,12 @@ bool DzBridgeMorphSelectionDialog::decorateMorphListItem(SortingListItem* item, 
 	{
 		sWhatsThis += "<br>" + whatsThisPoses;
 	}
+	if (sWhatsThis == sNoChange)
+	{
+		sWhatsThis += "<br>" + sToolTip;
+	}
 	item->setWhatsThis(sWhatsThis);
+
 
 	return true;
 
