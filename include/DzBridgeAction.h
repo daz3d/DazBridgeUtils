@@ -448,7 +448,7 @@ namespace DzBridgeNameSpace
 		QList<DiffuseAndAlphaMapsUndoData> m_undoList_CombineDiffuseAndAlphaMaps;
 		QList<MultiplyTextureValuesUndoData> m_undoList_MultilpyTextureValues;
 		// DB, 2023-11-10: Morph Selection Overhaul
-		QMap<DzBase*, QString> m_undoTable_MorphRename;
+		QMap<DzBase*, MorphInfo> m_undoTable_MorphRename;
 
 		// Override data structures
 		QMap<DzProperty*, QString> m_overrideTable_MaterialImageMaps;

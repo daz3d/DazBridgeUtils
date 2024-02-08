@@ -302,6 +302,7 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 		// rename Morph Property with prefix, if prefix is not already present
 		if (m_AvailableMorphsTable[key].Name.contains("export____") == false)
 		{
+			MorphInfo morphInfo = m_AvailableMorphsTable[key];
 			QString sExportName = "export____" + m_AvailableMorphsTable[key].Name;
 			DzProperty* morphProperty = m_AvailableMorphsTable[key].Property;
 			DzElement* owner = nullptr;
@@ -311,14 +312,18 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 				owner = morphProperty->getOwner();
 				if (owner && owner->inherits("DzModifier"))
 				{
+					if (morphInfo.Property != morphProperty)
+					{
+						dzApp->debug(QString("DzBridge: ERROR: preProcessScene(): morphInfo.Property mismatch found while renaming Morph: owner=%1").arg(owner->getName()));
+					}
 					owner->setName(sExportName);
-					m_undoTable_MorphRename.insert(owner, m_AvailableMorphsTable[key].Name);
+					m_undoTable_MorphRename.insert(owner, morphInfo);
 				}
 				else
 				{
 					morphProperty->setName(sExportName);
 					// add to undo table
-					m_undoTable_MorphRename.insert(morphProperty, m_AvailableMorphsTable[key].Name);
+					m_undoTable_MorphRename.insert(morphProperty, morphInfo);
 				}
 			}
 		}
@@ -697,8 +702,30 @@ bool DzBridgeAction::undoPreProcessScene()
 	for (int i=0; i < m_undoTable_MorphRename.size(); i++)
 	{
 		DzBase* morph = m_undoTable_MorphRename.keys()[i];
-		QString originalName = m_undoTable_MorphRename.values()[i];
-		morph->setName(originalName);
+		DzProperty* morphProperty = qobject_cast<DzProperty*>(morph);
+		DzElement* morphElement = qobject_cast<DzElement*>(morph);
+		MorphInfo morphInfo = m_undoTable_MorphRename[morph];
+		QString originalName = morphInfo.Name;
+		QString originalLabel = morphInfo.Label;
+		if (morphProperty)
+		{
+			morphProperty->setName(originalName);
+			morphProperty->setLabel(originalLabel);
+		}
+		else if (morphElement)
+		{
+			morphElement->setName(originalName);
+			morphElement->setLabel(originalLabel);
+			DzProperty *ownedProperty = morphInfo.Property;
+			if (ownedProperty)
+			{
+				ownedProperty->setLabel(originalLabel);
+			}
+		}
+		else
+		{
+			morph->setName(originalName);
+		}
 	}
 
 	// Clear Override Tables
