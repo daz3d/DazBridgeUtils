@@ -1350,6 +1350,34 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 		ControlRotation.m_x = Bone->getXRotControl()->getValue(CurrentTime);
 		ControlRotation.m_y = Bone->getYRotControl()->getValue(CurrentTime);
 		ControlRotation.m_z = Bone->getZRotControl()->getValue(CurrentTime);
+
+		// If fixing twist bones, add any child twist bone rotations
+		if (m_bFixTwistBones)
+		{
+			// Looks through the child nodes for more bones
+			for (int ChildIndex = 0; ChildIndex < Bone->getNumNodeChildren(); ChildIndex++)
+			{
+				DzNode* ChildNode = Bone->getNodeChild(ChildIndex);
+				if (ChildNode->getName().contains("twist", Qt::CaseInsensitive))
+				{
+					if (DzBone* ChildBone = qobject_cast<DzBone*>(ChildNode))
+					{
+						ControlRotation.m_x += ChildBone->getXRotControl()->getValue(CurrentTime);
+						ControlRotation.m_y += ChildBone->getYRotControl()->getValue(CurrentTime);
+						ControlRotation.m_z += ChildBone->getZRotControl()->getValue(CurrentTime);
+					}
+				}
+			}
+
+			// If this is a twist bone, zero it's rotation
+			if (Bone->getName().contains("twist", Qt::CaseInsensitive))
+			{
+				ControlRotation.m_x = 0.0f;
+				ControlRotation.m_y = 0.0f;
+				ControlRotation.m_z = 0.0f;
+			}
+		}
+
 		DzVec3 VectorRotation = ControlRotation;
 
 		// Scale
@@ -1547,7 +1575,15 @@ void DzBridgeAction::exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxPa
 			BoneNode->LclTranslation.Set(FbxVector4(LocalPosition.m_x, LocalPosition.m_y, LocalPosition.m_z));
 			BoneNode->LclRotation.Set(FbxVector4(VectorRotation.m_x, VectorRotation.m_y, VectorRotation.m_z));
 
-			FbxParent->AddChild(BoneNode);
+			// if fixing twist bones, reparent their children
+			if (m_bFixTwistBones && Node->getNodeParent() != nullptr && Node->getNodeParent()->getName().contains("twist", Qt::CaseInsensitive))
+			{
+				FbxParent->GetParent()->AddChild(BoneNode);
+			}
+			else
+			{
+				FbxParent->AddChild(BoneNode);
+			}
 
 			// Looks through the child nodes for more bones
 			for (int ChildIndex = 0; ChildIndex < Node->getNumNodeChildren(); ChildIndex++)
