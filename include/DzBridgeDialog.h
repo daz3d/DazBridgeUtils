@@ -120,6 +120,15 @@ namespace DzBridgeNameSpace
 		QCheckBox* subdivisionEnabledCheckBox = nullptr;
         QLabel* m_WelcomeLabel = nullptr;
 
+		// Row Widgets
+		QWidget* m_wMorphsRowLabelWidget = nullptr;
+		QWidget* m_wSubDRowLabelWidget = nullptr;
+		QWidget* m_wFbxVersionRowLabelWidget = nullptr;
+		QWidget* m_wShowFbxRowLabelWidget = nullptr;
+		QWidget* m_wNormalMapsRowLabelWidget = nullptr;
+		QWidget* m_wExportCsvRowLabelWidget = nullptr;
+		QWidget* m_wEnableExperimentalRowLabelWidget = nullptr;
+
         // Advanced settings
 		QGroupBox* advancedSettingsGroupBox = nullptr;
 		QWidget* advancedWidget = nullptr;
