@@ -232,7 +232,8 @@ namespace DzBridgeNameSpace
 		bool m_bRecompressIfFileSizeTooBig = false;
 		int m_nFileSizeThresholdToInitiateRecompression = 1024*1024*10; // size in bytes
 		bool m_bForceReEncoding = false;
-		QStringList m_aProcessedFiles;
+//		QStringList m_aProcessedFiles;
+		QMap<QString, QString> m_mapProcessedFiles;
 
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }

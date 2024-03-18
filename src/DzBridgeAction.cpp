@@ -2718,7 +2718,8 @@ void DzBridgeAction::writeAllMaterials(DzNode* Node, DzJsonWriter& Writer, QText
 
 	if (!bRecursive)
 	{
-		m_aProcessedFiles.clear();
+//		m_aProcessedFiles.clear();
+		m_mapProcessedFiles.clear();
 		Writer.startMemberArray("Materials", true);
 	}
 
@@ -2899,7 +2900,8 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 	}
 
 	QString dtuTextureName = TextureName;
-	if ( !TextureName.isEmpty() && m_aProcessedFiles.contains(TextureName, Qt::CaseInsensitive)==false)
+//	if ( !TextureName.isEmpty() && m_aProcessedFiles.contains(TextureName, Qt::CaseInsensitive)==false)
+	if (!TextureName.isEmpty() && m_mapProcessedFiles.contains(TextureName.toLower()) == false)
 	{
 
 		// DB, 2023-10-27: New integrated resizing/re-encoding integrated save pathway
@@ -3088,7 +3090,12 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 		{
 			dtuTextureName = exportAssetWithDtu(TextureName, Node->getLabel() + "_" + Material->getName());
 		}
-		m_aProcessedFiles.append(TextureName);
+//		m_aProcessedFiles.append(TextureName);
+		m_mapProcessedFiles.insert(TextureName.toLower(), dtuTextureName);
+	}
+	else if (!TextureName.isEmpty())
+	{
+		dtuTextureName = m_mapProcessedFiles.value(TextureName.toLower());
 	}
 	if (bUseNumeric)
 		writePropertyTexture(Writer, Name, sLabel, dtuPropNumericValue, dtuPropType, dtuTextureName);
