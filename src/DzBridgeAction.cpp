@@ -3656,11 +3656,6 @@ void DzBridgeAction::writeEnvironment(DzJsonWriter& writer)
 	writer.finishArray();
 }
 
-void DzBridgeAction::writeMLDeformerData(DzJsonWriter& writer)
-{
-	writer.addMember("AlembicFile", m_sDestinationPath + m_sExportFilename + ".abc");
-}
-
 void DzBridgeAction::writeInstances(DzNode* Node, DzJsonWriter& Writer, QMap<QString, DzMatrix3>& WritenInstances, QList<DzGeometry*>& ExportedGeometry, QUuid ParentID)
 {
 	if (Node == nullptr)

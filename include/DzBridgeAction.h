@@ -285,7 +285,8 @@ namespace DzBridgeNameSpace
 
 		Q_INVOKABLE virtual void writeAllPoses(DzJsonWriter& writer);
 
-		Q_INVOKABLE virtual void writeMLDeformerData(DzJsonWriter& writer);
+		// Should be moved from the common library to specific plugin projects that use it (ex: DazToUnreal)
+//		Q_INVOKABLE virtual void writeMLDeformerData(DzJsonWriter& writer);
 
 		// Used to find all the unique props in a scene for Environment export
 		void getScenePropList(DzNode* Node, QMap<QString, DzNode*>& Types);
