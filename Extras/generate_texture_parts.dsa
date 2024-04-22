@@ -1,0 +1,89 @@
+// DAZ Studio version 4.22.0.15 filetype DAZ Script
+
+(function(){
+
+var includeDir_oFILE = new DzFile( getScriptFileName() );
+var sIncludePath = includeDir_oFILE.path();
+
+var sDazTempFolder = App.getTempPath();
+var sMapTransferOutputFolder = sDazTempFolder + "/MapTransfer";
+
+var g9body_maptransfer_settings_file = sIncludePath + "/MapTransferSettings_G9Body.dsx";
+var g9eye_maptransfer_settings_file = sIncludePath + "/MapTransferSettings_G9Eyes.dsx";
+var g9mouth_maptransfer_settings_file = sIncludePath + "/MapTransferSettings_G9Mouth.dsx";
+
+// Step 1: Instantiate a MapTransfer object
+var mapTransfer = App.getTextureConvertorMgr();
+
+function processNode(node) {
+	Scene.selectAllNodes(false);
+	Scene.setPrimarySelection(node);
+
+    print("DEBUG: node object name == " + node.name);
+	// Step 2: Load a settings file
+	if (node.name == "Genesis9") {
+		mapTransfer.loadConfiguration(g9body_maptransfer_settings_file);
+		// var options = mapTransfer.getTextureConvertorOptions();
+		// options.convertImgPath = sMapTransferOutputFolder;
+
+		// Perform the conversion operation
+	    mapTransfer.doConversion();
+	}
+	else if (node.name == "Genesis9Eyes") {
+		mapTransfer.loadConfiguration(g9eye_maptransfer_settings_file);
+		// var options = mapTransfer.getTextureConvertorOptions();
+		// options.convertImgPath = sMapTransferOutputFolder;
+
+		// Perform the conversion operation
+	    mapTransfer.doConversion();
+	}
+	else if (node.name == "Genesis9Mouth") {
+		mapTransfer.loadConfiguration(g9mouth_maptransfer_settings_file);
+		// var options = mapTransfer.getTextureConvertorOptions();
+		// options.convertImgPath = sMapTransferOutputFolder;
+
+		// Perform the conversion operation
+		mapTransfer.doConversion();
+	}
+
+}
+
+function main() {
+	// make output folder if does not exist
+	print("DEBUG: sMapTransferOutputFolder == " + sMapTransferOutputFolder);
+	var oDir = new DzDir(sMapTransferOutputFolder);
+	if (!oDir.exists) {
+		print("DEBUG: creating output folder: " + sMapTransferOutputFolder);
+		oDir.mkpath(sMapTransferOutputFolder);
+	} else {
+		// clear the folder
+		print("DEBUG: clearing output folder: " + sMapTransferOutputFolder);
+		oDir.rmdir();
+		oDir.mkpath(sMapTransferOutputFolder);
+	}
+
+	// Check if there's a selected node and it's a figure
+	var selectedNode = Scene.getPrimarySelection();
+	if (selectedNode && selectedNode.inherits("DzFigure")) {
+		processNode(selectedNode);
+		var childList = selectedNode.getNodeChildren(true);
+		for (i = 0; i < childList.length; i++) {
+			var child = childList[i];
+			if (child.inherits("DzFigure")) {
+				processNode(child);
+			}
+
+		}
+	    print("Map transfer operation executed on the selected figure.");
+	    // reset primary selection
+		Scene.selectAllNodes(false);
+	    Scene.setPrimarySelection(selectedNode);
+	} else {
+	    print("Please select a figure to apply the map transfer operation.");
+	}	
+	
+}
+
+main();
+
+})();

@@ -1,0 +1,93 @@
+// DAZ Studio version 4.22.0.15 filetype DAZ Script
+
+// walk through each object/child and assign combined texture to appropriate properties
+
+(function(){
+
+var sDazTempFolder = App.getTempPath();
+var sMapTransferOutputFolder = sDazTempFolder + "/MapTransfer";
+
+var sCombinedDiffuseColorImage = sMapTransferOutputFolder + "/combined diffuse test.png";
+var sCombinedNormalMapImage = sMapTransferOutputFolder + "/combined normal test.png";
+var sCombinedSpecularMapImage = sMapTransferOutputFolder + "/combined specular test.png";
+
+function assignCombinedTextures(oNode) {
+    if (oNode) {
+        if (oNode.inherits("DzFigure")) {
+        	print("DEBUG: node=" + oNode.name);
+
+            var oObject = oNode.getObject();
+            if (oObject) {
+                var oShape = oObject.getCurrentShape();
+                var nMatCount = oShape.getNumMaterials();
+
+                for (var i = 0; i < nMatCount; i++) {
+                    var oMaterial = oShape.getMaterial(i);
+                    if (oMaterial) {
+                        print("DEBUG: material=" + oMaterial.name);
+                        var oDiffuseColorProperty = oMaterial.findProperty("Diffuse Color");
+                        if (oDiffuseColorProperty) {
+                            oDiffuseColorProperty.setMap(sCombinedDiffuseColorImage);
+                        }
+                        var oNormalMapProperty = oMaterial.findProperty("Normal Map");
+                        if (oNormalMapProperty) {
+                            oNormalMapProperty.setMap(sCombinedNormalMapImage);
+                        }
+                        var oSpecularMapProperty = oMaterial.findProperty("Specular Lobe 1 Roughness");
+                        if (oSpecularMapProperty && oSpecularMapProperty.getMapValue() && oSpecularMapProperty.getMapValue().getFilename().length > 0) {
+							 print("DEBUG: setting specular lobe 1 roughness for " + oMaterial.name);
+                            oSpecularMapProperty.setMap(sCombinedSpecularMapImage);
+                        } else {
+	                        var oSpecularMapProperty = oMaterial.findProperty("Dual Lobe Specular Weight");
+	                        if (oSpecularMapProperty && oSpecularMapProperty.getMapValue() && oSpecularMapProperty.getMapValue().getFilename().length > 0) {
+								 print("DEBUG: dual lobe specular weight for " + oMaterial.name);
+	                            oSpecularMapProperty.setMap(sCombinedSpecularMapImage);
+	                        }
+                        }
+
+                        // switch UV set to the combined texture
+                        var oUVSet = oMaterial.findProperty("UV Set");
+                        if (oUVSet) {
+                            originalUVSetName = oUVSet.getStringValue();
+                            print("DEBUG: originalUVSetName=" + originalUVSetName);
+                            oUVSet.setValueFromString("Combined Head And Body");
+                            newUVSetName = oUVSet.getStringValue();
+                            print("DEBUG: newUVSetName=" + newUVSetName);
+                        }
+                    }
+    
+                }
+    
+            }
+        }
+        var aChildren = oNode.getNodeChildren();
+        for (var i = 0; i < aChildren.length; i++) {
+            assignCombinedTextures(aChildren[i]);
+        }
+    }
+}
+
+function main() {
+    var oTopNode = Scene.getPrimarySelection();
+    assignCombinedTextures(oTopNode);
+    // try to find eye and mouth geografts, search by name for "game_engine_eye_geograft", "game_engine_mouth_geograft"
+    var oEyeGeograft = Scene.findNodeByLabel("game_engine_eye_geograft");
+    if (!oEyeGeograft) {
+        oEyeGeograft = Scene.findNode("game_engine_eye_geograft_0");
+    }
+    if (oEyeGeograft) {
+        assignCombinedTextures(oEyeGeograft);
+    }
+    var oMouthGeograft = Scene.findNodeByLabel("game_engine_mouth_geograft");
+    if (!oMouthGeograft) {
+        oMouthGeograft = Scene.findNode("game_engine_mouth_geograft_0");
+    }
+    if (oMouthGeograft) {
+        assignCombinedTextures(oMouthGeograft);
+    }
+
+}
+
+main();
+
+})();
