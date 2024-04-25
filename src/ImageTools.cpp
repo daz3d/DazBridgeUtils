@@ -17,7 +17,7 @@ void log(QString message)
 
 
 // Bitwise check if number is a power of two
-bool isPowerOfTwo(int n)
+bool ImageTools::isPowerOfTwo(int n)
 {
     // must be positive
     if (n <= 0) return false;
@@ -34,7 +34,7 @@ bool isPowerOfTwo(int n)
 
 // Bitwise function to find the nearest power of two
 // NOTE: will fail in edge case were n is equal or greater than the largest power of 2 that can be held by an int
-int nearestPowerOfTwo(int n)
+int ImageTools::nearestPowerOfTwo(int n)
 {
     // must be positive
     if (n < 1) return 0;
@@ -54,7 +54,7 @@ int nearestPowerOfTwo(int n)
     return (power - n) < (n - prevPower) ? power : prevPower;
 }
 
-void multiplyImageByColorMultithreaded(QImage& image, QColor color)
+void ImageTools::multiplyImageByColorMultithreaded(QImage& image, QColor color)
 {
 	// Crash Check
 	int width = image.width();
@@ -82,7 +82,7 @@ void multiplyImageByColorMultithreaded(QImage& image, QColor color)
 	QThreadPool::globalInstance()->waitForDone();
 }
 
-void multiplyImageByStrengthMultithreaded(QImage& image, double strength)
+void ImageTools::multiplyImageByStrengthMultithreaded(QImage& image, double strength)
 {
 	// Crash Check
 	int width = image.width();
@@ -110,7 +110,7 @@ void multiplyImageByStrengthMultithreaded(QImage& image, double strength)
 	QThreadPool::globalInstance()->waitForDone();
 }
 
-QString colorToHexString(const QColor& color)
+QString ImageTools::colorToHexString(const QColor& color)
 {
 	// Extract the RGB components
 	int red = color.red();

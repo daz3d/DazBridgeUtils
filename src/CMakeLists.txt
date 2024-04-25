@@ -38,6 +38,8 @@ set(LIB_SRCS
 	DzBridgeDialog.cpp
 	ImageTools.cpp
 	MorphTools.cpp
+	MvcTools.cpp
+	FbxTools.cpp
 	${QA_SRCS}
 )
 

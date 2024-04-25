@@ -4606,6 +4606,7 @@ void FixClusterTranformLinks(FbxScene* Scene, FbxNode* RootNode)
 		FixClusterTranformLinks(Scene, ChildNode);
 	}
 }
+/*
 void RemoveBindPoses(FbxScene* Scene)
 {
 	for (int PoseIndex = Scene->GetPoseCount() - 1; PoseIndex >= 0; --PoseIndex)
@@ -4613,6 +4614,7 @@ void RemoveBindPoses(FbxScene* Scene)
 		Scene->RemovePose(PoseIndex);
 	}
 }
+*/
 void RemovePrePostRotations(FbxNode* pNode)
 {
 	QString sNodeName = pNode->GetName();
@@ -6078,7 +6080,7 @@ bool DzBridgeAction::combineDiffuseAndAlphaMaps(DzMaterial* Material)
 			{
 				stemDiffuse = "EMPTY";
 				diffuseImage = dzApp->getImageMgr()->loadImage(sAlphaFilename);
-				multiplyImageByColorMultithreaded(diffuseImage, colorProp->getColorValue());
+				ImageTools::multiplyImageByColorMultithreaded(diffuseImage, colorProp->getColorValue());
 			}
 			else
 			{
@@ -6098,10 +6100,10 @@ bool DzBridgeAction::combineDiffuseAndAlphaMaps(DzMaterial* Material)
 				outputImage.width() != alphaImage.width())
 			{
 				// scale diffuse to power of 2
-				if (!isPowerOfTwo(outputImage.height()) || !isPowerOfTwo(outputImage.width()))
+				if (!ImageTools::isPowerOfTwo(outputImage.height()) || !ImageTools::isPowerOfTwo(outputImage.width()))
 				{
-                    int w = nearestPowerOfTwo(outputImage.width());
-                    int h = nearestPowerOfTwo(outputImage.height());
+                    int w = ImageTools::nearestPowerOfTwo(outputImage.width());
+                    int h = ImageTools::nearestPowerOfTwo(outputImage.height());
 					outputImage = outputImage.scaled(w, h, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
 				}
 
@@ -6185,11 +6187,11 @@ bool DzBridgeAction::multiplyTextureValues(DzMaterial* material)
 				QImage image = dzApp->getImageMgr()->loadImage(textureFilename);
 				QString tempPath = dzApp->getTempPath().replace("\\", "/");
 				QString stem = QFileInfo(textureFilename).fileName();
-				QString outfile = tempPath + "/" + stem + QString("_%1.png").arg(colorToHexString(colorValue));
+				QString outfile = tempPath + "/" + stem + QString("_%1.png").arg(ImageTools::colorToHexString(colorValue));
 
 				// multiply image
 				dzApp->log(QString("DazBridge: Baking material strength into image: %1").arg(outfile));
-				multiplyImageByColorMultithreaded(image, colorValue);
+				ImageTools::multiplyImageByColorMultithreaded(image, colorValue);
 
 				// save out file
 //				dzApp->getImageMgr()->saveImage(outfile, image);
@@ -6224,7 +6226,7 @@ bool DzBridgeAction::multiplyTextureValues(DzMaterial* material)
 
 				// multiply image
 				dzApp->log(QString("DazBridge: Baking material strength into image: %1").arg(outfile));
-				multiplyImageByStrengthMultithreaded(image, numericValue);
+				ImageTools::multiplyImageByStrengthMultithreaded(image, numericValue);
 
 				// save out file
 //				dzApp->getImageMgr()->saveImage(outfile, image);

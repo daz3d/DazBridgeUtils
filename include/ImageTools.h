@@ -89,8 +89,13 @@ private:
 	QImage::Format m_pixelFormat;
 };
 
-void multiplyImageByColorMultithreaded(QImage& image, QColor color);
-void multiplyImageByStrengthMultithreaded(QImage& image, double strength);
-QString colorToHexString(const QColor& color);
-bool isPowerOfTwo(int n);
-int nearestPowerOfTwo(int n);
+class ImageTools
+{
+public:
+	static void multiplyImageByColorMultithreaded(QImage& image, QColor color);
+	static void multiplyImageByStrengthMultithreaded(QImage& image, double strength);
+	static QString colorToHexString(const QColor& color);
+	static bool isPowerOfTwo(int n);
+	static int nearestPowerOfTwo(int n);
+
+};
