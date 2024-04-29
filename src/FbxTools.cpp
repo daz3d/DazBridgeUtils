@@ -1405,7 +1405,8 @@ bool FbxTools::FlipAndBakeVertexBuffer(FbxMesh* mesh, FbxNode* rootNode, FbxVect
 {
 	if (ConvertToZUp(mesh, rootNode) == false)
 		return false;
-	BakePoseToVertexBuffer(vertex_buffer, &FbxTools::GetAffineMatrix(NULL, mesh->GetNode()), nullptr, mesh);
+    FbxAMatrix matrix = FbxTools::GetAffineMatrix(NULL, mesh->GetNode());
+	BakePoseToVertexBuffer(vertex_buffer, &matrix, nullptr, mesh);
 
 	return true;
 }

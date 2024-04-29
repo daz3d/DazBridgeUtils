@@ -13,6 +13,7 @@
 
 #include <QtCore>
 #include <QThread>
+#include <QList>
 
 //////////////////////////////////////////////////////////////////////////////////
 // Mean Value Coordinate deformation and interpolation functions
@@ -783,7 +784,7 @@ FbxVector4 MvcTools::deform_using_mean_value_coordinates(const FbxMesh* pMesh, c
 {
 	if (pMesh == nullptr || pMvcWeights == nullptr)
 	{
-		return false;
+        return FbxVector4(-1,-1,-1);
 	}
 
 	FbxVector4 deformed_x;
@@ -857,7 +858,8 @@ bool MvcHelper::createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode, DzProg
 	FbxVector4* pTempBuffer = pMesh->GetControlPoints();
 	FbxVector4* pVertexBuffer = new FbxVector4[numVerts];
 	memcpy(pVertexBuffer, pTempBuffer, sizeof(FbxVector4)*numVerts);
-	FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &FbxTools::GetAffineMatrix(nullptr, pMesh->GetNode()), nullptr, pMesh);
+    FbxAMatrix matrix = FbxTools::GetAffineMatrix(nullptr, pMesh->GetNode());
+	FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &matrix, nullptr, pMesh);
 
 	//while (todoQueue.isEmpty() == false)
 	//{
@@ -1021,8 +1023,17 @@ bool MvcHelper::createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode, DzProg
 	*/
 
 	/////// QtConcurrent
-	QtConcurrent::blockingMap(m_JobQueue.values(), JobCalculateMvcWeights::StaticPerformJob);
-	//for (auto job : m_JobQueue.values())
+#ifdef __APPLE__
+    std::vector<JobCalculateMvcWeights*> jobs;
+    for (JobCalculateMvcWeights* job : m_JobQueue.values())
+    {
+        jobs.push_back(job);
+    }
+    QtConcurrent::blockingMap(jobs, JobCalculateMvcWeights::StaticPerformJob);
+#else
+    QtConcurrent::blockingMap(m_JobQueue.values(), JobCalculateMvcWeights::StaticPerformJob);
+#endif
+    //for (auto job : m_JobQueue.values())
 	//{
 	//	job->PerformJob();
 	//}
@@ -1046,7 +1057,8 @@ bool MvcHelper::validateMvcWeights(const FbxMesh* pMesh, FbxNode* pRootBone)
 	FbxVector4* pTempBuffer = pMesh->GetControlPoints();
 	FbxVector4* pVertexBuffer = new FbxVector4[numVerts];
 	memcpy(pVertexBuffer, pTempBuffer, sizeof(FbxVector4) * numVerts);
-	FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &FbxTools::GetAffineMatrix(nullptr, pMesh->GetNode()), nullptr, (FbxMesh*) pMesh);
+    FbxAMatrix matrix = FbxTools::GetAffineMatrix(nullptr, pMesh->GetNode());
+	FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &matrix, nullptr, (FbxMesh*) pMesh);
 
 	double epsilon = 0.001;
 	QList<FbxNode*> todoQueue;
@@ -1122,7 +1134,8 @@ FbxVector4 MvcHelper::calibrate_bone(const FbxMesh* pMorphedMesh, QString sBoneN
 	QVector<double>* pMvcWeights = results.value();
 
 	FbxVector4* pVertexBuffer = pMorphedMesh->GetControlPoints();
-	FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &FbxTools::GetAffineMatrix(nullptr, pMorphedMesh->GetNode()), nullptr, (FbxMesh*)pMorphedMesh);
+    FbxAMatrix matrix = FbxTools::GetAffineMatrix(nullptr, pMorphedMesh->GetNode());
+    FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &matrix, nullptr, (FbxMesh*)pMorphedMesh);
 
 	FbxVector4 newBonePosition = MvcTools::deform_using_mean_value_coordinates(pMorphedMesh, pVertexBuffer, pMvcWeights);
 	return newBonePosition;
