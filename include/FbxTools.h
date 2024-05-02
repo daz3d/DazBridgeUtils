@@ -81,4 +81,8 @@ public:
 	static FbxVector4 CalculatePointCloudAverage(FbxMesh* pMesh, QList<int>* pVertexIndexes);
 
 	static FbxVector4 CalculatePointCloudCenter(FbxMesh* pMesh, QList<int>* pVertexIndexes, bool bCenterWeight = false);
+
+	static void removeMorphExportPrefixFromNode(FbxNode* pNode, const char* prefix);
+	static void removeMorphExportPrefixFromBlendShapeChannel(FbxBlendShapeChannel* pChannel, const char* prefix);
+
 };

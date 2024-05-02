@@ -65,6 +65,7 @@
 #include <qimage.h>
 #include "ImageTools.h"
 #include "MorphTools.h"
+#include "FbxTools.h"
 
 // miniz-lib
 extern "C"
@@ -4675,57 +4676,6 @@ void FindAndProcessTwistBones(FbxNode* pNode)
 	{
 		ReparentTwistBone(pNode);
 	}
-}
-
-
-void FbxTools::removeMorphExportPrefixFromBlendShapeChannel(FbxBlendShapeChannel* pChannel, const char* prefix)
-{
-    int shapeCount = pChannel->GetTargetShapeCount();
-    for (int shapeIndex = 0; shapeIndex < shapeCount; ++shapeIndex) 
-	{
-        FbxShape* shape = pChannel->GetTargetShape(shapeIndex);
-        if (shape) 
-		{
-            FbxString newName = shape->GetName();
-			newName.FindAndReplace(prefix, "", 0);
-            shape->SetName(newName.Buffer());
-        }
-    }
-}
-
-void FbxTools::removeMorphExportPrefixFromNode(FbxNode* pNode, const char* prefix)
-{
-    if (pNode) 
-	{
-        // Check if the node has a mesh
-        FbxMesh* pMesh = pNode->GetMesh();
-
-		// Rename Shapes
-		if (pMesh) 
-		{
-			int deformerCount = pMesh->GetDeformerCount(FbxDeformer::eBlendShape);
-			for (int deformerIndex = 0; deformerIndex < deformerCount; ++deformerIndex) 
-			{
-				FbxBlendShape* blendShape = static_cast<FbxBlendShape*>(pMesh->GetDeformer(deformerIndex, FbxDeformer::eBlendShape));
-				
-				int blendShapeChannelCount = blendShape->GetBlendShapeChannelCount();
-				for (int channelIndex = 0; channelIndex < blendShapeChannelCount; ++channelIndex) 
-				{
-					FbxBlendShapeChannel* channel = blendShape->GetBlendShapeChannel(channelIndex);
-					if (channel) 
-					{
-						// Rename the shapes associated with this channel
-						removeMorphExportPrefixFromBlendShapeChannel(channel, prefix);
-					}
-				}
-			}
-		}
-
-        // Recursively process children nodes
-        for (int j = 0; j < pNode->GetChildCount(); j++) {
-            removeMorphExportPrefixFromNode(pNode->GetChild(j), prefix);
-        }
-    }
 }
 
 

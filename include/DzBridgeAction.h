@@ -21,14 +21,6 @@ class DzNumericProeprty;
 
 class UnitTest_DzBridgeAction;
 
-class FbxTools
-{
-public:
-	static void removeMorphExportPrefixFromNode(FbxNode* pNode, const char* prefix);
-	static void removeMorphExportPrefixFromBlendShapeChannel(FbxBlendShapeChannel* pChannel, const char* prefix);
-
-};
-
 #include "dzbridge.h"
 namespace DzBridgeNameSpace
 {
