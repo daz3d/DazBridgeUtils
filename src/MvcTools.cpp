@@ -837,7 +837,7 @@ FbxVector2 MvcTools::interpolate_using_mean_value_coordinates(const QVector<doub
 	return interpolated_uv;
 }
 
-bool MvcHelper::createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode, DzProgress* pProgress)
+bool MvcBoneRetargeter::createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode, DzProgress* pProgress)
 {
 	pProgress->step();
 	// for each bone, calculte mvc weights, add to mvc weights table
@@ -1045,7 +1045,7 @@ bool MvcHelper::createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode, DzProg
 	return true;
 }
 
-bool MvcHelper::validateMvcWeights(const FbxMesh* pMesh, FbxNode* pRootBone)
+bool MvcBoneRetargeter::validateMvcWeights(const FbxMesh* pMesh, FbxNode* pRootBone)
 {
 	bool bResult = true;
 
@@ -1111,7 +1111,7 @@ bool MvcHelper::validateMvcWeights(const FbxMesh* pMesh, FbxNode* pRootBone)
 	return bResult;
 }
 
-FbxVector4 MvcHelper::calibrate_bone(const FbxMesh* pMorphedMesh, const FbxVector4* pVertexBuffer, QString sBoneName)
+FbxVector4 MvcBoneRetargeter::calibrate_bone(const FbxMesh* pMorphedMesh, const FbxVector4* pVertexBuffer, QString sBoneName)
 {
 	auto results = m_mBoneToMvcWeightsTable.find(sBoneName);
 	if (results == m_mBoneToMvcWeightsTable.end())
@@ -1124,7 +1124,7 @@ FbxVector4 MvcHelper::calibrate_bone(const FbxMesh* pMorphedMesh, const FbxVecto
 };
 
 
-FbxVector4 MvcHelper::calibrate_bone(const FbxMesh* pMorphedMesh, QString sBoneName)
+FbxVector4 MvcBoneRetargeter::calibrate_bone(const FbxMesh* pMorphedMesh, QString sBoneName)
 {
 	auto results = m_mBoneToMvcWeightsTable.find(sBoneName);
 	if (results == m_mBoneToMvcWeightsTable.end())
@@ -1141,7 +1141,7 @@ FbxVector4 MvcHelper::calibrate_bone(const FbxMesh* pMorphedMesh, QString sBoneN
 	return newBonePosition;
 };
 
-bool MvcHelper::loadMvcWeightsCache(QString mvcWeightsFilename)
+bool MvcBoneRetargeter::loadMvcWeightsCache(QString mvcWeightsFilename)
 {
 	// LOAD WEIGHTS...
 	QFile fileMvcWeights(mvcWeightsFilename);
@@ -1202,7 +1202,7 @@ bool MvcHelper::loadMvcWeightsCache(QString mvcWeightsFilename)
 	return true;
 };
 
-bool MvcHelper::saveMvcWeightsCache(QString mvcWeightsFilename)
+bool MvcBoneRetargeter::saveMvcWeightsCache(QString mvcWeightsFilename)
 {
 	QFile fileMvcWeights(mvcWeightsFilename);
 	if (fileMvcWeights.open(QIODevice::OpenModeFlag::WriteOnly | QIODevice::OpenModeFlag::Truncate))
@@ -1251,7 +1251,7 @@ bool MvcHelper::saveMvcWeightsCache(QString mvcWeightsFilename)
 	return true;
 }
 
-void MvcHelper::clearWeights()
+void MvcBoneRetargeter::clearWeights()
 {
 	for (QString key : m_mBoneToMvcWeightsTable.keys())
 	{
@@ -1262,6 +1262,112 @@ void MvcHelper::clearWeights()
 	}
 	m_mBoneToMvcWeightsTable.clear();
 
+}
+
+bool MvcCageRetargeter::createMvcWeights(const FbxMesh* pMesh, const FbxMesh* pCage, DzProgress* pProgress)
+{
+	pProgress->step();
+	// for each bone, calculte mvc weights, add to mvc weights table
+
+	if (pMesh == nullptr || pCage == nullptr)
+		return false;
+
+	const char* cageName = pCage->GetName();
+	int numWeights = pMesh->GetControlPointsCount();
+	int numCageVerts = pCage->GetControlPointsCount();
+	DzProgress* pMvcProgress = new DzProgress(QString("Reshaping rig... %1").arg(cageName), numCageVerts, false, true);
+	pMvcProgress->enable(true);
+	pMvcProgress->step();
+
+	FbxVector4* pTempMeshBuffer = pMesh->GetControlPoints();
+	FbxVector4* pMeshBuffer = new FbxVector4[numWeights];
+	memcpy(pMeshBuffer, pTempMeshBuffer, sizeof(FbxVector4) * numWeights);
+	if (false)
+	{
+		FbxAMatrix matrix = FbxTools::GetAffineMatrix(nullptr, pMesh->GetNode());
+		FbxTools::BakePoseToVertexBuffer(pMeshBuffer, &matrix, nullptr, pMesh);
+	}
+
+	FbxVector4* pTempCageBuffer = pCage->GetControlPoints();
+	FbxVector4* pCageBuffer = new FbxVector4[numCageVerts];
+	memcpy(pCageBuffer, pTempCageBuffer, sizeof(FbxVector4) * numCageVerts);
+	if (false)
+	{
+		FbxAMatrix matrix2 = FbxTools::GetAffineMatrix(nullptr, pCage->GetNode());
+		FbxTools::BakePoseToVertexBuffer(pCageBuffer, &matrix2, nullptr, pCage);
+	}
+
+	// create jobs
+	int nJobID = 0;
+	for (int i=0; i < numCageVerts; i++)
+	{
+		pMvcProgress->step();
+
+		// calculate mvc weights
+		FbxVector4 vertexPosition = pCageBuffer[i];
+		QVector<double>* pMvcWeights = new QVector<double>(numWeights, (double)0.0);
+		DzProgress::setCurrentInfo(QString("Computing MVC weights for vertex %1").arg(i));
+
+		QString sJobName = QString("Job#%1").arg(i);
+		auto job = new JobCalculateMvcWeights(sJobName, pMesh, vertexPosition, pMeshBuffer, pMvcWeights);
+		m_JobQueue.insert(i, job);
+		m_MvcWeightsTable.insert(i, pMvcWeights);
+	}
+
+	// spawn threads and process jobs
+	int numLogicalCores = QThread::idealThreadCount();
+	//int numLogicalCores = 1;
+
+	//if (numLogicalCores > 1) numLogicalCores *= 0.85;
+	if (numLogicalCores >= 4)
+	{
+		numLogicalCores--;
+	}
+
+	/////// QtConcurrent
+#ifdef __APPLE__
+	std::vector<JobCalculateMvcWeights*> jobs;
+	for (JobCalculateMvcWeights* job : m_JobQueue.values())
+	{
+		jobs.push_back(job);
+	}
+	QtConcurrent::blockingMap(jobs, JobCalculateMvcWeights::StaticPerformJob);
+#else
+	QtConcurrent::blockingMap(m_JobQueue.values(), JobCalculateMvcWeights::StaticPerformJob);
+#endif
+	//for (auto job : m_JobQueue.values())
+	//{
+	//	job->PerformJob();
+	//}
+
+
+	pMvcProgress->finish();
+	delete pMvcProgress;
+	return true;
+}
+
+bool MvcCageRetargeter::deformCage(const FbxMesh* pMorphedMesh, const FbxMesh* pCage, FbxVector4* pVertexBuffer)
+{
+	if (pMorphedMesh == nullptr || pCage == nullptr)
+		return false;
+
+	int numCageVerts = pCage->GetControlPointsCount();
+	for (int i = 0; i < numCageVerts; i++)
+	{
+		auto results = m_MvcWeightsTable.find(i);
+		if (results == m_MvcWeightsTable.end())
+		{
+			pVertexBuffer[i] = FbxVector4(NAN, NAN, NAN);
+			continue;
+		}
+		QVector<double>* pMvcWeights = results.value();
+		FbxVector4* pMorphedVertexBuffer = pMorphedMesh->GetControlPoints();
+
+		FbxVector4 newVertexPosition = MvcTools::deform_using_mean_value_coordinates(pMorphedMesh, pMorphedVertexBuffer, pMvcWeights);
+		pVertexBuffer[i] = newVertexPosition;
+	}
+
+	return true;
 }
 
 #include "moc_MvcTools.cpp"

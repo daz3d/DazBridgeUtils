@@ -30,11 +30,45 @@ struct mvcweights_header
 	int fileSize = 0;
 };
 
-class MvcHelper
+template <typename TKEY> class MvcHelper
 {
 public:
 	MvcHelper() {};
 	~MvcHelper() { clearWeights(); };
+
+	QMap<TKEY, QVector<double>*> m_MvcWeightsTable;
+	QMap<TKEY, JobCalculateMvcWeights*> m_JobQueue;
+
+	virtual void clearWeights() {
+		for (TKEY key : m_MvcWeightsTable.keys())
+		{
+			auto mvc_weights = m_MvcWeightsTable[key];
+			mvc_weights->clear();
+			delete mvc_weights;
+			m_MvcWeightsTable.remove(key);
+		}
+		m_MvcWeightsTable.clear();
+	};
+
+};
+
+class MvcCageRetargeter
+{
+public:
+	QMap<int, QVector<double>*> m_MvcWeightsTable;
+	QMap<int, JobCalculateMvcWeights*> m_JobQueue;
+
+	bool createMvcWeights(const FbxMesh* pMesh, const FbxMesh* pCage, DzProgress* pProgress);
+//	bool validateMvcWeights(const FbxMesh* pMesh);
+	bool deformCage(const FbxMesh* pMorphedMesh, const FbxMesh* pCage, FbxVector4* pVertexBuffer);
+
+};
+
+class MvcBoneRetargeter
+{
+public:
+	MvcBoneRetargeter() {};
+	~MvcBoneRetargeter() { clearWeights(); };
 
 	bool createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode, DzProgress* pProgress);
 	bool validateMvcWeights(const FbxMesh* pMesh, FbxNode* pRootBone);
