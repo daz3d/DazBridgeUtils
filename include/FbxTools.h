@@ -41,13 +41,13 @@ public:
 
 	static FbxAMatrix GetGeometricAffineMatrix(FbxNode* pNode);
 
-	static bool CalculateClusterDeformationMatrix(FbxAMatrix& clusterDeformationMatrix, FbxCluster* pCluster, FbxAMatrix* pGlobalOffsetMatrix, FbxPose* pPose, FbxMesh* pMesh, FbxTime fbxTime = FBXSDK_TIME_INFINITE);
+	static bool CalculateClusterDeformationMatrix(FbxAMatrix& clusterDeformationMatrix, FbxCluster* pCluster, FbxAMatrix* pGlobalOffsetMatrix, FbxPose* pPose, const FbxMesh* pMesh, FbxTime fbxTime = FBXSDK_TIME_INFINITE);
 
-	static bool BakePoseToVertexBuffer_LinearPathway(FbxVector4* pVertexBuffer, FbxAMatrix* pGlobalOffsetMatrix, FbxPose* pPose, FbxMesh* pMesh, FbxTime fbxTime = FBXSDK_TIME_INFINITE);
+	static bool BakePoseToVertexBuffer_LinearPathway(FbxVector4* pVertexBuffer, FbxAMatrix* pGlobalOffsetMatrix, FbxPose* pPose, const FbxMesh* pMesh, FbxTime fbxTime = FBXSDK_TIME_INFINITE);
 
-	static bool BakePoseToVertexBuffer_DualQuaternionPathway(FbxVector4* pVertexBuffer, FbxAMatrix* pGlobalOffsetMatrix, FbxPose* pPose, FbxMesh* pMesh, FbxTime fbxTime = FBXSDK_TIME_INFINITE);
+	static bool BakePoseToVertexBuffer_DualQuaternionPathway(FbxVector4* pVertexBuffer, FbxAMatrix* pGlobalOffsetMatrix, FbxPose* pPose, const FbxMesh* pMesh, FbxTime fbxTime = FBXSDK_TIME_INFINITE);
 
-	static bool BakePoseToVertexBuffer(FbxVector4* pVertexBuffer, FbxAMatrix* pGlobalOffsetMatrix, FbxPose* pPose, FbxMesh* pMesh, FbxTime pTime = FBXSDK_TIME_INFINITE);
+	static bool BakePoseToVertexBuffer(FbxVector4* pVertexBuffer, FbxAMatrix* pGlobalOffsetMatrix, FbxPose* pPose, const FbxMesh* pMesh, FbxTime pTime = FBXSDK_TIME_INFINITE);
 
 	static FbxAMatrix FindPoseMatrixOrIdentity(FbxPose* pPose, FbxNode* pNode);
 

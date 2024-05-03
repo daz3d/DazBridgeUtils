@@ -25,7 +25,7 @@ void JobCalculateMvcWeights::PerformJob()
 
 	//bool bResult;
 
-	FbxMesh* pMesh = m_pMesh;
+	const FbxMesh* pMesh = m_pMesh;
 	FbxVector4 x = m_x;
 	QVector<double>* pMvcWeights = m_pMvcWeights;
 

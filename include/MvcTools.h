@@ -54,7 +54,7 @@ class JobCalculateMvcWeights : public QObject
 {
 	Q_OBJECT
 public:
-	JobCalculateMvcWeights(QString sJobName, FbxMesh* pMesh, FbxVector4 vec, FbxVector4* pVertexBuffer, QVector<double>* pWeights)
+	JobCalculateMvcWeights(QString sJobName, const FbxMesh* pMesh, FbxVector4 vec, FbxVector4* pVertexBuffer, QVector<double>* pWeights)
 	{
 		m_sJobName = sJobName;
 		m_pMesh = pMesh;
@@ -63,7 +63,7 @@ public:
 		m_pMvcWeights = pWeights;
 	}
 	QString m_sJobName;
-	FbxMesh* m_pMesh;
+	const FbxMesh* m_pMesh;
 	FbxVector4* m_pVertexBuffer;
 	FbxVector4 m_x;
 	QVector<double>* m_pMvcWeights;

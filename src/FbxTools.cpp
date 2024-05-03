@@ -436,7 +436,7 @@ FbxAMatrix FbxTools::GetGeometricAffineMatrix(FbxNode* pNode)
 	return returnMatrix;
 }
 
-bool FbxTools::CalculateClusterDeformationMatrix(FbxAMatrix& clusterDeformationMatrix, FbxCluster* pCluster, FbxAMatrix* pGlobalOffsetMatrix, FbxPose* pPose, FbxMesh* pMesh, FbxTime fbxTime)
+bool FbxTools::CalculateClusterDeformationMatrix(FbxAMatrix& clusterDeformationMatrix, FbxCluster* pCluster, FbxAMatrix* pGlobalOffsetMatrix, FbxPose* pPose, const FbxMesh* pMesh, FbxTime fbxTime)
 {
 	bool bResult = false;
 	// if cluster link mode is eAdditive
@@ -489,7 +489,7 @@ bool FbxTools::CalculateClusterDeformationMatrix(FbxAMatrix& clusterDeformationM
 	return bResult;
 }
 
-bool FbxTools::BakePoseToVertexBuffer_LinearPathway(FbxVector4* pVertexBuffer, FbxAMatrix* pGlobalOffsetMatrix, FbxPose* pPose, FbxMesh* pMesh, FbxTime fbxTime)
+bool FbxTools::BakePoseToVertexBuffer_LinearPathway(FbxVector4* pVertexBuffer, FbxAMatrix* pGlobalOffsetMatrix, FbxPose* pPose, const FbxMesh* pMesh, FbxTime fbxTime)
 {
 	bool bResult = false;
 	// get cluster link mode
@@ -598,7 +598,7 @@ bool FbxTools::BakePoseToVertexBuffer_LinearPathway(FbxVector4* pVertexBuffer, F
 	return bResult;
 }
 
-bool FbxTools::BakePoseToVertexBuffer_DualQuaternionPathway(FbxVector4* pVertexBuffer, FbxAMatrix* pGlobalOffsetMatrix, FbxPose* pPose, FbxMesh* pMesh, FbxTime fbxTime)
+bool FbxTools::BakePoseToVertexBuffer_DualQuaternionPathway(FbxVector4* pVertexBuffer, FbxAMatrix* pGlobalOffsetMatrix, FbxPose* pPose, const FbxMesh* pMesh, FbxTime fbxTime)
 {
 	bool bResult = false;
 	// get cluster link mode
@@ -727,7 +727,7 @@ bool FbxTools::BakePoseToVertexBuffer_DualQuaternionPathway(FbxVector4* pVertexB
 	return bResult;
 }
 
-bool FbxTools::BakePoseToVertexBuffer(FbxVector4* pVertexBuffer, FbxAMatrix* pGlobalOffsetMatrix, FbxPose* pPose, FbxMesh* pMesh, FbxTime pTime)
+bool FbxTools::BakePoseToVertexBuffer(FbxVector4* pVertexBuffer, FbxAMatrix* pGlobalOffsetMatrix, FbxPose* pPose, const FbxMesh* pMesh, FbxTime pTime)
 {
 	bool bResult = false;
 	// get skin deformer for mesh
