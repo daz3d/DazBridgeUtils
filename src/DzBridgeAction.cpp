@@ -1414,12 +1414,31 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 		else
 		{
 			// MAIN FBX EXPORT OPERATION
-			DzError result = Exporter->writeFile(m_sDestinationFBX, &ExportOptions);
+			DzError result;
+			dzApp->log("DEBUG: Preparing to export FBX using DzExporter::writeFile()...");
+			try {
+				result = Exporter->writeFile(m_sDestinationFBX, &ExportOptions);
+				dzApp->log("DEBUG: Export using DzExporter::writeFile() completed successfuly with result code=" + QString("%1").arg((int)result));
+			}
+			catch (std::exception& e) {
+				result = -1;
+				dzApp->log("ERROR: Exception caught during FBX Export for: " + m_sDestinationPath + ", e=" + QString(e.what()));
+				QMessageBox::critical(0, tr("DzBridge Critical Exception"),
+					tr("A critical exception error occured during the FBX export operation using DzExporter::writeFile().") + "\n" +
+					tr("Please refer to the Daz Studio log.txt file for details."), QMessageBox::Ok);
+				bReturnResult = false;
+//				dzApp->quit();
+			}
 
 			if (result == DZ_USER_CANCELLED_OPERATION || result != DZ_NO_ERROR)
 			{
 				// handle cancel operation
-				dzApp->log("INFO: User cancelled FBX Export for: " + m_sDestinationFBX);
+				if (result == DZ_USER_CANCELLED_OPERATION) {
+					dzApp->log("INFO: User cancelled FBX Export for: " + m_sDestinationFBX);
+				}
+				else {
+					dzApp->log("ERROR: Error occured during FBX Export for: " + m_sDestinationFBX + " , DzError=" + QString("%1").arg((int)result));
+				}
 				bReturnResult = false;
 			}
 			else
