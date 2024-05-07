@@ -1279,19 +1279,19 @@ bool MvcCageRetargeter::createMvcWeights(const FbxMesh* pMesh, const FbxMesh* pC
 	pMvcProgress->enable(true);
 	pMvcProgress->step();
 
-	FbxVector4* pTempMeshBuffer = pMesh->GetControlPoints();
-	FbxVector4* pMeshBuffer = new FbxVector4[numWeights];
-	memcpy(pMeshBuffer, pTempMeshBuffer, sizeof(FbxVector4) * numWeights);
-	if (false)
+	FbxVector4* pActiveMeshBuffer = pMesh->GetControlPoints();
+	FbxVector4* pSourceMeshBuffer = new FbxVector4[numWeights];
+	memcpy(pSourceMeshBuffer, pActiveMeshBuffer, sizeof(FbxVector4) * numWeights);
+	if (pMesh->GetNode())
 	{
 		FbxAMatrix matrix = FbxTools::GetAffineMatrix(nullptr, pMesh->GetNode());
-		FbxTools::BakePoseToVertexBuffer(pMeshBuffer, &matrix, nullptr, pMesh);
+		FbxTools::BakePoseToVertexBuffer(pSourceMeshBuffer, &matrix, nullptr, pMesh);
 	}
 
-	FbxVector4* pTempCageBuffer = pCage->GetControlPoints();
+	FbxVector4* pActiveCageBuffer = pCage->GetControlPoints();
 	FbxVector4* pCageBuffer = new FbxVector4[numCageVerts];
-	memcpy(pCageBuffer, pTempCageBuffer, sizeof(FbxVector4) * numCageVerts);
-	if (false)
+	memcpy(pCageBuffer, pActiveCageBuffer, sizeof(FbxVector4) * numCageVerts);
+	if (pCage->GetNode())
 	{
 		FbxAMatrix matrix2 = FbxTools::GetAffineMatrix(nullptr, pCage->GetNode());
 		FbxTools::BakePoseToVertexBuffer(pCageBuffer, &matrix2, nullptr, pCage);
@@ -1309,7 +1309,7 @@ bool MvcCageRetargeter::createMvcWeights(const FbxMesh* pMesh, const FbxMesh* pC
 		DzProgress::setCurrentInfo(QString("Computing MVC weights for vertex %1").arg(i));
 
 		QString sJobName = QString("Job#%1").arg(i);
-		auto job = new JobCalculateMvcWeights(sJobName, pMesh, vertexPosition, pMeshBuffer, pMvcWeights);
+		auto job = new JobCalculateMvcWeights(sJobName, pMesh, vertexPosition, pSourceMeshBuffer, pMvcWeights);
 		m_JobQueue.insert(i, job);
 		m_MvcWeightsTable.insert(i, pMvcWeights);
 	}

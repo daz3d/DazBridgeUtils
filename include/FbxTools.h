@@ -85,4 +85,5 @@ public:
 	static void removeMorphExportPrefixFromNode(FbxNode* pNode, const char* prefix);
 	static void removeMorphExportPrefixFromBlendShapeChannel(FbxBlendShapeChannel* pChannel, const char* prefix);
 
+	static bool MultiplyMatrixToVertexBuffer(FbxAMatrix* pMatrix, FbxVector4* pVertexBuffer, int numVerts);
 };

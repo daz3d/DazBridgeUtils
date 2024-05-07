@@ -732,6 +732,12 @@ bool FbxTools::BakePoseToVertexBuffer(FbxVector4* pVertexBuffer, FbxAMatrix* pGl
 	bool bResult = false;
 	// get skin deformer for mesh
 	FbxSkin* pSkinDeformer = (FbxSkin*)pMesh->GetDeformer(0, FbxDeformer::eSkin);
+	if (!pSkinDeformer)
+	{
+		// do unskinned bake
+		bResult = MultiplyMatrixToVertexBuffer(pGlobalOffsetMatrix, pVertexBuffer, pMesh->GetControlPointsCount());
+		return bResult;
+	}
 	FbxSkin::EType skinningType = pSkinDeformer->GetSkinningType();
 
 	// choose linear, dual-quaternion or blend pathways
@@ -1483,5 +1489,17 @@ void FbxTools::removeMorphExportPrefixFromNode(FbxNode* pNode, const char* prefi
 			removeMorphExportPrefixFromNode(pNode->GetChild(j), prefix);
 		}
 	}
+}
+
+bool FbxTools::MultiplyMatrixToVertexBuffer(FbxAMatrix* pMatrix, FbxVector4* pVertexBuffer, int numVerts)
+{
+	// apply weight * matrix transform to each vertex
+	for (int i = 0; i < numVerts; i++)
+	{
+		FbxVector4 sourceVertex = pVertexBuffer[i];
+		FbxVector4 finalTargetVertex = pMatrix->MultT(sourceVertex);
+		pVertexBuffer[i] = finalTargetVertex;
+	}
+	return true;
 }
 
