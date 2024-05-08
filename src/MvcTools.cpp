@@ -1,3 +1,6 @@
+// UNCOMMENT FOLLOWING LINE TO STEP THROUGH MVC CALCULATIONS IN SINGLE THREAD
+//#define __SINGLE_THREAD_DEBUG
+
 #include "MvcTools.h"
 #include <dzobject.h>
 #include <fbxsdk.h>
@@ -319,11 +322,12 @@ void JobCalculateMvcWeights::PerformJob()
 				if (bOutsideCage)
 				{
 					//Wj = 0;
-					//printf("nop?");
+					int nop = 0;
 				}
 				if (isinf(Wj))
 				{
 					//printf("ERROR: Wj is infinite for %d", vertBufferIndex);
+					int nop = 0;
 				}
 				else if (fabs(Wj) > epsilon)
 				{
@@ -407,11 +411,20 @@ FbxVector4 MvcTools::deform_using_mean_value_coordinates(const QVector<FbxVector
 
 	if (!bNoWeights)
 	{
+		if ( fabs(sumWj) < 3.5 ) {
+			int break_here = 0;
+			// hardcode for G9
+//			sumWj *= 1.6334531198954590003266906239791;
+		}
 		deformed_x = sumWjPj;
 		if (fabs(sumWj) > epsilon)
 		{
 			FbxVector4 normalizedWjPj = sumWjPj / sumWj;
 			deformed_x = normalizedWjPj;
+		}
+		else
+		{
+			int break_here = 0;
 		}
 	}
 
@@ -784,7 +797,7 @@ FbxVector4 MvcTools::deform_using_mean_value_coordinates(const FbxMesh* pMesh, c
 {
 	if (pMesh == nullptr || pMvcWeights == nullptr)
 	{
-        return FbxVector4(-1,-1,-1);
+        return FbxVector4(NAN,NAN,NAN);
 	}
 
 	FbxVector4 deformed_x;
@@ -1023,7 +1036,12 @@ bool MvcBoneRetargeter::createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode
 	*/
 
 	/////// QtConcurrent
-#ifdef __APPLE__
+#ifdef __SINGLE_THREAD_DEBUG
+	for (auto job : m_JobQueue.values())
+	{
+		job->PerformJob();
+	}
+#elif defined(__APPLE__)
     std::vector<JobCalculateMvcWeights*> jobs;
     for (JobCalculateMvcWeights* job : m_JobQueue.values())
     {
@@ -1033,11 +1051,8 @@ bool MvcBoneRetargeter::createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode
 #else
     QtConcurrent::blockingMap(m_JobQueue.values(), JobCalculateMvcWeights::StaticPerformJob);
 #endif
-    //for (auto job : m_JobQueue.values())
-	//{
-	//	job->PerformJob();
-	//}
 
+	delete[] pVertexBuffer;
 
 	pMvcProgress->finish();
 	delete pMvcProgress;
@@ -1088,6 +1103,7 @@ bool MvcBoneRetargeter::validateMvcWeights(const FbxMesh* pMesh, FbxNode* pRootB
 			fabs(delta[2]) > epsilon)
 		{
 			//printf("ERROR: MVC validation failed, unable to reproduce same position using original values.");
+			delete [] pVertexBuffer;
 			bResult = false;
 			return bResult;
 		}
@@ -1107,7 +1123,7 @@ bool MvcBoneRetargeter::validateMvcWeights(const FbxMesh* pMesh, FbxNode* pRootB
 			}
 		}
 	}
-
+	delete[] pVertexBuffer;
 	return bResult;
 }
 
@@ -1325,7 +1341,12 @@ bool MvcCageRetargeter::createMvcWeights(const FbxMesh* pMesh, const FbxMesh* pC
 	}
 
 	/////// QtConcurrent
-#ifdef __APPLE__
+#ifdef __SINGLE_THREAD_DEBUG
+	for (auto job : m_JobQueue.values())
+	{
+		job->PerformJob();
+	}
+#elif defined(__APPLE__)
 	std::vector<JobCalculateMvcWeights*> jobs;
 	for (JobCalculateMvcWeights* job : m_JobQueue.values())
 	{
@@ -1335,11 +1356,10 @@ bool MvcCageRetargeter::createMvcWeights(const FbxMesh* pMesh, const FbxMesh* pC
 #else
 	QtConcurrent::blockingMap(m_JobQueue.values(), JobCalculateMvcWeights::StaticPerformJob);
 #endif
-	//for (auto job : m_JobQueue.values())
-	//{
-	//	job->PerformJob();
-	//}
 
+	// cleanup memory
+	delete[] pSourceMeshBuffer;
+	delete[] pCageBuffer;
 
 	pMvcProgress->finish();
 	delete pMvcProgress;
@@ -1364,6 +1384,7 @@ bool MvcCageRetargeter::deformCage(const FbxMesh* pMorphedMesh, const FbxMesh* p
 		FbxVector4* pMorphedVertexBuffer = pMorphedMesh->GetControlPoints();
 
 		FbxVector4 newVertexPosition = MvcTools::deform_using_mean_value_coordinates(pMorphedMesh, pMorphedVertexBuffer, pMvcWeights);
+
 		pVertexBuffer[i] = newVertexPosition;
 	}
 

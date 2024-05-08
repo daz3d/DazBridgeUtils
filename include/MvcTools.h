@@ -58,9 +58,9 @@ public:
 	QMap<int, QVector<double>*> m_MvcWeightsTable;
 	QMap<int, JobCalculateMvcWeights*> m_JobQueue;
 
-	bool createMvcWeights(const FbxMesh* pMesh, const FbxMesh* pCage, DzProgress* pProgress);
+	virtual bool createMvcWeights(const FbxMesh* pMesh, const FbxMesh* pCage, DzProgress* pProgress);
 //	bool validateMvcWeights(const FbxMesh* pMesh);
-	bool deformCage(const FbxMesh* pMorphedMesh, const FbxMesh* pCage, FbxVector4* pVertexBuffer);
+	virtual bool deformCage(const FbxMesh* pMorphedMesh, const FbxMesh* pCage, FbxVector4* pVertexBuffer);
 
 };
 
