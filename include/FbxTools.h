@@ -86,4 +86,6 @@ public:
 	static void removeMorphExportPrefixFromBlendShapeChannel(FbxBlendShapeChannel* pChannel, const char* prefix);
 
 	static bool MultiplyMatrixToVertexBuffer(FbxAMatrix* pMatrix, FbxVector4* pVertexBuffer, int numVerts);
+
+	static FbxVector4 CalculatePointCloudCenter(FbxVector4* pVertexBuffer, int numVertices, bool bCenterWeight=false);
 };

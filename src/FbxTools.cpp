@@ -1503,3 +1503,45 @@ bool FbxTools::MultiplyMatrixToVertexBuffer(FbxAMatrix* pMatrix, FbxVector4* pVe
 	return true;
 }
 
+
+FbxVector4 FbxTools::CalculatePointCloudCenter(FbxVector4 *pVertexBuffer, int numVertices, bool bCenterWeight)
+{
+
+	if (pVertexBuffer == nullptr || numVertices <= 0)
+	{
+		dzApp->log("ERROR: CalculatePointCloudCenter recieved invalid inputs");
+		return nullptr;
+	}
+
+	FbxVector4 cloudCenter = pVertexBuffer[0];
+	FbxVector4 min_bounds = cloudCenter;
+	FbxVector4 max_bounds = cloudCenter;
+	for (int vertIndex=0; vertIndex < numVertices; vertIndex++)
+	{
+		FbxVector4 currentPoint = pVertexBuffer[vertIndex];
+		for (int i = 0; i < 3; i++)
+		{
+			if (currentPoint[i] < min_bounds[i]) min_bounds[i] = currentPoint[i];
+			if (currentPoint[i] > max_bounds[i]) max_bounds[i] = currentPoint[i];
+		}
+	}
+	double center_weight = 0;
+	if (abs(max_bounds[0]) < abs(min_bounds[0]))
+		center_weight = max_bounds[0];
+	else
+		center_weight = min_bounds[0];
+
+	if (bCenterWeight)
+		//		cloudCenter[0] = (max_bounds[0] + min_bounds[0] + center_weight) / 3;
+		cloudCenter[0] = center_weight;
+	else
+		cloudCenter[0] = (max_bounds[0] + min_bounds[0]) / 2;
+	cloudCenter[1] = (max_bounds[1] + min_bounds[1]) / 2;
+	cloudCenter[2] = (max_bounds[2] + min_bounds[2]) / 2;
+
+//	FbxVector4 cloudAverage = CalculatePointCloudAverage(pMesh, pVertexIndexes);
+
+	return cloudCenter;
+
+}
+
