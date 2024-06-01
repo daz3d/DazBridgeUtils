@@ -17,7 +17,7 @@ class DzGeometry;
 class DzFigure;
 class DzSkinBinding;
 class DzColorProperty;
-class DzNumericProeprty;
+class DzNumericProperty;
 
 class UnitTest_DzBridgeAction;
 
