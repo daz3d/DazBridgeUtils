@@ -1524,8 +1524,10 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 
 void DzBridgeAction::exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzNode*, FbxNode*>& BoneMap)
 {
-	// Only transfer face bones if requested.  MLDeformer doesn't like missing bones though
-	if (m_sAssetType != "MLDeformer" && Parent != nullptr && Parent->getName() == "head" && m_bAnimationTransferFace == false) return;
+	// Only transfer face bones if requested.  MLDeformer doesn't like missing bones in UE5.3 and earlier
+	bool bIncludeFaceBones = m_bAnimationTransferFace;
+	if (m_sAssetType == "MLDeformer") bIncludeFaceBones = m_bMLDeformerExportFace;
+	if (Parent != nullptr && Parent->getName() == "head" && bIncludeFaceBones == false) return;
 
 	FbxNode* BoneNode;
 

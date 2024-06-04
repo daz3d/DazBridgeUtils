@@ -149,6 +149,7 @@ namespace DzBridgeNameSpace
 
 		// Shared Settings
 		bool m_bFixTwistBones = true;
+		bool m_bMLDeformerExportFace = false;
 
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }
