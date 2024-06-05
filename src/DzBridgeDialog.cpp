@@ -424,16 +424,6 @@ void DzBridgeDialog::refreshAsset()
 	{
 		assetNameEdit->setText(Selection->getLabel().remove(QRegExp("[^A-Za-z0-9_]")));
 	}
-
-	if (qobject_cast<DzSkeleton*>(Selection))
-	{
-		assetTypeCombo->setCurrentIndex(0);
-	}
-	else
-	{
-		assetTypeCombo->setCurrentIndex(1);
-	}
-
 }
 
 void DzBridgeDialog::accept()
