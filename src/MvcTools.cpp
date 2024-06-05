@@ -864,7 +864,7 @@ bool MvcBoneRetargeter::createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode
 	const char* rootName = pRootNode->GetName();
 	int numVerts = pMesh->GetControlPointsCount();
 	int numBones = 1500;
-	DzProgress* pMvcProgress = new DzProgress(QString("Reshaping rig... %1").arg(rootName), numBones, false, true);
+	DzProgress* pMvcProgress = new DzProgress(QString("Analyzing... %1").arg(rootName), numBones, false, true);
 	pMvcProgress->enable(true);
 	pMvcProgress->step();
 
@@ -1291,7 +1291,7 @@ bool MvcCageRetargeter::createMvcWeights(const FbxMesh* pMesh, const FbxMesh* pC
 	const char* cageName = pCage->GetName();
 	int numWeights = pMesh->GetControlPointsCount();
 	int numCageVerts = pCage->GetControlPointsCount();
-	DzProgress* pMvcProgress = new DzProgress(QString("Reshaping rig... %1").arg(cageName), numCageVerts, false, true);
+	DzProgress* pMvcProgress = new DzProgress(QString("Analyzing... %1").arg(cageName), numCageVerts, false, true);
 	pMvcProgress->enable(true);
 	pMvcProgress->step();
 
@@ -1322,8 +1322,9 @@ bool MvcCageRetargeter::createMvcWeights(const FbxMesh* pMesh, const FbxMesh* pC
 		// calculate mvc weights
 		FbxVector4 vertexPosition = pCageBuffer[i];
 		QVector<double>* pMvcWeights = new QVector<double>(numWeights, (double)0.0);
-		DzProgress::setCurrentInfo(QString("Computing MVC weights for vertex %1").arg(i));
-
+#ifdef _DEBUG
+			DzProgress::setCurrentInfo(QString("Computing MVC weights for vertex %1").arg(i));
+#endif
 		QString sJobName = QString("Job#%1").arg(i);
 		auto job = new JobCalculateMvcWeights(sJobName, pMesh, vertexPosition, pSourceMeshBuffer, pMvcWeights);
 		m_JobQueue.insert(i, job);
