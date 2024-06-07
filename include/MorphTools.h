@@ -95,6 +95,10 @@ public:
 	static QStringList getFinalizedMorphList(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled);
 	static QStringList getCombinedMorphList(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled);
 
+	// DB 2024-06-07: get available morphs independent of GUI
+	static QMap<QString, MorphInfo>* getAvailableMorphs(DzNode* Node);
+	static void safeDeleteMorphInfoTable(QMap<QString, MorphInfo>*);
+
 private:
 	static void AddActiveJointControlledMorphs(QList<QString> &m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node = nullptr);
 	static QList<JointLinkInfo> GetActiveJointControlledMorphs(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node = nullptr);

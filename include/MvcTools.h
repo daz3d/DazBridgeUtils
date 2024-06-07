@@ -17,6 +17,13 @@ public:
 	static FbxVector4 deform_using_mean_value_coordinates(const QVector<FbxVector4>& VertexBuffer, const QVector<double>* pMvcWeights, FbxVector4 x);
 
 	static FbxVector2 interpolate_using_mean_value_coordinates(const QVector<double>* pMvcWeights, const QVector<FbxVector2>* pFValues);
+
+	// modify a geometry node using Mvc Cage deform
+	static bool testMvc(DzNode* selected);
+	// private use by testMvc()
+	static bool makeTestMvcCage(QVector<FbxVector4>* &mvc_test_cage_vertexbuffer, QVector<int>* &mvc_test_cage_triangles);
+	static bool makeTestMvcCage_2(QVector<FbxVector4>* &mvc_test_cage_vertexbuffer, QVector<int>* &mvc_test_cage_triangles);
+
 };
 
 struct mvcweights_header

@@ -885,3 +885,87 @@ QStringList MorphTools::getAvailableMorphNames(DzNode* Node)
 
 	return newMorphList;
 }
+
+// DB 2024-06-07: need available morph table independent of GUI
+// NOTE: User must free table after done using
+QMap<QString, MorphInfo>* MorphTools::getAvailableMorphs(DzNode* Node)
+{
+	// Build morphinfo table to return
+	QMap<QString, MorphInfo>* pMorphInfoTable = new QMap<QString, MorphInfo>();
+
+	DzObject* Object = Node->getObject();
+	DzShape* Shape = Object ? Object->getCurrentShape() : NULL;
+
+	for (int index = 0; index < Node->getNumProperties(); index++)
+	{
+		DzProperty* property = Node->getProperty(index);
+		QString propName = property->getName();
+		QString propLabel = property->getLabel();
+		DzPresentation* presentation = property->getPresentation();
+		if (presentation)
+		{
+			MorphInfo morphInfo;
+			morphInfo.Name = propName;
+			morphInfo.Label = propLabel;
+			morphInfo.Path = Node->getLabel() + "/" + property->getPath();
+			morphInfo.Type = presentation->getType();
+			morphInfo.Property = property;
+			morphInfo.Node = Node;
+			if (!pMorphInfoTable->contains(morphInfo.Name))
+			{
+				pMorphInfoTable->insert(morphInfo.Name, morphInfo);
+			}
+		}
+	}
+
+	if (Object)
+	{
+		for (int index = 0; index < Object->getNumModifiers(); index++)
+		{
+			DzModifier* modifier = Object->getModifier(index);
+			QString modName = modifier->getName();
+			QString modLabel = modifier->getLabel();
+			DzMorph* mod = qobject_cast<DzMorph*>(modifier);
+			if (mod)
+			{
+				for (int propindex = 0; propindex < modifier->getNumProperties(); propindex++)
+				{
+					DzProperty* property = modifier->getProperty(propindex);
+					QString propName = property->getName();
+					QString propLabel = property->getLabel();
+					DzPresentation* presentation = property->getPresentation();
+					if (presentation)
+					{
+						MorphInfo morphInfoProp;
+						morphInfoProp.Name = modName;
+						morphInfoProp.Label = propLabel;
+						morphInfoProp.Path = Node->getLabel() + "/" + property->getPath();
+						morphInfoProp.Type = presentation->getType();
+						morphInfoProp.Property = property;
+						morphInfoProp.Node = Node;
+						if (!pMorphInfoTable->contains(morphInfoProp.Name))
+						{
+							pMorphInfoTable->insert(morphInfoProp.Name, morphInfoProp);
+						}
+					}
+				}
+
+			}
+
+		}
+	}
+
+	return pMorphInfoTable;
+}
+
+void MorphTools::safeDeleteMorphInfoTable(QMap<QString, MorphInfo>* pMorphInfoTable)
+{
+	foreach(MorphInfo m, pMorphInfoTable->values())
+	{
+//		delete(&m);
+	}
+	pMorphInfoTable->clear();
+
+	return;
+}
+

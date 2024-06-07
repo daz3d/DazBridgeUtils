@@ -7,6 +7,9 @@
 
 #include <dzapp.h>
 #include <dzprogress.h>
+#include <dzscene.h>
+#include <dzshape.h>
+#include <dzgeometry.h>
 
 #include "FbxTools.h"
 
@@ -1387,6 +1390,357 @@ bool MvcCageRetargeter::deformCage(const FbxMesh* pMorphedMesh, const FbxMesh* p
 		FbxVector4 newVertexPosition = MvcTools::deform_using_mean_value_coordinates(pMorphedMesh, pMorphedVertexBuffer, pMvcWeights);
 
 		pVertexBuffer[i] = newVertexPosition;
+	}
+
+	return true;
+}
+
+
+///////////////////////////////////////////////////////////////////////////////////
+
+
+bool MvcTools::makeTestMvcCage(QVector<FbxVector4>* &mvc_test_cage_vertexbuffer, QVector<int>* &mvc_test_cage_triangles)
+{
+	double cage_width = 140;
+	double cage_depth = 50;
+	double cage_height = 180;
+	double cage_floor = -0;
+
+	//double cage_width = 200;
+	//double cage_depth = 200;
+	//double cage_height = 200;
+	//double cage_floor = -200;
+
+	QVector<FbxVector4> *vertexbuffer = new QVector<FbxVector4>(8);
+	(*vertexbuffer)[0] = FbxVector4(-cage_width, cage_floor, cage_depth);
+	(*vertexbuffer)[1] = FbxVector4(-cage_width, cage_floor, -cage_depth);
+	(*vertexbuffer)[2] = FbxVector4(cage_width, cage_floor, -cage_depth);
+	(*vertexbuffer)[3] = FbxVector4(cage_width, cage_floor, cage_depth);
+
+	(*vertexbuffer)[4] = FbxVector4(-cage_width, cage_height, cage_depth);
+	(*vertexbuffer)[5] = FbxVector4(-cage_width, cage_height, -cage_depth);
+	(*vertexbuffer)[6] = FbxVector4(cage_width, cage_height, -cage_depth);
+	(*vertexbuffer)[7] = FbxVector4(cage_width, cage_height, cage_depth);
+
+	QVector<int> *triangles = new QVector<int>(12*3);
+	int v=0;
+	// bottom
+	(*triangles)[v * 3 + 0] = 0;
+	(*triangles)[v * 3 + 1] = 3;
+	(*triangles)[v * 3 + 2] = 1;
+	v++;
+	(*triangles)[v * 3 + 0] = 3;
+	(*triangles)[v * 3 + 1] = 2;
+	(*triangles)[v * 3 + 2] = 1;
+	v++;
+
+	// top
+	(*triangles)[v * 3 + 0] = 4;
+	(*triangles)[v * 3 + 1] = 5;
+	(*triangles)[v * 3 + 2] = 7;
+	v++;
+	(*triangles)[v * 3 + 0] = 7;
+	(*triangles)[v * 3 + 1] = 5;
+	(*triangles)[v * 3 + 2] = 6;
+	v++;
+
+	// back
+	(*triangles)[v * 3 + 0] = 0;
+	(*triangles)[v * 3 + 1] = 4;
+	(*triangles)[v * 3 + 2] = 3;
+	v++;
+	(*triangles)[v * 3 + 0] = 3;
+	(*triangles)[v * 3 + 1] = 4;
+	(*triangles)[v * 3 + 2] = 7;
+	v++;
+
+	// front
+	(*triangles)[v * 3 + 0] = 1;
+	(*triangles)[v * 3 + 1] = 2;
+	(*triangles)[v * 3 + 2] = 5;
+	v++;
+	(*triangles)[v * 3 + 0] = 5;
+	(*triangles)[v * 3 + 1] = 2;
+	(*triangles)[v * 3 + 2] = 6;
+	v++;
+
+	// right
+	(*triangles)[v * 3 + 0] = 0;
+	(*triangles)[v * 3 + 1] = 1;
+	(*triangles)[v * 3 + 2] = 4;
+	v++;
+	(*triangles)[v * 3 + 0] = 4;
+	(*triangles)[v * 3 + 1] = 1;
+	(*triangles)[v * 3 + 2] = 5;
+	v++;
+
+	// left
+	(*triangles)[v * 3 + 0] = 3;
+	(*triangles)[v * 3 + 1] = 7;
+	(*triangles)[v * 3 + 2] = 2;
+	v++;
+	(*triangles)[v * 3 + 0] = 2;
+	(*triangles)[v * 3 + 1] = 7;
+	(*triangles)[v * 3 + 2] = 6;
+	v++;
+
+	mvc_test_cage_vertexbuffer = vertexbuffer;
+	mvc_test_cage_triangles = triangles;
+
+	return true;
+}
+
+bool MvcTools::makeTestMvcCage_2(QVector<FbxVector4>* &mvc_test_cage_vertexbuffer, QVector<int>* &mvc_test_cage_triangles)
+{
+	//double cage_width = 140;
+	//double cage_depth = 50;
+	//double cage_height = 180;
+	//double cage_floor = -0;
+
+	double cage_width = 140;
+	double cage_depth = 50;
+	double cage_height = 200;
+	double cage_floor = -0;
+	QVector<FbxVector4>* vertexbuffer = new QVector<FbxVector4>(8);
+	(*vertexbuffer)[0] = FbxVector4(-cage_width, cage_floor, cage_depth);
+	(*vertexbuffer)[1] = FbxVector4(-cage_width, cage_floor, -cage_depth);
+	(*vertexbuffer)[2] = FbxVector4(cage_width, cage_floor, -cage_depth);
+	(*vertexbuffer)[3] = FbxVector4(cage_width, cage_floor, cage_depth);
+
+	cage_width = 14;
+	cage_depth = 5;
+	(*vertexbuffer)[4] = FbxVector4(-cage_width, cage_height, cage_depth);
+	(*vertexbuffer)[5] = FbxVector4(-cage_width, cage_height, -cage_depth);
+	(*vertexbuffer)[6] = FbxVector4(cage_width, cage_height, -cage_depth);
+	(*vertexbuffer)[7] = FbxVector4(cage_width, cage_height, cage_depth);
+
+	QVector<int>* triangles = new QVector<int>(12 * 3);
+	int v = 0;
+	// bottom
+	(*triangles)[v * 3 + 0] = 0;
+	(*triangles)[v * 3 + 1] = 3;
+	(*triangles)[v * 3 + 2] = 1;
+	v++;
+	(*triangles)[v * 3 + 0] = 3;
+	(*triangles)[v * 3 + 1] = 2;
+	(*triangles)[v * 3 + 2] = 1;
+	v++;
+
+	// top
+	(*triangles)[v * 3 + 0] = 4;
+	(*triangles)[v * 3 + 1] = 5;
+	(*triangles)[v * 3 + 2] = 7;
+	v++;
+	(*triangles)[v * 3 + 0] = 7;
+	(*triangles)[v * 3 + 1] = 5;
+	(*triangles)[v * 3 + 2] = 6;
+	v++;
+
+	// back
+	(*triangles)[v * 3 + 0] = 0;
+	(*triangles)[v * 3 + 1] = 4;
+	(*triangles)[v * 3 + 2] = 3;
+	v++;
+	(*triangles)[v * 3 + 0] = 3;
+	(*triangles)[v * 3 + 1] = 4;
+	(*triangles)[v * 3 + 2] = 7;
+	v++;
+
+	// front
+	(*triangles)[v * 3 + 0] = 1;
+	(*triangles)[v * 3 + 1] = 2;
+	(*triangles)[v * 3 + 2] = 5;
+	v++;
+	(*triangles)[v * 3 + 0] = 5;
+	(*triangles)[v * 3 + 1] = 2;
+	(*triangles)[v * 3 + 2] = 6;
+	v++;
+
+	// right
+	(*triangles)[v * 3 + 0] = 0;
+	(*triangles)[v * 3 + 1] = 1;
+	(*triangles)[v * 3 + 2] = 4;
+	v++;
+	(*triangles)[v * 3 + 0] = 4;
+	(*triangles)[v * 3 + 1] = 1;
+	(*triangles)[v * 3 + 2] = 5;
+	v++;
+
+	// left
+	(*triangles)[v * 3 + 0] = 3;
+	(*triangles)[v * 3 + 1] = 7;
+	(*triangles)[v * 3 + 2] = 2;
+	v++;
+	(*triangles)[v * 3 + 0] = 2;
+	(*triangles)[v * 3 + 1] = 7;
+	(*triangles)[v * 3 + 2] = 6;
+	v++;
+
+	mvc_test_cage_vertexbuffer = vertexbuffer;
+	mvc_test_cage_triangles = triangles;
+
+	return true;
+}
+//
+//bool MakeTestMvcCage_3()
+//{
+//	QString sFbxFilePath = "c:/dev/sphere2.fbx";
+//	auto oFBX = new OpenFBXInterface();
+//	FbxScene* pScene = oFBX->CreateScene("mvc control cage");
+//	if (oFBX->LoadScene(pScene, sFbxFilePath.toLocal8Bit().data()) == false)
+//	{
+//		return false;
+//	}
+//	FbxMesh* pMesh = (FbxMesh*) pScene->GetGeometry(0);
+//	if (pMesh == nullptr)
+//	{
+//		return false;
+//	}
+//	int numVerts = pMesh->GetControlPointsCount();
+//	FbxVector4* fbx_vertbuffer = pMesh->GetControlPoints();
+//
+//	QVector<FbxVector4>* vertexbuffer = new QVector<FbxVector4>(numVerts);
+//
+//	for (int i = 0; i < numVerts; i++)
+//	{
+//		(*vertexbuffer)[i][0] = fbx_vertbuffer[i][0];
+//		(*vertexbuffer)[i][1] = fbx_vertbuffer[i][1]-15.0;
+//		(*vertexbuffer)[i][2] = fbx_vertbuffer[i][2];
+//	}
+//
+//	int polyCount = pMesh->GetPolygonCount();
+//	int polyVertCount = pMesh->GetPolygonVertexCount();
+//
+//	int vertsPerPoly = pMesh->GetPolygonSize(0);
+//	bool bTriangulate = false;
+//	if (vertsPerPoly > 3)
+//	{
+//		bTriangulate = true;
+//	}
+//	assert(vertsPerPoly == 3);
+//
+//	QVector<int>* triangles = new QVector<int>(polyVertCount);
+//	for (int i = 0; i < polyCount; i++)
+//	{
+//		int polySize = pMesh->GetPolygonSize(i);
+//		if (polySize != 3)
+//		{
+//			//printf("ERROR: ignoring polysize %d", polySize);
+//		}
+//		for (int j = 0; j < 3; j++)
+//		{
+//			(*triangles)[i*3 + j] = pMesh->GetPolygonVertex(i, j);
+//		}
+//	}
+//
+//	mvc_test_cage_vertexbuffer = vertexbuffer;
+//	mvc_test_cage_triangles = triangles;
+//
+//	return true;
+//}
+
+bool MvcTools::testMvc(DzNode *selected)
+{
+
+	DzPnt3* pVerts = nullptr;
+	DzGeometry* pGeo = nullptr;
+	int numVerts = 0;
+
+	QVector<FbxVector4>* mvc_test_cage_vertexbuffer;
+	QVector<int>* mvc_test_cage_triangles;
+	QVector<FbxVector4>* mvc_test_cage_vertexbuffer_2;
+	QVector<int>* mvc_test_cage_triangles_2;
+
+	//MakeTestMvcCage_3();
+	makeTestMvcCage(mvc_test_cage_vertexbuffer, mvc_test_cage_triangles);
+	makeTestMvcCage_2(mvc_test_cage_vertexbuffer_2, mvc_test_cage_triangles_2);
+
+	FbxVector4 origin(0,0,0);
+
+	QVector<FbxVector4> vertList;
+
+	if (selected)
+	{
+		pGeo = selected->getObject()->getShape(0)->getGeometry();
+		pVerts = pGeo->getVerticesPtr();
+		numVerts = pGeo->getNumVertices();
+		pGeo->beginEdit();
+		vertList.resize(numVerts);
+	}
+	else
+	{
+		vertList.append(origin);
+		vertList.append(FbxVector4(-100, -100, -100));
+		vertList.append(FbxVector4(-110, -110, -110));
+		vertList.append(FbxVector4(100, 0, 100));
+		vertList.append(FbxVector4(110, 0, 110));
+		vertList.append(FbxVector4(1000, 0, 100));
+	}
+
+	for (int i = 0; i < numVerts; i++)
+	{
+		vertList[i][0] = pVerts[i][0];
+		vertList[i][1] = pVerts[i][1];
+		vertList[i][2] = pVerts[i][2];
+	}
+
+	double epsilon = std::numeric_limits<double>::epsilon() * 100.0;
+	for (int i=0; i < vertList.count(); i++)
+	{
+		FbxVector4 point = vertList[i];
+		QVector<double>* pMvcWeights = new QVector<double>(mvc_test_cage_vertexbuffer->count(), 0.0);
+		calculate_mean_value_coordinate_weights(*mvc_test_cage_vertexbuffer, *mvc_test_cage_triangles, point, pMvcWeights);
+		//recalibrate_mean_value_coordinate_weights(*mvc_test_cage_vertexbuffer, point, pMvcWeights);
+		FbxVector4 newPoint = deform_using_mean_value_coordinates(*mvc_test_cage_vertexbuffer, pMvcWeights, point);
+		FbxVector4 newPoint_2 = deform_using_mean_value_coordinates(*mvc_test_cage_vertexbuffer_2, pMvcWeights, point);
+
+		FbxVector4 delta = newPoint - point;
+		FbxVector4 delta2 = newPoint_2 - point;
+
+		if (fabs(delta[0]) > epsilon ||
+			fabs(delta[1]) > epsilon ||
+			fabs(delta[2]) > epsilon)
+		{
+			//printf("failed restore");
+		}
+		else
+		{
+			//printf("successly restored");
+		}
+
+		//if (fabs(delta2[0]) > epsilon ||
+		//	fabs(delta2[1]) > epsilon ||
+		//	fabs(delta2[2]) > epsilon)
+		//{
+		//	printf("successly morphed");
+		//}
+		//else
+		//{
+		//	printf("failed morph");
+		//}
+
+		//vertList[i] = newPoint;
+		vertList[i] = newPoint_2;
+
+		//if (!isnan(newPoint[0]) &&
+		//	!isnan(newPoint[1]) &&
+		//	!isnan(newPoint[2]))
+		//{
+		//	vertList[i] = newPoint;
+		//}
+		//else
+		//{
+		//	printf("nop");
+		//}
+	}
+
+	for (int i = 0; i < numVerts; i++)
+	{
+		pVerts[i][0] = vertList[i][0];
+		pVerts[i][1] = vertList[i][1];
+		pVerts[i][2] = vertList[i][2];
+
+		pGeo->finishEdit();
 	}
 
 	return true;
