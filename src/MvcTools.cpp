@@ -867,7 +867,7 @@ bool MvcBoneRetargeter::createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode
 	const char* rootName = pRootNode->GetName();
 	int numVerts = pMesh->GetControlPointsCount();
 	int numBones = 1500;
-	DzProgress* pMvcProgress = new DzProgress(QString("Analyzing... %1").arg(rootName), numBones, false, true);
+	DzProgress* pMvcProgress = new DzProgress(QString("Preparing retargeter: %1").arg(rootName), numBones, false, true);
 	pMvcProgress->enable(true);
 	pMvcProgress->step();
 
@@ -1039,6 +1039,7 @@ bool MvcBoneRetargeter::createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode
 	*/
 
 	/////// QtConcurrent
+	pMvcProgress->setInfo("Retargeting...");
 #ifdef __SINGLE_THREAD_DEBUG
 	for (auto job : m_JobQueue.values())
 	{
@@ -1294,7 +1295,7 @@ bool MvcCageRetargeter::createMvcWeights(const FbxMesh* pMesh, const FbxMesh* pC
 	const char* cageName = pCage->GetName();
 	int numWeights = pMesh->GetControlPointsCount();
 	int numCageVerts = pCage->GetControlPointsCount();
-	DzProgress* pMvcProgress = new DzProgress(QString("Analyzing... %1").arg(cageName), numCageVerts, false, true);
+	DzProgress* pMvcProgress = new DzProgress(QString("Preparing retargeter: %1").arg(cageName), numCageVerts, false, true);
 	pMvcProgress->enable(true);
 	pMvcProgress->step();
 
@@ -1345,6 +1346,7 @@ bool MvcCageRetargeter::createMvcWeights(const FbxMesh* pMesh, const FbxMesh* pC
 	}
 
 	/////// QtConcurrent
+	pMvcProgress->setInfo("Retargeting...");
 #ifdef __SINGLE_THREAD_DEBUG
 	for (auto job : m_JobQueue.values())
 	{
