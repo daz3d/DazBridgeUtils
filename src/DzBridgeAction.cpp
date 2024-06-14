@@ -3319,7 +3319,8 @@ void DzBridgeAction::writeAllDforceInfo(DzNode* Node, DzJsonWriter& Writer, QTex
 		{
 			Writer.startObject(true);
 			Writer.addMember("Version", 4);
-			Writer.addMember("Asset Name", Node->getLabel());
+			Writer.addMember("Asset Name", Node->getName());
+			Writer.addMember("Asset Label", Node->getLabel());
 			Writer.addMember("Modifier Count", modifierCount);
 			Writer.addMember("Material Count", Shape->getNumMaterials());
 			writeDforceModifiers(dforceModifierList, Writer, Shape);
@@ -3332,7 +3333,8 @@ void DzBridgeAction::writeAllDforceInfo(DzNode* Node, DzJsonWriter& Writer, QTex
 				{
 					Writer.startObject(true);
 					Writer.addMember("Version", 3);
-					Writer.addMember("Asset Name", Node->getLabel());
+					Writer.addMember("Asset Name", Node->getName());
+					Writer.addMember("Asset Label", Node->getLabel());
 					Writer.addMember("Material Name", Material->getName());
 					Writer.addMember("Material Type", Material->getMaterialName());
 					DzPresentation* presentation = Node->getPresentation();
@@ -4919,7 +4921,7 @@ void DzBridgeAction::writeHeadTailData(DzNode* Node, DzJsonWriter& writer)
 			// DB 2023-July-9: bugfix for restpose
 			DzVec3 vecEndVector = pBone->getEndPoint(true) - pBone->getOrigin(true);
 			double nBoneLength = vecEndVector.length();
-			// Calculate Primary Axis
+			// Calculate Primar y Axis
 			DzVec3 vecPrimaryAxis = calculatePrimaryAxis(pBone, vecEndVector, nBoneLength);
 			// Calculate Secondary Axis
 			DzVec3 vecSecondAxis = calculateSecondaryAxis(pBone, vecEndVector);
