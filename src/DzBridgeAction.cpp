@@ -1268,17 +1268,17 @@ void DzBridgeAction::exportAnimation()
 
 	// Add the skeleton to the scene
 	QMap<DzNode*, FbxNode*> BoneMap;
-	exportSkeleton(m_pSelectedNode, nullptr, nullptr, Scene, BoneMap);
+	exportSkeleton(Figure, m_pSelectedNode, nullptr, nullptr, Scene, BoneMap);
 
 	// Get the play range
 	DzTimeRange PlayRange = dzScene->getPlayRange();
 
-	//
+	// Root Node
 	exportNodeAnimation(Figure, BoneMap, AnimBaseLayer, FigureScale /*, bExportingForMLDeformer*/);
 
 	// Iterate the bones
-	DzBoneList Bones;
-	Skeleton->getAllBones(Bones);
+	DzBoneList Bones = getAllBones(m_pSelectedNode);
+	//Skeleton->getAllBones(Bones);
 	for (auto Bone : Bones)
 	{
 		exportNodeAnimation(Bone, BoneMap, AnimBaseLayer, FigureScale /*, bExportingForMLDeformer*/);
@@ -1522,7 +1522,7 @@ void DzBridgeAction::exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& 
 	}
 }
 
-void DzBridgeAction::exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzNode*, FbxNode*>& BoneMap)
+void DzBridgeAction::exportSkeleton(DzFigure* Figure, DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzNode*, FbxNode*>& BoneMap)
 {
 	// Only transfer face bones if requested.  MLDeformer doesn't like missing bones in UE5.3 and earlier
 	bool bIncludeFaceBones = m_bAnimationTransferFace;
@@ -1547,7 +1547,7 @@ void DzBridgeAction::exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxPa
 		for (int ChildIndex = 0; ChildIndex < Node->getNumNodeChildren(); ChildIndex++)
 		{
 			DzNode* ChildNode = Node->getNodeChild(ChildIndex);
-			exportSkeleton(ChildNode, Node, BoneNode, Scene, BoneMap);
+			exportSkeleton(Figure, ChildNode, Node, BoneNode, Scene, BoneMap);
 		}
 	}
 	else
@@ -1588,10 +1588,42 @@ void DzBridgeAction::exportSkeleton(DzNode* Node, DzNode* Parent, FbxNode* FbxPa
 			}
 
 			// Looks through the child nodes for more bones
+			QList<QString> DirectChildBones;
 			for (int ChildIndex = 0; ChildIndex < Node->getNumNodeChildren(); ChildIndex++)
 			{
 				DzNode* ChildNode = Node->getNodeChild(ChildIndex);
-				exportSkeleton(ChildNode, Node, BoneNode, Scene, BoneMap);
+				if (DzBone* ChildBone = qobject_cast<DzBone*>(ChildNode))
+				{
+					DirectChildBones.append(ChildBone->getName());
+				}
+				exportSkeleton(Figure, ChildNode, Node, BoneNode, Scene, BoneMap);
+			}
+
+			// Add child figure bones
+			for (int ChildFigureIndex = 0; ChildFigureIndex < Figure->getNumNodeChildren(); ChildFigureIndex++)
+			{
+				DzNode* ChildNode = Figure->getNodeChild(ChildFigureIndex);
+				if (DzFigure* ChildFigure = qobject_cast<DzFigure*>(ChildNode))
+				{
+					// Find matching parent bone in child figures
+					if (DzNode* ChildFigureMatchingParentBone = ChildFigure->findBone(Node->getName()))
+					{
+						// Look for new child bones
+						for (int ChildBoneIndex = 0; ChildBoneIndex < ChildFigureMatchingParentBone->getNumNodeChildren(); ChildBoneIndex++)
+						{
+							DzNode* ChildNode = ChildFigureMatchingParentBone->getNodeChild(ChildBoneIndex);
+							if (DzBone* ChildBone = qobject_cast<DzBone*>(ChildNode))
+							{
+								if (!DirectChildBones.contains(ChildBone->getName()))
+								{
+									DirectChildBones.append(ChildBone->getName());
+									exportSkeleton(Figure, ChildNode, Node, BoneNode, Scene, BoneMap);
+									qDebug() << "Found Extra Bone: " << ChildBone->getName();
+								}
+							}
+						}
+					}
+				}
 			}
 		}
 	}
