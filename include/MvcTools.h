@@ -71,11 +71,11 @@ public:
 
 };
 
-class MvcBoneRetargeter
+class MvcFbxBoneRetargeter
 {
 public:
-	MvcBoneRetargeter() {};
-	~MvcBoneRetargeter() { clearWeights(); };
+	MvcFbxBoneRetargeter() {};
+	~MvcFbxBoneRetargeter() { clearWeights(); };
 
 	bool createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode, DzProgress* pProgress);
 	bool validateMvcWeights(const FbxMesh* pMesh, FbxNode* pRootBone);
@@ -88,6 +88,26 @@ public:
 	bool loadMvcWeightsCache(QString sMvcWeightsFilename);
 	bool saveMvcWeightsCache(QString sMvcWeightsFilename);
 	void clearWeights();
+
+};
+
+class MvcDzBoneRetargeter
+{
+public:
+	MvcDzBoneRetargeter() {};
+	~MvcDzBoneRetargeter() { clearWeights(); };
+
+	//bool createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode, DzProgress* pProgress);
+	//bool validateMvcWeights(const FbxMesh* pMesh, FbxNode* pRootBone);
+
+	//QMap<QString, QVector<double>*> m_mBoneToMvcWeightsTable;
+	//QMap<QString, JobCalculateMvcWeights*> m_JobQueue;
+
+	//FbxVector4 calibrate_bone(const FbxMesh* pMorphedMesh, const FbxVector4* pVertexBuffer, QString sBoneName);
+	//FbxVector4 calibrate_bone(const FbxMesh* pMesh, QString sBoneName);
+	//bool loadMvcWeightsCache(QString sMvcWeightsFilename);
+	//bool saveMvcWeightsCache(QString sMvcWeightsFilename);
+	void clearWeights() {};
 
 };
 

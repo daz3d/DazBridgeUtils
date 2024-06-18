@@ -835,7 +835,7 @@ FbxVector2 MvcTools::interpolate_using_mean_value_coordinates(const QVector<doub
 	return interpolated_uv;
 }
 
-bool MvcBoneRetargeter::createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode, DzProgress* pProgress)
+bool MvcFbxBoneRetargeter::createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode, DzProgress* pProgress)
 {
 	pProgress->step();
 	// for each bone, calculte mvc weights, add to mvc weights table
@@ -926,7 +926,7 @@ bool MvcBoneRetargeter::createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode
 	return true;
 }
 
-bool MvcBoneRetargeter::validateMvcWeights(const FbxMesh* pMesh, FbxNode* pRootBone)
+bool MvcFbxBoneRetargeter::validateMvcWeights(const FbxMesh* pMesh, FbxNode* pRootBone)
 {
 	bool bResult = true;
 
@@ -993,7 +993,7 @@ bool MvcBoneRetargeter::validateMvcWeights(const FbxMesh* pMesh, FbxNode* pRootB
 	return bResult;
 }
 
-FbxVector4 MvcBoneRetargeter::calibrate_bone(const FbxMesh* pMorphedMesh, const FbxVector4* pVertexBuffer, QString sBoneName)
+FbxVector4 MvcFbxBoneRetargeter::calibrate_bone(const FbxMesh* pMorphedMesh, const FbxVector4* pVertexBuffer, QString sBoneName)
 {
 	auto results = m_mBoneToMvcWeightsTable.find(sBoneName);
 	if (results == m_mBoneToMvcWeightsTable.end())
@@ -1006,7 +1006,7 @@ FbxVector4 MvcBoneRetargeter::calibrate_bone(const FbxMesh* pMorphedMesh, const 
 };
 
 
-FbxVector4 MvcBoneRetargeter::calibrate_bone(const FbxMesh* pMorphedMesh, QString sBoneName)
+FbxVector4 MvcFbxBoneRetargeter::calibrate_bone(const FbxMesh* pMorphedMesh, QString sBoneName)
 {
 	auto results = m_mBoneToMvcWeightsTable.find(sBoneName);
 	if (results == m_mBoneToMvcWeightsTable.end())
@@ -1023,7 +1023,7 @@ FbxVector4 MvcBoneRetargeter::calibrate_bone(const FbxMesh* pMorphedMesh, QStrin
 	return newBonePosition;
 };
 
-bool MvcBoneRetargeter::loadMvcWeightsCache(QString mvcWeightsFilename)
+bool MvcFbxBoneRetargeter::loadMvcWeightsCache(QString mvcWeightsFilename)
 {
 	// LOAD WEIGHTS...
 	QFile fileMvcWeights(mvcWeightsFilename);
@@ -1084,7 +1084,7 @@ bool MvcBoneRetargeter::loadMvcWeightsCache(QString mvcWeightsFilename)
 	return true;
 };
 
-bool MvcBoneRetargeter::saveMvcWeightsCache(QString mvcWeightsFilename)
+bool MvcFbxBoneRetargeter::saveMvcWeightsCache(QString mvcWeightsFilename)
 {
 	QFile fileMvcWeights(mvcWeightsFilename);
 	if (fileMvcWeights.open(QIODevice::OpenModeFlag::WriteOnly | QIODevice::OpenModeFlag::Truncate))
@@ -1133,7 +1133,7 @@ bool MvcBoneRetargeter::saveMvcWeightsCache(QString mvcWeightsFilename)
 	return true;
 }
 
-void MvcBoneRetargeter::clearWeights()
+void MvcFbxBoneRetargeter::clearWeights()
 {
 	for (QString key : m_mBoneToMvcWeightsTable.keys())
 	{
