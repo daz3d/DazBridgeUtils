@@ -68,9 +68,6 @@ void JobCalculateMvcWeights::PerformJob()
 	//	assert(vertsPerPoly == 3);
 	int numWeights = numVerts;
 	int numSteps = (bTriangulate) ? polyCount * 2 : polyCount;
-	//DzProgress* pMvcProgress = new DzProgress(QString("Building MVC weights...%1").arg(m_sJobName), numSteps, false, true);
-	////pMvcProgress->enable(true);
-	//pMvcProgress->step();
 
 	int extraPolys = 0;
 	QVector<int>* triangles = new QVector<int>(polyCount * 3);
@@ -96,7 +93,6 @@ void JobCalculateMvcWeights::PerformJob()
 			(*triangles)[newPolyOffset * 3 + 2] = pMesh->GetPolygonVertex(i, 0);
 		}
 	}
-
 
 	const FbxVector4* pVertexBuffer = vertexbuffer->constData();
 
@@ -128,15 +124,10 @@ void JobCalculateMvcWeights::PerformJob()
 
 	int numPolys = triangles->count() / 3;
 
-	//DzProgress* pMvcProgress = new DzProgress("Building MVC weights...", numPolys, false, true);
-	//pMvcProgress->enable(true);
-	//pMvcProgress->step();
-
 	double sumWj = 0.0;
 	for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
 	{
 		bool bIsCoplanar = false;
-		//pMvcProgress->step();
 		int numVertsInPolygon = 3;
 
 		double* aTheta = new double[numVertsInPolygon];
@@ -366,10 +357,8 @@ void JobCalculateMvcWeights::PerformJob()
 	delete triangles;
 	delete vertexbuffer;
 
-
 	//emit SignalJobDone(m_sJobName);
 
-	//pMvcProgress->finish();
 }
 
 FbxVector4 MvcTools::deform_using_mean_value_coordinates(const QVector<FbxVector4>& VertexBuffer, const QVector<double>* pMvcWeights, FbxVector4 x)
@@ -472,10 +461,6 @@ bool MvcTools::calculate_mean_value_coordinate_weights(const QVector<FbxVector4>
 	//double totalW;
 
 	int numPolys = Triangles.count() / 3;
-
-	//DzProgress* pMvcProgress = new DzProgress("Building MVC weights...", numPolys, false, true);
-	//pMvcProgress->enable(true);
-	//pMvcProgress->step();
 
 	double sumWj = 0.0;
 	for (int polyIndex = 0; polyIndex < numPolys; polyIndex++)
@@ -719,9 +704,6 @@ bool MvcTools::calculate_mean_value_coordinate_weights(const QVector<FbxVector4>
 	//	}
 	//}
 
-	//pMvcProgress->finish();
-	//delete pMvcProgress;
-
 	return false;
 }
 
@@ -877,34 +859,6 @@ bool MvcBoneRetargeter::createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode
     FbxAMatrix matrix = FbxTools::GetAffineMatrix(nullptr, pMesh->GetNode());
 	FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &matrix, nullptr, pMesh);
 
-	//while (todoQueue.isEmpty() == false)
-	//{
-	//	pMvcProgress->step();
-	//	FbxNode* pNode = todoQueue.front();
-	//	todoQueue.pop_front();
-
-	//	const char* lpBoneName = pNode->GetName();
-	//	QString sBoneName(lpBoneName);
-	//	// calculate mvc weights
-	//	FbxVector4 bonePosition = GetAffineMatrix(nullptr, pNode).GetT();
-	//	QVector<double>* pMvcWeights = new QVector<double>(numVerts, (double)0.0);
-	//	DzProgress::setCurrentInfo(QString("Computing MVC weights for %1").arg(sBoneName));
-	//	calculate_mean_value_coordinate_weights(pMesh, bonePosition, pMvcWeights);
-	//	// add mvc weights to table
-	//	m_mBoneToMvcWeightsTable.insert(sBoneName, pMvcWeights);
-
-	//	// add children
-	//	for (int i = 0; i < pNode->GetChildCount(); i++)
-	//	{
-	//		FbxNode* pChild = pNode->GetChild(i);
-	//		FbxNodeAttribute* attributes = pChild->GetNodeAttribute();
-	//		if (attributes && attributes->GetAttributeType() == FbxNodeAttribute::eSkeleton)
-	//		{
-	//			todoQueue.append(pChild);
-	//		}
-	//	}
-	//}
-
 	// create jobs
 	int nJobID = 0;
 	while (todoQueue.isEmpty() == false)
@@ -919,10 +873,6 @@ bool MvcBoneRetargeter::createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode
 		FbxVector4 bonePosition = FbxTools::GetAffineMatrix(nullptr, pNode).GetT();
 		QVector<double>* pMvcWeights = new QVector<double>(numVerts, (double)0.0);
 		DzProgress::setCurrentInfo(QString("Computing MVC weights for %1").arg(sBoneName));
-
-		//calculate_mean_value_coordinate_weights(pMesh, bonePosition, pMvcWeights);
-		//// add mvc weights to table
-		//m_mBoneToMvcWeightsTable.insert(sBoneName, pMvcWeights);
 
 		auto job = new JobCalculateMvcWeights(sBoneName, pMesh, bonePosition, pVertexBuffer, pMvcWeights);
 		m_JobQueue.insert(sBoneName, job);
@@ -943,100 +893,12 @@ bool MvcBoneRetargeter::createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode
 
 	// spawn threads and process jobs
 	int numLogicalCores = QThread::idealThreadCount();
-	//int numLogicalCores = 1;
 
 	//if (numLogicalCores > 1) numLogicalCores *= 0.85;
 	if (numLogicalCores >= 4)
 	{
 		numLogicalCores--;
 	}
-
-	/*
-		int numJobs = m_JobQueue.count();
-		int bundleSize = numJobs / numLogicalCores;
-		bool bDoHack = true;
-		if (bDoHack)
-		{
-			bundleSize *= 2;
-		}
-		while (m_JobQueue.count() > 0)
-		{
-			// if active workers are not at max, hire new workers
-			// else wait for number active workers to decrease (HandleJobDone())
-			if (m_WorkerThreads.count() < numLogicalCores)
-			{
-				// get jobs (gather list of clusterSize of jobs)
-				JobBundle* jobBundle = new JobBundle();
-				for (int i = 0; i < bundleSize; i++)
-				{
-					auto kvp = m_JobQueue.begin();
-					if (kvp != m_JobQueue.end())
-					{
-						QString key = kvp.key();
-						JobCalculateMvcWeights* job = kvp.value();
-						jobBundle->addJob(job);
-						// remove job from queue
-						m_JobQueue.remove(key);
-					}
-					else
-					{
-						break;
-					}
-				}
-				spawnThread(jobBundle);
-				QThread::yieldCurrentThread();
-
-				int index = 0;
-				QString sJobLog = QString("d:/temp/joblog_%1_%2.log").arg(jobBundle->getName()).arg(index);
-				QFile fileJobLog(sJobLog);
-				while (fileJobLog.exists())
-				{
-					index++;
-					sJobLog = QString("d:/temp/joblog_%1_%2.log").arg(jobBundle->getName()).arg(index);
-					fileJobLog.setFileName(sJobLog);
-				}
-				if (fileJobLog.open(QIODevice::OpenModeFlag::WriteOnly | QIODevice::OpenModeFlag::Text))
-				{
-					for (auto job : jobBundle->m_JobList)
-					{
-						QString jobname = job->m_sJobName + "\n";
-						fileJobLog.write(jobname.toLocal8Bit());
-					}
-					fileJobLog.close();
-				}
-			}
-			else
-			{
-				auto first = m_WorkerThreads.begin().value();
-				if (first->isRunning() == false)
-				{
-					printf("nop");
-				}
-				//first->wait(500);
-				Sleep(50);
-				//DzProgress::setCurrentInfo("Waiting on threads...");
-			}
-			if (m_WorkerThreads.count() > 0)
-			{
-				QThread::yieldCurrentThread();
-				//m_WorkerThreads.begin().value()->wait(250);
-				Sleep(50);
-				QCoreApplication::processEvents(QEventLoop::ProcessEventsFlag::ExcludeSocketNotifiers | QEventLoop::ProcessEventsFlag::ExcludeUserInputEvents);
-			}
-		}
-
-		// flush out any remaining threads & active jobs
-		while (m_WorkerThreads.count() > 0)
-		{
-			QThread::yieldCurrentThread();
-			//m_WorkerThreads.begin().value()->wait(250);
-			Sleep(50);
-
-			//QCoreApplication::processEvents();
-			QCoreApplication::processEvents(QEventLoop::ProcessEventsFlag::ExcludeSocketNotifiers | QEventLoop::ProcessEventsFlag::ExcludeUserInputEvents);
-			//DzProgress::setCurrentInfo("Waiting on threads...");
-		}
-	*/
 
 	/////// QtConcurrent
 	pMvcProgress->setInfo("Retargeting...");

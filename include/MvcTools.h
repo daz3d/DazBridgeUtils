@@ -117,36 +117,3 @@ public:
 
 };
 
-//class JobBundle : public QObject
-//{
-//	Q_OBJECT
-//public:
-//	void addJob(JobCalculateMvcWeights* job) { m_JobList.append(job); if (m_sBundleName == "") m_sBundleName = job->m_sJobName; };
-//	JobCalculateMvcWeights* takeJob() { auto job = m_JobList.first(); m_JobList.pop_front(); return job; };
-//	int count() { return m_JobList.count(); };
-//	QString getName() { return m_sBundleName; };
-//
-//	QString m_sBundleName;
-//	QList<JobCalculateMvcWeights*> m_JobList;
-//	int debug_PerformJob_Called = 0;
-//
-//	static void StaticPerformJob(JobBundle* job)
-//	{
-//		job->PerformJob();
-//	};
-//
-//public slots:
-//	void PerformJob() 
-//	{ 
-//		assert(debug_PerformJob_Called==0);
-//		debug_PerformJob_Called++;
-//		for (auto job : m_JobList) 
-//		{ 
-//			job->PerformJob(); 
-//		} 
-//		emit SignalJobDone(getName()); 
-//	};
-//
-//signals:
-//	void SignalJobDone(QString);
-//};
