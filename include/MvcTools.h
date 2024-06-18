@@ -4,12 +4,18 @@
 
 class DzProgress;
 class QThread;
+class DzGeometry;
+class DzFacetMesh;
+class DzBone;
 
 class JobCalculateMvcWeights;
 
 class MvcTools
 {
 public:
+	// Db 2024-06-18: better support for Daz Classes
+	static bool calculate_mean_value_coordinate_weights(const DzFacetMesh* pMesh, DzPnt3 x, QVector<double>* pMvcWeights);
+
 	static bool calculate_mean_value_coordinate_weights(const FbxMesh* pMesh, FbxVector4 x, QVector<double>* pMvcWeights);
 	static FbxVector4 deform_using_mean_value_coordinates(const FbxMesh* pMesh, const FbxVector4* pVertexBuffer, const QVector<double>* pMvcWeights, FbxVector4 x = FbxVector4(NAN, NAN, NAN));
 
@@ -97,11 +103,11 @@ public:
 	MvcDzBoneRetargeter() {};
 	~MvcDzBoneRetargeter() { clearWeights(); };
 
-	//bool createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode, DzProgress* pProgress);
+	bool createMvcWeightsTable(DzGeometry* pMesh, DzBone* pRootNode, DzProgress* pProgress);
 	//bool validateMvcWeights(const FbxMesh* pMesh, FbxNode* pRootBone);
 
-	//QMap<QString, QVector<double>*> m_mBoneToMvcWeightsTable;
-	//QMap<QString, JobCalculateMvcWeights*> m_JobQueue;
+	QMap<QString, QVector<double>*> m_mBoneToMvcWeightsTable;
+	QMap<QString, JobCalculateMvcWeights*> m_JobQueue;
 
 	//FbxVector4 calibrate_bone(const FbxMesh* pMorphedMesh, const FbxVector4* pVertexBuffer, QString sBoneName);
 	//FbxVector4 calibrate_bone(const FbxMesh* pMesh, QString sBoneName);

@@ -10,6 +10,8 @@
 #include <dzscene.h>
 #include <dzshape.h>
 #include <dzgeometry.h>
+#include <dzfacetmesh.h>
+#include <dzbone.h>
 
 #include "FbxTools.h"
 
@@ -771,6 +773,85 @@ bool MvcTools::calculate_mean_value_coordinate_weights(const FbxMesh* pMesh, Fbx
 	}
 
 	bool bResult = calculate_mean_value_coordinate_weights(*vertexbuffer, *triangles, x, pMvcWeights);
+
+	pMvcProgress->finish();
+	delete pMvcProgress;
+
+	return bResult;
+}
+
+// DB 2024-06-18: convenience method to support Daz classes: overload of const QVector<FbxVector4>& based method
+bool MvcTools::calculate_mean_value_coordinate_weights(const DzFacetMesh* pMesh, DzPnt3 x, QVector<double>* pMvcWeights)
+{
+	if (pMesh == nullptr || pMvcWeights == nullptr)
+	{
+		return false;
+	}
+	double epsilon = std::numeric_limits<double>::epsilon() * 10.0;
+
+	int numVerts = pMesh->getNumVertices();
+	DzPnt3* dzpnt3_vertbuffer = pMesh->getVerticesPtr();
+
+	QVector<FbxVector4>* vertexbuffer = new QVector<FbxVector4>(numVerts);
+
+	for (int i = 0; i < numVerts; i++)
+	{
+		(*vertexbuffer)[i][0] = dzpnt3_vertbuffer[i][0];
+		(*vertexbuffer)[i][1] = dzpnt3_vertbuffer[i][1];
+		(*vertexbuffer)[i][2] = dzpnt3_vertbuffer[i][2];
+	}
+
+	int polyCount = pMesh->getNumFacets();
+
+	int numWeights = numVerts;
+	int numSteps = polyCount;
+	DzProgress* pMvcProgress = new DzProgress(QString("Building MVC weights...%1").arg(numWeights), numSteps, false, true);
+	//pMvcProgress->enable(true);
+	pMvcProgress->step();
+
+	int extraPolys = 0;
+	QVector<int>* triangles = new QVector<int>(polyCount * 3);
+	DzFacet* pFaceBuffer = pMesh->getFacetsPtr();
+	for (int i = 0; i < polyCount; i++)
+	{
+		DzFacet* pFace = &pFaceBuffer[i];
+		int polySize = -1;
+		if (pFace->isQuad()) {
+			polySize = 4;
+		}
+		else if (pFace->isTri()) {
+			polySize = 3;
+		}
+		else {
+			// raise exception
+			assert(polySize != -1);
+		}
+		for (int j = 0; j < 3; j++)
+		{
+			(*triangles)[i * 3 + j] = pFace->m_vertIdx[j];
+			//(*triangles)[i * 3 + j] = pMesh->GetPolygonVertex(i, j);
+		}
+		if (polySize != 3)
+		{
+			if (polySize > 4)
+			{
+				//printf("ERROR: ignoring polysize %d", polySize);
+			}
+			// add more triangles...
+			extraPolys++;
+			triangles->resize((polyCount + extraPolys) * 3);
+			int newPolyOffset = polyCount + extraPolys - 1;
+			(*triangles)[newPolyOffset * 3 + 0] = pFace->m_vertIdx[2];
+			(*triangles)[newPolyOffset * 3 + 1] = pFace->m_vertIdx[3];
+			(*triangles)[newPolyOffset * 3 + 2] = pFace->m_vertIdx[0];
+			//(*triangles)[newPolyOffset * 3 + 0] = pMesh->GetPolygonVertex(i, 2);
+			//(*triangles)[newPolyOffset * 3 + 1] = pMesh->GetPolygonVertex(i, 3);
+			//(*triangles)[newPolyOffset * 3 + 2] = pMesh->GetPolygonVertex(i, 0);
+		}
+	}
+
+	FbxVector4 fbx_x = FbxVector4(x[0], x[1], x[3]);
+	bool bResult = calculate_mean_value_coordinate_weights(*vertexbuffer, *triangles, fbx_x, pMvcWeights);
 
 	pMvcProgress->finish();
 	delete pMvcProgress;
@@ -1609,5 +1690,107 @@ bool MvcTools::testMvc(DzNode *selected)
 
 	return true;
 }
+
+bool MvcDzBoneRetargeter::createMvcWeightsTable(DzGeometry* pMesh, DzBone* pRootNode, DzProgress* pProgress)
+{
+	pProgress->step();
+	// for each bone, calculte mvc weights, add to mvc weights table
+
+	if (pMesh == nullptr || pRootNode == nullptr)
+		return false;
+
+	QList<DzBone*> todoQueue;
+	todoQueue.append(pRootNode);
+
+	QString rootName = pRootNode->getName();
+	int numVerts = pMesh->getNumVertices();
+	int numBones = 1500;
+	DzProgress* pMvcProgress = new DzProgress(QString("Preparing retargeter: %1").arg(rootName), numBones, false, true);
+	pMvcProgress->enable(true);
+	pMvcProgress->step();
+
+	//DzPnt3* pTempBuffer = pMesh->getVerticesPtr();
+	//FbxVector4* pVertexBuffer = new FbxVector4[numVerts];
+	//for (int i = 0; i < numVerts; i++)
+	//{
+	//	pVertexBuffer[i][0] = pTempBuffer[i][0];
+	//	pVertexBuffer[i][1] = pTempBuffer[i][1];
+	//	pVertexBuffer[i][2] = pTempBuffer[i][2];
+	//}
+
+	// create jobs
+	int nJobID = 0;
+	while (todoQueue.isEmpty() == false)
+	{
+		pMvcProgress->step();
+		DzBone* pNode = todoQueue.front();
+		todoQueue.pop_front();
+
+		QString sBoneName = pNode->getName();
+
+		// calculate mvc weights
+		//FbxVector4 bonePosition = FbxTools::GetAffineMatrix(nullptr, pNode).GetT();
+		DzPnt3 bonePosition;
+
+		QVector<double>* pMvcWeights = new QVector<double>(numVerts, (double)0.0);
+		DzProgress::setCurrentInfo(QString("Computing MVC weights for %1").arg(sBoneName));
+
+		//auto job = new JobCalculateMvcWeights(sBoneName, pMesh, bonePosition, pVertexBuffer, pMvcWeights);
+//		auto job = new JobCalculateMvcWeights(sBoneName, (FbxMesh*) NULL, FbxVector4(bonePosition[0], bonePosition[1], bonePosition[2]), pVertexBuffer, pMvcWeights);
+//		m_JobQueue.insert(sBoneName, job);
+//		nJobID++;
+		MvcTools::calculate_mean_value_coordinate_weights(qobject_cast<DzFacetMesh*>(pMesh), bonePosition, pMvcWeights);
+		m_mBoneToMvcWeightsTable.insert(sBoneName, pMvcWeights);
+
+		// add children
+		for (int i = 0; i < pNode->getNumNodeChildren(); i++)
+		{
+			DzNode* pChild = pNode->getNodeChild(i);
+			//FbxNodeAttribute* attributes = pChild->GetNodeAttribute();
+			//if (attributes && attributes->GetAttributeType() == FbxNodeAttribute::eSkeleton)
+			if (pChild->inherits("DzBone"))
+			{
+				DzBone* pBone = qobject_cast<DzBone*>(pChild);
+				todoQueue.append(pBone);
+			}
+		}
+	}
+
+	// spawn threads and process jobs
+	int numLogicalCores = QThread::idealThreadCount();
+
+	//if (numLogicalCores > 1) numLogicalCores *= 0.85;
+	if (numLogicalCores >= 4)
+	{
+		numLogicalCores--;
+	}
+
+	/////// QtConcurrent
+	pMvcProgress->setInfo("Retargeting...");
+//#ifdef __SINGLE_THREAD_DEBUG
+//	for (auto job : m_JobQueue.values())
+//	{
+//		job->PerformJob();
+//	}
+//#elif defined(__APPLE__)
+//	std::vector<JobCalculateMvcWeights*> jobs;
+//	for (JobCalculateMvcWeights* job : m_JobQueue.values())
+//	{
+//		jobs.push_back(job);
+//	}
+//	QtConcurrent::blockingMap(jobs, JobCalculateMvcWeights::StaticPerformJob);
+//#else
+//	QtConcurrent::blockingMap(m_JobQueue.values(), JobCalculateMvcWeights::StaticPerformJob);
+//#endif
+
+//	delete[] pVertexBuffer;
+
+	pMvcProgress->finish();
+	delete pMvcProgress;
+
+	return true;
+}
+
+
 
 #include "moc_MvcTools.cpp"
