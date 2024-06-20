@@ -14,7 +14,8 @@ class MvcTools
 {
 public:
 	// Db 2024-06-18: better support for Daz Classes
-	static bool calculate_mean_value_coordinate_weights(const DzFacetMesh* pMesh, DzPnt3 x, QVector<double>* pMvcWeights);
+	static bool calculate_mean_value_coordinate_weights(const DzFacetMesh* pMesh, DzVec3 x, QVector<double>* pMvcWeights);
+	static DzVec3 deform_using_mean_value_coordinates(const DzFacetMesh* pMesh, const DzPnt3* pVertexBuffer, const QVector<double>* pMvcWeights, DzVec3 x = DzVec3(NAN, NAN, NAN));
 
 	static bool calculate_mean_value_coordinate_weights(const FbxMesh* pMesh, FbxVector4 x, QVector<double>* pMvcWeights);
 	static FbxVector4 deform_using_mean_value_coordinates(const FbxMesh* pMesh, const FbxVector4* pVertexBuffer, const QVector<double>* pMvcWeights, FbxVector4 x = FbxVector4(NAN, NAN, NAN));
@@ -109,6 +110,7 @@ public:
 	QMap<QString, QVector<double>*> m_mBoneToMvcWeightsTable;
 	QMap<QString, JobCalculateMvcWeights*> m_JobQueue;
 
+	DzVec3 calibrate_bone(const DzGeometry* pMorphedMesh, QString sBoneName);
 	//FbxVector4 calibrate_bone(const FbxMesh* pMorphedMesh, const FbxVector4* pVertexBuffer, QString sBoneName);
 	//FbxVector4 calibrate_bone(const FbxMesh* pMesh, QString sBoneName);
 	//bool loadMvcWeightsCache(QString sMvcWeightsFilename);

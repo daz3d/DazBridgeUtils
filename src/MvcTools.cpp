@@ -781,7 +781,7 @@ bool MvcTools::calculate_mean_value_coordinate_weights(const FbxMesh* pMesh, Fbx
 }
 
 // DB 2024-06-18: convenience method to support Daz classes: overload of const QVector<FbxVector4>& based method
-bool MvcTools::calculate_mean_value_coordinate_weights(const DzFacetMesh* pMesh, DzPnt3 x, QVector<double>* pMvcWeights)
+bool MvcTools::calculate_mean_value_coordinate_weights(const DzFacetMesh* pMesh, DzVec3 x, QVector<double>* pMvcWeights)
 {
 	if (pMesh == nullptr || pMvcWeights == nullptr)
 	{
@@ -850,7 +850,7 @@ bool MvcTools::calculate_mean_value_coordinate_weights(const DzFacetMesh* pMesh,
 		}
 	}
 
-	FbxVector4 fbx_x = FbxVector4(x[0], x[1], x[3]);
+	FbxVector4 fbx_x = FbxVector4(x[0], x[1], x[2]);
 	bool bResult = calculate_mean_value_coordinate_weights(*vertexbuffer, *triangles, fbx_x, pMvcWeights);
 
 	pMvcProgress->finish();
@@ -1730,7 +1730,7 @@ bool MvcDzBoneRetargeter::createMvcWeightsTable(DzGeometry* pMesh, DzBone* pRoot
 
 		// calculate mvc weights
 		//FbxVector4 bonePosition = FbxTools::GetAffineMatrix(nullptr, pNode).GetT();
-		DzPnt3 bonePosition;
+		DzVec3 bonePosition = pNode->getWSPos();
 
 		QVector<double>* pMvcWeights = new QVector<double>(numVerts, (double)0.0);
 		DzProgress::setCurrentInfo(QString("Computing MVC weights for %1").arg(sBoneName));
@@ -1766,7 +1766,7 @@ bool MvcDzBoneRetargeter::createMvcWeightsTable(DzGeometry* pMesh, DzBone* pRoot
 	}
 
 	/////// QtConcurrent
-	pMvcProgress->setInfo("Retargeting...");
+//	pMvcProgress->setInfo("Retargeting...");
 //#ifdef __SINGLE_THREAD_DEBUG
 //	for (auto job : m_JobQueue.values())
 //	{
@@ -1791,6 +1791,73 @@ bool MvcDzBoneRetargeter::createMvcWeightsTable(DzGeometry* pMesh, DzBone* pRoot
 	return true;
 }
 
+DzVec3 MvcDzBoneRetargeter::calibrate_bone(const DzGeometry* pMorphedMesh, QString sBoneName)
+{
+	auto results = m_mBoneToMvcWeightsTable.find(sBoneName);
+	if (results == m_mBoneToMvcWeightsTable.end())
+	{
+		return DzVec3(NAN, NAN, NAN);
+	}
+	QVector<double>* pMvcWeights = results.value();
+
+	DzPnt3* pVertexBuffer = pMorphedMesh->getVerticesPtr();
+//	FbxAMatrix matrix = FbxTools::GetAffineMatrix(nullptr, pMorphedMesh->GetNode());
+//	FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &matrix, nullptr, (FbxMesh*)pMorphedMesh);
+	
+	const DzFacetMesh* pFacetMesh = qobject_cast<const DzFacetMesh*>(pMorphedMesh);
+	DzVec3 newBonePosition = MvcTools::deform_using_mean_value_coordinates(pFacetMesh, pVertexBuffer, pMvcWeights);
+	return newBonePosition;
+}
+
+DzVec3 MvcTools::deform_using_mean_value_coordinates(const DzFacetMesh* pMesh, const DzPnt3* pVertexBuffer, const QVector<double>* pMvcWeights, DzVec3 x)
+{
+	if (pMesh == nullptr || pMvcWeights == nullptr)
+	{
+		return DzVec3(NAN, NAN, NAN);
+	}
+
+	FbxVector4 deformed_x;
+
+	//FbxVector4* pVertexBuffer = pMesh->GetControlPoints();
+	//BakePoseToVertexBuffer(pVertexBuffer, &GetAffineMatrix(nullptr, pMesh->GetNode(), false, FbxTime(0)), nullptr, (FbxMesh*) pMesh, FbxTime(0));
+
+	int numVerts = pMesh->getNumVertices();
+	int numWeights = pMvcWeights->count();
+	assert(numVerts == numWeights);
+
+	QVector<FbxVector4> vertex_buffer_list;
+	vertex_buffer_list.resize(numVerts);
+//	std::copy(pVertexBuffer, pVertexBuffer + numVerts, std::back_inserter(vertex_buffer_list));
+
+	for (int i = 0; i < numVerts; i++) {
+		const DzPnt3 *pnt_val;
+		pnt_val = &(pVertexBuffer[i]);
+		FbxVector4 fbx_val( (*pnt_val)[0], (*pnt_val)[1], (*pnt_val)[2]);
+		vertex_buffer_list[i] = fbx_val;
+		//for (int j = 0; j < 3; j++) {
+		//	float float_val = pVertexBuffer[i][j];
+		//	vertex_buffer_list[i][j] = double(float_val);
+		//}
+	}
+
+	// validation
+	for (int i = 0; i < numVerts; i++)
+	{
+		//assert(vertex_buffer_list[i] == pVertexBuffer[i]);
+		for (int j = 0; j < 3; j++)
+		{
+			float new_val = vertex_buffer_list[i][j];
+			float old_val = pVertexBuffer[i][j];
+//			assert(vertex_buffer_list[i][j] == pVertexBuffer[i][j]);
+			assert(new_val == old_val);
+		}
+	}
+
+	FbxVector4 fbx_x = FbxVector4(x[0], x[1], x[2]);
+	deformed_x = deform_using_mean_value_coordinates(vertex_buffer_list, pMvcWeights, fbx_x);
+
+	return DzVec3(deformed_x[0], deformed_x[1], deformed_x[2]);
+}
 
 
 #include "moc_MvcTools.cpp"
