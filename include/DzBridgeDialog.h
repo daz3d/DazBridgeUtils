@@ -81,7 +81,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual void setDisabled(bool bDisable);
 		Q_INVOKABLE virtual void showLodRow(bool bShowWidget = true);
 
-		void accept();
+		void accept() override;
 
 	protected slots:
 		virtual void handleSceneSelectionChanged();
