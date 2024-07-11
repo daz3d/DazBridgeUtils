@@ -319,12 +319,13 @@ better quality.  **DOES NOT EXPORT MESH**";
 	// Advanced
 	advancedSettingsGroupBox = new QGroupBox("Advanced Settings", this);
 	advancedSettingsGroupBox->setLayout(advancedLayoutOuter);
-	advancedSettingsGroupBox->setCheckable(true);
+	advancedSettingsGroupBox->setCheckable(false);
 	advancedSettingsGroupBox->setChecked(false);
 	advancedSettingsGroupBox->setFixedWidth(500); // This is what forces the whole forms width
-	addWidget(advancedSettingsGroupBox);
-	advancedWidget->setHidden(true);
-	connect(advancedSettingsGroupBox, SIGNAL(clicked(bool)), this, SLOT(HandleShowAdvancedSettingsCheckBoxChange(bool)));
+//	addWidget(advancedSettingsGroupBox);
+//	connect(advancedSettingsGroupBox, SIGNAL(clicked(bool)), this, SLOT(HandleShowAdvancedSettingsCheckBoxChange(bool)));
+	
+	this->addOptionsWidget(advancedSettingsGroupBox);
 
 	// Help
 	assetNameEdit->setWhatsThis("This is the name the asset will use in the destination software.");
@@ -420,18 +421,25 @@ bool DzBridgeDialog::loadSavedSettings()
 	}
 	if (m_bSetupMode)
 	{
-		advancedSettingsGroupBox->setChecked(true);
-		advancedWidget->setHidden(false);
+//		advancedSettingsGroupBox->setChecked(true);
+//		advancedWidget->setHidden(false);
+		this->showOptions();
 	}
 	else if (!settings->value("ShowAdvancedSettings").isNull())
 	{
-		advancedSettingsGroupBox->setChecked(settings->value("ShowAdvancedSettings").toBool());
-		advancedWidget->setHidden(!advancedSettingsGroupBox->isChecked());
+//		advancedSettingsGroupBox->setChecked(settings->value("ShowAdvancedSettings").toBool());
+//		advancedWidget->setHidden(!advancedSettingsGroupBox->isChecked());
+		bool bShowOptions = settings->value("ShowAdvancedSettings").toBool();
+		if (bShowOptions)
+			this->showOptions();
+		else
+			this->hideOptions();
 	}
 	else
 	{
-		advancedSettingsGroupBox->setChecked(false);
-		advancedWidget->setHidden(true);
+//		advancedSettingsGroupBox->setChecked(false);
+//		advancedWidget->setHidden(true);
+		this->hideOptions();
 	}
 	if (!settings->value("FBXExportVersion").isNull())
 	{
@@ -626,12 +634,13 @@ void DzBridgeDialog::HandleShowAdvancedSettingsCheckBoxChange(bool checked)
 {
 	if (m_bSetupMode)
 	{
-		advancedWidget->setHidden(false);
-		advancedSettingsGroupBox->setChecked(true);
+//		advancedWidget->setHidden(false);
+//		advancedSettingsGroupBox->setChecked(true);
+		this->showOptions();
 		return;
 	}
 
-	advancedWidget->setHidden(!checked);
+//	advancedWidget->setHidden(!checked);
 
 	if (settings == nullptr || m_bDontSaveSettings) return;
 	settings->setValue("ShowAdvancedSettings", checked);
@@ -799,8 +808,9 @@ void DzBridgeDialog::setDisabled(bool bDisabled)
 {
 	if (bDisabled)
 	{
-		advancedWidget->setHidden(false);
-		advancedSettingsGroupBox->setChecked(true);
+//		advancedWidget->setHidden(false);
+//		advancedSettingsGroupBox->setChecked(true);
+		this->showOptions();
 	}
 
 //	m_WelcomeLabel->setVisible(bDisabled);
