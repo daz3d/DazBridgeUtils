@@ -122,6 +122,8 @@ namespace DzBridgeNameSpace
         QLabel* m_WelcomeLabel = nullptr;
 
 		// Row Widgets
+		QWidget* m_wAssetNameRowLabelWidget = nullptr;
+		QWidget* m_wAssetTypeRowLabelWidget = nullptr;
 		QWidget* m_wMorphsRowLabelWidget = nullptr;
 		QWidget* m_wSubDRowLabelWidget = nullptr;
 		QWidget* m_wFbxVersionRowLabelWidget = nullptr;

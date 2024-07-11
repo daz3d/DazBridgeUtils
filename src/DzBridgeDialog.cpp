@@ -278,16 +278,18 @@ better quality.  **DOES NOT EXPORT MESH**";
 	connect(m_enableExperimentalOptionsCheckBox, SIGNAL(clicked(bool)), this, SLOT(HandleExperimentalOptionsCheckBoxClicked()));
                                   
 	// Add the widget to the basic dialog
-	mainLayout->addRow("Asset Name", assetNameEdit);
-	mainLayout->addRow("Asset Type", assetTypeCombo);
-	mainLayout->addRow("Export Morphs", morphsLayout);
-	m_wMorphsRowLabelWidget = mainLayout->itemAt(mainLayout->rowCount()-1, QFormLayout::LabelRole)->widget();
-	mainLayout->addRow("Bake Subdivision", subdivisionLayout);
-	m_wSubDRowLabelWidget = mainLayout->itemAt(mainLayout->rowCount()-1, QFormLayout::LabelRole)->widget();
+	m_wAssetNameRowLabelWidget = new QLabel(tr("Asset Name"));
+	mainLayout->addRow(m_wAssetNameRowLabelWidget, assetNameEdit);
+	m_wAssetTypeRowLabelWidget = new QLabel(tr("Asset Type"));
+	mainLayout->addRow(m_wAssetTypeRowLabelWidget, assetTypeCombo);
+	m_wMorphsRowLabelWidget = new QLabel(tr("Export Morphs"));
+	mainLayout->addRow(m_wMorphsRowLabelWidget, morphsLayout);
+	m_wSubDRowLabelWidget = new QLabel(tr("Bake Subdivision"));
+	mainLayout->addRow(m_wSubDRowLabelWidget, subdivisionLayout);
 
 	// Create LOD Row, then store lod row widget, then hide row as default state
-	mainLayout->addRow("Enable LOD", lodSettingsLayout);
-	m_wLodRowLabelWidget = mainLayout->itemAt(mainLayout->rowCount()-1, QFormLayout::LabelRole)->widget();
+	m_wLodRowLabelWidget = new QLabel(tr("Enable LOD"));
+	mainLayout->addRow(m_wLodRowLabelWidget, lodSettingsLayout);
 	this->showLodRow(false);
 
 	// Advanced Settings Layout
@@ -297,16 +299,16 @@ better quality.  **DOES NOT EXPORT MESH**";
 #endif
 	advancedLayout->addRow("", m_OpenIntermediateFolderButton);
 	showTargetPluginInstaller(false);
-	advancedLayout->addRow("FBX Version", fbxVersionCombo);
-	m_wFbxVersionRowLabelWidget = advancedLayout->itemAt(advancedLayout->rowCount()-1, QFormLayout::LabelRole)->widget();
-	advancedLayout->addRow("Show FBX Dialog", showFbxDialogCheckBox);
-	m_wShowFbxRowLabelWidget = advancedLayout->itemAt(advancedLayout->rowCount()-1, QFormLayout::LabelRole)->widget();
-	advancedLayout->addRow("Generate Normal Maps", enableNormalMapGenerationCheckBox);
-	m_wNormalMapsRowLabelWidget = advancedLayout->itemAt(advancedLayout->rowCount()-1, QFormLayout::LabelRole)->widget();
-	advancedLayout->addRow("Export Material CSV", exportMaterialPropertyCSVCheckBox);
-	m_wExportCsvRowLabelWidget = advancedLayout->itemAt(advancedLayout->rowCount()-1, QFormLayout::LabelRole)->widget();
-    advancedLayout->addRow("Enable Experimental Options", m_enableExperimentalOptionsCheckBox);
-	m_wEnableExperimentalRowLabelWidget = advancedLayout->itemAt(advancedLayout->rowCount()-1, QFormLayout::LabelRole)->widget();
+	m_wFbxVersionRowLabelWidget = new QLabel(tr("FBX Version"));
+	advancedLayout->addRow(m_wFbxVersionRowLabelWidget, fbxVersionCombo);
+	m_wShowFbxRowLabelWidget = new QLabel(tr("Show FBX Dialog"));
+	advancedLayout->addRow(m_wShowFbxRowLabelWidget, showFbxDialogCheckBox);
+	m_wNormalMapsRowLabelWidget = new QLabel(tr("Generate Normal Maps"));
+	advancedLayout->addRow(m_wNormalMapsRowLabelWidget, enableNormalMapGenerationCheckBox);
+	m_wExportCsvRowLabelWidget = new QLabel(tr("Export Material CSV"));
+	advancedLayout->addRow(m_wExportCsvRowLabelWidget, exportMaterialPropertyCSVCheckBox);
+	m_wEnableExperimentalRowLabelWidget = new QLabel(tr("Enable Experimental Options"));
+	advancedLayout->addRow(m_wEnableExperimentalRowLabelWidget, m_enableExperimentalOptionsCheckBox);
 
 	addLayout(mainLayout);
 
