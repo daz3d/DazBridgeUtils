@@ -1,5 +1,6 @@
 #pragma once
 #include "dzbasicdialog.h"
+#include "dzoptionsdialog.h"
 #include <QtGui/qcombobox.h>
 #include <QtCore/qsettings.h>
 #include <QtGui/qcheckbox.h>
@@ -20,7 +21,7 @@ namespace DzBridgeNameSpace
 {
 	class DzBridgeAction;
 
-	class CPP_Export DzBridgeDialog : public DzBasicDialog {
+	class CPP_Export DzBridgeDialog : public DzOptionsDialog {
 		Q_OBJECT
 		Q_PROPERTY(QWidget* wAssetNameEdit READ getAssetNameEdit)
 		Q_PROPERTY(QWidget* wAssetTypeCombo READ getAssetTypeCombo)

@@ -52,7 +52,7 @@ bool DzBridgeDialog::setBridgeActionObject(QObject* arg) {
 }
 
 DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
-	DzBasicDialog(parent, DAZ_BRIDGE_LIBRARY_NAME)
+	DzOptionsDialog(parent, DAZ_BRIDGE_LIBRARY_NAME)
 {
 	if (dzScene->getPrimarySelection() == nullptr)
 	{
