@@ -310,7 +310,10 @@ better quality.  **DOES NOT EXPORT MESH**";
 	m_wEnableExperimentalRowLabelWidget = new QLabel(tr("Enable Experimental Options"));
 	advancedLayout->addRow(m_wEnableExperimentalRowLabelWidget, m_enableExperimentalOptionsCheckBox);
 
-	addLayout(mainLayout);
+	m_wMainGroupBox = new QGroupBox();
+	m_wMainGroupBox->setMinimumWidth(500);
+	m_wMainGroupBox->setLayout(mainLayout);
+	addWidget(m_wMainGroupBox);
 
 	// Add Animation settings to the main layout as a new row without header
 	mainLayout->addRow(animationSettingsGroupBox);
@@ -319,11 +322,11 @@ better quality.  **DOES NOT EXPORT MESH**";
 	mainLayout->addRow(morphSettingsGroupBox);
 	
 	// Advanced
-	advancedSettingsGroupBox = new QGroupBox("Advanced Settings", this);
+	advancedSettingsGroupBox = new QGroupBox(tr("Advanced Options"), this);
 	advancedSettingsGroupBox->setLayout(advancedLayoutOuter);
 	advancedSettingsGroupBox->setCheckable(false);
 	advancedSettingsGroupBox->setChecked(false);
-	advancedSettingsGroupBox->setFixedWidth(500); // This is what forces the whole forms width
+	advancedSettingsGroupBox->setMinimumWidth(500); // This is what forces the whole forms width
 //	addWidget(advancedSettingsGroupBox);
 //	connect(advancedSettingsGroupBox, SIGNAL(clicked(bool)), this, SLOT(HandleShowAdvancedSettingsCheckBoxChange(bool)));
 	

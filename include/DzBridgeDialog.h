@@ -109,6 +109,7 @@ namespace DzBridgeNameSpace
 
 		virtual void refreshAsset();
 
+		QGroupBox* m_wMainGroupBox = nullptr;
 		QFormLayout* mainLayout = nullptr;
 		QFormLayout* advancedLayout = nullptr;
 		QLineEdit* assetNameEdit = nullptr;
