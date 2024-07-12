@@ -27,13 +27,16 @@ CPP_Export DzBridgeLodSettingsDialog* DzBridgeLodSettingsDialog::singleton = nul
 DzBridgeLodSettingsDialog::DzBridgeLodSettingsDialog(DzBridgeAction* action, QWidget* parent) :
 	DzBasicDialog(parent, DAZ_BRIDGE_LIBRARY_NAME)
 {
+	int nStyleMargin = this->style()->pixelMetric(DZ_PM_GeneralMargin);
+
 	m_BridgeAction = action;
 
 	// Set the dialog title 
 	setWindowTitle(tr("Configure LOD Settings"));
 
 	QVBoxLayout* mainLayout = new QVBoxLayout();
-	mainLayout->setMargin(5);
+	mainLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
+	mainLayout->setSpacing(nStyleMargin);
 
 	// Level of Detail (LOD) Explanation
 	QLabel* helpBox = new QLabel();

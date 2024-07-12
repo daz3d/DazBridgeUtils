@@ -57,6 +57,8 @@ CPP_Export DzBridgeSubdivisionDialog* DzBridgeSubdivisionDialog::singleton = nul
 DzBridgeSubdivisionDialog::DzBridgeSubdivisionDialog(QWidget *parent) :
 	DzBasicDialog(parent, DAZ_BRIDGE_LIBRARY_NAME)
 {
+	int nStyleMargin = this->style()->pixelMetric(DZ_PM_GeneralMargin);
+
 	 subdivisionItemsGrid = NULL;
 	//settings = new QSettings("Code Wizards", "DazToUnreal");
 
@@ -67,7 +69,8 @@ DzBridgeSubdivisionDialog::DzBridgeSubdivisionDialog(QWidget *parent) :
 	presetsFolder = QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation) + QDir::separator() + "DazBridge" + QDir::separator() + "Presets";
 
 	QVBoxLayout* mainLayout = new QVBoxLayout();
-	mainLayout->setMargin(5);
+	mainLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
+	mainLayout->setSpacing(nStyleMargin);
 
 	// Bake Subdivision Levels Explanation
 	QLabel* helpBox = new QLabel();

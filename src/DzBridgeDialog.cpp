@@ -42,6 +42,26 @@ Local definitions
 
 using namespace DzBridgeNameSpace;
 
+DzBridgeBrowseEdit::DzBridgeBrowseEdit(const QString& text, QWidget* parent)
+	: QWidget(parent)
+{
+	// create horizontal layout
+	// add edit, add browser
+}
+
+DzBridgeThinButton::DzBridgeThinButton(const QString& text, QWidget* parent)
+	: QPushButton(text, parent)
+{
+
+	int labelSize = this->fontMetrics().width(text);
+	int minSize = this->style()->pixelMetric(DZ_PM_ButtonMinWidth);
+	int buttonSize = labelSize;
+	if (labelSize < minSize)
+		buttonSize = minSize;
+	this->setFixedWidth(buttonSize);
+	this->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+}
+
 bool DzBridgeDialog::setBridgeActionObject(QObject* arg) {
 	DzBridgeAction* action = qobject_cast<DzBridgeAction*>(arg);
 	if (action)
@@ -99,10 +119,11 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	setWindowTitle(workingTitle);
 
 	layout()->setSizeConstraint(QLayout::SetFixedSize);
-	layout()->setMargin(nStyleMargin);
+	layout()->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
 
 	mainLayout = new QFormLayout();
-	mainLayout->setMargin(nStyleMargin);
+	mainLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
+	mainLayout->setSpacing(nStyleMargin);
 	mainLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
 	QString sSetupModeString = tr("<h4>\
@@ -124,10 +145,11 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 
 //	advancedWidget = new QWidget();
 //	QHBoxLayout* advancedLayoutOuter = new QHBoxLayout();
-//	advancedLayoutOuter->setMargin(0);
+//	advancedLayoutOuter->setContentsMargin(0);
 //	advancedLayoutOuter->addWidget(advancedWidget);
 	advancedLayout = new QFormLayout();
-	advancedLayout->setMargin(nStyleMargin);
+	advancedLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
+	advancedLayout->setSpacing(nStyleMargin);
 	advancedLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 //	advancedWidget->setLayout(advancedLayout);
 
@@ -156,7 +178,7 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
     animationSettingsGroupBox = new QGroupBox(tr("Experimental Animation Options : "), this);
 #endif
 	QFormLayout* animationSettingsLayout = new QFormLayout();
-	animationSettingsLayout->setMargin(nStyleMargin);
+	animationSettingsLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
 	animationSettingsGroupBox->setLayout(animationSettingsLayout);
 	experimentalAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
 	experimentalAnimationExportCheckBox->setChecked(true);
@@ -198,7 +220,9 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	// Morphs
 	QHBoxLayout* morphsLayout = new QHBoxLayout();
-//	morphsLayout->setMargin(nStyleMargin);
+//	morphsLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
+	morphsLayout->setContentsMargins(0,0,0,0);
+	morphsLayout->setSpacing(0);
 	morphsButton = new QPushButton(tr("Choose Morphs..."), this);
 	connect(morphsButton, SIGNAL(released()), this, SLOT(HandleChooseMorphsButton()));
 	morphsEnabledCheckBox = new QCheckBox("", this);
@@ -210,7 +234,8 @@ better quality.  **DOES NOT EXPORT MESH**";
 	// Morph Settings
 	morphSettingsGroupBox = new QGroupBox(tr("Morph Options : "), this);
 	QFormLayout* morphSettingsLayout = new QFormLayout();
-//	morphSettingsLayout->setMargin(nStyleMargin);
+	morphSettingsLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
+	morphSettingsLayout->setSpacing(nStyleMargin);
 	morphSettingsGroupBox->setLayout(morphSettingsLayout);
 	morphLockBoneTranslationCheckBox = new QCheckBox("", morphSettingsGroupBox);
 	morphLockBoneTranslationCheckBox->setChecked(false);
@@ -219,7 +244,9 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	// Subdivision
 	QHBoxLayout* subdivisionLayout = new QHBoxLayout();
-//	subdivisionLayout->setMargin(nStyleMargin);
+//	subdivisionLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
+	subdivisionLayout->setContentsMargins(0,0,0,0);
+	subdivisionLayout->setSpacing(0);
 	subdivisionButton = new QPushButton(tr("Bake Subdivision Levels..."), this);
 	connect(subdivisionButton, SIGNAL(released()), this, SLOT(HandleChooseSubdivisionsButton()));
 	subdivisionEnabledCheckBox = new QCheckBox("", this);
@@ -230,8 +257,9 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	// LOD Settings
 	QHBoxLayout* lodSettingsLayout = new QHBoxLayout();
-//	lodSettingsLayout->setMargin(nStyleMargin);
+//	lodSettingsLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
 	lodSettingsLayout->setContentsMargins(0,0,0,0);
+	lodSettingsLayout->setSpacing(0);
 	m_wLodSettingsButton = new QPushButton(tr("Configure LOD Settings..."), this);
 	connect(m_wLodSettingsButton, SIGNAL(released()), this, SLOT(HandleLodSettingsButton()));
 	m_wEnableLodCheckBox = new QCheckBox("", this);
@@ -275,11 +303,13 @@ better quality.  **DOES NOT EXPORT MESH**";
 #ifndef VODSVERSION
 	m_wTargetPluginInstaller = new QWidget();
 	QHBoxLayout* targetPluginInstallerLayout = new QHBoxLayout();
-	targetPluginInstallerLayout->setMargin(0);
+//	targetPluginInstallerLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
+	targetPluginInstallerLayout->setContentsMargins(0,0,0,0);
+	targetPluginInstallerLayout->setSpacing(nStyleMargin);
 	m_TargetSoftwareVersionCombo = new QComboBox(m_wTargetPluginInstaller);
 	m_TargetSoftwareVersionCombo->setFixedHeight(nStyleButtonHeight);
 	m_TargetSoftwareVersionCombo->addItem(tr("Software Version"));
-	m_TargetPluginInstallerButton = new QPushButton(tr("Install Plugin"), m_wTargetPluginInstaller);
+	m_TargetPluginInstallerButton = new QPushButton(tr("Install Plugin..."), m_wTargetPluginInstaller);
 	connect(m_TargetPluginInstallerButton, SIGNAL(clicked(bool)), this, SLOT(HandleTargetPluginInstallerButton()));
 	targetPluginInstallerLayout->addWidget(m_TargetSoftwareVersionCombo, 2);
 	targetPluginInstallerLayout->addWidget(m_TargetPluginInstallerButton, 1);
@@ -291,7 +321,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 //	m_BridgeVersionLabel = new QLabel(sBridgeVersionString);
 
 	// Go To Intermediate Folder
-	m_OpenIntermediateFolderButton = new QPushButton(tr("Open Intermediate Folder"));
+	m_OpenIntermediateFolderButton = new QPushButton(tr("Open Intermediate Folder..."));
 	connect(m_OpenIntermediateFolderButton, SIGNAL(clicked(bool)), this, SLOT(HandleOpenIntermediateFolderButton()));
 
     // Use this->getEnableExperimentalOptions() to query state, see HandleAssetTypeComboChange() for example
@@ -332,7 +362,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	m_wEnableExperimentalRowLabelWidget = new QLabel(tr("Enable Experimental Options"));
 	advancedLayout->addRow(m_wEnableExperimentalRowLabelWidget, m_enableExperimentalOptionsCheckBox);
 
-	m_wMainGroupBox = new QGroupBox(tr("Main Export Options :"));
+	m_wMainGroupBox = new QGroupBox(tr("Main Export Options : "));
 	m_wMainGroupBox->setMinimumWidth(500);
 	m_wMainGroupBox->setLayout(mainLayout);
 	addWidget(m_wMainGroupBox);
@@ -391,7 +421,26 @@ better quality.  **DOES NOT EXPORT MESH**";
 	m_WelcomeLabel->setVisible(true);
 #endif
 
+	//	connect(m_wMoreHelpButton, SIGNAL( released() ), this, SLOT( HandleMoreHelpButton() ));
+
+	m_wSupportButton = new DzBridgeThinButton(tr("  Support  "), this);
+	m_wYoutubeButton = new DzBridgeThinButton(tr("  Youtube  "), this);
+	m_wPdfButton = new DzBridgeThinButton(tr("  PDF  "), this);
+
+	connect(m_wSupportButton, SIGNAL( released() ), this, SLOT( HandleSupportButton() ));
+	connect(m_wYoutubeButton, SIGNAL( released() ), this, SLOT( HandleYoutubeButton() ));
+	connect(m_wPdfButton, SIGNAL( released() ), this, SLOT( HandlePdfButton() ));
+
+	this->addButton(m_wSupportButton);
+	this->addButton(m_wYoutubeButton);
+	this->addButton(m_wPdfButton);
+
+	m_wSupportButton->hide();
+	m_wYoutubeButton->hide();
+	m_wPdfButton->hide();
+
 	layout()->invalidate();
+
 }
 
 void DzBridgeDialog::renameTargetPluginInstaller(QString sNewLabelName)
@@ -1004,6 +1053,24 @@ void DzBridgeDialog::showLodRow(bool bShowWidget)
 	m_wLodSettingsButton->setVisible(bShowWidget);
 	m_wLodRowLabelWidget->setVisible(bShowWidget);
 
+}
+
+void DzBridgeDialog::HandlePdfButton()
+{
+	QMessageBox::information(0, "Daz Bridge",
+		tr("INFO: PDF button is not configured."));
+}
+
+void DzBridgeDialog::HandleYoutubeButton()
+{
+	QMessageBox::information(0, "Daz Bridge",
+		tr("INFO: Youtube button is not configured."));
+}
+
+void DzBridgeDialog::HandleSupportButton()
+{
+	QMessageBox::information(0, "Daz Bridge",
+		tr("INFO: Support button is not configured."));
 }
 
 #include "moc_DzBridgeDialog.cpp"

@@ -94,6 +94,9 @@ public:
 DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	DzBasicDialog(parent, DAZ_BRIDGE_LIBRARY_NAME)
 {
+
+	int nStyleMargin = this->style()->pixelMetric(DZ_PM_GeneralMargin);
+
 	connect(this, SIGNAL(accepted()), this, SLOT(HandleDialogAccepted()));
 
 	// Try to retrieve settings from parent dialog
@@ -121,6 +124,8 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	setWindowTitle(tr("Select Morphs"));
 
 	QVBoxLayout* mainLayout = new QVBoxLayout();
+	mainLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
+	mainLayout->setSpacing(nStyleMargin);
 
 	// Left tree with morph structure
 	m_morphTreeWidget = new QTreeWidget(this);
@@ -143,8 +148,10 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 
 	// Presets
 	QHBoxLayout* settingsLayout = new QHBoxLayout();
+	settingsLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
+	settingsLayout->setSpacing(nStyleMargin);
 	presetCombo = new QComboBox(this);
-	QPushButton* savePresetButton = new QPushButton("Save Preset", this);
+	QPushButton* savePresetButton = new QPushButton(tr("Save Preset..."), this);
 	connect(savePresetButton, SIGNAL(released()), this, SLOT(HandleSavePreset()));
 	settingsLayout->addWidget(new QLabel("Choose Preset"));
 	settingsLayout->addWidget(presetCombo);
@@ -153,6 +160,8 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 
 	// All Morphs
 	QHBoxLayout* morphsLayout = new QHBoxLayout();
+	morphsLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
+	morphsLayout->setSpacing(nStyleMargin);
 
 	// Left Tree
 	QVBoxLayout* treeLayout = new QVBoxLayout();
@@ -162,11 +171,20 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 
 	// Buttons for quickly adding certain JCMs
 	QGroupBox* MorphGroupBox = new QGroupBox("Morph Utilities", this);
-	MorphGroupBox->setLayout(new QVBoxLayout());
+	QVBoxLayout* pMorphsGroupBoxLayout = new QVBoxLayout();
+	pMorphsGroupBoxLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
+	pMorphsGroupBoxLayout->setSpacing(nStyleMargin);
+	MorphGroupBox->setLayout(pMorphsGroupBoxLayout);
 	QGroupBox* JCMGroupBox = new QGroupBox("Add JCMs", this);
-	JCMGroupBox->setLayout(new QGridLayout());
+	QGridLayout* pJCMGroupBoxGridLayout = new QGridLayout();
+	pJCMGroupBoxGridLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
+	pJCMGroupBoxGridLayout->setSpacing(nStyleMargin);
+	JCMGroupBox->setLayout(pJCMGroupBoxGridLayout);
 	QGroupBox* FaceGroupBox = new QGroupBox("Add Expressions", this);
-	FaceGroupBox->setLayout(new QGridLayout());
+	QGridLayout* pFaceGroupBoxGridLayout = new QGridLayout();
+	pFaceGroupBoxGridLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
+	pFaceGroupBoxGridLayout->setSpacing(nStyleMargin);
+	FaceGroupBox->setLayout(pFaceGroupBoxGridLayout);
 
 	QPushButton* ArmsJCMButton = new QPushButton("Arms");
 	QPushButton* LegsJCMButton = new QPushButton("Legs");
@@ -239,6 +257,8 @@ functionality for some Morph and JCM products.\
 
 	// Center List of morphs based on tree selection
 	QVBoxLayout* morphListLayout = new QVBoxLayout();
+	morphListLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
+	morphListLayout->setSpacing(nStyleMargin);
 	morphListLayout->addWidget(new QLabel("Morphs in Group"));
 	morphListLayout->addWidget(new QLabel("Select and click Add for Export"));
 	morphListLayout->addLayout(filterLayout);
@@ -252,6 +272,8 @@ functionality for some Morph and JCM products.\
 
 	// Right List of morphs that will export
 	QVBoxLayout* selectedListLayout = new QVBoxLayout();
+	selectedListLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
+	selectedListLayout->setSpacing(nStyleMargin);
 	selectedListLayout->addWidget(new QLabel("Morphs to Export"));
 	selectedListLayout->addWidget(m_morphExportListWidget);
 

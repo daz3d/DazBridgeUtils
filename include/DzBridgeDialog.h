@@ -1,36 +1,39 @@
 #pragma once
-#include "dzbasicdialog.h"
+//#include "dzbasicdialog.h"
 #include "dzoptionsdialog.h"
-#include <QtGui/qcombobox.h>
-#include <QtCore/qsettings.h>
 #include <QtGui/qcheckbox.h>
-
 #include <QtGui/qpushbutton.h>
 #include "dzstyledefs.h"
 
-//class QPushButton;
+class QPushButton;
 class QLineEdit;
 class QCheckBox;
 class QComboBox;
 class QGroupBox;
 class QFormLayout;
 class QLabel;
+class QSettings;
 
 class UnitTest_DzBridgeDialog;
 
 #include "dzbridge.h"
 
-class DzBridgeBrowseButton : public QPushButton {
+class DzBridgeBrowseEdit : public QWidget {
 	Q_OBJECT
 public:
-	DzBridgeBrowseButton(QWidget* parent = nullptr) : QPushButton("...", parent) {
-		int labelSize = this->fontMetrics().width("...");
-		int minSize = style()->pixelMetric(DZ_PM_ButtonMinWidth);
-		int buttonSize = labelSize;
-		if (labelSize < minSize)
-			buttonSize = minSize;
-		this->setFixedWidth(buttonSize);
-		this->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+	DzBridgeBrowseEdit(const QString& text, QWidget* parent);
+};
+
+class DzBridgeThinButton : public QPushButton {
+	Q_OBJECT
+public:
+	DzBridgeThinButton(const QString& text, QWidget* parent = nullptr);
+};
+
+class DzBridgeBrowseButton : public DzBridgeThinButton {
+	Q_OBJECT
+public:
+	DzBridgeBrowseButton(QWidget* parent = nullptr) : DzBridgeThinButton("...", parent) {
 	}
 };
 
@@ -120,7 +123,17 @@ namespace DzBridgeNameSpace
         virtual void HandleLodSettingsButton();
 		virtual void HandleEnableLodCheckBoxChange(int state);
 
+		// Extra Bottom Row Button Handlers
+		virtual void HandlePdfButton();
+		virtual void HandleYoutubeButton();
+		virtual void HandleSupportButton();
+
 	protected:
+		// Extra Bottom Row Buttons
+		QPushButton* m_wPdfButton = nullptr;
+		QPushButton* m_wYoutubeButton = nullptr;
+		QPushButton* m_wSupportButton = nullptr;
+
 		DzBridgeAction* m_BridgeAction = nullptr;
 		QSettings* settings = nullptr;
 
