@@ -83,11 +83,11 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	 m_wTargetPluginInstaller = nullptr;
 
 	// Declarations
-	int m_nStyleMargin = style()->pixelMetric(DZ_PM_GeneralMargin);
-	int m_nStyleButtonHeight = style()->pixelMetric(DZ_PM_ButtonHeight);
-	int m_nStyleButtonMinWidth = style()->pixelMetric(DZ_PM_ButtonMinWidth);
+	int nStyleMargin = style()->pixelMetric(DZ_PM_GeneralMargin);
+	int nStyleButtonHeight = style()->pixelMetric(DZ_PM_ButtonHeight);
+	int nStyleButtonMinWidth = style()->pixelMetric(DZ_PM_ButtonMinWidth);
 
-	this->setOptionsMargin(m_nStyleMargin);
+	this->setOptionsMargin(nStyleMargin);
 
 	// Set the dialog title
 	int revision = COMMON_REV % 1000;
@@ -99,10 +99,10 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	setWindowTitle(workingTitle);
 
 	layout()->setSizeConstraint(QLayout::SetFixedSize);
-	layout()->setMargin(m_nStyleMargin);
+	layout()->setMargin(nStyleMargin);
 
 	mainLayout = new QFormLayout();
-	mainLayout->setMargin(m_nStyleMargin);
+	mainLayout->setMargin(nStyleMargin);
 	mainLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
 	QString sSetupModeString = tr("<h4>\
@@ -127,17 +127,18 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 //	advancedLayoutOuter->setMargin(0);
 //	advancedLayoutOuter->addWidget(advancedWidget);
 	advancedLayout = new QFormLayout();
-	advancedLayout->setMargin(m_nStyleMargin);
+	advancedLayout->setMargin(nStyleMargin);
 	advancedLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 //	advancedWidget->setLayout(advancedLayout);
 
 	// Asset Name
 	assetNameEdit = new QLineEdit(this);
 	assetNameEdit->setValidator(new QRegExpValidator(QRegExp("[A-Za-z0-9_]*"), this));
+	assetNameEdit->setFixedHeight(nStyleButtonHeight);
 
 	// Asset Transfer Type
 	assetTypeCombo = new QComboBox(this);
-	assetTypeCombo->setFixedHeight(m_nStyleButtonHeight);
+	assetTypeCombo->setFixedHeight(nStyleButtonHeight);
 	assetTypeCombo->addItem("Skeletal Mesh");
 	assetTypeCombo->addItem("Static Mesh");
 	assetTypeCombo->addItem("Animation");
@@ -150,12 +151,12 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 
 	// Animation Settings
 #ifdef VODSVERSION
-    animationSettingsGroupBox = new QGroupBox("Animation Settings :", this);
+    animationSettingsGroupBox = new QGroupBox(tr("Animation Options : "), this);
 #else
-    animationSettingsGroupBox = new QGroupBox("Experimental Animation Settings :", this);
+    animationSettingsGroupBox = new QGroupBox(tr("Experimental Animation Options : "), this);
 #endif
 	QFormLayout* animationSettingsLayout = new QFormLayout();
-	animationSettingsLayout->setMargin(m_nStyleMargin);
+	animationSettingsLayout->setMargin(nStyleMargin);
 	animationSettingsGroupBox->setLayout(animationSettingsLayout);
 	experimentalAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
 	experimentalAnimationExportCheckBox->setChecked(true);
@@ -198,7 +199,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	// Morphs
 	QHBoxLayout* morphsLayout = new QHBoxLayout();
 //	morphsLayout->setMargin(nStyleMargin);
-	morphsButton = new QPushButton("Choose Morphs...", this);
+	morphsButton = new QPushButton(tr("Choose Morphs..."), this);
 	connect(morphsButton, SIGNAL(released()), this, SLOT(HandleChooseMorphsButton()));
 	morphsEnabledCheckBox = new QCheckBox("", this);
 	morphsEnabledCheckBox->setMaximumWidth(25);
@@ -207,13 +208,13 @@ better quality.  **DOES NOT EXPORT MESH**";
 	connect(morphsEnabledCheckBox, SIGNAL(stateChanged(int)), this, SLOT(HandleMorphsCheckBoxChange(int)));
 
 	// Morph Settings
-	morphSettingsGroupBox = new QGroupBox("Morph Settings :", this);
+	morphSettingsGroupBox = new QGroupBox(tr("Morph Options : "), this);
 	QFormLayout* morphSettingsLayout = new QFormLayout();
 //	morphSettingsLayout->setMargin(nStyleMargin);
 	morphSettingsGroupBox->setLayout(morphSettingsLayout);
 	morphLockBoneTranslationCheckBox = new QCheckBox("", morphSettingsGroupBox);
 	morphLockBoneTranslationCheckBox->setChecked(false);
-	morphSettingsLayout->addRow("Lock Bone Translation for Morphs", morphLockBoneTranslationCheckBox);
+	morphSettingsLayout->addRow(tr("Lock Bone Translation for Morphs"), morphLockBoneTranslationCheckBox);
 	morphSettingsGroupBox->setVisible(false);
 
 	// Subdivision
@@ -243,7 +244,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	// FBX Version
 	fbxVersionCombo = new QComboBox(this);
-	fbxVersionCombo->setFixedHeight(m_nStyleButtonHeight);
+	fbxVersionCombo->setFixedHeight(nStyleButtonHeight);
 	fbxVersionCombo->addItem("FBX 2014 -- Binary");
 	fbxVersionCombo->addItem("FBX 2014 -- Ascii");
 	fbxVersionCombo->addItem("FBX 2013 -- Binary");
@@ -276,9 +277,9 @@ better quality.  **DOES NOT EXPORT MESH**";
 	QHBoxLayout* targetPluginInstallerLayout = new QHBoxLayout();
 	targetPluginInstallerLayout->setMargin(0);
 	m_TargetSoftwareVersionCombo = new QComboBox(m_wTargetPluginInstaller);
-	m_TargetSoftwareVersionCombo->setFixedHeight(m_nStyleButtonHeight);
-	m_TargetSoftwareVersionCombo->addItem("Software Version");
-	m_TargetPluginInstallerButton = new QPushButton("Install Plugin", m_wTargetPluginInstaller);
+	m_TargetSoftwareVersionCombo->setFixedHeight(nStyleButtonHeight);
+	m_TargetSoftwareVersionCombo->addItem(tr("Software Version"));
+	m_TargetPluginInstallerButton = new QPushButton(tr("Install Plugin"), m_wTargetPluginInstaller);
 	connect(m_TargetPluginInstallerButton, SIGNAL(clicked(bool)), this, SLOT(HandleTargetPluginInstallerButton()));
 	targetPluginInstallerLayout->addWidget(m_TargetSoftwareVersionCombo, 2);
 	targetPluginInstallerLayout->addWidget(m_TargetPluginInstallerButton, 1);
@@ -300,16 +301,12 @@ better quality.  **DOES NOT EXPORT MESH**";
                                   
 	// Add the widget to the basic dialog
 	m_wAssetNameRowLabelWidget = new QLabel(tr("Asset Name"));
-	m_wAssetNameRowLabelWidget->setObjectName("DzBridgeDialog_wAssetNameRowLabelWidget");
 	mainLayout->addRow(m_wAssetNameRowLabelWidget, assetNameEdit);
 	m_wAssetTypeRowLabelWidget = new QLabel(tr("Asset Type"));
-	m_wAssetTypeRowLabelWidget->setObjectName("DzBridgeDialog_wAssetTypeRowLabelWidget");
 	mainLayout->addRow(m_wAssetTypeRowLabelWidget, assetTypeCombo);
 	m_wMorphsRowLabelWidget = new QLabel(tr("Export Morphs"));
-	m_wMorphsRowLabelWidget->setObjectName("DzBridgeDialog_wMorphsRowLabelWidget");
 	mainLayout->addRow(m_wMorphsRowLabelWidget, morphsLayout);
 	m_wSubDRowLabelWidget = new QLabel(tr("Bake Subdivision"));
-	m_wSubDRowLabelWidget->setObjectName("DzBridgeDialog_wSubDRowLabelWidget");
 	mainLayout->addRow(m_wSubDRowLabelWidget, subdivisionLayout);
 
 	// Create LOD Row, then store lod row widget, then hide row as default state
@@ -360,14 +357,14 @@ better quality.  **DOES NOT EXPORT MESH**";
 	this->addOptionsWidget(advancedSettingsGroupBox);
 
 	// Help
-	assetNameEdit->setWhatsThis("This is the name the asset will use in the destination software.");
-	assetTypeCombo->setWhatsThis("Skeletal Mesh for something with moving parts, like a character\nStatic Mesh for things like props\nAnimation for a character animation.");
-	subdivisionButton->setWhatsThis("Select Subdivision Detail Level to Bake into each exported mesh.");
-	morphsButton->setWhatsThis("Select Morphs to export with asset.");
-	fbxVersionCombo->setWhatsThis("The version of FBX to use when exporting assets.");
-	showFbxDialogCheckBox->setWhatsThis("Checking this will show the FBX Dialog for adjustments before export.");
-	exportMaterialPropertyCSVCheckBox->setWhatsThis("Checking this will write out a CSV of all the material properties.  Useful for reference when changing materials.");
-	enableNormalMapGenerationCheckBox->setWhatsThis("Checking this will enable generation of Normal Maps for any surfaces that only have Bump Height Maps.");
+	assetNameEdit->setWhatsThis(tr("This is the name the asset will use in the destination software."));
+	assetTypeCombo->setWhatsThis(tr("Skeletal Mesh for something with moving parts, like a character\nStatic Mesh for things like props\nAnimation for a character animation."));
+	subdivisionButton->setWhatsThis(tr("Select Subdivision Detail Level to Bake into each exported mesh."));
+	morphsButton->setWhatsThis(tr("Select Morphs to export with asset."));
+	fbxVersionCombo->setWhatsThis(tr("The version of FBX to use when exporting assets."));
+	showFbxDialogCheckBox->setWhatsThis(tr("Checking this will show the FBX Dialog for adjustments before export."));
+	exportMaterialPropertyCSVCheckBox->setWhatsThis(tr("Checking this will write out a CSV of all the material properties.  Useful for reference when changing materials."));
+	enableNormalMapGenerationCheckBox->setWhatsThis(tr("Checking this will enable generation of Normal Maps for any surfaces that only have Bump Height Maps."));
 	//m_wTargetPluginInstaller->setWhatsThis("Install a plugin to use Daz Bridge with the destination software.");
 	QString sEnableLodHelp = tr("Enable Level of Detail (LOD) mesh.  Specific features depend on the destination software.");
 	m_wLodRowLabelWidget->setWhatsThis(sEnableLodHelp);
