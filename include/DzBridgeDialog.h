@@ -123,19 +123,19 @@ namespace DzBridgeNameSpace
         QLabel* m_WelcomeLabel = nullptr;
 
 		// Row Widgets
-		QWidget* m_wAssetNameRowLabelWidget = nullptr;
-		QWidget* m_wAssetTypeRowLabelWidget = nullptr;
-		QWidget* m_wMorphsRowLabelWidget = nullptr;
-		QWidget* m_wSubDRowLabelWidget = nullptr;
-		QWidget* m_wFbxVersionRowLabelWidget = nullptr;
-		QWidget* m_wShowFbxRowLabelWidget = nullptr;
-		QWidget* m_wNormalMapsRowLabelWidget = nullptr;
-		QWidget* m_wExportCsvRowLabelWidget = nullptr;
-		QWidget* m_wEnableExperimentalRowLabelWidget = nullptr;
+		QLabel* m_wAssetNameRowLabelWidget = nullptr;
+		QLabel* m_wAssetTypeRowLabelWidget = nullptr;
+		QLabel* m_wMorphsRowLabelWidget = nullptr;
+		QLabel* m_wSubDRowLabelWidget = nullptr;
+		QLabel* m_wFbxVersionRowLabelWidget = nullptr;
+		QLabel* m_wShowFbxRowLabelWidget = nullptr;
+		QLabel* m_wNormalMapsRowLabelWidget = nullptr;
+		QLabel* m_wExportCsvRowLabelWidget = nullptr;
+		QLabel* m_wEnableExperimentalRowLabelWidget = nullptr;
 
         // Advanced settings
 		QGroupBox* advancedSettingsGroupBox = nullptr;
-		QWidget* advancedWidget = nullptr;
+//		QWidget* advancedWidget = nullptr;
 		QComboBox* fbxVersionCombo = nullptr;
 		QCheckBox* showFbxDialogCheckBox = nullptr;
 		QCheckBox* enableNormalMapGenerationCheckBox = nullptr;
@@ -143,7 +143,7 @@ namespace DzBridgeNameSpace
 		QWidget* m_wTargetPluginInstaller = nullptr;
 		QPushButton* m_TargetPluginInstallerButton = nullptr;
 		QComboBox* m_TargetSoftwareVersionCombo = nullptr;
-		QLabel* m_BridgeVersionLabel = nullptr;
+//		QLabel* m_BridgeVersionLabel = nullptr;
 		QPushButton* m_OpenIntermediateFolderButton = nullptr;
         QCheckBox* m_enableExperimentalOptionsCheckBox = nullptr;
 

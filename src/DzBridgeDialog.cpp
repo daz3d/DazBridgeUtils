@@ -38,6 +38,7 @@
 Local definitions
 *****************************/
 #define DAZ_BRIDGE_LIBRARY_NAME "Daz Bridge"
+#define ADVANCED_OPTIONS_TITLE "Advanced Options : "
 
 using namespace DzBridgeNameSpace;
 
@@ -82,9 +83,11 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	 m_wTargetPluginInstaller = nullptr;
 
 	// Declarations
-	int margin = style()->pixelMetric(DZ_PM_GeneralMargin);
-	int wgtHeight = style()->pixelMetric(DZ_PM_ButtonHeight);
-	int btnMinWidth = style()->pixelMetric(DZ_PM_ButtonMinWidth);
+	int nStyleMargin = style()->pixelMetric(DZ_PM_GeneralMargin);
+	int nStyleButtonHeight = style()->pixelMetric(DZ_PM_ButtonHeight);
+	int nStyleButtonMinWidth = style()->pixelMetric(DZ_PM_ButtonMinWidth);
+
+	this->setOptionsMargin(nStyleMargin);
 
 	// Set the dialog title
 	int revision = COMMON_REV % 1000;
@@ -94,9 +97,13 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	else
 		workingTitle = QString(tr("DazBridge %1 v%2.%3.%4").arg(COMMON_MAJOR).arg(COMMON_MINOR).arg(revision).arg(COMMON_BUILD));
 	setWindowTitle(workingTitle);
+
 	layout()->setSizeConstraint(QLayout::SetFixedSize);
+	layout()->setMargin(nStyleMargin);
+
 	mainLayout = new QFormLayout();
-	mainLayout->setMargin(5);
+	mainLayout->setMargin(nStyleMargin);
+	mainLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
 	QString sSetupModeString = tr("<h4>\
 If this is your first time using this bridge, please be sure to read or watch \
@@ -115,11 +122,14 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	mainLayout->addRow(m_WelcomeLabel);
 #endif
 
-	advancedWidget = new QWidget();
-	QHBoxLayout* advancedLayoutOuter = new QHBoxLayout();
-	advancedLayoutOuter->addWidget(advancedWidget);
+//	advancedWidget = new QWidget();
+//	QHBoxLayout* advancedLayoutOuter = new QHBoxLayout();
+//	advancedLayoutOuter->setMargin(0);
+//	advancedLayoutOuter->addWidget(advancedWidget);
 	advancedLayout = new QFormLayout();
-	advancedWidget->setLayout(advancedLayout);
+	advancedLayout->setMargin(nStyleMargin);
+	advancedLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+//	advancedWidget->setLayout(advancedLayout);
 
 	// Asset Name
 	assetNameEdit = new QLineEdit(this);
@@ -127,6 +137,7 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 
 	// Asset Transfer Type
 	assetTypeCombo = new QComboBox(this);
+	assetTypeCombo->setFixedHeight(nStyleButtonHeight);
 	assetTypeCombo->addItem("Skeletal Mesh");
 	assetTypeCombo->addItem("Static Mesh");
 	assetTypeCombo->addItem("Animation");
@@ -139,11 +150,12 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 
 	// Animation Settings
 #ifdef VODSVERSION
-    animationSettingsGroupBox = new QGroupBox("Animation Settings", this);
+    animationSettingsGroupBox = new QGroupBox("Animation Settings :", this);
 #else
-    animationSettingsGroupBox = new QGroupBox("Experimental Animation Settings", this);
+    animationSettingsGroupBox = new QGroupBox("Experimental Animation Settings :", this);
 #endif
 	QFormLayout* animationSettingsLayout = new QFormLayout();
+	animationSettingsLayout->setMargin(nStyleMargin);
 	animationSettingsGroupBox->setLayout(animationSettingsLayout);
 	experimentalAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
 	experimentalAnimationExportCheckBox->setChecked(true);
@@ -162,7 +174,9 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	animationApplyBoneScaleCheckBox = new QCheckBox("", animationSettingsGroupBox);
 	animationSettingsLayout->addRow("Apply Bone Scale", animationApplyBoneScaleCheckBox);
 	animationSettingsGroupBox->setVisible(false);
-                                  
+
+	animationSettingsLayout->invalidate();
+
     // Animation Help Text
     const char* AnimationExportHelpText = "New custom animation export pathway which can produce\n\
 better quality.  **DOES NOT EXPORT MESH**";
@@ -183,7 +197,8 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	// Morphs
 	QHBoxLayout* morphsLayout = new QHBoxLayout();
-	morphsButton = new QPushButton("Choose Morphs", this);
+//	morphsLayout->setMargin(nStyleMargin);
+	morphsButton = new QPushButton("Choose Morphs...", this);
 	connect(morphsButton, SIGNAL(released()), this, SLOT(HandleChooseMorphsButton()));
 	morphsEnabledCheckBox = new QCheckBox("", this);
 	morphsEnabledCheckBox->setMaximumWidth(25);
@@ -192,8 +207,9 @@ better quality.  **DOES NOT EXPORT MESH**";
 	connect(morphsEnabledCheckBox, SIGNAL(stateChanged(int)), this, SLOT(HandleMorphsCheckBoxChange(int)));
 
 	// Morph Settings
-	morphSettingsGroupBox = new QGroupBox("Morph Settings", this);
+	morphSettingsGroupBox = new QGroupBox("Morph Settings :", this);
 	QFormLayout* morphSettingsLayout = new QFormLayout();
+//	morphSettingsLayout->setMargin(nStyleMargin);
 	morphSettingsGroupBox->setLayout(morphSettingsLayout);
 	morphLockBoneTranslationCheckBox = new QCheckBox("", morphSettingsGroupBox);
 	morphLockBoneTranslationCheckBox->setChecked(false);
@@ -202,7 +218,8 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	// Subdivision
 	QHBoxLayout* subdivisionLayout = new QHBoxLayout();
-	subdivisionButton = new QPushButton(tr("Bake Subdivision Levels"), this);
+//	subdivisionLayout->setMargin(nStyleMargin);
+	subdivisionButton = new QPushButton(tr("Bake Subdivision Levels..."), this);
 	connect(subdivisionButton, SIGNAL(released()), this, SLOT(HandleChooseSubdivisionsButton()));
 	subdivisionEnabledCheckBox = new QCheckBox("", this);
 	subdivisionEnabledCheckBox->setMaximumWidth(25);
@@ -212,8 +229,9 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	// LOD Settings
 	QHBoxLayout* lodSettingsLayout = new QHBoxLayout();
+//	lodSettingsLayout->setMargin(nStyleMargin);
 	lodSettingsLayout->setContentsMargins(0,0,0,0);
-	m_wLodSettingsButton = new QPushButton(tr("Configure LOD Settings"), this);
+	m_wLodSettingsButton = new QPushButton(tr("Configure LOD Settings..."), this);
 	connect(m_wLodSettingsButton, SIGNAL(released()), this, SLOT(HandleLodSettingsButton()));
 	m_wEnableLodCheckBox = new QCheckBox("", this);
 	m_wEnableLodCheckBox->setMaximumWidth(25);
@@ -225,6 +243,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	// FBX Version
 	fbxVersionCombo = new QComboBox(this);
+	fbxVersionCombo->setFixedHeight(nStyleButtonHeight);
 	fbxVersionCombo->addItem("FBX 2014 -- Binary");
 	fbxVersionCombo->addItem("FBX 2014 -- Ascii");
 	fbxVersionCombo->addItem("FBX 2013 -- Binary");
@@ -255,7 +274,9 @@ better quality.  **DOES NOT EXPORT MESH**";
 #ifndef VODSVERSION
 	m_wTargetPluginInstaller = new QWidget();
 	QHBoxLayout* targetPluginInstallerLayout = new QHBoxLayout();
+	targetPluginInstallerLayout->setMargin(0);
 	m_TargetSoftwareVersionCombo = new QComboBox(m_wTargetPluginInstaller);
+	m_TargetSoftwareVersionCombo->setFixedHeight(nStyleButtonHeight);
 	m_TargetSoftwareVersionCombo->addItem("Software Version");
 	m_TargetPluginInstallerButton = new QPushButton("Install Plugin", m_wTargetPluginInstaller);
 	connect(m_TargetPluginInstallerButton, SIGNAL(clicked(bool)), this, SLOT(HandleTargetPluginInstallerButton()));
@@ -265,8 +286,8 @@ better quality.  **DOES NOT EXPORT MESH**";
 #endif
 
 	// Bridge Software Version Label
-	QString sBridgeVersionString = QString(tr("Daz Bridge Library %1 v%2.%3.%4")).arg(COMMON_MAJOR).arg(COMMON_MINOR).arg(revision).arg(COMMON_BUILD);
-	m_BridgeVersionLabel = new QLabel(sBridgeVersionString);
+//	QString sBridgeVersionString = QString(tr("Daz Bridge Library %1 v%2.%3.%4")).arg(COMMON_MAJOR).arg(COMMON_MINOR).arg(revision).arg(COMMON_BUILD);
+//	m_BridgeVersionLabel = new QLabel(sBridgeVersionString);
 
 	// Go To Intermediate Folder
 	m_OpenIntermediateFolderButton = new QPushButton(tr("Open Intermediate Folder"));
@@ -279,12 +300,16 @@ better quality.  **DOES NOT EXPORT MESH**";
                                   
 	// Add the widget to the basic dialog
 	m_wAssetNameRowLabelWidget = new QLabel(tr("Asset Name"));
+	m_wAssetNameRowLabelWidget->setObjectName("DzBridgeDialog_wAssetNameRowLabelWidget");
 	mainLayout->addRow(m_wAssetNameRowLabelWidget, assetNameEdit);
 	m_wAssetTypeRowLabelWidget = new QLabel(tr("Asset Type"));
+	m_wAssetTypeRowLabelWidget->setObjectName("DzBridgeDialog_wAssetTypeRowLabelWidget");
 	mainLayout->addRow(m_wAssetTypeRowLabelWidget, assetTypeCombo);
 	m_wMorphsRowLabelWidget = new QLabel(tr("Export Morphs"));
+	m_wMorphsRowLabelWidget->setObjectName("DzBridgeDialog_wMorphsRowLabelWidget");
 	mainLayout->addRow(m_wMorphsRowLabelWidget, morphsLayout);
 	m_wSubDRowLabelWidget = new QLabel(tr("Bake Subdivision"));
+	m_wSubDRowLabelWidget->setObjectName("DzBridgeDialog_wSubDRowLabelWidget");
 	mainLayout->addRow(m_wSubDRowLabelWidget, subdivisionLayout);
 
 	// Create LOD Row, then store lod row widget, then hide row as default state
@@ -293,7 +318,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	this->showLodRow(false);
 
 	// Advanced Settings Layout
-	advancedLayout->addRow("", m_BridgeVersionLabel);
+//	advancedLayout->addRow("", m_BridgeVersionLabel);
 #ifndef VODSVERSION
 	advancedLayout->addRow("Install Destination Plugin", m_wTargetPluginInstaller);
 #endif
@@ -310,7 +335,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	m_wEnableExperimentalRowLabelWidget = new QLabel(tr("Enable Experimental Options"));
 	advancedLayout->addRow(m_wEnableExperimentalRowLabelWidget, m_enableExperimentalOptionsCheckBox);
 
-	m_wMainGroupBox = new QGroupBox();
+	m_wMainGroupBox = new QGroupBox(tr("Main Export Options :"));
 	m_wMainGroupBox->setMinimumWidth(500);
 	m_wMainGroupBox->setLayout(mainLayout);
 	addWidget(m_wMainGroupBox);
@@ -322,8 +347,10 @@ better quality.  **DOES NOT EXPORT MESH**";
 	mainLayout->addRow(morphSettingsGroupBox);
 	
 	// Advanced
-	advancedSettingsGroupBox = new QGroupBox(tr("Advanced Options"), this);
-	advancedSettingsGroupBox->setLayout(advancedLayoutOuter);
+	QString sAdvancedOptionsTitle = tr(ADVANCED_OPTIONS_TITLE);
+	advancedSettingsGroupBox = new QGroupBox(sAdvancedOptionsTitle);
+	advancedSettingsGroupBox->setLayout(advancedLayout);
+//	advancedSettingsGroupBox->setLayout(advancedLayoutOuter);
 	advancedSettingsGroupBox->setCheckable(false);
 	advancedSettingsGroupBox->setChecked(false);
 	advancedSettingsGroupBox->setMinimumWidth(500); // This is what forces the whole forms width
@@ -366,6 +393,8 @@ better quality.  **DOES NOT EXPORT MESH**";
 #ifndef VODSVERSION
 	m_WelcomeLabel->setVisible(true);
 #endif
+
+	layout()->invalidate();
 }
 
 void DzBridgeDialog::renameTargetPluginInstaller(QString sNewLabelName)
@@ -791,6 +820,7 @@ bool DzBridgeDialog::installEmbeddedArchive(QString sArchiveFilename, QString sD
 
 void DzBridgeDialog::setBridgeVersionStringAndLabel(QString sVersionString, QString sLabel)
 {
+/*
 	if (m_BridgeVersionLabel == nullptr)
 		return;
 
@@ -805,6 +835,10 @@ void DzBridgeDialog::setBridgeVersionStringAndLabel(QString sVersionString, QStr
 			rowLabel->setText(sLabel);
 		}
 	}
+*/
+
+	QString sAdvancedOptionsBoxTitle = tr(ADVANCED_OPTIONS_TITLE) + QString("(%1)").arg(sVersionString);
+	advancedSettingsGroupBox->setTitle(sAdvancedOptionsBoxTitle);
 
 	return;
 }
