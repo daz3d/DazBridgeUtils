@@ -5,7 +5,10 @@
 #include <QtCore/qsettings.h>
 #include <QtGui/qcheckbox.h>
 
-class QPushButton;
+#include <QtGui/qpushbutton.h>
+#include "dzstyledefs.h"
+
+//class QPushButton;
 class QLineEdit;
 class QCheckBox;
 class QComboBox;
@@ -16,6 +19,15 @@ class QLabel;
 class UnitTest_DzBridgeDialog;
 
 #include "dzbridge.h"
+
+class DzBridgeBrowseButton : public QPushButton {
+	Q_OBJECT
+public:
+	DzBridgeBrowseButton(QWidget* parent = nullptr) : QPushButton("...", parent) {
+		this->setFixedWidth(this->fontMetrics().width("...") + style()->pixelMetric(DZ_PM_GeneralMargin) * 2);
+		this->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+	}
+};
 
 namespace DzBridgeNameSpace
 {
