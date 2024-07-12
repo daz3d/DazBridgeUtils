@@ -24,7 +24,12 @@ class DzBridgeBrowseButton : public QPushButton {
 	Q_OBJECT
 public:
 	DzBridgeBrowseButton(QWidget* parent = nullptr) : QPushButton("...", parent) {
-		this->setFixedWidth(this->fontMetrics().width("...") + style()->pixelMetric(DZ_PM_GeneralMargin) * 2);
+		int labelSize = this->fontMetrics().width("...");
+		int minSize = style()->pixelMetric(DZ_PM_ButtonMinWidth);
+		int buttonSize = labelSize;
+		if (labelSize < minSize)
+			buttonSize = minSize;
+		this->setFixedWidth(buttonSize);
 		this->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
 	}
 };

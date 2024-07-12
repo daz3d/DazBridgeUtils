@@ -83,11 +83,11 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	 m_wTargetPluginInstaller = nullptr;
 
 	// Declarations
-	int nStyleMargin = style()->pixelMetric(DZ_PM_GeneralMargin);
-	int nStyleButtonHeight = style()->pixelMetric(DZ_PM_ButtonHeight);
-	int nStyleButtonMinWidth = style()->pixelMetric(DZ_PM_ButtonMinWidth);
+	int m_nStyleMargin = style()->pixelMetric(DZ_PM_GeneralMargin);
+	int m_nStyleButtonHeight = style()->pixelMetric(DZ_PM_ButtonHeight);
+	int m_nStyleButtonMinWidth = style()->pixelMetric(DZ_PM_ButtonMinWidth);
 
-	this->setOptionsMargin(nStyleMargin);
+	this->setOptionsMargin(m_nStyleMargin);
 
 	// Set the dialog title
 	int revision = COMMON_REV % 1000;
@@ -99,10 +99,10 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	setWindowTitle(workingTitle);
 
 	layout()->setSizeConstraint(QLayout::SetFixedSize);
-	layout()->setMargin(nStyleMargin);
+	layout()->setMargin(m_nStyleMargin);
 
 	mainLayout = new QFormLayout();
-	mainLayout->setMargin(nStyleMargin);
+	mainLayout->setMargin(m_nStyleMargin);
 	mainLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
 	QString sSetupModeString = tr("<h4>\
@@ -127,7 +127,7 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 //	advancedLayoutOuter->setMargin(0);
 //	advancedLayoutOuter->addWidget(advancedWidget);
 	advancedLayout = new QFormLayout();
-	advancedLayout->setMargin(nStyleMargin);
+	advancedLayout->setMargin(m_nStyleMargin);
 	advancedLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 //	advancedWidget->setLayout(advancedLayout);
 
@@ -137,7 +137,7 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 
 	// Asset Transfer Type
 	assetTypeCombo = new QComboBox(this);
-	assetTypeCombo->setFixedHeight(nStyleButtonHeight);
+	assetTypeCombo->setFixedHeight(m_nStyleButtonHeight);
 	assetTypeCombo->addItem("Skeletal Mesh");
 	assetTypeCombo->addItem("Static Mesh");
 	assetTypeCombo->addItem("Animation");
@@ -155,7 +155,7 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
     animationSettingsGroupBox = new QGroupBox("Experimental Animation Settings :", this);
 #endif
 	QFormLayout* animationSettingsLayout = new QFormLayout();
-	animationSettingsLayout->setMargin(nStyleMargin);
+	animationSettingsLayout->setMargin(m_nStyleMargin);
 	animationSettingsGroupBox->setLayout(animationSettingsLayout);
 	experimentalAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
 	experimentalAnimationExportCheckBox->setChecked(true);
@@ -243,7 +243,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	// FBX Version
 	fbxVersionCombo = new QComboBox(this);
-	fbxVersionCombo->setFixedHeight(nStyleButtonHeight);
+	fbxVersionCombo->setFixedHeight(m_nStyleButtonHeight);
 	fbxVersionCombo->addItem("FBX 2014 -- Binary");
 	fbxVersionCombo->addItem("FBX 2014 -- Ascii");
 	fbxVersionCombo->addItem("FBX 2013 -- Binary");
@@ -276,7 +276,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	QHBoxLayout* targetPluginInstallerLayout = new QHBoxLayout();
 	targetPluginInstallerLayout->setMargin(0);
 	m_TargetSoftwareVersionCombo = new QComboBox(m_wTargetPluginInstaller);
-	m_TargetSoftwareVersionCombo->setFixedHeight(nStyleButtonHeight);
+	m_TargetSoftwareVersionCombo->setFixedHeight(m_nStyleButtonHeight);
 	m_TargetSoftwareVersionCombo->addItem("Software Version");
 	m_TargetPluginInstallerButton = new QPushButton("Install Plugin", m_wTargetPluginInstaller);
 	connect(m_TargetPluginInstallerButton, SIGNAL(clicked(bool)), this, SLOT(HandleTargetPluginInstallerButton()));
