@@ -52,8 +52,13 @@ DzBridgeBrowseEdit::DzBridgeBrowseEdit(const QString& text, QWidget* parent)
 DzBridgeThinButton::DzBridgeThinButton(const QString& text, QWidget* parent)
 	: QPushButton(text, parent)
 {
+	setText(text);
+}
 
-	int labelSize = this->fontMetrics().width(text);
+void DzBridgeThinButton::setText(const QString& text)
+{
+	QPushButton::setText(text);
+	int labelSize = this->fontMetrics().width("  " + text + "  ");
 	int minSize = this->style()->pixelMetric(DZ_PM_ButtonMinWidth);
 	int buttonSize = labelSize;
 	if (labelSize < minSize)
@@ -423,9 +428,9 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	//	connect(m_wMoreHelpButton, SIGNAL( released() ), this, SLOT( HandleMoreHelpButton() ));
 
-	m_wSupportButton = new DzBridgeThinButton(tr("  Support  "), this);
-	m_wYoutubeButton = new DzBridgeThinButton(tr("  Youtube  "), this);
-	m_wPdfButton = new DzBridgeThinButton(tr("  PDF  "), this);
+	m_wSupportButton = new DzBridgeThinButton(tr("Support"), this);
+	m_wYoutubeButton = new DzBridgeThinButton(tr("Youtube"), this);
+	m_wPdfButton = new DzBridgeThinButton(tr("PDF"), this);
 
 	connect(m_wSupportButton, SIGNAL( released() ), this, SLOT( HandleSupportButton() ));
 	connect(m_wYoutubeButton, SIGNAL( released() ), this, SLOT( HandleYoutubeButton() ));

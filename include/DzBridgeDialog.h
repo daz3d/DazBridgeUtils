@@ -28,6 +28,7 @@ class DzBridgeThinButton : public QPushButton {
 	Q_OBJECT
 public:
 	DzBridgeThinButton(const QString& text, QWidget* parent = nullptr);
+	void setText(const QString& text);
 };
 
 class DzBridgeBrowseButton : public DzBridgeThinButton {
@@ -130,9 +131,9 @@ namespace DzBridgeNameSpace
 
 	protected:
 		// Extra Bottom Row Buttons
-		QPushButton* m_wPdfButton = nullptr;
-		QPushButton* m_wYoutubeButton = nullptr;
-		QPushButton* m_wSupportButton = nullptr;
+		DzBridgeThinButton* m_wPdfButton = nullptr;
+		DzBridgeThinButton* m_wYoutubeButton = nullptr;
+		DzBridgeThinButton* m_wSupportButton = nullptr;
 
 		DzBridgeAction* m_BridgeAction = nullptr;
 		QSettings* settings = nullptr;
