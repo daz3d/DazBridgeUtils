@@ -6068,6 +6068,15 @@ bool DzBridgeAction::combineDiffuseAndAlphaMaps(DzMaterial* Material)
 			if (outputImage.height() != alphaImage.height() ||
 				outputImage.width() != alphaImage.width())
 			{
+				// if outputImage is too small (<64 pixels) then resize to alphaImage dim (if > 64)
+				int dw = outputImage.width();
+				int dh = outputImage.height();
+				int aw = alphaImage.width();
+				int ah = alphaImage.height();
+				if ((dw < 64 && dh < 64) && (aw > 64 || ah > 64)) {
+					outputImage = outputImage.scaled(aw, ah, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+				}
+
 				// scale diffuse to power of 2
 				if (!ImageTools::isPowerOfTwo(outputImage.height()) || !ImageTools::isPowerOfTwo(outputImage.width()))
 				{
