@@ -17,5 +17,7 @@ set(QA_SRCS
 	${CMAKE_CURRENT_SOURCE_DIR}/UnitTest_DzBridgeMorphSelectionDialog.h
 	${CMAKE_CURRENT_SOURCE_DIR}/UnitTest_DzBridgeSubdivisionDialog.cpp
 	${CMAKE_CURRENT_SOURCE_DIR}/UnitTest_DzBridgeSubdivisionDialog.h
+	${CMAKE_CURRENT_SOURCE_DIR}/DzBridgeAction_Scriptable.h
+	${CMAKE_CURRENT_SOURCE_DIR}/DzBridgeAction_Scriptable.cpp
 )
 set(QA_SRCS ${QA_SRCS} PARENT_SCOPE)
