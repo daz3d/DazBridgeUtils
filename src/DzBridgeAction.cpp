@@ -6151,8 +6151,10 @@ bool DzBridgeAction::undoCombineDiffuseAndAlphaMaps()
                 
 	foreach(DiffuseAndAlphaMapsUndoData undoData, m_undoList_CombineDiffuseAndAlphaMaps)
 	{
-		undoData.diffuseProperty->setMap(undoData.colorMapName);
-		undoData.cutoutProperty->setMap(undoData.cutoutMapName);
+		if (undoData.diffuseProperty && !undoData.colorMapName.isEmpty() && undoData.colorMapName != "")
+			undoData.diffuseProperty->setMap(undoData.colorMapName);
+		if (undoData.cutoutProperty && !undoData.cutoutMapName.isEmpty() && undoData.cutoutMapName != "")
+			undoData.cutoutProperty->setMap(undoData.cutoutMapName);
 	}
 	m_undoList_CombineDiffuseAndAlphaMaps.clear();
 
