@@ -11,10 +11,10 @@
 
 #include "dzbridge.h"
 
-class DzBridgeAction : public DzBridgeNameSpace::DzBridgeAction {
+class DzBridgeAction_Scriptable : public DzBridgeNameSpace::DzBridgeAction {
 	Q_OBJECT
 public:
-	DzBridgeAction();
+	DzBridgeAction_Scriptable();
 
 	Q_INVOKABLE void resetToDefaults();
 	QString readGuiRootFolder();

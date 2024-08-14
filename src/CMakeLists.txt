@@ -83,14 +83,6 @@ add_library(dzbridge-shared
 	${OSDI_SOURCES}
 	${MINI_LIBZIP_SOURCES}
 	pluginmain.cpp
-	DzBridgeAction_Scriptable.h
-	DzBridgeAction_Scriptable.cpp
-	DzBridgeMorphSelectionDialog_Scriptable.h
-	DzBridgeMorphSelectionDialog_Scriptable.cpp
-	DzBridgeSubdivisionDialog_Scriptable.h
-	DzBridgeSubdivisionDialog_Scriptable.cpp
-	DzBridgeDialog_Scriptable.h
-	DzBridgeDialog_Scriptable.cpp
 )
 
 target_include_directories(dzbridge-shared

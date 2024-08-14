@@ -13,7 +13,7 @@ using namespace DzBridgeNameSpace;
 /// </summary>
 UnitTest_DzBridgeAction::UnitTest_DzBridgeAction()
 {
-	m_testObject = (QObject*) new ::DzBridgeAction();
+	m_testObject = (QObject*) new ::DzBridgeAction_Scriptable();
 }
 
 /// <summary>

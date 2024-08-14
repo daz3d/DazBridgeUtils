@@ -24,11 +24,13 @@
 #include "dzuri.h"
 
 #include "DzBridgeAction_Scriptable.h"
-#include "DzBridgeDialog_Scriptable.h"
-#include "DzBridgeMorphSelectionDialog_Scriptable.h"
-#include "DzBridgeSubdivisionDialog_Scriptable.h"
+#include "DzBridgeDialog.h"
+#include "DzBridgeSubdivisionDialog.h"
+//#include "DzBridgeMorphSelectionDialog.h"
 
-DzBridgeAction::DzBridgeAction() :
+using namespace DzBridgeNameSpace;
+
+DzBridgeAction_Scriptable::DzBridgeAction_Scriptable() :
 	 DzBridgeNameSpace::DzBridgeAction(tr("Daz &Scriptable Bridge"), tr("Send the selected node to Daz Scriptable Bridge."))
 {
      m_nNonInteractiveMode = 0;
@@ -43,7 +45,7 @@ DzBridgeAction::DzBridgeAction() :
 	 m_bGenerateNormalMaps = false;
 }
 
-void DzBridgeAction::executeAction()
+void DzBridgeAction_Scriptable::executeAction()
 {
 	 // Check if the main window has been created yet.
 	 // If it hasn't, alert the user and exit early.
@@ -133,7 +135,7 @@ void DzBridgeAction::executeAction()
     }
 }
 
-void DzBridgeAction::writeConfiguration()
+void DzBridgeAction_Scriptable::writeConfiguration()
 {
 	 QString DTUfilename = m_sDestinationPath + m_sExportFilename + ".dtu";
 	 QFile DTUfile(DTUfilename);
@@ -192,14 +194,14 @@ void DzBridgeAction::writeConfiguration()
 }
 
 // Setup custom FBX export options
-void DzBridgeAction::setExportOptions(DzFileIOSettings& ExportOptions)
+void DzBridgeAction_Scriptable::setExportOptions(DzFileIOSettings& ExportOptions)
 {
 
 }
 
 // Overrides baseclass implementation with Unreal specific resets
 // Resets Default Values but Ignores any saved settings
-void DzBridgeAction::resetToDefaults()
+void DzBridgeAction_Scriptable::resetToDefaults()
 {
 	DzBridgeNameSpace::DzBridgeAction::resetToDefaults();
 
@@ -225,7 +227,7 @@ void DzBridgeAction::resetToDefaults()
 
 }
 
-QString DzBridgeAction::readGuiRootFolder()
+QString DzBridgeAction_Scriptable::readGuiRootFolder()
 {
 	QString rootFolder = QDesktopServices::storageLocation(QDesktopServices::DocumentsLocation) + QDir::separator() + "DazBridge";
 	rootFolder = rootFolder.replace("\\","/");

@@ -3859,21 +3859,40 @@ QMessageBox::Yes);
 		m_aPoseExportList = BridgeDialog->GetPoseList();
 	}
 
-	m_EnableSubdivisions = BridgeDialog->getSubdivisionEnabledCheckBox()->isChecked();
-	m_bShowFbxOptions = BridgeDialog->getShowFbxDialogCheckBox()->isChecked();
-	m_sFbxVersion = BridgeDialog->getFbxVersionCombo()->currentText();
-	m_bGenerateNormalMaps = BridgeDialog->getEnableNormalMapGenerationCheckBox()->isChecked();
+	// DB 2024-07-26: Must check if widget is available before setting member variables, since derived classes may not have them exposed
+	if (BridgeDialog->getSubdivisionEnabledCheckBox()->isVisible())
+		m_EnableSubdivisions = BridgeDialog->getSubdivisionEnabledCheckBox()->isChecked();
 
-	m_bAnimationUseExperimentalTransfer = BridgeDialog->getExperimentalAnimationExportCheckBox()->isChecked();
-	m_bAnimationBake = BridgeDialog->getBakeAnimationExportCheckBox()->isChecked();
-	m_bAnimationTransferFace = BridgeDialog->getFaceAnimationExportCheckBox()->isChecked();
-	m_bAnimationExportActiveCurves = BridgeDialog->getAnimationExportActiveCurvesCheckBox()->isChecked();
-	m_bAnimationApplyBoneScale = BridgeDialog->getAnimationApplyBoneScaleCheckBox()->isChecked();
+	if (BridgeDialog->getShowFbxDialogCheckBox()->isVisible())
+		m_bShowFbxOptions = BridgeDialog->getShowFbxDialogCheckBox()->isChecked();
 
-	m_bMorphLockBoneTranslation = BridgeDialog->getMorphLockBoneTranslationCheckBox()->isChecked();
+	if (BridgeDialog->getFbxVersionCombo()->isVisible())
+		m_sFbxVersion = BridgeDialog->getFbxVersionCombo()->currentText();
+
+	if (BridgeDialog->getEnableNormalMapGenerationCheckBox()->isVisible())
+		m_bGenerateNormalMaps = BridgeDialog->getEnableNormalMapGenerationCheckBox()->isChecked();
+
+	if (BridgeDialog->getExperimentalAnimationExportCheckBox()->isVisible())
+		m_bAnimationUseExperimentalTransfer = BridgeDialog->getExperimentalAnimationExportCheckBox()->isChecked();
+
+	if (BridgeDialog->getBakeAnimationExportCheckBox()->isVisible())
+		m_bAnimationBake = BridgeDialog->getBakeAnimationExportCheckBox()->isChecked();
+
+	if (BridgeDialog->getFaceAnimationExportCheckBox()->isVisible())
+		m_bAnimationTransferFace = BridgeDialog->getFaceAnimationExportCheckBox()->isChecked();
+
+	if (BridgeDialog->getAnimationExportActiveCurvesCheckBox()->isVisible())
+		m_bAnimationExportActiveCurves = BridgeDialog->getAnimationExportActiveCurvesCheckBox()->isChecked();
+
+	if (BridgeDialog->getAnimationApplyBoneScaleCheckBox()->isVisible())
+		m_bAnimationApplyBoneScale = BridgeDialog->getAnimationApplyBoneScaleCheckBox()->isChecked();
+
+	if (BridgeDialog->getMorphLockBoneTranslationCheckBox()->isVisible())
+		m_bMorphLockBoneTranslation = BridgeDialog->getMorphLockBoneTranslationCheckBox()->isChecked();
 
 	// LOD settings
-	m_bEnableLodGeneration = BridgeDialog->getEnableLodCheckBox()->isChecked();
+	if (BridgeDialog->getEnableLodCheckBox()->isVisible())
+		m_bEnableLodGeneration = BridgeDialog->getEnableLodCheckBox()->isChecked();
 
 	return true;
 }
@@ -6068,6 +6087,15 @@ bool DzBridgeAction::combineDiffuseAndAlphaMaps(DzMaterial* Material)
 			if (outputImage.height() != alphaImage.height() ||
 				outputImage.width() != alphaImage.width())
 			{
+				// if outputImage is too small (<64 pixels) then resize to alphaImage dim (if > 64)
+				int dw = outputImage.width();
+				int dh = outputImage.height();
+				int aw = alphaImage.width();
+				int ah = alphaImage.height();
+				if ((dw < 64 && dh < 64) && (aw > 64 || ah > 64)) {
+					outputImage = outputImage.scaled(aw, ah, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+				}
+
 				// scale diffuse to power of 2
 				if (!ImageTools::isPowerOfTwo(outputImage.height()) || !ImageTools::isPowerOfTwo(outputImage.width()))
 				{
@@ -6123,8 +6151,10 @@ bool DzBridgeAction::undoCombineDiffuseAndAlphaMaps()
                 
 	foreach(DiffuseAndAlphaMapsUndoData undoData, m_undoList_CombineDiffuseAndAlphaMaps)
 	{
-		undoData.diffuseProperty->setMap(undoData.colorMapName);
-		undoData.cutoutProperty->setMap(undoData.cutoutMapName);
+		if (undoData.diffuseProperty && !undoData.colorMapName.isEmpty() && undoData.colorMapName != "")
+			undoData.diffuseProperty->setMap(undoData.colorMapName);
+		if (undoData.cutoutProperty && !undoData.cutoutMapName.isEmpty() && undoData.cutoutMapName != "")
+			undoData.cutoutProperty->setMap(undoData.cutoutMapName);
 	}
 	m_undoList_CombineDiffuseAndAlphaMaps.clear();
 
