@@ -3800,7 +3800,7 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 
 	if (preCheckEnableMorphs)
 	{
-		if (checkForIrreversibleOperations_in_disconnectOverrideControllers() == true && m_nNonInteractiveMode == 0)
+		if (checkForIrreversibleOperations_in_disconnectOverrideControllers() == true && m_nNonInteractiveMode == 0 )
 		{
 			// Sanity Check:  should always be false in this execution pathway
 			if (preCheckMorphDoubleDipping == true)
@@ -3824,15 +3824,15 @@ QMessageBox::Yes);
 	}
 
 	// Collect the values from the dialog fields
-	if (m_sAssetName == "" || m_nNonInteractiveMode == 0) m_sAssetName = BridgeDialog->getAssetNameEdit()->text();
-	if (m_sExportFilename == "" || m_nNonInteractiveMode == 0) m_sExportFilename = m_sAssetName;
-	if (m_sRootFolder == "" || m_nNonInteractiveMode == 0) m_sRootFolder = readGuiRootFolder();
-	if (m_sExportSubfolder == "" || m_nNonInteractiveMode == 0) m_sExportSubfolder = m_sExportFilename;
+	if (m_sAssetName == "" || isInteractiveMode() ) m_sAssetName = BridgeDialog->getAssetNameEdit()->text();
+	if (m_sExportFilename == "" || isInteractiveMode() ) m_sExportFilename = m_sAssetName;
+	if (m_sRootFolder == "" || isInteractiveMode() ) m_sRootFolder = readGuiRootFolder();
+	if (m_sExportSubfolder == "" || isInteractiveMode() ) m_sExportSubfolder = m_sExportFilename;
 	m_sDestinationPath = m_sRootFolder + "/" + m_sExportSubfolder + "/";
-	if (m_sExportFbx == "" || m_nNonInteractiveMode == 0) m_sExportFbx = m_sExportFilename;
+	if (m_sExportFbx == "" || isInteractiveMode() ) m_sExportFbx = m_sExportFilename;
 	m_sDestinationFBX = m_sDestinationPath + m_sExportFbx + ".fbx";
 
-	if (m_nNonInteractiveMode == 0)
+	if ( isInteractiveMode() )
 	{
 		// TODO: consider removing once findData( ) method above is completely implemented
 		//m_sAssetType = cleanString(BridgeDialog->getAssetTypeCombo()->currentText());
@@ -6342,5 +6342,26 @@ bool DzBridgeAction::isAssetPoseCompatible(QString sAssetType)
 
 	return false;
 }
+
+bool DzBridgeAction::isInteractiveMode()
+{
+	bool isInteractive = false;
+
+	switch (m_nNonInteractiveMode) {
+
+	case eNonInteractiveMode::FullInteractiveMode:
+	case eNonInteractiveMode::ReducedPopup:
+		isInteractive = true;
+		break;
+
+	case eNonInteractiveMode::ScriptMode:
+	default:
+		isInteractive = false;
+		break;
+	}
+
+	return isInteractive;
+}
+
 
 #include "moc_DzBridgeAction.cpp"

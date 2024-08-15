@@ -38,6 +38,12 @@ namespace DzBridgeNameSpace
 		float threshold_screen_height = -1.0f;
 	};
 
+	enum eNonInteractiveMode {
+		FullInteractiveMode = 0, // default, all GUI
+		ScriptMode = 1, // script mode, no GUI
+		ReducedPopup = 2 // used by DzBlenderExporter
+	};
+
 	/// <summary>
 	/// Abstract base class that manages exporting of assets to Target Software via FBX/DTU
 	/// intermediate files.  Manages destination filepaths, morphs, subdivisions, animations, etc.
@@ -132,6 +138,8 @@ namespace DzBridgeNameSpace
 		} m_nCalcCRC32ResultCode = CalcCRC32ResultCodes::SUCCESS;
 
 		QList<LodInfo*> m_aLodInfo;
+
+		Q_INVOKABLE virtual bool isInteractiveMode();
 
 	protected:
 		// Struct to remember attachment info
