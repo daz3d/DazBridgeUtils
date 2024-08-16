@@ -3,6 +3,7 @@
 #include "dzoptionsdialog.h"
 #include <QtGui/qcheckbox.h>
 #include <QtGui/qpushbutton.h>
+#include "dzmenubutton.h"
 #include "dzstyledefs.h"
 
 class QPushButton;
@@ -13,10 +14,17 @@ class QGroupBox;
 class QFormLayout;
 class QLabel;
 class QSettings;
+class DzMenuButton;
 
 class UnitTest_DzBridgeDialog;
 
 #include "dzbridge.h"
+
+class DzBridgeDialogTools
+{
+public:
+	static void SetThinButtonText(QPushButton* widget, const QString& text);
+};
 
 class DzBridgeBrowseEdit : public QWidget {
 	Q_OBJECT
@@ -105,6 +113,10 @@ namespace DzBridgeNameSpace
 
 		void accept() override;
 
+		// Used to set universal width for all row labels.  Append rowlabel widgets that are added using Layout::addRow() method
+		QList<QLabel*> aRowLabels;
+		virtual void fixRowLabelWidths();
+
 	protected slots:
 		virtual void handleSceneSelectionChanged();
 		virtual int  HandleChooseMorphsButton();
@@ -128,12 +140,14 @@ namespace DzBridgeNameSpace
 		virtual void HandlePdfButton();
 		virtual void HandleYoutubeButton();
 		virtual void HandleSupportButton();
+		virtual void HandleHelpMenuButton(int);
 
 	protected:
 		// Extra Bottom Row Buttons
-		DzBridgeThinButton* m_wPdfButton = nullptr;
-		DzBridgeThinButton* m_wYoutubeButton = nullptr;
-		DzBridgeThinButton* m_wSupportButton = nullptr;
+		DzMenuButton* wHelpMenuButton = nullptr;
+#define BRIDGE_HELP_ID_PDF 0
+#define BRIDGE_HELP_ID_YOUTUBE 1
+#define BRIDGE_HELP_ID_SUPPORT 2
 
 		DzBridgeAction* m_BridgeAction = nullptr;
 		QSettings* settings = nullptr;
@@ -193,7 +207,7 @@ namespace DzBridgeNameSpace
 		// LOD settings
 		QPushButton* m_wLodSettingsButton = nullptr;
 		QCheckBox* m_wEnableLodCheckBox = nullptr;
-		QWidget* m_wLodRowLabelWidget = nullptr;
+		QLabel* m_wLodRowLabelWidget = nullptr;
 
 		QString m_sEmbeddedFilesPath = ":/DazBridge";
 		bool m_bDontSaveSettings = false;

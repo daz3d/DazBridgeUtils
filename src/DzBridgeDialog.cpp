@@ -24,6 +24,7 @@
 #include "dzactionmgr.h"
 #include "dzaction.h"
 #include "dzskeleton.h"
+#include "dzmenubutton.h"
 
 #include "DzBridgeAction.h"
 #include "DzBridgeDialog.h"
@@ -55,16 +56,21 @@ DzBridgeThinButton::DzBridgeThinButton(const QString& text, QWidget* parent)
 	setText(text);
 }
 
-void DzBridgeThinButton::setText(const QString& text)
+void DzBridgeDialogTools::SetThinButtonText(QPushButton* widget, const QString& text)
 {
-	QPushButton::setText(text);
-	int labelSize = this->fontMetrics().width("  " + text + "  ");
-	int minSize = this->style()->pixelMetric(DZ_PM_ButtonMinWidth);
+	widget->setText(text);
+	int labelSize = widget->fontMetrics().width("  " + text + "  ");
+	int minSize = widget->style()->pixelMetric(DZ_PM_ButtonMinWidth);
 	int buttonSize = labelSize;
 	if (labelSize < minSize)
 		buttonSize = minSize;
-	this->setFixedWidth(buttonSize);
-	this->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+	widget->setFixedWidth(buttonSize);
+	widget->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Preferred);
+}
+
+void DzBridgeThinButton::setText(const QString& text)
+{
+	DzBridgeDialogTools::SetThinButtonText(this, text);
 }
 
 bool DzBridgeDialog::setBridgeActionObject(QObject* arg) {
@@ -187,7 +193,9 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	animationSettingsGroupBox->setLayout(animationSettingsLayout);
 	experimentalAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
 	experimentalAnimationExportCheckBox->setChecked(true);
-	animationSettingsLayout->addRow("Use New Export", experimentalAnimationExportCheckBox);
+	QLabel* wExperimentalAnimationOptionRowLabel = new QLabel(tr("Use new Export"));
+	animationSettingsLayout->addRow(wExperimentalAnimationOptionRowLabel, experimentalAnimationExportCheckBox);
+	aRowLabels.append(wExperimentalAnimationOptionRowLabel);
 
     // DB 2023-Aug-09: bake animation does not appear to be hooked up to anything, disabling for now
 	bakeAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
@@ -196,11 +204,17 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
     bakeAnimationExportCheckBox->setDisabled(true);
 
 	faceAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
-	animationSettingsLayout->addRow("Transfer Face Bones", faceAnimationExportCheckBox);
+	QLabel* wFaceAnimationExportOptionRowLabel = new QLabel(tr("Transfer Face Bones"));
+	animationSettingsLayout->addRow(wFaceAnimationExportOptionRowLabel, faceAnimationExportCheckBox);
+	aRowLabels.append(wFaceAnimationExportOptionRowLabel);
 	animationExportActiveCurvesCheckBox = new QCheckBox("", animationSettingsGroupBox);
-	animationSettingsLayout->addRow("Transfer Active Curves", animationExportActiveCurvesCheckBox);
+	QLabel* wAnimationExportActiveCurvesOptionRowLabel = new QLabel(tr("Transfer Active Curves"));
+	animationSettingsLayout->addRow(wAnimationExportActiveCurvesOptionRowLabel, animationExportActiveCurvesCheckBox);
+	aRowLabels.append(wAnimationExportActiveCurvesOptionRowLabel);
 	animationApplyBoneScaleCheckBox = new QCheckBox("", animationSettingsGroupBox);
-	animationSettingsLayout->addRow("Apply Bone Scale", animationApplyBoneScaleCheckBox);
+	QLabel* wAnimationApplyBoneScaleOptionRowLabel = new QLabel(tr("Apply Bone Scale"));
+	animationSettingsLayout->addRow(wAnimationApplyBoneScaleOptionRowLabel, animationApplyBoneScaleCheckBox);
+	aRowLabels.append(wAnimationApplyBoneScaleOptionRowLabel);
 	animationSettingsGroupBox->setVisible(false);
 
 	animationSettingsLayout->invalidate();
@@ -244,7 +258,9 @@ better quality.  **DOES NOT EXPORT MESH**";
 	morphSettingsGroupBox->setLayout(morphSettingsLayout);
 	morphLockBoneTranslationCheckBox = new QCheckBox("", morphSettingsGroupBox);
 	morphLockBoneTranslationCheckBox->setChecked(false);
-	morphSettingsLayout->addRow(tr("Lock Bone Translation for Morphs"), morphLockBoneTranslationCheckBox);
+	QLabel* wMorphLockBoneTranslationOptionRowLabel = new QLabel(tr("Lock Bone Translation for Morphs"));
+	morphSettingsLayout->addRow(wMorphLockBoneTranslationOptionRowLabel, morphLockBoneTranslationCheckBox);
+	aRowLabels.append(wMorphLockBoneTranslationOptionRowLabel);
 	morphSettingsGroupBox->setVisible(false);
 
 	// Subdivision
@@ -337,35 +353,47 @@ better quality.  **DOES NOT EXPORT MESH**";
 	// Add the widget to the basic dialog
 	m_wAssetNameRowLabelWidget = new QLabel(tr("Asset Name"));
 	mainLayout->addRow(m_wAssetNameRowLabelWidget, assetNameEdit);
+	aRowLabels.append(m_wAssetNameRowLabelWidget);
 	m_wAssetTypeRowLabelWidget = new QLabel(tr("Asset Type"));
 	mainLayout->addRow(m_wAssetTypeRowLabelWidget, assetTypeCombo);
+	aRowLabels.append(m_wAssetTypeRowLabelWidget);
 	m_wMorphsRowLabelWidget = new QLabel(tr("Export Morphs"));
 	mainLayout->addRow(m_wMorphsRowLabelWidget, morphsLayout);
+	aRowLabels.append(m_wMorphsRowLabelWidget);
 	m_wSubDRowLabelWidget = new QLabel(tr("Bake Subdivision"));
 	mainLayout->addRow(m_wSubDRowLabelWidget, subdivisionLayout);
+	aRowLabels.append(m_wSubDRowLabelWidget);
 
 	// Create LOD Row, then store lod row widget, then hide row as default state
 	m_wLodRowLabelWidget = new QLabel(tr("Enable LOD"));
 	mainLayout->addRow(m_wLodRowLabelWidget, lodSettingsLayout);
+	aRowLabels.append(m_wLodRowLabelWidget);
 	this->showLodRow(false);
 
 	// Advanced Settings Layout
 //	advancedLayout->addRow("", m_BridgeVersionLabel);
 #ifndef VODSVERSION
-	advancedLayout->addRow("Install Destination Plugin", m_wTargetPluginInstaller);
+	QLabel* wTargetPluginInstallerRowLabel = new QLabel(tr("Install Destination Plugin"));
+	advancedLayout->addRow(wTargetPluginInstallerRowLabel, m_wTargetPluginInstaller);
+	aRowLabels.append(wTargetPluginInstallerRowLabel);
 #endif
 	advancedLayout->addRow("", m_OpenIntermediateFolderButton);
 	showTargetPluginInstaller(false);
 	m_wFbxVersionRowLabelWidget = new QLabel(tr("FBX Version"));
 	advancedLayout->addRow(m_wFbxVersionRowLabelWidget, fbxVersionCombo);
+	aRowLabels.append(m_wFbxVersionRowLabelWidget);
 	m_wShowFbxRowLabelWidget = new QLabel(tr("Show FBX Dialog"));
 	advancedLayout->addRow(m_wShowFbxRowLabelWidget, showFbxDialogCheckBox);
+	aRowLabels.append(m_wShowFbxRowLabelWidget);
 	m_wNormalMapsRowLabelWidget = new QLabel(tr("Generate Normal Maps"));
 	advancedLayout->addRow(m_wNormalMapsRowLabelWidget, enableNormalMapGenerationCheckBox);
+	aRowLabels.append(m_wNormalMapsRowLabelWidget);
 	m_wExportCsvRowLabelWidget = new QLabel(tr("Export Material CSV"));
 	advancedLayout->addRow(m_wExportCsvRowLabelWidget, exportMaterialPropertyCSVCheckBox);
+	aRowLabels.append(m_wExportCsvRowLabelWidget);
 	m_wEnableExperimentalRowLabelWidget = new QLabel(tr("Enable Experimental Options"));
 	advancedLayout->addRow(m_wEnableExperimentalRowLabelWidget, m_enableExperimentalOptionsCheckBox);
+	aRowLabels.append(m_wEnableExperimentalRowLabelWidget);
 
 	m_wMainGroupBox = new QGroupBox(tr("Main Export Options : "));
 	m_wMainGroupBox->setMinimumWidth(500);
@@ -410,6 +438,8 @@ better quality.  **DOES NOT EXPORT MESH**";
 	m_wLodSettingsButton->setWhatsThis(sLodSettingsHelp);
 	m_wLodSettingsButton->setToolTip(sLodSettingsHelp);
 
+	// Set Universal Width for all Row Labels
+	fixRowLabelWidths();
 
 	// detect scene change
 	connect(dzScene, SIGNAL(nodeSelectionListChanged()), this, SLOT(handleSceneSelectionChanged()));
@@ -426,23 +456,19 @@ better quality.  **DOES NOT EXPORT MESH**";
 	m_WelcomeLabel->setVisible(true);
 #endif
 
-	//	connect(m_wMoreHelpButton, SIGNAL( released() ), this, SLOT( HandleMoreHelpButton() ));
-
-	m_wSupportButton = new DzBridgeThinButton(tr("Support"), this);
-	m_wYoutubeButton = new DzBridgeThinButton(tr("Youtube"), this);
-	m_wPdfButton = new DzBridgeThinButton(tr("PDF"), this);
-
-	connect(m_wSupportButton, SIGNAL( released() ), this, SLOT( HandleSupportButton() ));
-	connect(m_wYoutubeButton, SIGNAL( released() ), this, SLOT( HandleYoutubeButton() ));
-	connect(m_wPdfButton, SIGNAL( released() ), this, SLOT( HandlePdfButton() ));
-
-	this->addButton(m_wSupportButton);
-	this->addButton(m_wYoutubeButton);
-	this->addButton(m_wPdfButton);
-
-	m_wSupportButton->hide();
-	m_wYoutubeButton->hide();
-	m_wPdfButton->hide();
+	wHelpMenuButton = new DzMenuButton(0, tr("BridgeHelpMenu"));
+	wHelpMenuButton->setIndeterminateText(tr("Help"), true);
+	this->addButton(wHelpMenuButton);
+	wHelpMenuButton->style()->pixelMetric(DZ_PM_ButtonMinWidth);
+	wHelpMenuButton->adjustSize();
+//	int help_width = wHelpMenuButton->width();
+	DzBridgeDialogTools::SetThinButtonText(wHelpMenuButton, tr("Help") + "       ");
+	wHelpMenuButton->insertItem(tr("PDF..."), BRIDGE_HELP_ID_PDF);
+	wHelpMenuButton->insertItem(tr("Youtube Tutorials..."), BRIDGE_HELP_ID_YOUTUBE);
+	wHelpMenuButton->insertItem(tr("Request Support..."), BRIDGE_HELP_ID_SUPPORT);
+//	wHelpMenuButton->setFixedWidth(help_width);
+	connect(wHelpMenuButton, SIGNAL(menuIndexSelected(int)), this, SLOT(HandleHelpMenuButton(int)));
+	wHelpMenuButton->hide();
 
 	layout()->invalidate();
 
@@ -1076,6 +1102,56 @@ void DzBridgeDialog::HandleSupportButton()
 {
 	QMessageBox::information(0, "Daz Bridge",
 		tr("INFO: Support button is not configured."));
+}
+
+void DzBridgeDialog::HandleHelpMenuButton(int)
+{
+	int id = wHelpMenuButton->getSelectionID();
+
+	switch (id) {
+	case BRIDGE_HELP_ID_PDF:
+		HandlePdfButton();
+		break;
+
+	case BRIDGE_HELP_ID_YOUTUBE:
+		HandleYoutubeButton();
+		break;
+
+	case BRIDGE_HELP_ID_SUPPORT:
+		HandleSupportButton();
+		break;
+
+	}
+
+	wHelpMenuButton->setIndeterminate();
+}
+
+void DzBridgeDialog::fixRowLabelWidths()
+{
+	int largest_width = 0;
+	foreach(QLabel * pRowLabel, aRowLabels)
+	{
+		if (pRowLabel->isHidden()) continue;
+		// add colon if not in string
+		QString sLabel = pRowLabel->text();
+		if (sLabel.endsWith(":") == false) {
+			sLabel.append(" :");
+		}
+		pRowLabel->setText(sLabel);
+#define MAX(A,B) (A>B)?A:B
+		pRowLabel->adjustSize();
+		int this_width = pRowLabel->sizeHint().width();
+		largest_width = MAX(largest_width, this_width);
+#undef MAX
+	}
+	foreach(QLabel * pRowLabel, aRowLabels)
+	{
+		if (pRowLabel->isHidden()) continue;
+		pRowLabel->setFixedWidth(largest_width);
+		// right align
+		pRowLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+	}
+
 }
 
 #include "moc_DzBridgeDialog.cpp"
