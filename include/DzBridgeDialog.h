@@ -1,5 +1,6 @@
 #pragma once
 //#include "dzbasicdialog.h"
+#include <QtGui/qdialog.h>
 #include "dzoptionsdialog.h"
 #include <QtGui/qcheckbox.h>
 #include <QtGui/qpushbutton.h>
@@ -94,10 +95,6 @@ namespace DzBridgeNameSpace
 		/** Destructor **/
 		virtual ~DzBridgeDialog() {}
 
-		// Pass so the DazToUnrealAction can access it from the morph dialog
-//		Q_INVOKABLE QString GetMorphString();
-		// Pass so the DazToUnrealAction can access it from the morph dialog
-//		Q_INVOKABLE QMap<QString, QString> GetMorphMappingFromMorphSelectionDialog();
 		Q_INVOKABLE QList<QString> GetPoseList();
 		Q_INVOKABLE virtual void resetToDefaults();
 		Q_INVOKABLE virtual bool loadSavedSettings();
@@ -114,8 +111,14 @@ namespace DzBridgeNameSpace
 		void accept() override;
 
 		// Used to set universal width for all row labels.  Append rowlabel widgets that are added using Layout::addRow() method
-		QList<QLabel*> aRowLabels;
+		QList<QLabel*> m_aRowLabels;
 		virtual void fixRowLabelWidths();
+		virtual void fixRowLabelStyle();
+
+		virtual void toggleOptions() override { DzOptionsDialog::toggleOptions(); fixRowLabelWidths(); };
+
+	protected:
+		virtual void showEvent(QShowEvent* event) override { QDialog::showEvent(event); fixRowLabelWidths(); }
 
 	protected slots:
 		virtual void handleSceneSelectionChanged();
@@ -180,7 +183,6 @@ namespace DzBridgeNameSpace
 
         // Advanced settings
 		QGroupBox* advancedSettingsGroupBox = nullptr;
-//		QWidget* advancedWidget = nullptr;
 		QComboBox* fbxVersionCombo = nullptr;
 		QCheckBox* showFbxDialogCheckBox = nullptr;
 		QCheckBox* enableNormalMapGenerationCheckBox = nullptr;
@@ -188,7 +190,6 @@ namespace DzBridgeNameSpace
 		QWidget* m_wTargetPluginInstaller = nullptr;
 		QPushButton* m_TargetPluginInstallerButton = nullptr;
 		QComboBox* m_TargetSoftwareVersionCombo = nullptr;
-//		QLabel* m_BridgeVersionLabel = nullptr;
 		QPushButton* m_OpenIntermediateFolderButton = nullptr;
         QCheckBox* m_enableExperimentalOptionsCheckBox = nullptr;
 

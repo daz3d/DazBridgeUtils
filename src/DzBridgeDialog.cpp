@@ -154,15 +154,10 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	mainLayout->addRow(m_WelcomeLabel);
 #endif
 
-//	advancedWidget = new QWidget();
-//	QHBoxLayout* advancedLayoutOuter = new QHBoxLayout();
-//	advancedLayoutOuter->setContentsMargin(0);
-//	advancedLayoutOuter->addWidget(advancedWidget);
 	advancedLayout = new QFormLayout();
 	advancedLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
 	advancedLayout->setSpacing(nStyleMargin);
 	advancedLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
-//	advancedWidget->setLayout(advancedLayout);
 
 	// Asset Name
 	assetNameEdit = new QLineEdit(this);
@@ -177,7 +172,6 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	assetTypeCombo->addItem("Animation");
 	assetTypeCombo->addItem("Environment");
 	assetTypeCombo->addItem("Pose");
-	//assetTypeCombo->addItem("MLDeformer");
 	connect(assetTypeCombo, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(HandleAssetTypeComboChange(const QString&)));
 	// Connect new asset type handler
 	connect(assetTypeCombo, SIGNAL(activated(int)), this, SLOT(HandleAssetTypeComboChange(int)));
@@ -322,6 +316,11 @@ better quality.  **DOES NOT EXPORT MESH**";
 	exportMaterialPropertyCSVCheckBox = new QCheckBox("", this);
 	connect(exportMaterialPropertyCSVCheckBox, SIGNAL(stateChanged(int)), this, SLOT(HandleExportMaterialPropertyCSVCheckBoxChange(int)));
 
+	// Use this->getEnableExperimentalOptions() to query state, see HandleAssetTypeComboChange() for example
+	// Enable Experimental Settings
+	m_enableExperimentalOptionsCheckBox = new QCheckBox("", this);
+	connect(m_enableExperimentalOptionsCheckBox, SIGNAL(clicked(bool)), this, SLOT(HandleExperimentalOptionsCheckBoxClicked()));
+
 	// Install Destination Software Bridge
 #ifndef VODSVERSION
 	m_wTargetPluginInstaller = new QWidget();
@@ -347,81 +346,81 @@ better quality.  **DOES NOT EXPORT MESH**";
 	m_OpenIntermediateFolderButton = new QPushButton(tr("Open Intermediate Folder..."));
 	connect(m_OpenIntermediateFolderButton, SIGNAL(clicked(bool)), this, SLOT(HandleOpenIntermediateFolderButton()));
 
-    // Use this->getEnableExperimentalOptions() to query state, see HandleAssetTypeComboChange() for example
-    // Enable Experimental Settings
-    m_enableExperimentalOptionsCheckBox = new QCheckBox("", this);
-	connect(m_enableExperimentalOptionsCheckBox, SIGNAL(clicked(bool)), this, SLOT(HandleExperimentalOptionsCheckBoxClicked()));
-                                  
+	///////////////////////////////////////
+	// Add Widgets to Main Layout
+	///////////////////////////////////////
+
 	// Add the widget to the basic dialog
 	m_wAssetNameRowLabelWidget = new QLabel(tr("Asset Name"));
 	mainLayout->addRow(m_wAssetNameRowLabelWidget, assetNameEdit);
-	aRowLabels.append(m_wAssetNameRowLabelWidget);
+	m_aRowLabels.append(m_wAssetNameRowLabelWidget);
 	m_wAssetTypeRowLabelWidget = new QLabel(tr("Asset Type"));
 	mainLayout->addRow(m_wAssetTypeRowLabelWidget, assetTypeCombo);
-	aRowLabels.append(m_wAssetTypeRowLabelWidget);
+	m_aRowLabels.append(m_wAssetTypeRowLabelWidget);
+
+	// Add Animation settings to the main layout as a new row without header
+	mainLayout->addRow("", animationSettingsGroupBox);
+
 	m_wMorphsRowLabelWidget = new QLabel(tr("Export Morphs"));
 	mainLayout->addRow(m_wMorphsRowLabelWidget, morphsLayout);
-	aRowLabels.append(m_wMorphsRowLabelWidget);
+	m_aRowLabels.append(m_wMorphsRowLabelWidget);
+
+	// Add Morph settings to the main layout as a new row without header
+	mainLayout->addRow("", morphSettingsGroupBox);
+
 	m_wSubDRowLabelWidget = new QLabel(tr("Bake Subdivision"));
 	mainLayout->addRow(m_wSubDRowLabelWidget, subdivisionLayout);
-	aRowLabels.append(m_wSubDRowLabelWidget);
+	m_aRowLabels.append(m_wSubDRowLabelWidget);
 
 	// Create LOD Row, then store lod row widget, then hide row as default state
 	m_wLodRowLabelWidget = new QLabel(tr("Enable LOD"));
 	mainLayout->addRow(m_wLodRowLabelWidget, lodSettingsLayout);
-	aRowLabels.append(m_wLodRowLabelWidget);
+	m_aRowLabels.append(m_wLodRowLabelWidget);
 	this->showLodRow(false);
 
-	// Advanced Settings Layout
-//	advancedLayout->addRow("", m_BridgeVersionLabel);
+	///////////////////////////////////////
+	// Add Widgets to Advanced Layout
+	///////////////////////////////////////
+
 #ifndef VODSVERSION
 	QLabel* wTargetPluginInstallerRowLabel = new QLabel(tr("Install Destination Plugin"));
 	advancedLayout->addRow(wTargetPluginInstallerRowLabel, m_wTargetPluginInstaller);
-	aRowLabels.append(wTargetPluginInstallerRowLabel);
+	m_aRowLabels.append(wTargetPluginInstallerRowLabel);
 #endif
 	advancedLayout->addRow("", m_OpenIntermediateFolderButton);
 	showTargetPluginInstaller(false);
 	m_wFbxVersionRowLabelWidget = new QLabel(tr("FBX Version"));
 	advancedLayout->addRow(m_wFbxVersionRowLabelWidget, fbxVersionCombo);
-	aRowLabels.append(m_wFbxVersionRowLabelWidget);
+	m_aRowLabels.append(m_wFbxVersionRowLabelWidget);
 	m_wShowFbxRowLabelWidget = new QLabel(tr("Show FBX Dialog"));
 	advancedLayout->addRow(m_wShowFbxRowLabelWidget, showFbxDialogCheckBox);
-	aRowLabels.append(m_wShowFbxRowLabelWidget);
+	m_aRowLabels.append(m_wShowFbxRowLabelWidget);
 	m_wNormalMapsRowLabelWidget = new QLabel(tr("Generate Normal Maps"));
 	advancedLayout->addRow(m_wNormalMapsRowLabelWidget, enableNormalMapGenerationCheckBox);
-	aRowLabels.append(m_wNormalMapsRowLabelWidget);
+	m_aRowLabels.append(m_wNormalMapsRowLabelWidget);
 	m_wExportCsvRowLabelWidget = new QLabel(tr("Export Material CSV"));
 	advancedLayout->addRow(m_wExportCsvRowLabelWidget, exportMaterialPropertyCSVCheckBox);
-	aRowLabels.append(m_wExportCsvRowLabelWidget);
-	m_wEnableExperimentalRowLabelWidget = new QLabel(tr("Enable Experimental Options"));
+	m_aRowLabels.append(m_wExportCsvRowLabelWidget);
+	m_wEnableExperimentalRowLabelWidget = new QLabel(tr("Experimental Options"));
 	advancedLayout->addRow(m_wEnableExperimentalRowLabelWidget, m_enableExperimentalOptionsCheckBox);
-	aRowLabels.append(m_wEnableExperimentalRowLabelWidget);
+	m_aRowLabels.append(m_wEnableExperimentalRowLabelWidget);
 
+	// add main layout to dialog window
 	m_wMainGroupBox = new QGroupBox(tr("Main Export Options : "));
 	m_wMainGroupBox->setMinimumWidth(500);
 	m_wMainGroupBox->setLayout(mainLayout);
 	addWidget(m_wMainGroupBox);
 
-	// Add Animation settings to the main layout as a new row without header
-	mainLayout->addRow(animationSettingsGroupBox);
-
-	// Add Morph settings to the main layout as a new row without header
-	mainLayout->addRow(morphSettingsGroupBox);
-	
-	// Advanced
+	// add advanced layout to options section of dialog window
 	QString sAdvancedOptionsTitle = tr(ADVANCED_OPTIONS_TITLE);
 	advancedSettingsGroupBox = new QGroupBox(sAdvancedOptionsTitle);
 	advancedSettingsGroupBox->setLayout(advancedLayout);
-//	advancedSettingsGroupBox->setLayout(advancedLayoutOuter);
 	advancedSettingsGroupBox->setCheckable(false);
 	advancedSettingsGroupBox->setChecked(false);
-	advancedSettingsGroupBox->setMinimumWidth(500); // This is what forces the whole forms width
-//	addWidget(advancedSettingsGroupBox);
-//	connect(advancedSettingsGroupBox, SIGNAL(clicked(bool)), this, SLOT(HandleShowAdvancedSettingsCheckBoxChange(bool)));
-	
+	advancedSettingsGroupBox->setMinimumWidth(500); // This is what forces the whole forms width	
 	this->addOptionsWidget(advancedSettingsGroupBox);
 
-	// Help
+	// add help text
 	assetNameEdit->setWhatsThis(tr("This is the name the asset will use in the destination software."));
 	assetTypeCombo->setWhatsThis(tr("Skeletal Mesh for something with moving parts, like a character\nStatic Mesh for things like props\nAnimation for a character animation."));
 	subdivisionButton->setWhatsThis(tr("Select Subdivision Detail Level to Bake into each exported mesh."));
@@ -441,6 +440,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	m_wLodSettingsButton->setToolTip(sLodSettingsHelp);
 
 	// Set Universal Width for all Row Labels
+	fixRowLabelStyle();
 	fixRowLabelWidths();
 
 	// detect scene change
@@ -462,17 +462,12 @@ better quality.  **DOES NOT EXPORT MESH**";
 	wHelpMenuButton->setIndeterminateText(tr("Help"), true);
 	this->addButton(wHelpMenuButton);
 	wHelpMenuButton->style()->pixelMetric(DZ_PM_ButtonMinWidth);
-	wHelpMenuButton->adjustSize();
-//	int help_width = wHelpMenuButton->width();
 	DzBridgeDialogTools::SetThinButtonText(wHelpMenuButton, tr("Help") + "       ");
 	wHelpMenuButton->insertItem(tr("PDF..."), BRIDGE_HELP_ID_PDF);
 	wHelpMenuButton->insertItem(tr("Youtube Tutorials..."), BRIDGE_HELP_ID_YOUTUBE);
 	wHelpMenuButton->insertItem(tr("Request Support..."), BRIDGE_HELP_ID_SUPPORT);
-//	wHelpMenuButton->setFixedWidth(help_width);
 	connect(wHelpMenuButton, SIGNAL(menuIndexSelected(int)), this, SLOT(HandleHelpMenuButton(int)));
 	wHelpMenuButton->hide();
-
-	layout()->invalidate();
 
 }
 
@@ -534,14 +529,10 @@ bool DzBridgeDialog::loadSavedSettings()
 	}
 	if (m_bSetupMode)
 	{
-//		advancedSettingsGroupBox->setChecked(true);
-//		advancedWidget->setHidden(false);
 		this->showOptions();
 	}
 	else if (!settings->value("ShowAdvancedSettings").isNull())
 	{
-//		advancedSettingsGroupBox->setChecked(settings->value("ShowAdvancedSettings").toBool());
-//		advancedWidget->setHidden(!advancedSettingsGroupBox->isChecked());
 		bool bShowOptions = settings->value("ShowAdvancedSettings").toBool();
 		if (bShowOptions)
 			this->showOptions();
@@ -550,8 +541,6 @@ bool DzBridgeDialog::loadSavedSettings()
 	}
 	else
 	{
-//		advancedSettingsGroupBox->setChecked(false);
-//		advancedWidget->setHidden(true);
 		this->hideOptions();
 	}
 	if (!settings->value("FBXExportVersion").isNull())
@@ -592,10 +581,6 @@ bool DzBridgeDialog::loadSavedSettings()
 	{
 		animationApplyBoneScaleCheckBox->setChecked(settings->value("AnimationApplyBoneScale").toBool());
 	}
-	//if (!settings->value("MLDeformerPoseCount").isNull())
-	//{
-	//	mlDeformerPoseCountEdit->setText(settings->value("MLDeformerPoseCount").toString());
-	//}
 
 	return true;
 }
@@ -610,7 +595,6 @@ void DzBridgeDialog::saveSettings()
 	settings->setValue("AnimationExportFace", faceAnimationExportCheckBox->isChecked());
 	settings->setValue("AnimationExportActiveCurves", animationExportActiveCurvesCheckBox->isChecked());
 	settings->setValue("AnimationApplyBoneScale", animationApplyBoneScaleCheckBox->isChecked());
-	//settings->setValue("MLDeformerPoseCount", mlDeformerPoseCountEdit->text().toInt());
 }
 
 void DzBridgeDialog::refreshAsset()
@@ -705,18 +689,6 @@ void DzBridgeDialog::HandleChooseSubdivisionsButton()
 	}
 }
 
-//QString DzBridgeDialog::GetMorphString()
-//{
-//	DzBridgeMorphSelectionDialog* morphDialog = DzBridgeMorphSelectionDialog::Get(this);
-//	return morphDialog->GetMorphString();
-//}
-//
-//QMap<QString, QString> DzBridgeDialog::GetMorphMappingFromMorphSelectionDialog()
-//{
-//	DzBridgeMorphSelectionDialog* morphDialog = DzBridgeMorphSelectionDialog::Get(this);
-//	return morphDialog->GetMorphMapping();
-//}
-
 QList<QString> DzBridgeDialog::GetPoseList()
 {
 	return DzBridgeMorphSelectionDialog::Get(this)->GetPoseList();
@@ -755,13 +727,9 @@ void DzBridgeDialog::HandleShowAdvancedSettingsCheckBoxChange(bool checked)
 {
 	if (m_bSetupMode)
 	{
-//		advancedWidget->setHidden(false);
-//		advancedSettingsGroupBox->setChecked(true);
 		this->showOptions();
 		return;
 	}
-
-//	advancedWidget->setHidden(!checked);
 
 	if (settings == nullptr || m_bDontSaveSettings) return;
 	settings->setValue("ShowAdvancedSettings", checked);
@@ -907,23 +875,6 @@ bool DzBridgeDialog::installEmbeddedArchive(QString sArchiveFilename, QString sD
 
 void DzBridgeDialog::setBridgeVersionStringAndLabel(QString sVersionString, QString sLabel)
 {
-/*
-	if (m_BridgeVersionLabel == nullptr)
-		return;
-
-	m_BridgeVersionLabel->setText(sVersionString);
-
-	if (sLabel != "")
-	{
-		auto wBridgeVersionLabel_Label = advancedLayout->labelForField(m_BridgeVersionLabel);
-		QLabel* rowLabel = qobject_cast<QLabel*>(wBridgeVersionLabel_Label);
-		if (rowLabel != nullptr)
-		{
-			rowLabel->setText(sLabel);
-		}
-	}
-*/
-
 	QString sAdvancedOptionsBoxTitle = tr(ADVANCED_OPTIONS_TITLE) + QString("(%1)").arg(sVersionString);
 	advancedSettingsGroupBox->setTitle(sAdvancedOptionsBoxTitle);
 
@@ -934,8 +885,6 @@ void DzBridgeDialog::setDisabled(bool bDisabled)
 {
 	if (bDisabled)
 	{
-//		advancedWidget->setHidden(false);
-//		advancedSettingsGroupBox->setChecked(true);
 		this->showOptions();
 	}
 
@@ -988,7 +937,6 @@ void DzBridgeDialog::HandleAssetTypeComboChange(const QString& assetType)
 {
 #ifdef VODSVERSION
 	animationSettingsGroupBox->setVisible(assetType == "Animation" || assetType == "Pose");
-    //mlDeformerSettingsGroupBox->setVisible(assetType == "MLDeformer");
 #else
     if (this->getEnableExperimentalOptions()) {
 		animationSettingsGroupBox->setVisible(assetType == "Animation" || assetType == "Pose");
@@ -1029,9 +977,10 @@ void DzBridgeDialog::HandleAssetTypeComboChange(int state)
 	}
 
 	/// Enable subdivision and lod only if:
-	/// skeletal mesh, static mesh
+	/// skeletal mesh, static mesh, animation
 	if (sAssetType == "Skeletal Mesh" ||
-		sAssetType == "Static Mesh" )
+		sAssetType == "Static Mesh" ||
+		sAssetType == "Animation" )
 	{
 		subdivisionEnabledCheckBox->setDisabled(false);
 		subdivisionButton->setDisabled(false);
@@ -1152,30 +1101,37 @@ void DzBridgeDialog::HandleHelpMenuButton(int)
 	wHelpMenuButton->setIndeterminate();
 }
 
-void DzBridgeDialog::fixRowLabelWidths()
+void DzBridgeDialog::fixRowLabelStyle()
 {
-	int largest_width = 0;
-	foreach(QLabel * pRowLabel, aRowLabels)
+	foreach(QLabel * pRowLabel, m_aRowLabels)
 	{
-		if (pRowLabel->isHidden()) continue;
 		// add colon if not in string
 		QString sLabel = pRowLabel->text();
 		if (sLabel.endsWith(":") == false) {
 			sLabel.append(" :");
 		}
 		pRowLabel->setText(sLabel);
+		pRowLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+	}
+
+}
+
+void DzBridgeDialog::fixRowLabelWidths()
+{
+	int largest_width = 0;
+	foreach(QLabel* pRowLabel, m_aRowLabels)
+	{
+		if (pRowLabel->isHidden() || pRowLabel->isVisible() == false) continue;
 #define MAX(A,B) (A>B)?A:B
 		pRowLabel->adjustSize();
 		int this_width = pRowLabel->sizeHint().width();
 		largest_width = MAX(largest_width, this_width);
 #undef MAX
 	}
-	foreach(QLabel * pRowLabel, aRowLabels)
+	foreach(QLabel* pRowLabel, m_aRowLabels)
 	{
-		if (pRowLabel->isHidden()) continue;
+		if (pRowLabel->isHidden() || pRowLabel->isVisible() == false) continue;
 		pRowLabel->setFixedWidth(largest_width);
-		// right align
-		pRowLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
 	}
 
 }
