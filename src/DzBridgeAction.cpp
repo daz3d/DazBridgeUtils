@@ -5480,7 +5480,7 @@ void DzBridgeAction::writePoseData(DzNode* Node, DzJsonWriter& writer, bool bIsF
 ////////////////////////////////////////
 //// Additional Utility Functions translated from Blender.dsa
 ////////////////////////////////////////
-void DzBridgeAction::reparentFigure(DzNode* figure)
+void DzBridgeAction::ReparentFigure(DzNode* figure)
 {
 	QMap<DzNode*, DzNode*> reparentMapChildToParent;
 	if (reparentMapChildToParent.contains(figure))
@@ -5491,7 +5491,7 @@ void DzBridgeAction::reparentFigure(DzNode* figure)
 
 }
 
-DzNodeList DzBridgeAction::findRootNodes(DzNode* pNode)
+DzNodeList DzBridgeAction::FindRootNodes(DzNode* pNode)
 {
 	DzNodeList figureList;
 	DzNodeList propList;
@@ -5567,7 +5567,7 @@ DzNodeList DzBridgeAction::findRootNodes(DzNode* pNode)
 	return figureList + propList;
 }
 
-DzNodeList DzBridgeAction::buildRootNodeList()
+DzNodeList DzBridgeAction::BuildRootNodeList()
 {
 	DzNodeList rootNodeList;
 
@@ -5590,7 +5590,7 @@ DzNodeList DzBridgeAction::buildRootNodeList()
 
 			if (node->isVisible() && node->isRootNode())
 			{
-				rootNodeList += findRootNodes( node );
+				rootNodeList += FindRootNodes( node );
 			}
 
 		}

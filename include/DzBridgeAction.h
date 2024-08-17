@@ -371,9 +371,9 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual QStringList checkForBoneInAlias(DzNode* pNode, DzProperty* pMorphProperty, QStringList& controlledMeshList);
 		Q_INVOKABLE virtual QStringList checkForMorphOnChild(DzNode* pNode, QString sBoneName, QStringList& controlledMeshList);
 
-		Q_INVOKABLE virtual DzNodeList buildRootNodeList();
-		Q_INVOKABLE virtual DzNodeList findRootNodes(DzNode* pNode);
-		Q_INVOKABLE virtual void reparentFigure(DzNode* figure);
+		Q_INVOKABLE static DzNodeList BuildRootNodeList();
+		Q_INVOKABLE static DzNodeList FindRootNodes(DzNode* pNode);
+		Q_INVOKABLE static void ReparentFigure(DzNode* figure);
 
 		virtual void resetArray_ControllersToDisconnect();
 		Q_INVOKABLE virtual bool checkForIrreversibleOperations_in_disconnectOverrideControllers();
