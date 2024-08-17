@@ -1052,7 +1052,8 @@ void DzBridgeDialog::HandleAssetTypeComboChange(int state)
 
 void DzBridgeDialog::HandleExperimentalOptionsCheckBoxClicked()
 {
-	if (m_enableExperimentalOptionsCheckBox->isChecked())
+	bool bIsChecked = m_enableExperimentalOptionsCheckBox->isChecked();
+	if (bIsChecked)
 	{
 		QMessageBox::StandardButton reply;
 		reply = QMessageBox::question(this, "Daz Bridge", "Enabling Experimental Options may cause unexpected results.  Are you sure you want to enable Experimental Options?",
@@ -1064,11 +1065,26 @@ void DzBridgeDialog::HandleExperimentalOptionsCheckBoxClicked()
 		}
 	}
 
+	// Hide/Show experimental options for current state	
+	if (assetTypeCombo->currentText()  == "Animation") {
+		animationSettingsGroupBox->setVisible(bIsChecked);
+		// uncheck all options if experimental options was unchecked
+		if (bIsChecked == false) {
+			experimentalAnimationExportCheckBox->setChecked(false);
+			bakeAnimationExportCheckBox->setChecked(false);
+			faceAnimationExportCheckBox->setChecked(false);
+			animationExportActiveCurvesCheckBox->setChecked(false);
+			animationApplyBoneScaleCheckBox->setChecked(false);
+		}
+	}
+
+	//////////////////////////////////
+	// Intentionally disabling saving settings and saving as unchecked to force users to "opt-in" every time they use experimental features
+	//////////////////////////////////
     // int state = m_enableExperimentalOptionsCheckBox->checkState();
 	// if (settings == nullptr || m_bDontSaveSettings) return;
 	// settings->setValue("EnableExperimentalOptions", state == Qt::Checked);
-
-	// Intentionally saving as unchecked to force users to "opt-in" every time they use experimental features
+	//////////////////////////////////
 	if (settings == nullptr || m_bDontSaveSettings) return;
 	settings->setValue("EnableExperimentalOptions", false);
 
