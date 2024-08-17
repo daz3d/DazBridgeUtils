@@ -3859,40 +3859,21 @@ QMessageBox::Yes);
 		m_aPoseExportList = BridgeDialog->GetPoseList();
 	}
 
-	// DB 2024-07-26: Must check if widget is available before setting member variables, since derived classes may not have them exposed
-	if (BridgeDialog->getSubdivisionEnabledCheckBox()->isVisible())
-		m_EnableSubdivisions = BridgeDialog->getSubdivisionEnabledCheckBox()->isChecked();
+	m_EnableSubdivisions = BridgeDialog->getSubdivisionEnabledCheckBox()->isChecked();
+	m_bShowFbxOptions = BridgeDialog->getShowFbxDialogCheckBox()->isChecked();
+	m_sFbxVersion = BridgeDialog->getFbxVersionCombo()->currentText();
+	m_bGenerateNormalMaps = BridgeDialog->getEnableNormalMapGenerationCheckBox()->isChecked();
 
-	if (BridgeDialog->getShowFbxDialogCheckBox()->isVisible())
-		m_bShowFbxOptions = BridgeDialog->getShowFbxDialogCheckBox()->isChecked();
+	m_bAnimationUseExperimentalTransfer = BridgeDialog->getExperimentalAnimationExportCheckBox()->isChecked();
+	m_bAnimationBake = BridgeDialog->getBakeAnimationExportCheckBox()->isChecked();
+	m_bAnimationTransferFace = BridgeDialog->getFaceAnimationExportCheckBox()->isChecked();
+	m_bAnimationExportActiveCurves = BridgeDialog->getAnimationExportActiveCurvesCheckBox()->isChecked();
+	m_bAnimationApplyBoneScale = BridgeDialog->getAnimationApplyBoneScaleCheckBox()->isChecked();
 
-	if (BridgeDialog->getFbxVersionCombo()->isVisible())
-		m_sFbxVersion = BridgeDialog->getFbxVersionCombo()->currentText();
-
-	if (BridgeDialog->getEnableNormalMapGenerationCheckBox()->isVisible())
-		m_bGenerateNormalMaps = BridgeDialog->getEnableNormalMapGenerationCheckBox()->isChecked();
-
-	if (BridgeDialog->getExperimentalAnimationExportCheckBox()->isVisible())
-		m_bAnimationUseExperimentalTransfer = BridgeDialog->getExperimentalAnimationExportCheckBox()->isChecked();
-
-	if (BridgeDialog->getBakeAnimationExportCheckBox()->isVisible())
-		m_bAnimationBake = BridgeDialog->getBakeAnimationExportCheckBox()->isChecked();
-
-	if (BridgeDialog->getFaceAnimationExportCheckBox()->isVisible())
-		m_bAnimationTransferFace = BridgeDialog->getFaceAnimationExportCheckBox()->isChecked();
-
-	if (BridgeDialog->getAnimationExportActiveCurvesCheckBox()->isVisible())
-		m_bAnimationExportActiveCurves = BridgeDialog->getAnimationExportActiveCurvesCheckBox()->isChecked();
-
-	if (BridgeDialog->getAnimationApplyBoneScaleCheckBox()->isVisible())
-		m_bAnimationApplyBoneScale = BridgeDialog->getAnimationApplyBoneScaleCheckBox()->isChecked();
-
-	if (BridgeDialog->getMorphLockBoneTranslationCheckBox()->isVisible())
-		m_bMorphLockBoneTranslation = BridgeDialog->getMorphLockBoneTranslationCheckBox()->isChecked();
+	m_bMorphLockBoneTranslation = BridgeDialog->getMorphLockBoneTranslationCheckBox()->isChecked();
 
 	// LOD settings
-	if (BridgeDialog->getEnableLodCheckBox()->isVisible())
-		m_bEnableLodGeneration = BridgeDialog->getEnableLodCheckBox()->isChecked();
+	m_bEnableLodGeneration = BridgeDialog->getEnableLodCheckBox()->isChecked();
 
 	return true;
 }
