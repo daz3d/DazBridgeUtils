@@ -191,30 +191,32 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	QFormLayout* animationSettingsLayout = new QFormLayout();
 	animationSettingsLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
 	animationSettingsGroupBox->setLayout(animationSettingsLayout);
-	experimentalAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
+
+#ifdef VODSVERSION
+	QString sExperimentalAnimationExport = tr("Use new Export");
+#else
+	QString sExperimentalAnimationExport = tr("Export Bone Positions Only");
+#endif
+	experimentalAnimationExportCheckBox = new QCheckBox(sExperimentalAnimationExport, animationSettingsGroupBox);
 	experimentalAnimationExportCheckBox->setChecked(true);
-	QLabel* wExperimentalAnimationOptionRowLabel = new QLabel(tr("Use new Export"));
-	animationSettingsLayout->addRow(wExperimentalAnimationOptionRowLabel, experimentalAnimationExportCheckBox);
-	aRowLabels.append(wExperimentalAnimationOptionRowLabel);
+	animationSettingsLayout->addRow(experimentalAnimationExportCheckBox);
 
     // DB 2023-Aug-09: bake animation does not appear to be hooked up to anything, disabling for now
-	bakeAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
-//	animationSettingsLayout->addRow("Bake", bakeAnimationExportCheckBox);
+	QString sBakeAnimationExport = tr("Bake Animation");
+	bakeAnimationExportCheckBox = new QCheckBox(sBakeAnimationExport, animationSettingsGroupBox);
+//	animationSettingsLayout->addRow(bakeAnimationExportCheckBox);
     bakeAnimationExportCheckBox->setVisible(false);
     bakeAnimationExportCheckBox->setDisabled(true);
 
-	faceAnimationExportCheckBox = new QCheckBox("", animationSettingsGroupBox);
-	QLabel* wFaceAnimationExportOptionRowLabel = new QLabel(tr("Transfer Face Bones"));
-	animationSettingsLayout->addRow(wFaceAnimationExportOptionRowLabel, faceAnimationExportCheckBox);
-	aRowLabels.append(wFaceAnimationExportOptionRowLabel);
-	animationExportActiveCurvesCheckBox = new QCheckBox("", animationSettingsGroupBox);
-	QLabel* wAnimationExportActiveCurvesOptionRowLabel = new QLabel(tr("Transfer Active Curves"));
-	animationSettingsLayout->addRow(wAnimationExportActiveCurvesOptionRowLabel, animationExportActiveCurvesCheckBox);
-	aRowLabels.append(wAnimationExportActiveCurvesOptionRowLabel);
-	animationApplyBoneScaleCheckBox = new QCheckBox("", animationSettingsGroupBox);
-	QLabel* wAnimationApplyBoneScaleOptionRowLabel = new QLabel(tr("Apply Bone Scale"));
-	animationSettingsLayout->addRow(wAnimationApplyBoneScaleOptionRowLabel, animationApplyBoneScaleCheckBox);
-	aRowLabels.append(wAnimationApplyBoneScaleOptionRowLabel);
+	QString sFaceAnimationExport = tr("Transfer Face Bones");
+	faceAnimationExportCheckBox = new QCheckBox(sFaceAnimationExport, animationSettingsGroupBox);
+	animationSettingsLayout->addRow(faceAnimationExportCheckBox);
+	QString sAnimationExportActiveCurves = tr("Transfer Active Curves");
+	animationExportActiveCurvesCheckBox = new QCheckBox(sAnimationExportActiveCurves, animationSettingsGroupBox);
+	animationSettingsLayout->addRow(animationExportActiveCurvesCheckBox);
+	QString sAnimationApplyBoneScale = tr("Apply Bone Scale");
+	animationApplyBoneScaleCheckBox = new QCheckBox(sAnimationApplyBoneScale, animationSettingsGroupBox);
+	animationSettingsLayout->addRow(animationApplyBoneScaleCheckBox);
 	animationSettingsGroupBox->setVisible(false);
 
 	animationSettingsLayout->invalidate();
@@ -256,11 +258,11 @@ better quality.  **DOES NOT EXPORT MESH**";
 	morphSettingsLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
 	morphSettingsLayout->setSpacing(nStyleMargin);
 	morphSettingsGroupBox->setLayout(morphSettingsLayout);
-	morphLockBoneTranslationCheckBox = new QCheckBox("", morphSettingsGroupBox);
+
+	QString sMorphLockBoneTranslationOption = tr("Lock Bone Translations");
+	morphLockBoneTranslationCheckBox = new QCheckBox(sMorphLockBoneTranslationOption, morphSettingsGroupBox);
 	morphLockBoneTranslationCheckBox->setChecked(false);
-	QLabel* wMorphLockBoneTranslationOptionRowLabel = new QLabel(tr("Lock Bone Translation for Morphs"));
-	morphSettingsLayout->addRow(wMorphLockBoneTranslationOptionRowLabel, morphLockBoneTranslationCheckBox);
-	aRowLabels.append(wMorphLockBoneTranslationOptionRowLabel);
+	morphSettingsLayout->addRow(morphLockBoneTranslationCheckBox);
 	morphSettingsGroupBox->setVisible(false);
 
 	// Subdivision
