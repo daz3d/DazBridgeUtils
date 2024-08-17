@@ -1,0 +1,172 @@
+// DAZ Studio version 4.22.0.16 filetype DAZ Script
+
+function setVisibleAllFigures(bVisible) {
+    var nodes = Scene.getNodeList();
+    for (var i = 0; i < nodes.length; i++) {
+        if (nodes[i].inherits("DzFigure")) {
+            nodes[i].setVisible(bVisible);
+        }
+    }
+}
+
+function resetPoseProperties(node) {
+    var properties = node.getPropertyList();
+    for (var i = 0; i < properties.length; i++) {
+        var property = properties[i];
+        if (property.inherits("DzFloatProperty")) {
+            property.setValue(property.getDefaultValue());
+        }
+    }
+}
+
+// Function to reset pose except for hands
+function resetPoseExceptHandsAndFeet(node, skip) {
+    var children = node.getNodeChildren(false);
+    for (var i = 0; i < children.length; i++) {
+        var child = children[i];
+        var parent = child.getNodeParent();
+        if (skip && 
+            (child.name.indexOf("l_hand") != -1 || 
+            child.name.indexOf("r_hand") != -1 ||
+            child.name.indexOf("l_foot") != -1 ||
+            child.name.indexOf("r_foot") != -1
+        )) {
+        	print("DEBUG: skipping: " + child.name);
+            continue;
+        }
+        if (child.inherits("DzBone")) {
+            resetPoseProperties(child);
+	    }
+        resetPoseExceptHandsAndFeet(child, skip);
+    }
+}
+
+function findMorphProperty(figure, morphName) {
+    print("DEBUG: findMorphProperty: " + figure.name + ", " + morphName);
+    var obj = figure.getObject();
+    if (obj) {
+        var modifier = obj.findModifier(morphName);
+        if (modifier) {
+            var property = modifier.findProperty("Value");
+            if (property) {
+                return property;
+            }
+        }
+    }
+    return null;
+}
+
+function getCachedGeom(figure) {
+    // MUST HIDE EVERYTHING TO ISOLATE FIGURE
+    var obj = figure.getObject();
+    var shape = obj.getCurrentShape();
+    if (shape) {
+        var lodLevel = shape.findProperty("lodlevel");
+        if (lodLevel) {
+            lodLevel.setValue(0);  // 0 is typically the base resolution
+        }
+    }
+    forceUpdateAll(figure);
+    var cachedGeo = obj.getCachedGeom();
+    var geo = new DzFacetMesh();
+    geo.copyFrom(cachedGeo);
+    return geo;
+}
+
+function generateMorph(figure, geo, morphName) {
+    print("DEBUG: generateMorph: " + figure.name + ", " + morphName);
+    var morphLoader = new DzMorphLoader();
+    var realMorphName = figure.name + "_" + morphName;
+    morphLoader.setMorphName(morphName);
+    morphLoader.setPropertyGroupPath("Morphs/Morph Loader");
+    morphLoader.setReverseDeformations(true);
+    morphLoader.setPreserveExistingDeltas(true);
+    morphLoader.setOverwriteExisting(true);
+    var logText = morphLoader.createMorphFromMesh(geo, figure, false, true);
+    print("DEBUG: morphLoader: " + logText);
+}
+
+function forceUpdateAll(node) {
+    if (node.inherits("DzFigure") == false) {
+        return;
+    }
+    var children = node.getNodeChildren(false);
+    for (var i = 0; i < children.length; i++) {
+        var child = children[i];
+        if (child.inherits("DzFigure")) {
+            forceUpdateAll(child);
+        }
+    }
+    var obj = node.getObject();
+    if (obj) {
+        setVisibleAllFigures(false);
+        node.setVisible(true);
+        obj.forceCacheUpdate(node);
+    }
+}
+
+// Main script
+function main() {
+    // 1. Get selected figure (assuming Genesis 9)
+    var figure = Scene.getPrimarySelection();
+    if (!figure || !figure.inherits("DzFigure")) {
+        if (figure) print("DEBUG: figure is class: " + figure.className() );
+        MessageBox.information("Please select a Genesis 9 figure.", "Error", "OK");
+        return;
+    }
+
+    // 2. Reset all pose except for hands and feet
+    var skeleton = figure.getFollowTarget();
+    if (!skeleton) skeleton = figure;
+    resetPoseExceptHandsAndFeet(skeleton, true);
+
+    var cachedGeoLookup = {};
+    var nodeChildren = figure.getNodeChildren(false);
+    for (var i = 0; i < nodeChildren.length; i++) {
+        var child = nodeChildren[i];
+        if (child.inherits("DzFigure")) {
+            var geo = getCachedGeom(child);
+            cachedGeoLookup[child.name] = geo;
+        }
+    }
+    var geo = getCachedGeom(figure);
+    cachedGeoLookup[figure.name] = geo;
+
+    // 6. Reset hand pose
+    resetPoseExceptHandsAndFeet(skeleton, false);
+
+    var morphName = "HandsAndFeetPoseMorph";
+    var morphLoader = new DzMorphLoader();
+    morphLoader.setMorphName(morphName);
+    morphLoader.setPropertyGroupPath("Morphs/Morph Loader");
+    morphLoader.setReverseDeformations(true);
+    morphLoader.setPreserveExistingDeltas(false);
+    morphLoader.setOverwriteExisting(true);
+    morphLoader.setCleanUpOrphans(true);
+
+    for (var i = 0; i < nodeChildren.length; i++) {
+        var child = nodeChildren[i];
+        if (child.inherits("DzFigure")) {
+            forceUpdateAll(child);
+            var geo = cachedGeoLookup[child.name];
+		    morphLoader.createMorphFromMesh(geo, child, false, true);
+        }
+    }
+    forceUpdateAll(figure);
+    var geo = cachedGeoLookup[figure.name];
+    morphLoader.createMorphFromMesh(geo, figure, false, true);
+    setVisibleAllFigures(true);
+
+    // 7. Apply morph
+    var morphProperty = findMorphProperty(figure, morphName);
+    if (morphProperty) {
+        morphProperty.setMin(0.0);
+        morphProperty.setMax(1.0);
+        morphProperty.setValue(1.0);
+    } else {
+        print("ERROR: bake_hands_and_feet_nogui.dsa: Morph property not found: " + morphName);
+    }
+
+}
+
+main();

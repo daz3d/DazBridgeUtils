@@ -3,25 +3,101 @@
 var includeDir_oFILE = new DzFile( getScriptFileName() );
 var sIncludePath = includeDir_oFILE.path();
 
-(function(){
-    
+(function( aArgs ){
+
 var diffuseOverlayImagePath = [
     sIncludePath + "/genesis9_torso_modesty_overlay_d.png",
     sIncludePath + "/genesis9_legs_modesty_overlay_d.png",
+    "",
     ];
 var normalOverlayImagePath = [
     sIncludePath + "/genesis9_torso_modesty_overlay_nm.png",
     sIncludePath + "/genesis9_legs_modesty_overlay_nm.png",
+    "",
 ];
 var roughnessOverlayImagePath = [
     sIncludePath + "/genesis9_torso_modesty_overlay_r.png",
     sIncludePath + "/genesis9_legs_modesty_overlay_r.png",
-    ];
-// // TODO: make specular overlay if needed
-// var specularOverlayImagePath = sIncludePath + "/genesis9_torso_modesty_overlay_r.png"
+    "",
+];
+var metallicOverlayImagePath = [
+    sIncludePath + "/genesis9_torso_modesty_overlay_m.png",
+    sIncludePath + "/genesis9_legs_modesty_overlay_m.png",
+    "",
+];
+    
+function processArguments() {
+    print("Sanity Checking...");
+    if (!aArgs || Array.isArray(aArgs) == false) {
+        App.log("apply_modesty_overlay_aArgs.dsa, processArguments(): CRITCIAL ERROR: Arguments are not an array; continuing with default values.");
+        return false;
+    }
+    // Sanity Checks
+    if (aArgs.length != 4) {
+        App.log("apply_modesty_overlay_aArgs.dsa, processArguments(): CRITCIAL ERROR: Invalid Number of Arguments, expected 4, got " + aArgs.length + "; continuing with default values.");
+        return false;
+    }
+    for ( var i = 0, nArgs = aArgs.length; i < nArgs; i += 1 ){
+        var aSubArray = aArgs[i];
+        if ( !Array.isArray(aSubArray) ) {
+            App.log("apply_modesty_overlay_aArgs.dsa, processArguments(): CRITCIAL ERROR: Argument " + i + " is not an array; continuing with default values.");
+            return false;
+        }
+        if ( aSubArray.length != 3 ) {
+            App.log("apply_modesty_overlay_aArgs.dsa, processArguments(): CRITCIAL ERROR: Argument " + i + " does not have enough elements, expected 3, got " + aSubArray.length + "; continuing with default values.");
+            return false;
+        }
+        for (var j = 0; j < aSubArray.length; j++) {
+            if (typeof aSubArray[j] !== "string") {
+                App.log("apply_modesty_overlay_aArgs.dsa, processArguments(): CRITCIAL ERROR: Argument " + i + " element " + j + " is not a string; continuing with default values.");
+                return false;
+            }
+        }
+    }
+
+    // Iterate over the arguments passed to the script
+    for( var i = 0, nArgs = aArgs.length; i < nArgs; i += 1 ){
+        var aSubArray = aArgs[i];
+        for (var j = 0; j < aSubArray.length; j++) {
+            switch (i) {
+                case 0:
+                    diffuseOverlayImagePath[j] = aSubArray[j];
+                    break;
+                case 1:
+                    normalOverlayImagePath[j] = aSubArray[j];
+                    break;
+                case 2:
+                    roughnessOverlayImagePath[j] = aSubArray[j];
+                    break;
+                case 3:
+                    metallicOverlayImagePath[j] = aSubArray[j];
+                    break;
+                default:
+                    App.log("apply_modesty_overlay_aArgs.dsa, processArguments(): CRITCIAL ERROR: Invalid Argument Index: " + i + "; results may be unpredictable.");
+                    break;
+            }
+        }
+    }
+
+    return true;
+};
+
 
 // SubFunction to replace diffuse map with layered texture
 function replaceColorPropertyWithLayeredTexture(material, colorProperty, overlayImagePath) {
+    if (!overlayImagePath || overlayImagePath == "") {
+        print("No overlay image path found.");
+        return;
+    }
+
+    var fiOverlayImage = new DzFileInfo(overlayImagePath);
+    if ( fiOverlayImage.exists() == false ) {
+        App.log("apply_modesty_overlay_aArgs.dsa: ERROR: Overlay image does not exist: " + overlayImagePath);
+        fiOverlayImage.deleteLater();
+        return;
+    }
+    fiOverlayImage.deleteLater();
+
     // Get the current texture map
     var currentTextureMap = colorProperty.getMapValue();
     if (!currentTextureMap) {
@@ -105,16 +181,23 @@ function replaceMaterialWithLayeredTextures(material, overlay_index) {
         replaceColorPropertyWithLayeredTexture(material, roughnessMap, roughnessOverlayImagePath[overlay_index]);
     }
 
-    // var specularMap = material.findProperty("Dual Lobe Specular Weight");
-    // if (!specularMap) {
-    //     specularMap = material.findProperty("Dual Lobe Specular Reflectivity");
-    //     if (!specularMap) {
-    //         specularMap = material.findProperty("Glossy Reflectivity");
-    //     }
-    // }
-    // if (specularMap) {
-    //     replaceColorPropertyWithLayeredTexture(material, specularMap, specularOverlayImagePath);
-    // }
+    var specularMap = material.findProperty("Dual Lobe Specular Weight");
+    if (!specularMap || !specularMap.getMapValue()) {
+        specularMap = material.findProperty("Dual Lobe Specular Reflectivity");
+        if (!specularMap || !specularMap.getMapValue()) {
+            specularMap = material.findProperty("Glossy Reflectivity");
+        }
+    }
+    if (specularMap && specularMap.getMapValue()) {
+        print("DEBUG: applying specular overlay...");
+        replaceColorPropertyWithLayeredTexture(material, specularMap, roughnessOverlayImagePath[overlay_index]);
+    }
+
+    var metallicMap = material.findProperty("Metallic Weight");
+    if (metallicMap && metallicMap.getMapValue()) {
+        print("DEBUG: applying metallic overlay...");
+        replaceColorPropertyWithLayeredTexture(material, metallicMap, metallicOverlayImagePath[overlay_index]);
+    }
 
     print("Replaced texture map with layered texture for material: " + material.name);
 }
@@ -122,6 +205,10 @@ function replaceMaterialWithLayeredTextures(material, overlay_index) {
 
 // Modified function to enumerate materials of the currently selected node
 function main() {
+    if (!processArguments()) {
+        print("Failed to process arguments, using default values, see Log for details.");
+    }
+
     var selectedNode = Scene.getPrimarySelection();
     
     if (selectedNode) {
@@ -138,10 +225,13 @@ function main() {
                 print("Material " + (i + 1) + ": " + material.name);
                 if (material.name == "Body") {
                     // Process selected ColorMaps of each body material
-                    replaceMaterialWithLayeredTextures(material, 0);    
+                    replaceMaterialWithLayeredTextures(material, 0);
                 }
                 else if (material.name == "Legs") {
-                    replaceMaterialWithLayeredTextures(material, 1);                    
+                    replaceMaterialWithLayeredTextures(material, 1);
+                }
+                else if (material.name == "Head") {
+                    replaceMaterialWithLayeredTextures(material, 2);
                 }
             }
         } else {
@@ -155,4 +245,4 @@ function main() {
 // Call the function to enumerate materials and process "Diffuse Color"
 main();
 
-})();
+})( getArguments() );

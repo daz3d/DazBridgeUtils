@@ -1,6 +1,8 @@
 // DAZ Studio version 4.22.0.15 filetype DAZ Script
 
 (function(){
+var nTextureWidth = 4096;
+var nTextureHeight = 4096;
 
 var sDazTempFolder = App.getTempPath();
 var sMapTransferOutputFolder = sDazTempFolder + "/MapTransfer";
@@ -9,6 +11,7 @@ var sMapTransferInputFolder = sDazTempFolder + "/textureConvert";
 var sCombinedDiffuseColorImage = sMapTransferOutputFolder + "/combined diffuse test.png";
 var sCombinedNormalMapImage = sMapTransferOutputFolder + "/combined normal test.png";
 var sCombinedSpecularMapImage = sMapTransferOutputFolder + "/combined specular test.png";
+var sCombinedMetallicMapImage = sMapTransferOutputFolder + "/combined metallic test.png";
 
 // Template Names: "Diffuse Color.png", "Normal Map.png", "Specular Lob 1 Roughness.png", "Dual Lobe Specular Weight.png"
 
@@ -18,7 +21,7 @@ function alphaCombine(oImageA, oImageB) {
 }
 
 function combineImages(aImageList) {
-    var width=1024, height=1024;
+    var width=nTextureWidth, height=nTextureHeight;
     var format = 5;
     var oImageA = new Image(width, height, format);
     //print("DEBUG: creating empty image: width = " + oImageA.width + ", height = " + oImageA.height + ", format=" + oImageA.format);
@@ -44,10 +47,11 @@ function main() {
 	var aDiffuseColorImages = [];
 	var aNormalMapImages = [];
 	var aSpecularMapImages = [];
+    var aMetallicMapImages = [];
 
     // get list of files in the folder
-    oDir = new DzDir(sMapTransferInputFolder);
-    aFiles = oDir.getFilesFromDir(["*.png"], true);
+    var oDir = new DzDir(sMapTransferInputFolder);
+    var aFiles = oDir.getFilesFromDir(["*.png"], true);
     // add detail normals first so that it is overwritten by the main normal map
     for (var i = 0; i < aFiles.length; i++) {
         if (aFiles[i].search("Normal Map") > 0 && aFiles[i].search("Detail") > 0) {
@@ -64,26 +68,43 @@ function main() {
         	aNormalMapImages.push(aFiles[i]);
         } else if (aFiles[i].search("Specular") > 0) {
         	aSpecularMapImages.push(aFiles[i]);
+        } else if (aFiles[i].search("Metallic") > 0) {
+        	aMetallicMapImages.push(aFiles[i]);
         }
+
     }
     
     // diffuse color
-	print("DEBUG: output = " + sCombinedDiffuseColorImage);
-    var oCombinedImage = combineImages(aDiffuseColorImages);
-    oCombinedImage.save(sCombinedDiffuseColorImage);
-    oCombinedImage.deleteLater();
+    if (aDiffuseColorImages.length > 0) {
+        print("DEBUG: output = " + sCombinedDiffuseColorImage);
+        var oCombinedImage = combineImages(aDiffuseColorImages);
+        oCombinedImage.save(sCombinedDiffuseColorImage);
+        oCombinedImage.deleteLater();    
+    }
 
     // normal
-	print("DEBUG: output = " + sCombinedNormalMapImage);
-    var oCombinedImage = combineImages(aNormalMapImages);
-    oCombinedImage.save(sCombinedNormalMapImage);
-    oCombinedImage.deleteLater();
+    if (aNormalMapImages.length > 0) {
+        print("DEBUG: output = " + sCombinedNormalMapImage);
+        var oCombinedImage = combineImages(aNormalMapImages);
+        oCombinedImage.save(sCombinedNormalMapImage);
+        oCombinedImage.deleteLater();
+    }
     
     // specular
-	print("DEBUG: output = " + sCombinedSpecularMapImage);
-    var oCombinedImage = combineImages(aSpecularMapImages);
-    oCombinedImage.save(sCombinedSpecularMapImage);
-    oCombinedImage.deleteLater();
+    if (aSpecularMapImages.length > 0) {
+        print("DEBUG: output = " + sCombinedSpecularMapImage);
+        var oCombinedImage = combineImages(aSpecularMapImages);
+        oCombinedImage.save(sCombinedSpecularMapImage);
+        oCombinedImage.deleteLater();
+    }
+
+    // metallic
+    if (aMetallicMapImages.length > 0) {
+        print("DEBUG: output = " + sCombinedMetallicMapImage);
+        var oCombinedImage = combineImages(aMetallicMapImages);
+        oCombinedImage.save(sCombinedMetallicMapImage);
+        oCombinedImage.deleteLater();
+    }
 
 	print("done");
 }

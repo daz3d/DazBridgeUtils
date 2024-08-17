@@ -10,6 +10,7 @@ var sMapTransferOutputFolder = sDazTempFolder + "/MapTransfer";
 var sCombinedDiffuseColorImage = sMapTransferOutputFolder + "/combined diffuse test.png";
 var sCombinedNormalMapImage = sMapTransferOutputFolder + "/combined normal test.png";
 var sCombinedSpecularMapImage = sMapTransferOutputFolder + "/combined specular test.png";
+var sCombinedMetallicMapImage = sMapTransferOutputFolder + "/combined metallic test.png";
 
 function assignCombinedTextures(oNode) {
     if (oNode) {
@@ -26,23 +27,45 @@ function assignCombinedTextures(oNode) {
                     if (oMaterial) {
                         print("DEBUG: material=" + oMaterial.name);
                         var oDiffuseColorProperty = oMaterial.findProperty("Diffuse Color");
-                        if (oDiffuseColorProperty) {
+                        if (oDiffuseColorProperty && DzFileInfo(sCombinedDiffuseColorImage).exists()) {
                             oDiffuseColorProperty.setMap(sCombinedDiffuseColorImage);
                         }
                         var oNormalMapProperty = oMaterial.findProperty("Normal Map");
-                        if (oNormalMapProperty) {
+                        if (oNormalMapProperty && DzFileInfo(sCombinedNormalMapImage).exists()) {
                             oNormalMapProperty.setMap(sCombinedNormalMapImage);
                         }
                         var oSpecularMapProperty = oMaterial.findProperty("Specular Lobe 1 Roughness");
-                        if (oSpecularMapProperty && oSpecularMapProperty.getMapValue() && oSpecularMapProperty.getMapValue().getFilename().length > 0) {
-							 print("DEBUG: setting specular lobe 1 roughness for " + oMaterial.name);
+                        if (oSpecularMapProperty && 
+                            oSpecularMapProperty.getMapValue() && 
+                            oSpecularMapProperty.getMapValue().getFilename().length > 0 &&
+                            DzFileInfo(sCombinedSpecularMapImage).exists()
+                            ) {
+							print("DEBUG: setting specular lobe 1 roughness for " + oMaterial.name);
                             oSpecularMapProperty.setMap(sCombinedSpecularMapImage);
                         } else {
-	                        var oSpecularMapProperty = oMaterial.findProperty("Dual Lobe Specular Weight");
-	                        if (oSpecularMapProperty && oSpecularMapProperty.getMapValue() && oSpecularMapProperty.getMapValue().getFilename().length > 0) {
+	                        oSpecularMapProperty = oMaterial.findProperty("Dual Lobe Specular Weight");
+	                        if (oSpecularMapProperty && 
+                                oSpecularMapProperty.getMapValue() && 
+                                oSpecularMapProperty.getMapValue().getFilename().length > 0 &&
+                                DzFileInfo(sCombinedSpecularMapImage).exists()
+                                ) {
 								 print("DEBUG: dual lobe specular weight for " + oMaterial.name);
 	                            oSpecularMapProperty.setMap(sCombinedSpecularMapImage);
-	                        }
+	                        } else {
+                                oSpecularMapProperty = oMaterial.findProperty("Dual Lobe Specular Reflectivity");
+                                if (oSpecularMapProperty && 
+                                    oSpecularMapProperty.getMapValue() && 
+                                    oSpecularMapProperty.getMapValue().getFilename().length > 0 &&
+                                    DzFileInfo(sCombinedSpecularMapImage).exists()
+                                    ) {
+                                     print("DEBUG: dual lobe specular weight for " + oMaterial.name);
+                                    oSpecularMapProperty.setMap(sCombinedSpecularMapImage);
+                                }    
+                            }
+                        }
+                        var oMetallicMapProperty = oMaterial.findProperty("Metallic Weight");
+                        if (oMetallicMapProperty && DzFileInfo(sCombinedMetallicMapImage).exists()) {
+                            oMetallicMapProperty.setMap(sCombinedMetallicMapImage);
                         }
 
                         // switch UV set to the combined texture
@@ -62,7 +85,10 @@ function assignCombinedTextures(oNode) {
         }
         var aChildren = oNode.getNodeChildren();
         for (var i = 0; i < aChildren.length; i++) {
-            assignCombinedTextures(aChildren[i]);
+            var oChild = aChildren[i];
+            if (oChild.name == "Genesis9Eyes" || oChild.name == "Genesis9Mouth") {
+                assignCombinedTextures(aChildren[i]);
+            }
         }
     }
 }
@@ -84,6 +110,13 @@ function main() {
     }
     if (oMouthGeograft) {
         assignCombinedTextures(oMouthGeograft);
+    }
+    var oGroinGeograft = Scene.findNodeByLabel("game_engine_groin_geograft");
+    if (!oGroinGeograft) {
+        oGroinGeograft = Scene.findNode("game_engine_groin_geograft_0");
+    }
+    if (oGroinGeograft) {
+        assignCombinedTextures(oGroinGeograft);
     }
 
 }
