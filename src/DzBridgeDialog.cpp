@@ -688,13 +688,21 @@ int DzBridgeDialog::HandleChooseMorphsButton()
 {
 	DzBridgeMorphSelectionDialog * morphDialog = DzBridgeMorphSelectionDialog::Get(this);
 	int dialogReturnCode = morphDialog->exec();
+	if (dialogReturnCode == QDialog::Accepted)
+	{
+		this->morphsEnabledCheckBox->setChecked(true);
+	}
 	return dialogReturnCode;
 }
 
 void DzBridgeDialog::HandleChooseSubdivisionsButton()
 {
 	DzBridgeSubdivisionDialog *subdivisionDialog = DzBridgeSubdivisionDialog::Get(this);
-	subdivisionDialog->exec();
+	int returncode = subdivisionDialog->exec();
+	if (returncode == QDialog::Accepted)
+	{
+		this->subdivisionEnabledCheckBox->setChecked(true);
+	}
 }
 
 //QString DzBridgeDialog::GetMorphString()
