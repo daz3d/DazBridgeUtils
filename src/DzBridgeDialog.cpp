@@ -135,6 +135,7 @@ DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	mainLayout = new QFormLayout();
 	mainLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
 	mainLayout->setSpacing(nStyleMargin);
+	mainLayout->setMargin(nStyleMargin);
 	mainLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
 	QString sSetupModeString = tr("<h4>\
@@ -157,6 +158,7 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	advancedLayout = new QFormLayout();
 	advancedLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
 	advancedLayout->setSpacing(nStyleMargin);
+	advancedLayout->setMargin(nStyleMargin);
 	advancedLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
 	// Asset Name

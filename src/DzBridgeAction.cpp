@@ -6332,6 +6332,7 @@ bool DzBridgeAction::isInteractiveMode()
 
 	case eNonInteractiveMode::FullInteractiveMode:
 	case eNonInteractiveMode::ReducedPopup:
+	case eNonInteractiveMode::DzExporterMode:
 		isInteractive = true;
 		break;
 

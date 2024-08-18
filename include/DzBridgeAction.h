@@ -41,7 +41,8 @@ namespace DzBridgeNameSpace
 	enum eNonInteractiveMode {
 		FullInteractiveMode = 0, // default, all GUI
 		ScriptMode = 1, // script mode, no GUI
-		ReducedPopup = 2 // used by DzBlenderExporter
+		ReducedPopup = 2, 
+		DzExporterMode = 3 // used by DzBlenderExporter
 	};
 
 	/// <summary>
