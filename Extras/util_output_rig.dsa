@@ -1,0 +1,27 @@
+(function(){
+	
+	// Daz Script to output JSON of all bones
+	var root = Scene.getPrimarySelection();
+	if (root == null) return;
+
+    var children = root.getNodeChildren(true);
+	
+	var bones = [];
+	
+	for (var i=0; i < children.length; i++) {
+	    var child = children[i];
+	    if (child.inherits("DzBone")) {
+	        bones.push(child.name);
+	    }
+	}
+	
+    var json_data = {}
+	for (var i=0; i < bones.length; i++) {
+        var bone = bones[i];
+        json_data[bone] = bone;
+    }
+
+    var json_str = JSON.stringify(json_data, null, 4);
+    print(json_str);
+	
+})();
