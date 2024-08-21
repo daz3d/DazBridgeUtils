@@ -22,25 +22,15 @@ if bake_single:
     bake_list = []
     bpy.ops.object.select_all(action='DESELECT')
     for obj in bpy.data.objects:
-        if obj.type == 'MESH':
+        if obj.type == 'MESH' and obj.visible_get():
             obj.select_set(True)
             bake_list.append(obj)
 
     atlas, atlas_material, _ = game_readiness_tools.convert_to_atlas(bake_list, intermediate_folder_path, texture_size, bake_quality)
 
-    # new_uv_name = "AtlasUV"
-    # new_uv = game_readiness_tools.create_new_uv_layer(bake_list, new_uv_name)
-    # game_readiness_tools.repack_uv(bake_list)
-
-    # for obj in bake_list:
-    #     atlas, atlas_material, _ = game_readiness_tools.convert_to_atlas(obj, intermediate_folder_path, texture_size, bake_quality, False)
-
-    # game_readiness_tools.switch_uv(bake_list, new_uv_name)
-    # game_readiness_tools.remove_other_uvs(bake_list, new_uv_name)
-
 else:
     for obj in bpy.data.objects:
         bpy.ops.object.select_all(action='DESELECT')
-        if obj.type == 'MESH':
+        if obj.type == 'MESH' and obj.visible_get():
             obj.select_set(True)
             atlas, atlas_material, _ = game_readiness_tools.convert_to_atlas(obj, intermediate_folder_path, texture_size, bake_quality)

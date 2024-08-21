@@ -583,7 +583,7 @@ def process_material(mat, lowres_mode=None):
             # create normal map node
             node_normalmap = nodes.new("ShaderNodeNormalMap")
             node_normalmap.space = "TANGENT"
-            node_normalmap.inputs["Strength"].default_value = normal_strength*0.5
+            node_normalmap.inputs["Strength"].default_value = normal_strength
             links = data.node_tree.links
             link = links.new(node_tex.outputs["Color"], node_normalmap.inputs["Color"])
             link = links.new(node_normalmap.outputs["Normal"], bsdf_inputs["Normal"])
@@ -604,7 +604,7 @@ def process_material(mat, lowres_mode=None):
     if (cutoutMap != ""):
         if data.blend_method == "OPAQUE" or data.blend_method == "BLEND":
             data.blend_method = "HASHED"
-        load_cached_image_to_material(matName, "Alpha", "Alpha", cutoutMap, opacity_strength, "Non-Color")
+        load_cached_image_to_material(matName, "Alpha", "Color", cutoutMap, opacity_strength, "Non-Color")
     else:
         bsdf_inputs["Alpha"].default_value = opacity_strength
 
@@ -642,7 +642,7 @@ def process_material(mat, lowres_mode=None):
                 node_math.operation = "MULTIPLY"
                 node_math.inputs[1].default_value = 0.5
                 links = data.node_tree.links
-                link = links.new(node_tex.outputs["Alpha"], node_math.inputs[0])
+                link = links.new(node_tex.outputs["Color"], node_math.inputs[0])
                 link = links.new(node_math.outputs[0], bsdf_inputs["Alpha"])
 
     remove_unlinked_shader_nodes(matName)

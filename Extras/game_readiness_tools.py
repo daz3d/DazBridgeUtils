@@ -528,12 +528,20 @@ def bake_metallic_to_atlas(obj, atlas, bake_quality=4, clear_texture=False):
             material = mat_slot.material
             nodes = material.node_tree.nodes
             metallic_node = find_metallic_node(material)
+            output_type = ""
+            # loop through and find linked output
+            for output in metallic_node.outputs:
+                if output.is_linked:
+                    output_type = output.name
+                    break
+            if output_type == "" and type(metallic_node) == bpy.types.ShaderNodeRGB:
+                output_type = 'Color'
             # link image texture color to emission color of Principled BSDF node    
             if bpy.app.version >= (4, 0, 0):
-                material.node_tree.links.new(metallic_node.outputs['Color'], nodes['Principled BSDF'].inputs['Emission Color'])
+                material.node_tree.links.new(metallic_node.outputs[output_type], nodes['Principled BSDF'].inputs['Emission Color'])
                 nodes['Principled BSDF'].inputs['Emission Strength'].default_value = 1.0
             else:
-                material.node_tree.links.new(metallic_node.outputs['Color'], nodes['Principled BSDF'].inputs['Emission'])   
+                material.node_tree.links.new(metallic_node.outputs[output_type], nodes['Principled BSDF'].inputs['Emission'])   
         else:
             print(f"Warning: Material slot has no material or doesn't use nodes: {mat_slot.name}")    
     if not bake_nodes:
@@ -633,12 +641,23 @@ def bake_diffuse_to_atlas(obj, atlas, bake_quality=4, clear_texture=False):
             material = mat_slot.material
             nodes = material.node_tree.nodes
             diffuse_node = find_diffuse_node(material)
+            output_type = ""
+            # loop through and find linked output
+            for output in diffuse_node.outputs:
+                if output.is_linked:
+                    # check what it is linked to
+                    for link in output.links:
+                        if link.to_node.type == 'BSDF_PRINCIPLED' and link.to_socket.name == 'Base Color':
+                            output_type = output.name
+                            break
+            if output_type == "" and type(diffuse_node) == bpy.types.ShaderNodeRGB:
+                output_type = 'Color'
             # link image texture color to emission color of Principled BSDF node    
             if bpy.app.version >= (4, 0, 0):
-                material.node_tree.links.new(diffuse_node.outputs['Color'], nodes['Principled BSDF'].inputs['Emission Color'])
+                material.node_tree.links.new(diffuse_node.outputs[output_type], nodes['Principled BSDF'].inputs['Emission Color'])
                 nodes['Principled BSDF'].inputs['Emission Strength'].default_value = 1.0
             else:
-                material.node_tree.links.new(diffuse_node.outputs['Color'], nodes['Principled BSDF'].inputs['Emission'])
+                material.node_tree.links.new(diffuse_node.outputs[output_type], nodes['Principled BSDF'].inputs['Emission'])
         else:
             print(f"Warning: Material slot has no material or doesn't use nodes: {mat_slot.name}")    
     if not bake_nodes:
@@ -750,8 +769,22 @@ def remove_other_uvs(obj_or_list, new_uv_name):
 
 def convert_to_atlas(obj_list, image_output_path, atlas_size=4096, bake_quality=4, make_uv=True):
     if type(obj_list) != list:
-        # return convert_to_atlas_object(obj_list, image_output_path, atlas_size, bake_quality, make_uv)
         obj_list = [obj_list]
+
+    # compatibility checks
+    # make sure Principled BSDF is materials
+    for obj in obj_list:
+        if obj.visible_get() == False:
+            print(f"ERROR: Object {obj.name} is not visible")
+            return None, None, None
+        for mat_slot in obj.material_slots:
+            if mat_slot.material and mat_slot.material.use_nodes:
+                for node in mat_slot.material.node_tree.nodes:
+                    if node.type == 'BSDF_PRINCIPLED':
+                        break
+                else:
+                    print(f"ERROR: No Principled BSDF node found in material: {mat_slot.material.name}")
+                    return None, None, None
 
     obj_name = obj_list[0].name
 
@@ -869,11 +902,12 @@ def copy_intensity_to_alpha(source_image, target_image):
     
     # Convert source RGB to linear space
     # source_linear = srgb_to_linear(source_pixels[:, :3])
-    source_linear = source_pixels[:, :3]
     
     # Calculate intensity in linear space using correct coefficients
-    intensity = np.dot(source_linear, [0.2126, 0.7152, 0.0722])
-    
+    # intensity = np.dot(source_linear, [0.2126, 0.7152, 0.0722])
+    # intensity = np.dot(source_pixels[:, :3], [0.299, 0.587, 0.114])
+    intensity = np.mean(source_pixels[:, :3], axis=1)
+
     # Copy intensity to alpha channel of target image
     target_pixels[:, 3] = intensity
     
