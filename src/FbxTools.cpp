@@ -1545,3 +1545,177 @@ FbxVector4 FbxTools::CalculatePointCloudCenter(FbxVector4 *pVertexBuffer, int nu
 
 }
 
+bool FbxTools::GetAllMeshes(FbxNode* pNode, QList<FbxNode*>& aFbxNodeList)
+{
+	if (pNode == NULL) return false;
+
+	auto attribute = pNode->GetNodeAttribute();
+	if (attribute) {
+		auto attributeType = attribute->GetAttributeType();
+		if (attributeType == FbxNodeAttribute::eMesh) {
+			aFbxNodeList.append(pNode);
+		}
+	}
+
+	for (int i = 0; i < pNode->GetChildCount(); i++) {
+		FbxNode* pChild = pNode->GetChild(i);
+		GetAllMeshes(pChild, aFbxNodeList);
+	}
+
+	return true;
+}
+
+bool FbxTools::HasNodeAncestor(FbxNode* pNode, const QString sAncestorName, Qt::CaseSensitivity cs) {
+
+	FbxNode* pParentNode = pNode->GetParent();
+	if (pParentNode == NULL) return false;
+
+	QString sParentName = pParentNode->GetName();
+	if (sParentName.compare(sAncestorName, cs) == 0) {
+		return true;
+	}
+	return HasNodeAncestor(pParentNode, sAncestorName, cs);
+}
+
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+// DEV TESTING
+///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+void FbxTools::FixClusterTranformLinks(FbxScene* Scene, FbxNode* RootNode, bool bCorrectFix)
+{
+	FbxGeometry* NodeGeometry = static_cast<FbxGeometry*>(RootNode->GetMesh());
+
+	// Create missing weights
+	if (NodeGeometry)
+	{
+
+		for (int DeformerIndex = 0; DeformerIndex < NodeGeometry->GetDeformerCount(); ++DeformerIndex)
+		{
+			FbxSkin* Skin = static_cast<FbxSkin*>(NodeGeometry->GetDeformer(DeformerIndex));
+			if (Skin)
+			{
+				for (int ClusterIndex = 0; ClusterIndex < Skin->GetClusterCount(); ++ClusterIndex)
+				{
+					// Get the current tranform
+					FbxAMatrix Matrix;
+					FbxCluster* Cluster = Skin->GetCluster(ClusterIndex);
+					Cluster->GetTransformLinkMatrix(Matrix);
+
+					QString sBoneName(Cluster->GetLink()->GetName());
+
+					// Update the rotation
+					FbxDouble3 Rotation = Cluster->GetLink()->PostRotation.Get();
+					if (bCorrectFix) {
+						Matrix.MultRM(Rotation);
+						if (sBoneName.contains("_r")) {
+							Matrix.MultRM(FbxVector4(90, 0, 0));
+						} else {
+							Matrix.MultRM(FbxVector4(-90, 0, 0));
+						}
+						if (sBoneName.contains("ball_")) {
+							Matrix.MultRM(FbxVector4(90, 0, 0));
+						}
+						else if (sBoneName.contains("thumb_")) {
+							Matrix.MultRM(FbxVector4(0, 0, 0));
+						}
+						else if ( sBoneName.contains("hand_") ||
+							HasNodeAncestor(Cluster->GetLink(), "hand_r", Qt::CaseInsensitive) ||
+							HasNodeAncestor(Cluster->GetLink(), "hand_l", Qt::CaseInsensitive) )
+						{
+							Matrix.MultRM(FbxVector4(-90, 0, 0));
+						}
+						if (sBoneName.contains("_l") || sBoneName.contains("_r")) {
+							if (HasNodeAncestor(Cluster->GetLink(), "spine_01", Qt::CaseInsensitive)) {
+								Matrix.MultRM(FbxVector4(0, 0, 0));
+							} else {
+								Matrix.MultRM(FbxVector4(0, -90, 0));
+							}
+						} else {
+							Matrix.MultRM(FbxVector4(0, -90, 0));
+						}
+
+					}
+					else {
+						Matrix.SetR(Rotation);
+					}
+					Cluster->SetTransformLinkMatrix(Matrix);
+				}
+			}
+		}
+	}
+
+	for (int ChildIndex = 0; ChildIndex < RootNode->GetChildCount(); ++ChildIndex)
+	{
+		FbxNode* ChildNode = RootNode->GetChild(ChildIndex);
+		FixClusterTranformLinks(Scene, ChildNode, bCorrectFix);
+	}
+}
+/*
+void RemoveBindPoses(FbxScene* Scene)
+{
+	for (int PoseIndex = Scene->GetPoseCount() - 1; PoseIndex >= 0; --PoseIndex)
+	{
+		Scene->RemovePose(PoseIndex);
+	}
+}
+*/
+void FbxTools::RemovePrePostRotations(FbxNode* pNode)
+{
+	QString sNodeName = pNode->GetName();
+	for (int nChildIndex = 0; nChildIndex < pNode->GetChildCount(); nChildIndex++)
+	{
+		FbxNode* pChildBone = pNode->GetChild(nChildIndex);
+		RemovePrePostRotations(pChildBone);
+	}
+	if (sNodeName.contains("twist", Qt::CaseInsensitive) == false)
+	{
+		pNode->SetPreRotation(FbxNode::EPivotSet::eSourcePivot, FbxVector4(0, 0, 0));
+		pNode->SetPostRotation(FbxNode::EPivotSet::eSourcePivot, FbxVector4(0, 0, 0));
+	}
+}
+void FbxTools::ReparentTwistBone(FbxNode* pNode)
+{
+	FbxNode* pParentNode = pNode->GetParent();
+	FbxNode* pGrandParentNode = pParentNode->GetParent();
+	QString sNodeName = pNode->GetName();
+	QString sParentName = pParentNode->GetName();
+	QString sGrandParentName = pGrandParentNode->GetName();
+
+	// Calc Position Delta to add to Child
+	FbxAMatrix mNodeLocalTransform = pNode->EvaluateLocalTransform();
+	FbxVector4 vDelta = pNode->EvaluateLocalTransform().GetT();
+	for (int nChildIndex = 0; nChildIndex < pNode->GetChildCount(); nChildIndex++)
+	{
+		FbxNode* pChildBone = pNode->GetChild(nChildIndex);
+		QString sChildName = pChildBone->GetName();
+		pNode->RemoveChild(pChildBone);
+		pParentNode->AddChild(pChildBone);
+		FbxAMatrix pChildLocalTransform = pChildBone->EvaluateLocalTransform();
+		FbxAMatrix mNewTransform = mNodeLocalTransform * pChildLocalTransform;
+		pChildBone->LclTranslation.Set(mNodeLocalTransform.GetT());
+		//pChildBone->LclRotation.Set(mNodeLocalTransform.GetR());
+		//pChildBone->LclScaling.Set(mNodeLocalTransform.GetS());
+	}
+	if (pGrandParentNode)
+	{
+		//		pParentNode->RemoveChild(pNode);
+		//		pGrandParentNode->AddChild(pNode);
+	}
+	else
+	{
+		printf("nop");
+	}
+
+}
+void FbxTools::FindAndProcessTwistBones(FbxNode* pNode)
+{
+	QString sNodeName = pNode->GetName();
+	for (int nChildIndex = 0; nChildIndex < pNode->GetChildCount(); nChildIndex++)
+	{
+		FbxNode* pChildBone = pNode->GetChild(nChildIndex);
+		FindAndProcessTwistBones(pChildBone);
+	}
+	if (sNodeName.contains("twist", Qt::CaseInsensitive))
+	{
+		ReparentTwistBone(pNode);
+	}
+}

@@ -88,4 +88,16 @@ public:
 	static bool MultiplyMatrixToVertexBuffer(FbxAMatrix* pMatrix, FbxVector4* pVertexBuffer, int numVerts);
 
 	static FbxVector4 CalculatePointCloudCenter(FbxVector4* pVertexBuffer, int numVertices, bool bCenterWeight=false);
+
+	static bool GetAllMeshes(FbxNode* pNode, QList<FbxNode*>& aFbxNodeList);
+	static bool HasNodeAncestor(FbxNode* pNode, const QString sAncestorName, Qt::CaseSensitivity cs = Qt::CaseSensitive);
+
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	// DEV TESTING
+	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	static void FixClusterTranformLinks(FbxScene* Scene, FbxNode* RootNode, bool bCorrectFix = true);
+	static void RemovePrePostRotations(FbxNode* pNode);
+	static void ReparentTwistBone(FbxNode* pNode);
+	static void FindAndProcessTwistBones(FbxNode* pNode);
+
 };
