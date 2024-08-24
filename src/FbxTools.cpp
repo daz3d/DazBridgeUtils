@@ -603,6 +603,10 @@ bool FbxTools::BakePoseToVertexBuffer_DualQuaternionPathway(FbxVector4* pVertexB
 	bool bResult = false;
 	// get cluster link mode
 	FbxSkin* pSkinDeformer = (FbxSkin*)pMesh->GetDeformer(0, FbxDeformer::eSkin);
+	if (pSkinDeformer->GetClusterCount() < 1) {
+		dzApp->log("WARNING: FbxTools::BakePoseToVertexBuffer_DualQuaternionPathway(): SkinDeformer node has zero clusters");
+		return false;
+	}
 	FbxCluster* pCluster = pSkinDeformer->GetCluster(0);
 	FbxCluster::ELinkMode clusterMode = pCluster->GetLinkMode();
 

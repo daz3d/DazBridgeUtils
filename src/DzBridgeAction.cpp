@@ -1402,6 +1402,9 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 
 		setExportOptions(ExportOptions);
 
+		// DB 2024-08-24: Fix selected node before exporting to Fbx
+		dzScene->selectAllNodes(false);
+		dzScene->setPrimarySelection(Node);
 		if (m_EnableSubdivisions && m_bExportingBaseMesh)
 		{
 			QString CharacterBaseFBX = this->m_sDestinationFBX;
@@ -1427,7 +1430,6 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 					tr("A critical exception error occured during the FBX export operation using DzExporter::writeFile().") + "\n" +
 					tr("Please refer to the Daz Studio log.txt file for details."), QMessageBox::Ok);
 				bReturnResult = false;
-//				dzApp->quit();
 			}
 
 			if (result == DZ_USER_CANCELLED_OPERATION || result != DZ_NO_ERROR)
