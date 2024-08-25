@@ -274,6 +274,7 @@ void DzBridgeSubdivisionDialog::HandleSubdivisionLevelChanged(const QString& tex
 
 }
 
+// Find DzObject that matches "Name", depth-first recursive search of all descendents of "Node"
 DzNode* DzBridgeSubdivisionDialog::FindObject(DzNode* Node, QString Name)
 {
 	if (Node == nullptr)
@@ -321,6 +322,7 @@ bool DzBridgeSubdivisionDialog::setSubdivisionLevelByNode(DzNode* Node, int leve
 void DzBridgeSubdivisionDialog::LockSubdivisionProperties(bool subdivisionEnabled)
 {
 	DzNode* Selection = dzScene->getPrimarySelection();
+
 	foreach(QComboBox* combo, SubdivisionCombos)
 	{
 		QString Name = combo->property("Object").toString();
@@ -346,6 +348,8 @@ void DzBridgeSubdivisionDialog::LockSubdivisionProperties(bool subdivisionEnable
 					if (propName == "lodlevel" && enumProperty)
 					{
 						UndoData undo_data;
+						undo_data.sNodeName = Name;
+						undo_data.sPropertyName = propName;
 						undo_data.originalNumericLockState = enumProperty->isLocked();
 						undo_data.originalNumericValue = enumProperty->getValue();
 						UndoSubdivisionOverrides.insert(enumProperty, undo_data);
@@ -377,6 +381,8 @@ void DzBridgeSubdivisionDialog::LockSubdivisionProperties(bool subdivisionEnable
 					{
 						// DB 2021-09-02: Record data to Unlock/Undo changes
 						UndoData undo_data;
+						undo_data.sNodeName = Name;
+						undo_data.sPropertyName = propName;
 						undo_data.originalNumericLockState = numericProperty->isLocked();
 						undo_data.originalNumericValue = numericProperty->getDoubleValue();
 						UndoSubdivisionOverrides.insert(numericProperty, undo_data);
@@ -403,17 +409,53 @@ void DzBridgeSubdivisionDialog::LockSubdivisionProperties(bool subdivisionEnable
 // DB 2021-09-02: Unlock/Undo Subdivision Property Changes
 void DzBridgeSubdivisionDialog::UnlockSubdivisionProperties()
 {
+	DzNode* pSelection = dzScene->getPrimarySelection();
+
 	QMap<DzProperty*, UndoData>::iterator undoIterator = UndoSubdivisionOverrides.begin();
 	while (undoIterator != UndoSubdivisionOverrides.end())
 	{
+		// BUGFIX, 2024-08-25: Integrity Check of UndoData to account for modified scene, deleted objects
+		UndoData undo_data = undoIterator.value();
 		DzProperty* undoKey = undoIterator.key();
-		DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(undoKey);
-		if (numericProperty)
+		DzNode* pNode = FindObject(pSelection, undo_data.sNodeName);
+		if (pNode == NULL) {
+			// scene integrity failure, skip this undo key since the object no longer exists
+			QString sErrorString = tr("\
+SCENE INTEGRITY ERROR: DzBridgeSubdivisionDialog::UnlockSubdivisionProperties(): Unable to undo SubD property lock on Object: \
+");
+			dzApp->log(sErrorString + undo_data.sNodeName);
+			undoIterator++;
+			continue;
+		}
+
+//		DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(undoKey);
+		DzNumericProperty* pNumericProperty = NULL;
+
+		// BUGFIX, 2024-08-25: retrieve property by API, since passed property may be freed/recycled
+		DzObject* pObject = pNode->getObject();
+		DzShape* pShape = pObject ? pObject->getCurrentShape() : NULL;
+		DzGeometry* pGeo = pShape ? pShape->getGeometry() : NULL;
+		if (pGeo)
 		{
-			UndoData undo_data = undoIterator.value();
-			numericProperty->lock(false);
-			numericProperty->setDoubleValue(undo_data.originalNumericValue);
-			numericProperty->lock(undo_data.originalNumericLockState);
+			DzProperty* pProperty = pShape->findProperty(undo_data.sPropertyName);
+			if (pProperty && pProperty->getName() == undo_data.sPropertyName)
+			{
+				pNumericProperty = qobject_cast<DzNumericProperty*>(pProperty);
+			}
+		}
+
+		if (pNumericProperty)
+		{
+			pNumericProperty->lock(false);
+			pNumericProperty->setDoubleValue(undo_data.originalNumericValue);
+			pNumericProperty->lock(undo_data.originalNumericLockState);
+		}
+		else {
+			// scene integrity failure, skip this undo key since the object no longer exists
+			QString sErrorString = tr("\
+SCENE INTEGRITY ERROR: DzBridgeSubdivisionDialog::UnlockSubdivisionProperties(): Unable to undo SubD property lock on Object: \
+");
+			dzApp->log(sErrorString + undo_data.sNodeName + ", Property: " + undo_data.sPropertyName );
 		}
 		undoIterator++;
 	}
