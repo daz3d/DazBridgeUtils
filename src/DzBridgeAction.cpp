@@ -5516,6 +5516,8 @@ void DzBridgeAction::reparentFigure(DzNode* figure)
 
 }
 
+// WARNING: bugged execution logic, multiple redundant return paths
+// If given a DzGroupNode, returns list of all child Nodes that are type Actor/Character or Actor
 DzNodeList DzBridgeAction::findRootNodes(DzNode* pNode)
 {
 	DzNodeList figureList;
@@ -5592,6 +5594,7 @@ DzNodeList DzBridgeAction::findRootNodes(DzNode* pNode)
 	return figureList + propList;
 }
 
+// WARNING: destructive function that permanently sets invisible root nodes and all its children to visible
 DzNodeList DzBridgeAction::buildRootNodeList()
 {
 	DzNodeList rootNodeList;
