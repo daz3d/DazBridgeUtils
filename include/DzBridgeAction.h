@@ -398,6 +398,8 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool isAssetEnvironmentCompatible(QString sAssetType);
 		Q_INVOKABLE virtual bool isAssetPoseCompatible(QString sAssetType);
 
+		Q_INVOKABLE virtual void writeSceneMaterials(DzJsonWriter& Writer, QTextStream* pCSVstream);
+
 	private:
 		class MaterialGroupExportOrderMetaData
 		{

@@ -6347,5 +6347,20 @@ bool DzBridgeAction::isInteractiveMode()
 	return isInteractive;
 }
 
+// DB 2024-08-29: Convenience function for exporting full scene using Raw Environment Export
+void DzBridgeAction::writeSceneMaterials(DzJsonWriter& Writer, QTextStream* pCSVstream)
+{
+	m_mapProcessedFiles.clear();
+	Writer.startMemberArray("Materials", true);
+
+	auto aObjectList = dzScene->getNodeList();
+	foreach(auto el, aObjectList) {
+		DzNode* pNode = qobject_cast<DzNode*>(el);
+		writeAllMaterials(pNode, Writer, pCSVstream, true);
+	}
+
+	Writer.finishArray();
+}
+
 
 #include "moc_DzBridgeAction.cpp"
