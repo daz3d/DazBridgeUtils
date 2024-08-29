@@ -1723,3 +1723,125 @@ void FbxTools::FindAndProcessTwistBones(FbxNode* pNode)
 		ReparentTwistBone(pNode);
 	}
 }
+
+#define TCHAR_TO_UTF8(a) a
+#define TEXT(a) a
+void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLeftFoot, const char* sRightFoot, const char* sLeftHand, const char* sRightHand)
+{
+	bool AddIKBones = true;
+	// Add IK bones
+	if (pRootBone && AddIKBones)
+	{
+		// ik_foot_root
+		FbxNode* IKRootNode = pScene->FindNodeByName(TCHAR_TO_UTF8(TEXT("ik_foot_root")));
+		if (!IKRootNode)
+		{
+			// Create IK Root
+			FbxSkeleton* IKRootNodeAttribute = FbxSkeleton::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_foot_root")));
+			IKRootNodeAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
+			IKRootNodeAttribute->Size.Set(1.0);
+			IKRootNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_foot_root")));
+			IKRootNode->SetNodeAttribute(IKRootNodeAttribute);
+			IKRootNode->LclTranslation.Set(FbxVector4(0.0, 00.0, 0.0));
+			pRootBone->AddChild(IKRootNode);
+		}
+
+		// ik_foot_l
+		FbxNode* IKFootLNode = pScene->FindNodeByName(TCHAR_TO_UTF8(TEXT("ik_foot_l")));
+		FbxNode* FootLNode = pScene->FindNodeByName(TCHAR_TO_UTF8(TEXT(sLeftFoot)));
+		if (!FootLNode) FootLNode = pScene->FindNodeByName(TCHAR_TO_UTF8(TEXT("l_foot")));
+		if (!IKFootLNode && FootLNode)
+		{
+			// Create IK Root
+			FbxSkeleton* IKFootLNodeAttribute = FbxSkeleton::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_foot_l")));
+			IKFootLNodeAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
+			IKFootLNodeAttribute->Size.Set(1.0);
+			IKFootLNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_foot_l")));
+			IKFootLNode->SetNodeAttribute(IKFootLNodeAttribute);
+			FbxVector4 FootLocation = FootLNode->EvaluateGlobalTransform().GetT();
+			IKFootLNode->LclTranslation.Set(FootLocation);
+			IKRootNode->AddChild(IKFootLNode);
+		}
+
+		// ik_foot_r
+		FbxNode* IKFootRNode = pScene->FindNodeByName(TCHAR_TO_UTF8(TEXT("ik_foot_r")));
+		FbxNode* FootRNode = pScene->FindNodeByName(TCHAR_TO_UTF8(TEXT(sRightFoot)));
+		if (!FootRNode) FootRNode = pScene->FindNodeByName(TCHAR_TO_UTF8(TEXT("r_foot")));
+		if (!IKFootRNode && FootRNode)
+		{
+			// Create IK Root
+			FbxSkeleton* IKFootRNodeAttribute = FbxSkeleton::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_foot_r")));
+			IKFootRNodeAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
+			IKFootRNodeAttribute->Size.Set(1.0);
+			IKFootRNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_foot_r")));
+			IKFootRNode->SetNodeAttribute(IKFootRNodeAttribute);
+			FbxVector4 FootLocation = FootRNode->EvaluateGlobalTransform().GetT();
+			IKFootRNode->LclTranslation.Set(FootLocation);
+			IKRootNode->AddChild(IKFootRNode);
+		}
+
+		// ik_hand_root
+		FbxNode* IKHandRootNode = pScene->FindNodeByName(TCHAR_TO_UTF8(TEXT("ik_hand_root")));
+		if (!IKHandRootNode)
+		{
+			// Create IK Root
+			FbxSkeleton* IKHandRootNodeAttribute = FbxSkeleton::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_hand_root")));
+			IKHandRootNodeAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
+			IKHandRootNodeAttribute->Size.Set(1.0);
+			IKHandRootNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_hand_root")));
+			IKHandRootNode->SetNodeAttribute(IKHandRootNodeAttribute);
+			IKHandRootNode->LclTranslation.Set(FbxVector4(0.0, 00.0, 0.0));
+			pRootBone->AddChild(IKHandRootNode);
+		}
+
+		// ik_hand_gun
+		FbxNode* IKHandGunNode = pScene->FindNodeByName(TCHAR_TO_UTF8(TEXT("ik_hand_gun")));
+		FbxNode* HandRNode = pScene->FindNodeByName(TCHAR_TO_UTF8(TEXT(sRightHand)));
+		if (!HandRNode) HandRNode = pScene->FindNodeByName(TCHAR_TO_UTF8(TEXT("r_hand")));
+		if (!IKHandGunNode && HandRNode)
+		{
+			// Create IK Root
+			FbxSkeleton* IKHandGunNodeAttribute = FbxSkeleton::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_hand_gun")));
+			IKHandGunNodeAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
+			IKHandGunNodeAttribute->Size.Set(1.0);
+			IKHandGunNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_hand_gun")));
+			IKHandGunNode->SetNodeAttribute(IKHandGunNodeAttribute);
+			FbxVector4 HandLocation = HandRNode->EvaluateGlobalTransform().GetT();
+			IKHandGunNode->LclTranslation.Set(HandLocation);
+			IKHandRootNode->AddChild(IKHandGunNode);
+		}
+
+		// ik_hand_r
+		FbxNode* IKHandRNode = pScene->FindNodeByName(TCHAR_TO_UTF8(TEXT("ik_hand_r")));
+		if (!IKHandRNode && HandRNode && IKHandGunNode)
+		{
+			// Create IK Root
+			FbxSkeleton* IKHandRNodeAttribute = FbxSkeleton::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_hand_r")));
+			IKHandRNodeAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
+			IKHandRNodeAttribute->Size.Set(1.0);
+			IKHandRNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_hand_r")));
+			IKHandRNode->SetNodeAttribute(IKHandRNodeAttribute);
+			IKHandRNode->LclTranslation.Set(FbxVector4(0.0, 00.0, 0.0));
+			IKHandGunNode->AddChild(IKHandRNode);
+		}
+
+		// ik_hand_l
+		FbxNode* IKHandLNode = pScene->FindNodeByName(TCHAR_TO_UTF8(TEXT("ik_hand_l")));
+		FbxNode* HandLNode = pScene->FindNodeByName(TCHAR_TO_UTF8(TEXT(sLeftHand)));
+		if (!HandLNode) HandLNode = pScene->FindNodeByName(TCHAR_TO_UTF8(TEXT("l_hand")));
+		if (!IKHandLNode && HandLNode && IKHandGunNode)
+		{
+			// Create IK Root
+			FbxSkeleton* IKHandRNodeAttribute = FbxSkeleton::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_hand_l")));
+			IKHandRNodeAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
+			IKHandRNodeAttribute->Size.Set(1.0);
+			IKHandLNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_hand_l")));
+			IKHandLNode->SetNodeAttribute(IKHandRNodeAttribute);
+			FbxVector4 HandLocation = HandLNode->EvaluateGlobalTransform().GetT();
+			FbxVector4 ParentLocation = IKHandGunNode->EvaluateGlobalTransform().GetT();
+			IKHandLNode->LclTranslation.Set(HandLocation - ParentLocation);
+			IKHandGunNode->AddChild(IKHandLNode);
+		}
+	}
+
+}

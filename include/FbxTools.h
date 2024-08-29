@@ -99,5 +99,5 @@ public:
 	static void RemovePrePostRotations(FbxNode* pNode);
 	static void ReparentTwistBone(FbxNode* pNode);
 	static void FindAndProcessTwistBones(FbxNode* pNode);
-
+	static void AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLeftFoot, const char* sRightFoot, const char* sLeftHand, const char* sRightHand);
 };
