@@ -33,11 +33,17 @@ public:
 	DzBridgeBrowseEdit(const QString& text, QWidget* parent);
 };
 
-class DzBridgeThinButton : public QPushButton {
+#include "dzstyledbutton.h"
+class DzBridgeThinButton : public DzStyledButton {
 	Q_OBJECT
 public:
 	DzBridgeThinButton(const QString& text, QWidget* parent = nullptr);
 	void setText(const QString& text);
+	void setHighlightStyle(bool bHighlight);
+
+	QStyle::PrimitiveElement m_eDefaultElementStyle;
+	DzStyle::TextStyle m_eDefaultTextStyle;
+
 };
 
 class DzBridgeBrowseButton : public DzBridgeThinButton {

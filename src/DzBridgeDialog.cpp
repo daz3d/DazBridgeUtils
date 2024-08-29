@@ -50,10 +50,15 @@ DzBridgeBrowseEdit::DzBridgeBrowseEdit(const QString& text, QWidget* parent)
 	// add edit, add browser
 }
 
+#include "dzstyledbutton.h"
 DzBridgeThinButton::DzBridgeThinButton(const QString& text, QWidget* parent)
-	: QPushButton(text, parent)
+//	: QPushButton(text, parent)
+	: DzStyledButton(text, parent)
 {
 	setText(text);
+	// set up default styles
+	m_eDefaultElementStyle = getPrimitive();
+	m_eDefaultTextStyle = getTextStyle();
 }
 
 void DzBridgeDialogTools::SetThinButtonText(QPushButton* widget, const QString& text)
@@ -71,6 +76,18 @@ void DzBridgeDialogTools::SetThinButtonText(QPushButton* widget, const QString& 
 void DzBridgeThinButton::setText(const QString& text)
 {
 	DzBridgeDialogTools::SetThinButtonText(this, text);
+}
+
+void DzBridgeThinButton::setHighlightStyle(bool bHighlight)
+{
+	if (bHighlight) {
+		setCustomPrimitive(DZ_PE_SpecialInterestButton);
+		setCustomTextStyle(DZ_TS_SpecialInterestButton);
+	}
+	else {
+		setCustomPrimitive(m_eDefaultElementStyle);
+		setCustomTextStyle(m_eDefaultTextStyle);
+	}
 }
 
 bool DzBridgeDialog::setBridgeActionObject(QObject* arg) {
