@@ -145,6 +145,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE static DzNodeList BuildRootNodeList();
 		Q_INVOKABLE static DzNodeList FindRootNodes(DzNode* pNode);
 		Q_INVOKABLE static void ReparentFigure(DzNode* figure);
+		Q_INVOKABLE static DzNode* FindBestRootNode(const DzNodeList aNodeList);
 
 	protected:
 		// Struct to remember attachment info
@@ -454,6 +455,8 @@ namespace DzBridgeNameSpace
 		QList<MultiplyTextureValuesUndoData> m_undoList_MultilpyTextureValues;
 		// DB, 2023-11-10: Morph Selection Overhaul
 		QMap<DzBase*, MorphInfo> m_undoTable_MorphRename;
+		// DB, 2024-09-01: Duplicate Node Rename Undo
+		QMap<DzNode*, QString> m_undoTable_DuplicateNodeRename;
 
 		// Override data structures
 		QMap<DzProperty*, QString> m_overrideTable_MaterialImageMaps;
@@ -473,6 +476,9 @@ namespace DzBridgeNameSpace
 		// Need to temporarily rename surfaces if there is a name collision
 		void renameDuplicateMaterials(DzNode* Node, QList<QString>& MaterialNames, QMap<DzMaterial*, QString>& OriginalMaterialNames);
 		void undoRenameDuplicateMaterials(DzNode* Node, QList<QString>& MaterialNames, QMap<DzMaterial*, QString>& OriginalMaterialNames);
+		// DB, 2024-09-01: Duplicate Node Rename
+		bool renameDuplicateNodeName(DzNode* node, QStringList& existingNodeNameList);
+		bool undoDuplicateNodeRename();
 
 #ifdef UNITTEST_DZBRIDGE
 		friend class ::UnitTest_DzBridgeAction;

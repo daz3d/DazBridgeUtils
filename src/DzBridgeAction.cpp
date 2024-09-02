@@ -208,10 +208,13 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 	// Process JobPool (DzNodeList nodeJobList)
 	///////////////////////
 	QList<QString> existingMaterialNameList;
+	QStringList existingNodeNameList;
 	for (int i = 0; i < nodeJobList.length(); i++)
 	{
 		preProcessProgress.step();
 		DzNode *node = nodeJobList[i];
+		renameDuplicateNodeName(node, existingNodeNameList);
+
 		DzObject* object = node->getObject();
 		DzShape* shape = object ? object->getCurrentShape() : NULL;
 		if (shape)
@@ -727,6 +730,11 @@ bool DzBridgeAction::undoPreProcessScene()
 		{
 			morph->setName(originalName);
 		}
+	}
+
+	if (undoDuplicateNodeRename() == false)
+	{
+		bResult = false;
 	}
 
 	// Clear Override Tables
@@ -3847,7 +3855,7 @@ QMessageBox::Yes);
 		}
 		else
 		{
-			m_sAssetType = cleanString(wAssetCombo->itemData(nIndex).toString());
+			m_sAssetType = wAssetCombo->itemData(nIndex).toString();
 		}
 
 		m_bEnableMorphs = BridgeDialog->getMorphsEnabledCheckBox()->isChecked();
@@ -6353,13 +6361,69 @@ void DzBridgeAction::writeSceneMaterials(DzJsonWriter& Writer, QTextStream* pCSV
 	m_mapProcessedFiles.clear();
 	Writer.startMemberArray("Materials", true);
 
-	auto aObjectList = dzScene->getNodeList();
-	foreach(auto el, aObjectList) {
+	DzNodeList rootNodes = BuildRootNodeList();
+//	auto aObjectList = dzScene->getNodeList();
+//	foreach(auto el, aObjectList) {
+	foreach(auto el, rootNodes) {
 		DzNode* pNode = qobject_cast<DzNode*>(el);
 		writeAllMaterials(pNode, Writer, pCSVstream, true);
 	}
 
 	Writer.finishArray();
+}
+
+bool DzBridgeAction::renameDuplicateNodeName(DzNode* node, QStringList& existingNodeNameList)
+{
+	QString sNodeName = node->getName();
+	if (existingNodeNameList.contains(sNodeName) == true) {
+		int nDuplicateCount = 1;
+		QString sNewName = QString("%1__DUP_%2").arg(sNodeName).arg(nDuplicateCount, 3, 10, QChar('0'));
+		while (existingNodeNameList.contains(sNewName) == true)
+		{
+			nDuplicateCount++;
+			sNewName = QString("%1__DUP_%2").arg(sNodeName).arg(nDuplicateCount, 3, 10, QChar('0'));
+			if (nDuplicateCount > 999) {
+				// error, abort
+				dzApp->log("DzBridge: renameDuplicateNodeName(): CRITICAL ERROR: Over 999 duplicates for node name: " + sNodeName + ", aborting rename.");
+				return false;
+			}
+		}
+		m_undoTable_DuplicateNodeRename.insert(node, sNodeName);
+		node->setName(sNewName);
+	}
+	existingNodeNameList.append(node->getName());
+
+	return true;
+}
+
+bool DzBridgeAction::undoDuplicateNodeRename()
+{
+	foreach(DzNode * pNode, m_undoTable_DuplicateNodeRename.keys())
+	{
+		if (pNode == NULL) {
+			dzApp->log("DzBridge: undoDuplicateNodeRename: CRITICAL ERROR: null pointer found in DzNode* Keys. Aborting Undo.");
+			return false;
+		}
+		pNode->setName(m_undoTable_DuplicateNodeRename[pNode]);
+	}
+	m_undoTable_DuplicateNodeRename.clear();
+	return true;
+}
+
+DzNode* DzBridgeAction::FindBestRootNode(const DzNodeList aNodeList)
+{
+	foreach(DzNode * pNode, aNodeList) {
+		if (pNode->inherits("DzGroupNode") ||
+			pNode->inherits("DzSkeleton")) {
+			return pNode;
+		}
+	}
+	foreach(DzNode* pNode, aNodeList) {
+		if (!pNode->inherits("DzCamera")) {
+			return pNode;
+		}
+	}
+	return aNodeList[0];
 }
 
 

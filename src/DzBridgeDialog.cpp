@@ -616,6 +616,7 @@ void DzBridgeDialog::saveSettings()
 	settings->setValue("AnimationApplyBoneScale", animationApplyBoneScaleCheckBox->isChecked());
 }
 
+// Update Default GUI Settings based on currently selected asset
 void DzBridgeDialog::refreshAsset()
 {
 	DzNode* Selection = dzScene->getPrimarySelection();
@@ -632,11 +633,15 @@ void DzBridgeDialog::refreshAsset()
 
 	if (qobject_cast<DzSkeleton*>(Selection))
 	{
-		assetTypeCombo->setCurrentIndex(0);
+//		assetTypeCombo->setCurrentIndex(0);
+		int nSkeletalIndex = assetTypeCombo->findText("Skeletal Mesh");
+		assetTypeCombo->setCurrentIndex(nSkeletalIndex);
 	}
 	else
 	{
-		assetTypeCombo->setCurrentIndex(1);
+//		assetTypeCombo->setCurrentIndex(1);
+		int nStaticIndex = assetTypeCombo->findText("Static Mesh");
+		assetTypeCombo->setCurrentIndex(nStaticIndex);
 	}
 
 }
@@ -654,12 +659,12 @@ void DzBridgeDialog::resetToDefaults()
 {
 	m_bDontSaveSettings = true;
 	// Set Defaults
-	refreshAsset();
-
 	subdivisionEnabledCheckBox->setChecked(false);
 	morphsEnabledCheckBox->setChecked(false);
 	showFbxDialogCheckBox->setChecked(false);
 	exportMaterialPropertyCSVCheckBox->setChecked(false);
+
+	refreshAsset();
 	m_bDontSaveSettings = false;
 }
 
