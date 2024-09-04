@@ -6397,8 +6397,11 @@ bool DzBridgeAction::renameDuplicateNodeName(DzNode* node, QStringList& existing
 				return false;
 			}
 		}
-		m_undoTable_DuplicateNodeRename.insert(node, sNodeName);
 		node->setName(sNewName);
+		// Sanity Check before creating Undo Entry
+		if (node->getName() == sNewName) {
+			m_undoTable_DuplicateNodeRename.insert(sNewName, sNodeName);
+		}
 	}
 	existingNodeNameList.append(node->getName());
 
@@ -6407,13 +6410,16 @@ bool DzBridgeAction::renameDuplicateNodeName(DzNode* node, QStringList& existing
 
 bool DzBridgeAction::undoDuplicateNodeRename()
 {
-	foreach(DzNode * pNode, m_undoTable_DuplicateNodeRename.keys())
+	foreach(QString sNewName, m_undoTable_DuplicateNodeRename.keys())
 	{
-		if (pNode == NULL) {
-			dzApp->log("DzBridge: undoDuplicateNodeRename: CRITICAL ERROR: null pointer found in DzNode* Keys. Aborting Undo.");
-			return false;
+		DzNode* pNode = dzScene->findNode(sNewName);
+		if (pNode) {
+			QString sOldName = m_undoTable_DuplicateNodeRename[sNewName];
+			pNode->setName(sOldName);
 		}
-		pNode->setName(m_undoTable_DuplicateNodeRename[pNode]);
+		else {
+			dzApp->log("DzBridge WARNING: undoDuplicateNodeRename() unable to find pNode named: " + sNewName);
+		}
 	}
 	m_undoTable_DuplicateNodeRename.clear();
 	return true;

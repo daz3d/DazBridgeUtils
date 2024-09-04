@@ -456,7 +456,7 @@ namespace DzBridgeNameSpace
 		// DB, 2023-11-10: Morph Selection Overhaul
 		QMap<DzBase*, MorphInfo> m_undoTable_MorphRename;
 		// DB, 2024-09-01: Duplicate Node Rename Undo
-		QMap<DzNode*, QString> m_undoTable_DuplicateNodeRename;
+		QMap<QString, QString> m_undoTable_DuplicateNodeRename;
 
 		// Override data structures
 		QMap<DzProperty*, QString> m_overrideTable_MaterialImageMaps;
