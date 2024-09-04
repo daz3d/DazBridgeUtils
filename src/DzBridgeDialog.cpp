@@ -635,13 +635,13 @@ void DzBridgeDialog::refreshAsset()
 	{
 //		assetTypeCombo->setCurrentIndex(0);
 		int nSkeletalIndex = assetTypeCombo->findText("Skeletal Mesh");
-		assetTypeCombo->setCurrentIndex(nSkeletalIndex);
+		if (nSkeletalIndex != -1) assetTypeCombo->setCurrentIndex(nSkeletalIndex);
 	}
 	else
 	{
 //		assetTypeCombo->setCurrentIndex(1);
 		int nStaticIndex = assetTypeCombo->findText("Static Mesh");
-		assetTypeCombo->setCurrentIndex(nStaticIndex);
+		if (nStaticIndex != -1) assetTypeCombo->setCurrentIndex(nStaticIndex);
 	}
 
 }
