@@ -867,6 +867,9 @@ bool DzBridgeAction::exportHD(DzProgress* exportProgress)
 {
     DzProgress::setCurrentInfo("Preparing asset for export via Daz Bridge Library...");
 
+	// DB 2024-08-25: Ensure Primary Selection Integrity
+	DzNode* pPrimarySelection = dzScene->getPrimarySelection();
+
     if (m_subdivisionDialog == nullptr)
 		return false;
 
@@ -887,7 +890,7 @@ bool DzBridgeAction::exportHD(DzProgress* exportProgress)
 	// look for geograft morphs for export, and prepare
 	if (m_bEnableMorphs)
 	{
-		prepareGeograftMorphsToExport(dzScene->getPrimarySelection(), true);
+		prepareGeograftMorphsToExport(pPrimarySelection, true);
 	}
 
 	if (m_EnableSubdivisions && m_sAssetType != "MLDeformer")
@@ -920,9 +923,10 @@ bool DzBridgeAction::exportHD(DzProgress* exportProgress)
 			exportProgress->setInfo(tr("Exporting Asset..."));
 		QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 	}
+	// DB 2024-08-25: Ensure Primary Selection Integrity
+	dzScene->setPrimarySelection(pPrimarySelection);
 	m_subdivisionDialog->LockSubdivisionProperties(m_EnableSubdivisions);
 	m_bExportingBaseMesh = false;
-
 	bool bExportResult = exportAsset();
 	if (exportProgress)
 	{
@@ -933,7 +937,7 @@ bool DzBridgeAction::exportHD(DzProgress* exportProgress)
 	// Export any geograft morphs if exist
 	if (m_bEnableMorphs && bExportResult)
 	{
-        if (exportGeograftMorphs(dzScene->getPrimarySelection(), m_sDestinationPath))
+        if (exportGeograftMorphs(pPrimarySelection, m_sDestinationPath))
 		{
 			exportProgress->step();
 			exportProgress->setInfo(tr("Geograft morphs exported."));
@@ -978,6 +982,8 @@ bool DzBridgeAction::exportHD(DzProgress* exportProgress)
 
 	}
 
+	// DB 2024-08-25: Ensure Primary Selection Integrity
+	dzScene->setPrimarySelection(pPrimarySelection);
 	// DB 2021-09-02: Unlock and Undo subdivision changes
 	m_subdivisionDialog->UnlockSubdivisionProperties();
 	if (exportProgress)
@@ -5501,6 +5507,8 @@ void DzBridgeAction::ReparentFigure(DzNode* figure)
 
 }
 
+// WARNING: bugged execution logic, multiple redundant return paths
+// If given a DzGroupNode, returns list of all child Nodes that are type Actor/Character or Actor
 DzNodeList DzBridgeAction::FindRootNodes(DzNode* pNode)
 {
 	DzNodeList figureList;
@@ -5577,6 +5585,7 @@ DzNodeList DzBridgeAction::FindRootNodes(DzNode* pNode)
 	return figureList + propList;
 }
 
+// WARNING: destructive function that permanently sets invisible root nodes and all its children to visible
 DzNodeList DzBridgeAction::BuildRootNodeList()
 {
 	DzNodeList rootNodeList;

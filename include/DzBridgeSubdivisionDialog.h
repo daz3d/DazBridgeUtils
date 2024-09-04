@@ -75,6 +75,8 @@ namespace DzBridgeNameSpace
 
 		struct UndoData
 		{
+			QString sNodeName; // name of DzNode
+			QString sPropertyName;
 			bool originalNumericLockState;
 			double originalNumericValue;
 		};
