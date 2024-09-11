@@ -213,12 +213,14 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 	{
 		preProcessProgress.step();
 		DzNode *node = nodeJobList[i];
-		renameDuplicateNodeName(node, existingNodeNameList);
 
 		DzObject* object = node->getObject();
 		DzShape* shape = object ? object->getCurrentShape() : NULL;
 		if (shape)
 		{
+			// 2024-SEP-10, DB: moved renameDuplicateNodeName inside if (shape) to fix bone conversion and other potential node name change incompatibilities
+			renameDuplicateNodeName(node, existingNodeNameList);
+
 			for (int i = 0; i < shape->getNumMaterials(); i++)
 			{
 				DzMaterial* material = shape->getMaterial(i);
@@ -6383,6 +6385,11 @@ void DzBridgeAction::writeSceneMaterials(DzJsonWriter& Writer, QTextStream* pCSV
 
 bool DzBridgeAction::renameDuplicateNodeName(DzNode* node, QStringList& existingNodeNameList)
 {
+	// 2024-SEP-10, DB: Bugfix boneconverter incompatibility
+	if (node->inherits("DzBone")) {
+		return true;
+	}
+
 	QString sNodeName = node->getName();
 	if (existingNodeNameList.contains(sNodeName) == true) {
 		int nDuplicateCount = 1;
