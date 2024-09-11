@@ -470,7 +470,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	if (m_bSetupMode)
 	{
-		setDisabled(true);
+		this->setDisabled(true);
 	}
 
 #ifndef VODSVERSION
@@ -608,6 +608,8 @@ bool DzBridgeDialog::loadSavedSettings()
 void DzBridgeDialog::saveSettings()
 {
 	if (settings == nullptr || m_bDontSaveSettings) return;
+	settings->setValue("ShowAdvancedSettings", this->optionsShown());
+
 	if (experimentalAnimationExportCheckBox == nullptr) return;
 	settings->setValue("AnimationExperminentalExport", experimentalAnimationExportCheckBox->isChecked());
 	settings->setValue("AnimationBake", bakeAnimationExportCheckBox->isChecked());
@@ -747,17 +749,6 @@ void DzBridgeDialog::HandleExportMaterialPropertyCSVCheckBoxChange(int state)
 	settings->setValue("ExportMaterialPropertyCSV", state == Qt::Checked);
 }
 
-void DzBridgeDialog::HandleShowAdvancedSettingsCheckBoxChange(bool checked)
-{
-	if (m_bSetupMode)
-	{
-		this->showOptions();
-		return;
-	}
-
-	if (settings == nullptr || m_bDontSaveSettings) return;
-	settings->setValue("ShowAdvancedSettings", checked);
-}
 void DzBridgeDialog::HandleEnableNormalMapGenerationCheckBoxChange(int state)
 {
 	if (settings == nullptr || m_bDontSaveSettings) return;
@@ -918,6 +909,18 @@ void DzBridgeDialog::setDisabled(bool bDisabled)
 	subdivisionButton->setDisabled(bDisabled);
 	morphsButton->setDisabled(bDisabled);
 	m_wLodSettingsButton->setDisabled(bDisabled);
+
+	morphsEnabledCheckBox->setDisabled(bDisabled);
+	morphLockBoneTranslationCheckBox->setDisabled(bDisabled);
+	subdivisionEnabledCheckBox->setDisabled(bDisabled);
+	m_wLodSettingsButton->setDisabled(bDisabled);
+	m_wEnableLodCheckBox->setDisabled(bDisabled);
+
+	experimentalAnimationExportCheckBox->setDisabled(bDisabled);
+	bakeAnimationExportCheckBox->setDisabled(bDisabled);
+	faceAnimationExportCheckBox->setDisabled(bDisabled);
+	animationExportActiveCurvesCheckBox->setDisabled(bDisabled);
+	animationApplyBoneScaleCheckBox->setDisabled(bDisabled);
 
 }
 

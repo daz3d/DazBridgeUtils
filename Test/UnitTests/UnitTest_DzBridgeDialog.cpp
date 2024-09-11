@@ -40,7 +40,6 @@ bool UnitTest_DzBridgeDialog::runUnitTests()
 	RUNTEST(HandleFBXVersionChange);
 	RUNTEST(HandleShowFbxDialogCheckBoxChange);
 	RUNTEST(HandleExportMaterialPropertyCSVCheckBoxChange);
-	RUNTEST(HandleShowAdvancedSettingsCheckBoxChange);
 	RUNTEST(refreshAsset);
 
 	return true;
@@ -184,13 +183,6 @@ bool UnitTest_DzBridgeDialog::HandleExportMaterialPropertyCSVCheckBoxChange(Unit
 {
 	bool bResult = true;
 	TRY_METHODCALL(qobject_cast<DzBridgeDialog*>(m_testObject)->HandleExportMaterialPropertyCSVCheckBoxChange(0));
-	return bResult;
-}
-
-bool UnitTest_DzBridgeDialog::HandleShowAdvancedSettingsCheckBoxChange(UnitTest::TestResult* testResult)
-{
-	bool bResult = true;
-	TRY_METHODCALL(qobject_cast<DzBridgeDialog*>(m_testObject)->HandleShowAdvancedSettingsCheckBoxChange(0));
 	return bResult;
 }
 

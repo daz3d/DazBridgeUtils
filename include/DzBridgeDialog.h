@@ -135,7 +135,6 @@ namespace DzBridgeNameSpace
 		virtual void HandleFBXVersionChange(const QString& fbxVersion);
 		virtual void HandleShowFbxDialogCheckBoxChange(int state);
 		virtual void HandleExportMaterialPropertyCSVCheckBoxChange(int state);
-		virtual void HandleShowAdvancedSettingsCheckBoxChange(bool checked);
 		virtual void HandleEnableNormalMapGenerationCheckBoxChange(int state);
 		virtual void HandleTargetPluginInstallerButton();
 		virtual void HandleOpenIntermediateFolderButton(QString sFolderPath="");

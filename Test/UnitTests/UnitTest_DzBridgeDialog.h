@@ -31,7 +31,6 @@ private:
 	bool HandleFBXVersionChange(UnitTest::TestResult* testResult);
 	bool HandleShowFbxDialogCheckBoxChange(UnitTest::TestResult* testResult);
 	bool HandleExportMaterialPropertyCSVCheckBoxChange(UnitTest::TestResult* testResult);
-	bool HandleShowAdvancedSettingsCheckBoxChange(UnitTest::TestResult* testResult);
 	bool refreshAsset(UnitTest::TestResult* testResult);
 
 };
