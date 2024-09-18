@@ -146,6 +146,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE static DzNodeList FindRootNodes(DzNode* pNode);
 		Q_INVOKABLE static void ReparentFigure(DzNode* figure);
 		Q_INVOKABLE static DzNode* FindBestRootNode(const DzNodeList aNodeList);
+		Q_INVOKABLE static DzNode* FindNodeByName(DzNode* pRootNode, QString sNodeName);
 
 	protected:
 		// Struct to remember attachment info
@@ -433,6 +434,8 @@ namespace DzBridgeNameSpace
 		class DiffuseAndAlphaMapsUndoData
 		{
 		public:
+			int materialIndex;
+			QString materialLabel;
 			DzColorProperty* diffuseProperty;
 			DzNumericProperty* cutoutProperty;
 			QString colorMapName;
@@ -442,6 +445,8 @@ namespace DzBridgeNameSpace
 		class MultiplyTextureValuesUndoData
 		{
 		public:
+			int materialIndex;
+			QString materialLabel;
 			DzProperty* textureProperty;
 			QString textureMapName;
 			QVariant textureValue;

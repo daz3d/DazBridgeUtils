@@ -687,22 +687,7 @@ bool DzBridgeAction::undoPreProcessScene()
     
 	bool bResult = true;
 
-	if (undoRenameDuplicateMaterials() == false)
-	{
-		bResult = false;
-	}
-
-	// Undo Inject Normal Maps
-	if (undoGenerateMissingNormalMaps() == false)
-	{
-		bResult = false;
-	}
-
-	// Undo Combine Diffuse and ALpha Maps
-	if (undoCombineDiffuseAndAlphaMaps() == false)
-	{
-		bResult = false;
-	}
+	// DB 2024-09-18: CrashFix: Undo Integrity Error: Re-order Undo operations so they remain in LIFO / stack ordering
 
 	// Undo Morph Rename
 	for (int i=0; i < m_undoTable_MorphRename.size(); i++)
@@ -732,6 +717,35 @@ bool DzBridgeAction::undoPreProcessScene()
 		{
 			morph->setName(originalName);
 		}
+	}
+
+	// Undo Combine Diffuse and ALpha Maps
+	if (undoCombineDiffuseAndAlphaMaps() == false)
+	{
+		bResult = false;
+	}
+
+	// DB 2024-09-18: ?? Why was this not being called before ??
+	if (undoMultiplyTextureValues() == false)
+	{
+		bResult = false;
+	}
+
+	// Undo Inject Normal Maps
+	if (undoGenerateMissingNormalMaps() == false)
+	{
+		bResult = false;
+	}
+
+	// DB 2024-09-18: ?? Why was this not being called before ??
+	if (undoRenameDuplicateClothing() == false)
+	{
+		bResult = false;
+	}
+
+	if (undoRenameDuplicateMaterials() == false)
+	{
+		bResult = false;
 	}
 
 	if (undoDuplicateNodeRename() == false)
@@ -6136,6 +6150,9 @@ bool DzBridgeAction::combineDiffuseAndAlphaMaps(DzMaterial* Material)
 
 			// create Undo Data
 			DiffuseAndAlphaMapsUndoData undoData;
+			// DB 2024-09-18 crashfix: avoid invalidated material properties
+			undoData.materialIndex = Material->getIndex();
+			undoData.materialLabel = Material->getLabel();
 			undoData.diffuseProperty = colorProp;
 			undoData.colorMapName = sOriginalDiffuseFilename;
 			undoData.cutoutProperty = numericProp;
@@ -6160,6 +6177,15 @@ bool DzBridgeAction::undoCombineDiffuseAndAlphaMaps()
                 
 	foreach(DiffuseAndAlphaMapsUndoData undoData, m_undoList_CombineDiffuseAndAlphaMaps)
 	{
+		// DB 2024-09-18 crashfix: check for material list and scene integrity
+		int undoMatIndex = undoData.materialIndex;
+		QString undoMatLabel = undoData.materialLabel;
+		DzMaterial* pMaterial = DzMaterial::getMaterial(undoMatIndex);
+		if (!pMaterial) {
+			dzApp->log("DzBridge ERROR: undoCombineDiffuseAndAlphaMaps(): Scene Integrity Failure: material index integrity failure: index=" + QString("%1").arg(undoMatIndex) + ", label=" + undoMatLabel);
+			continue;
+		}
+
 		if (undoData.diffuseProperty && !undoData.colorMapName.isEmpty() && undoData.colorMapName != "")
 			undoData.diffuseProperty->setMap(undoData.colorMapName);
 		if (undoData.cutoutProperty && !undoData.cutoutMapName.isEmpty() && undoData.cutoutMapName != "")
@@ -6175,8 +6201,6 @@ bool DzBridgeAction::undoCombineDiffuseAndAlphaMaps()
 bool DzBridgeAction::multiplyTextureValues(DzMaterial* material)
 {
 	if (!material) return false;
-
-	MultiplyTextureValuesUndoData undoData;
 
 	foreach(QObject *propertyObject, material->getPropertyList())
 	{
@@ -6207,6 +6231,9 @@ bool DzBridgeAction::multiplyTextureValues(DzMaterial* material)
 				image.save(outfile, 0, 100);
 
 				// create undo record
+				MultiplyTextureValuesUndoData undoData;
+				undoData.materialIndex = material->getIndex();
+				undoData.materialLabel = material->getLabel();
 				undoData.textureProperty = colorProperty;
 				undoData.textureValue = colorValue.rgba();
 				undoData.textureMapName = textureFilename;
@@ -6242,6 +6269,9 @@ bool DzBridgeAction::multiplyTextureValues(DzMaterial* material)
 				image.save(outfile, 0, 100);
 
 				// create undo record
+				MultiplyTextureValuesUndoData undoData;
+				undoData.materialIndex = material->getIndex();
+				undoData.materialLabel = material->getLabel();
 				undoData.textureProperty = numericProperty;
 				undoData.textureValue = numericValue;
 				undoData.textureMapName = textureFilename;
@@ -6260,6 +6290,15 @@ bool DzBridgeAction::undoMultiplyTextureValues()
 
 	foreach(MultiplyTextureValuesUndoData undoData, m_undoList_MultilpyTextureValues)
 	{
+		// DB 2024-09-18 crashfix: check for material list and scene integrity
+		int undoMatIndex = undoData.materialIndex;
+		QString undoMatLabel = undoData.materialLabel;
+		DzMaterial* pMaterial = DzMaterial::getMaterial(undoMatIndex);
+		if (!pMaterial) {
+			dzApp->log("DzBridge ERROR: undoMultiplyTextureValues(): Scene Integrity Failure: material index integrity failure: index=" + QString("%1").arg(undoMatIndex) + ", label=" + undoMatLabel);
+			continue;
+		}
+
 		DzColorProperty* colorProperty = qobject_cast<DzColorProperty*>(undoData.textureProperty);
 		DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(undoData.textureProperty);
 
@@ -6455,5 +6494,28 @@ DzNode* DzBridgeAction::FindBestRootNode(const DzNodeList aNodeList)
 	return aNodeList[0];
 }
 
+
+// Find DzNode that matches "sNodeName", depth-first recursive search of all descendents of "pRootNode"
+DzNode* DzBridgeAction::FindNodeByName(DzNode* pRootNode, QString sNodeName)
+{
+	if (pRootNode == NULL)
+		pRootNode = dzScene->getPrimarySelection();
+
+	DzObject* pObject = pRootNode->getObject();
+	if (pObject && pObject->getCurrentShape())
+	{
+		if (pRootNode->getName() == sNodeName)
+			return pRootNode;
+	}
+
+	for (int ChildIndex = 0; ChildIndex < pRootNode->getNumNodeChildren(); ChildIndex++)
+	{
+		DzNode* pChildNode = pRootNode->getNodeChild(ChildIndex);
+		DzNode* pFoundNode = FindNodeByName(pChildNode, sNodeName);
+		if (pFoundNode)
+			return pFoundNode;
+	}
+	return NULL;
+}
 
 #include "moc_DzBridgeAction.cpp"
