@@ -3025,7 +3025,30 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 				{
 					dzApp->log("WARNING: multiple file extensions possibly detected: " + recompressedFilename);
 				}
-				if (image.save(recompressedFilename, 0, customEncodingQuality) == true)
+
+				bool bSaveSuccessful = false;
+				bool bCompressMore = false;
+				do {
+					bSaveSuccessful = image.save(recompressedFilename, 0, customEncodingQuality);
+					// check if there is file size target
+					int nNewFileSize = QFileInfo(recompressedFilename).size();
+					if (m_bRecompressIfFileSizeTooBig && nNewFileSize > m_nFileSizeThresholdToInitiateRecompression)
+					{
+						bCompressMore = true;
+						// decrease quality
+						customEncodingQuality -= 25;
+						// decrease resolution
+						if (customImageSize.height() > 256 && customImageSize.width() > 256) {
+							customImageSize = customImageSize / 2;
+							image = image.scaled(customImageSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+						}
+					}
+					else {
+						bCompressMore = false;
+					}
+				} while (bCompressMore);
+
+				if (bSaveSuccessful)
 				{
 					// only perform if save was successful
 					dtuTextureName = TextureName = recompressedFilename;
@@ -3040,80 +3063,6 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 		///////////////////////
 		}
 
-// DB, 2023-10-27: Above code block replaces this commented out section
-/****
-		if (m_bResizeTextures)
-		{
-			DzImageMgr* imageMgr = dzApp->getImageMgr();
-			QImage image = imageMgr->loadImage(TextureName);
-			if (image.size().width() > m_qTargetTextureSize.width() ||
-				image.size().height() > m_qTargetTextureSize.height())
-			{
-				image = image.scaled(m_qTargetTextureSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-				QString cleanedTempPath = dzApp->getTempPath().toLower().replace("\\", "/");
-				QString filestem = QFileInfo(TextureName).fileName();
-				QString resizedFilename = cleanedTempPath + "/" + filestem;
-				imageMgr->saveImage(resizedFilename, image);
-				dtuTextureName = TextureName = resizedFilename;
-			}
-		}
-		// DB 2023-Oct-23: Recompress if filesize too big
-		if (m_bRecompressIfFileSizeTooBig)
-		{
-			// only re-compress to jpeg if file is large
-			if (QFileInfo(TextureName).size() > m_nFileSizeThresholdToInitiateRecompression)
-			{
-				// load image and resave as PNG
-				DzImageMgr* imageMgr = dzApp->getImageMgr();
-				QImage image = imageMgr->loadImage(TextureName);
-				bool bHasAlpha = image.hasAlphaChannel();
-				QString cleanedTempPath = dzApp->getTempPath().toLower().replace("\\", "/");
-				QString filestem = QFileInfo(TextureName).fileName();
-				QString recompressedFilename;
-				QString fileTypeExtension = ".jpg";
-				if (bHasAlpha || !m_bConvertToJpg && m_bConvertToPng) // default to jpg, unless png=true and jpg=false
-					fileTypeExtension = ".png";
-				recompressedFilename = cleanedTempPath + "/" + filestem + fileTypeExtension;
-				if (fileTypeExtension == ".png")
-				{
-					if (image.save(recompressedFilename, "png", 95) == false) // 95% quality
-					{
-						dzApp->log("ERROR: saving file failed: " + recompressedFilename);
-					}
-				}
-				else
-				{
-					if (image.save(recompressedFilename, "jpg", 95) == false) // 95% quality
-					{
-						dzApp->log("ERROR: saving file failed: " + recompressedFilename);
-					}
-
-				}
-				dtuTextureName = TextureName = recompressedFilename;
-			}
-		}
-		// DB 2023-Oct-5: Save to PNG or JPG, Export all Textures
-		if (m_bConvertToPng || m_bConvertToJpg)
-		{
-			if (TextureName.endsWith(".png", Qt::CaseInsensitive) == false &&
-				TextureName.endsWith(".jpg", Qt::CaseInsensitive) == false &&
-				TextureName.endsWith(".jpeg", Qt::CaseInsensitive) == false)
-			{
-				// load image and resave as PNG
-				DzImageMgr* imageMgr = dzApp->getImageMgr();
-				QImage image = imageMgr->loadImage(TextureName);
-				bool bHasAlpha = image.hasAlphaChannel();
-				QString cleanedTempPath = dzApp->getTempPath().toLower().replace("\\", "/");
-				QString filestem = QFileInfo(TextureName).fileName();
-				QString fileTypeExtension = ".png";
-				if (m_bConvertToJpg && !bHasAlpha) // jpg conversion takes priority over png
-					fileTypeExtension = ".jpg";
-				QString pngFilename = cleanedTempPath + "/" + filestem + fileTypeExtension;
-				imageMgr->saveImage(pngFilename, image);
-				dtuTextureName = TextureName = pngFilename;
-			}
-		}
-****/
 
 
 		if (m_bExportAllTextures)
@@ -3128,7 +3077,6 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 		{
 			dtuTextureName = exportAssetWithDtu(TextureName, Node->getLabel() + "_" + Material->getName());
 		}
-//		m_aProcessedFiles.append(TextureName);
 		m_mapProcessedFiles.insert(TextureName.toLower(), dtuTextureName);
 	}
 	else if (!TextureName.isEmpty())
@@ -3892,6 +3840,47 @@ QMessageBox::Yes);
 
 	// LOD settings
 	m_bEnableLodGeneration = BridgeDialog->getEnableLodCheckBox()->isChecked();
+
+	// Texture Resizing options
+	bool bEnableTextureResizing = BridgeDialog->getResizeTextures();
+
+	m_nFileSizeThresholdToInitiateRecompression = BridgeDialog->getMaxTextureFileSize() * 1024;
+	if (m_nFileSizeThresholdToInitiateRecompression != -1) {
+		m_bRecompressIfFileSizeTooBig = true;
+	}
+	else {
+		m_bRecompressIfFileSizeTooBig = false;
+	}
+	int maxDimension = BridgeDialog->getMaxTextureResolution();
+	if (maxDimension != -1) {
+		m_qTargetTextureSize = QSize(maxDimension, maxDimension);
+		m_bResizeTextures = true;
+	}
+	else {
+		m_bResizeTextures = false;
+	}
+	QString formatString = BridgeDialog->getExportTextureFileFormat();
+	if (formatString == "any") {
+		m_bConvertToJpg = true;
+		m_bConvertToPng = true;
+		m_bForceReEncoding = false;
+	}
+	else if (formatString == "png+jpg") {
+		m_bConvertToJpg = true;
+		m_bConvertToPng = true;
+		m_bForceReEncoding = true;
+	}
+	else if (formatString == "png") {
+		m_bConvertToJpg = false;
+		m_bConvertToPng = true;
+		m_bForceReEncoding = true;
+	}
+	else if (formatString == "jpg") {
+		m_bConvertToJpg = true;
+		m_bConvertToPng = false;
+		m_bForceReEncoding = true;
+	}
+
 
 	return true;
 }

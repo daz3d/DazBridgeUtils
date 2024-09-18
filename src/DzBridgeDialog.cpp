@@ -397,6 +397,59 @@ better quality.  **DOES NOT EXPORT MESH**";
 	m_aRowLabels.append(m_wLodRowLabelWidget);
 	this->showLodRow(false);
 
+	// DB 2024-09-17: Texture Resizing options
+	m_wResizeTexturesGroupBox = new QGroupBox(tr("Texture Resizing Options : "));
+	m_wResizeTexturesGroupBox->setCheckable(true);
+	m_wResizeTexturesGroupBox->setChecked(true);	
+	QFormLayout* textureResizingOptionsLayout = new QFormLayout(m_wResizeTexturesGroupBox);
+	textureResizingOptionsLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
+	textureResizingOptionsLayout->setSpacing(nStyleMargin);
+	textureResizingOptionsLayout->setMargin(nStyleMargin);
+	textureResizingOptionsLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
+
+	m_wMaxTextureFileSizeCombo = new QComboBox(0);
+	m_wMaxTextureFileSizeCombo->addItem(tr("No Maximum"), QVariant(-1));
+	m_wMaxTextureFileSizeCombo->addItem(tr("1 MB"), QVariant(1024));
+	m_wMaxTextureFileSizeCombo->addItem(tr("2 MB"), QVariant(1024 * 2));
+	m_wMaxTextureFileSizeCombo->addItem(tr("5 MB"), QVariant(1024 * 5));
+	m_wMaxTextureFileSizeCombo->addItem(tr("10 MB"), QVariant(1024 * 10));
+	m_wMaxTextureFileSizeCombo->addItem(tr("25 MB"), QVariant(1024 * 25));
+//	m_wMaxTextureFileSizeCombo->addItem(tr("Custom File Size in kilobytes..."), QVariant("custom"));
+	QString sMaximumTextureFileSizeHelp = tr("The exporter will try to resize and/or re-encode the texture in order to reduce any files above the maximum file size.");
+	m_wMaxTextureFileSizeCombo->setWhatsThis(sMaximumTextureFileSizeHelp);
+	m_wMaxTextureFileSizeCombo->setToolTip(sMaximumTextureFileSizeHelp);
+	m_wMaxTextureFileSizeRowLabelWidget = new QLabel(tr("Maximum Texture File Size"));
+	textureResizingOptionsLayout->addRow(m_wMaxTextureFileSizeRowLabelWidget, m_wMaxTextureFileSizeCombo);
+//	m_aTextureResizingLabels.append(m_wMaxTextureFileSizeRowLabelWidget);
+	m_aRowLabels.append(m_wMaxTextureFileSizeRowLabelWidget);
+
+	m_wMaxTextureResolutionCombo = new QComboBox(0);
+	m_wMaxTextureResolutionCombo->addItem(tr("No Maximum"), QVariant(-1));
+	m_wMaxTextureResolutionCombo->addItem(tr("512x512"), QVariant(512));
+	m_wMaxTextureResolutionCombo->addItem(tr("1K (1024x1024)"), QVariant(1024));
+	m_wMaxTextureResolutionCombo->addItem(tr("2K (2028x2048)"), QVariant(2048));
+	m_wMaxTextureResolutionCombo->addItem(tr("4K (4096x4096)"), QVariant(4096));
+//	m_wMaxTextureResolutionCombo->addItem(tr("Custom Resolution in pixels..."), QVariant("custom"));
+	QString sMaximumTextureResolutionHelp = tr("The exporter will try to resize any texture greater than the specified maximum resolution to the maximum.");
+	m_wMaxTextureResolutionCombo->setWhatsThis(sMaximumTextureResolutionHelp);
+	m_wMaxTextureResolutionCombo->setToolTip(sMaximumTextureResolutionHelp);
+	m_wMaxTextureResolutionRowLabelWidget = new QLabel(tr("Maximum Texture Resolution"));
+	textureResizingOptionsLayout->addRow(m_wMaxTextureResolutionRowLabelWidget, m_wMaxTextureResolutionCombo);
+//	m_aTextureResizingLabels.append(m_wMaxTextureResolutionRowLabelWidget);
+	m_aRowLabels.append(m_wMaxTextureResolutionRowLabelWidget);
+
+	m_wExportTextureFileFormatCombo = new QComboBox(0);
+	m_wExportTextureFileFormatCombo->addItem(tr("Keep Original File Format(s)"), QVariant("any"));
+	m_wExportTextureFileFormatCombo->addItem(tr("Convert Everything to JPG Only"), QVariant("jpg"));
+	m_wExportTextureFileFormatCombo->addItem(tr("Convert Everything to PNG Only"), QVariant("png"));
+	m_wExportTextureFileFormatCombo->addItem(tr("Convert Everything to PNG or JPG"), QVariant("png+jpg"));
+	m_wExportTextureFormatRowLabelWidget = new QLabel(tr("Export Texture File Format"));
+	textureResizingOptionsLayout->addRow(m_wExportTextureFormatRowLabelWidget, m_wExportTextureFileFormatCombo);
+//	m_aTextureResizingLabels.append(m_wExportTextureFormatRowLabelWidget);
+	m_aRowLabels.append(m_wExportTextureFormatRowLabelWidget);
+
+	//	mainLayout->addRow("", m_wResizeTexturesGroupBox);
+
 	///////////////////////////////////////
 	// Add Widgets to Advanced Layout
 	///////////////////////////////////////
@@ -414,6 +467,10 @@ better quality.  **DOES NOT EXPORT MESH**";
 	m_wShowFbxRowLabelWidget = new QLabel(tr("Show FBX Dialog"));
 	advancedLayout->addRow(m_wShowFbxRowLabelWidget, showFbxDialogCheckBox);
 	m_aRowLabels.append(m_wShowFbxRowLabelWidget);
+
+	// Texture Resizing Options
+	advancedLayout->addRow(m_wResizeTexturesGroupBox);
+
 	m_wNormalMapsRowLabelWidget = new QLabel(tr("Generate Normal Maps"));
 	advancedLayout->addRow(m_wNormalMapsRowLabelWidget, enableNormalMapGenerationCheckBox);
 	m_aRowLabels.append(m_wNormalMapsRowLabelWidget);

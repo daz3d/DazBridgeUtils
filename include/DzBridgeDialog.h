@@ -4,6 +4,8 @@
 #include "dzoptionsdialog.h"
 #include <QtGui/qcheckbox.h>
 #include <QtGui/qpushbutton.h>
+#include <QtGui/qgroupbox.h>
+#include <QtGui/qcombobox.h>
 #include "dzmenubutton.h"
 #include "dzstyledefs.h"
 
@@ -94,6 +96,11 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE QCheckBox* getMorphLockBoneTranslationCheckBox() { return morphLockBoneTranslationCheckBox; }
         Q_INVOKABLE bool getEnableExperimentalOptions() { return m_enableExperimentalOptionsCheckBox->isChecked(); }
 		Q_INVOKABLE QCheckBox* getEnableLodCheckBox() { return m_wEnableLodCheckBox; }
+
+		Q_INVOKABLE bool getResizeTextures() { return m_wResizeTexturesGroupBox->isChecked(); }
+		Q_INVOKABLE int getMaxTextureFileSize() { return m_wMaxTextureFileSizeCombo->itemData(m_wMaxTextureFileSizeCombo->currentIndex()).toInt(); }
+		Q_INVOKABLE int getMaxTextureResolution() { return m_wMaxTextureResolutionCombo->itemData(m_wMaxTextureResolutionCombo->currentIndex()).toInt(); }
+		Q_INVOKABLE QString getExportTextureFileFormat() { return m_wExportTextureFileFormatCombo->itemData(m_wExportTextureFileFormatCombo->currentIndex()).toString(); }
 
 		/** Constructor **/
 		DzBridgeDialog(QWidget* parent = nullptr, const QString& windowTitle = "");
@@ -214,6 +221,16 @@ namespace DzBridgeNameSpace
 		QPushButton* m_wLodSettingsButton = nullptr;
 		QCheckBox* m_wEnableLodCheckBox = nullptr;
 		QLabel* m_wLodRowLabelWidget = nullptr;
+
+		// Texture Resizing options (2024-09-17, DB)
+		QGroupBox* m_wResizeTexturesGroupBox = nullptr;
+		QComboBox* m_wMaxTextureFileSizeCombo = nullptr;
+		QComboBox* m_wMaxTextureResolutionCombo = nullptr;
+		QComboBox* m_wExportTextureFileFormatCombo = nullptr;
+		QList<QLabel*> m_aTextureResizingLabels;
+		QLabel* m_wMaxTextureFileSizeRowLabelWidget = nullptr;
+		QLabel* m_wMaxTextureResolutionRowLabelWidget = nullptr;
+		QLabel* m_wExportTextureFormatRowLabelWidget = nullptr;
 
 		QString m_sEmbeddedFilesPath = ":/DazBridge";
 		bool m_bDontSaveSettings = false;
