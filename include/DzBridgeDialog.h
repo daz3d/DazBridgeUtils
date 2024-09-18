@@ -97,6 +97,7 @@ namespace DzBridgeNameSpace
         Q_INVOKABLE bool getEnableExperimentalOptions() { return m_enableExperimentalOptionsCheckBox->isChecked(); }
 		Q_INVOKABLE QCheckBox* getEnableLodCheckBox() { return m_wEnableLodCheckBox; }
 
+		Q_INVOKABLE bool getSkipResizeTextures() { return (m_wResizeTexturesGroupBox->isEnabled() == false); }
 		Q_INVOKABLE bool getResizeTextures() { return m_wResizeTexturesGroupBox->isChecked(); }
 		Q_INVOKABLE int getMaxTextureFileSize() { return m_wMaxTextureFileSizeCombo->itemData(m_wMaxTextureFileSizeCombo->currentIndex()).toInt(); }
 		Q_INVOKABLE int getMaxTextureResolution() { return m_wMaxTextureResolutionCombo->itemData(m_wMaxTextureResolutionCombo->currentIndex()).toInt(); }

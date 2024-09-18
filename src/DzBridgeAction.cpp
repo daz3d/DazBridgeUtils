@@ -3843,45 +3843,60 @@ QMessageBox::Yes);
 	m_bEnableLodGeneration = BridgeDialog->getEnableLodCheckBox()->isChecked();
 
 	// Texture Resizing options
-	bool bEnableTextureResizing = BridgeDialog->getResizeTextures();
+	bool bSkipTextureResizing = BridgeDialog->getSkipResizeTextures();
 
-	m_nFileSizeThresholdToInitiateRecompression = -1;
-	int maxTextureFileSize = BridgeDialog->getMaxTextureFileSize();
-	if (maxTextureFileSize > 0) {
-		m_nFileSizeThresholdToInitiateRecompression = maxTextureFileSize * 1024;
-		m_bRecompressIfFileSizeTooBig = true;
-	}
-	else {
-		m_bRecompressIfFileSizeTooBig = false;
-	}
-	int maxDimension = BridgeDialog->getMaxTextureResolution();
-	if (maxDimension != -1) {
-		m_qTargetTextureSize = QSize(maxDimension, maxDimension);
-		m_bResizeTextures = true;
-	}
-	else {
-		m_bResizeTextures = false;
-	}
-	QString formatString = BridgeDialog->getExportTextureFileFormat();
-	if (formatString == "any") {
-		m_bConvertToJpg = true;
-		m_bConvertToPng = true;
-		m_bForceReEncoding = false;
-	}
-	else if (formatString == "png+jpg") {
-		m_bConvertToJpg = true;
-		m_bConvertToPng = true;
-		m_bForceReEncoding = true;
-	}
-	else if (formatString == "png") {
-		m_bConvertToJpg = false;
-		m_bConvertToPng = true;
-		m_bForceReEncoding = true;
-	}
-	else if (formatString == "jpg") {
-		m_bConvertToJpg = true;
-		m_bConvertToPng = false;
-		m_bForceReEncoding = true;
+	if (bSkipTextureResizing == false)
+	{
+		bool bEnableTextureResizing = BridgeDialog->getResizeTextures();
+		if (bEnableTextureResizing)
+		{
+			int maxTextureFileSize = BridgeDialog->getMaxTextureFileSize();
+			if (maxTextureFileSize > 0) {
+				m_nFileSizeThresholdToInitiateRecompression = maxTextureFileSize * 1024;
+				m_bRecompressIfFileSizeTooBig = true;
+			}
+			else {
+				m_bRecompressIfFileSizeTooBig = false;
+			}
+			int maxDimension = BridgeDialog->getMaxTextureResolution();
+			if (maxDimension != -1) {
+				m_qTargetTextureSize = QSize(maxDimension, maxDimension);
+				m_bResizeTextures = true;
+			}
+			else {
+				m_bResizeTextures = false;
+			}
+			QString formatString = BridgeDialog->getExportTextureFileFormat();
+			if (formatString == "any") {
+				m_bConvertToJpg = true;
+				m_bConvertToPng = true;
+				m_bForceReEncoding = false;
+			}
+			else if (formatString == "png+jpg") {
+				m_bConvertToJpg = true;
+				m_bConvertToPng = true;
+				m_bForceReEncoding = true;
+			}
+			else if (formatString == "png") {
+				m_bConvertToJpg = false;
+				m_bConvertToPng = true;
+				m_bForceReEncoding = true;
+			}
+			else if (formatString == "jpg") {
+				m_bConvertToJpg = true;
+				m_bConvertToPng = false;
+				m_bForceReEncoding = true;
+			}
+		}
+		else
+		{
+			m_bRecompressIfFileSizeTooBig = false;
+			m_bResizeTextures = false;
+//			m_bConvertToJpg = true;
+//			m_bConvertToPng = true;
+			m_bForceReEncoding = false;
+		}
+
 	}
 
 
