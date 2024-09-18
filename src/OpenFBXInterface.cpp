@@ -11,6 +11,7 @@
 ****************************************************************************************/
 
 #include <QString>
+#include <qcoreapplication.h>
 
 #ifdef __APPLE__
 #define USING_LIBSTDCPP     1
@@ -138,11 +139,28 @@ bool OpenFBXInterface::SaveScene(FbxScene* pScene, QString sFilename, int nFileF
 		return false;
 	}
 
-	bStatus = pExporter->Export(pScene);
+	// DB 2024-09-17: Trying to fix race condition related to DCC/destination software import before DzBridgeAction::upgadeToHD()
+	//    finishes writing missing bone weights for subdivided verts to file. 
+	bool bNonBlocking = false;
+//	bool bNonBlocking = true; // if false doesn't work, try true
+	bStatus = pExporter->Export(pScene, bNonBlocking);
 	if (!bStatus)
 	{
 		m_ErrorString = QString(pExporter->GetStatus().GetErrorString());
 		m_ErrorCode = pExporter->GetStatus().GetCode();
+	}
+	else
+	{
+		// DB 2024-09-17: NonBlocking / race condition issues: try to wait for Export to really complete.
+		do {
+			QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+		} while (pExporter->IsExporting(bStatus));
+		// Sanity Check
+		if (!bStatus) {
+			m_ErrorString = QString(pExporter->GetStatus().GetErrorString());
+			m_ErrorCode = pExporter->GetStatus().GetCode();
+		}
+
 	}
 
 	pExporter->Destroy();
