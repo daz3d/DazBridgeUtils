@@ -3032,19 +3032,20 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 					bSaveSuccessful = image.save(recompressedFilename, 0, customEncodingQuality);
 					// check if there is file size target
 					int nNewFileSize = QFileInfo(recompressedFilename).size();
+					bCompressMore = false;
 					if (m_bRecompressIfFileSizeTooBig && nNewFileSize > m_nFileSizeThresholdToInitiateRecompression)
 					{
-						bCompressMore = true;
 						// decrease quality
-						customEncodingQuality -= 25;
+						if (customEncodingQuality > 10) {
+							customEncodingQuality -= 5;
+							bCompressMore = true;
+						}
 						// decrease resolution
 						if (customImageSize.height() > 256 && customImageSize.width() > 256) {
 							customImageSize = customImageSize / 2;
 							image = image.scaled(customImageSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-						}
-					}
-					else {
-						bCompressMore = false;
+							bCompressMore = true;
+						} 
 					}
 				} while (bCompressMore);
 
@@ -3844,8 +3845,10 @@ QMessageBox::Yes);
 	// Texture Resizing options
 	bool bEnableTextureResizing = BridgeDialog->getResizeTextures();
 
-	m_nFileSizeThresholdToInitiateRecompression = BridgeDialog->getMaxTextureFileSize() * 1024;
-	if (m_nFileSizeThresholdToInitiateRecompression != -1) {
+	m_nFileSizeThresholdToInitiateRecompression = -1;
+	int maxTextureFileSize = BridgeDialog->getMaxTextureFileSize();
+	if (maxTextureFileSize > 0) {
+		m_nFileSizeThresholdToInitiateRecompression = maxTextureFileSize * 1024;
 		m_bRecompressIfFileSizeTooBig = true;
 	}
 	else {
