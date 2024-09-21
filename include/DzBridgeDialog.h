@@ -233,6 +233,21 @@ namespace DzBridgeNameSpace
 		QLabel* m_wMaxTextureResolutionRowLabelWidget = nullptr;
 		QLabel* m_wExportTextureFormatRowLabelWidget = nullptr;
 
+		// Texture Baking Options
+		QGroupBox* m_wTextureBakingGroupBox = nullptr;
+		QCheckBox* m_wBakeAlphaChannelCheckBox = nullptr;
+		QCheckBox* m_wBakeMakeupOverlayCheckBox = nullptr;
+		QCheckBox* m_wBakeColorTintCheckBox = nullptr;
+		QCheckBox* m_wBakeTranslucencyTintCheckBox = nullptr;
+		QCheckBox* m_wBakeSpecularToRoughnessCheckBox = nullptr;
+
+		QLabel* m_wBakeAlphaChannelRowLabel = nullptr;
+		QLabel* m_wBakeMakeupOverlayRowLabel = nullptr;
+		QLabel* m_wBakeColorTintRowLabel = nullptr;
+		QLabel* m_wBakeTranslucencyTintRowLabel = nullptr;
+		QLabel* m_wBakeSpecularToRoughnessRowLabel = nullptr;
+
+
 		QString m_sEmbeddedFilesPath = ":/DazBridge";
 		bool m_bDontSaveSettings = false;
 		bool m_bSetupMode = false;

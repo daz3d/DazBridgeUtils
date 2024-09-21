@@ -400,7 +400,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	// DB 2024-09-17: Texture Resizing options
 	m_wResizeTexturesGroupBox = new QGroupBox(tr("Texture Resizing Options : "));
 	m_wResizeTexturesGroupBox->setCheckable(true);
-	m_wResizeTexturesGroupBox->setChecked(true);	
+	m_wResizeTexturesGroupBox->setChecked(false);
 	QFormLayout* textureResizingOptionsLayout = new QFormLayout(m_wResizeTexturesGroupBox);
 	textureResizingOptionsLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
 	textureResizingOptionsLayout->setSpacing(nStyleMargin);
@@ -448,6 +448,43 @@ better quality.  **DOES NOT EXPORT MESH**";
 //	m_aTextureResizingLabels.append(m_wExportTextureFormatRowLabelWidget);
 	m_aRowLabels.append(m_wExportTextureFormatRowLabelWidget);
 
+	// DB 2024-09-21: Texture Baking options
+	m_wTextureBakingGroupBox = new QGroupBox(tr("Texture Baking Options : "));
+	QFormLayout* textureBakingOptionsLayout = new QFormLayout(m_wTextureBakingGroupBox);
+	textureBakingOptionsLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
+	textureBakingOptionsLayout->setSpacing(nStyleMargin);
+	textureBakingOptionsLayout->setMargin(nStyleMargin);
+
+	QString sBakeAlphaChannel = tr("Bake Cutout/Opacity to Diffuse Alpha Channel");
+	m_wBakeAlphaChannelRowLabel = new QLabel(tr("Alpha"));
+	m_wBakeAlphaChannelCheckBox = new QCheckBox(sBakeAlphaChannel);
+	textureBakingOptionsLayout->addRow(m_wBakeAlphaChannelRowLabel, m_wBakeAlphaChannelCheckBox);
+	m_aRowLabels.append(m_wBakeAlphaChannelRowLabel);
+
+	QString sBakeMakeupOverlay = tr("Bake HD Makeup Materials to Diffuse Maps");
+	m_wBakeMakeupOverlayRowLabel = new QLabel(tr("Make-up"));
+	m_wBakeMakeupOverlayCheckBox = new QCheckBox(sBakeMakeupOverlay);
+	textureBakingOptionsLayout->addRow(m_wBakeMakeupOverlayRowLabel, m_wBakeMakeupOverlayCheckBox);
+	m_aRowLabels.append(m_wBakeMakeupOverlayRowLabel);
+
+	QString sBakeColorTint = tr("Bake Color Tints (and Strengths) to Image Maps");
+	m_wBakeColorTintRowLabel = new QLabel(tr("Tint"));
+	m_wBakeColorTintCheckBox = new QCheckBox(sBakeColorTint);
+	textureBakingOptionsLayout->addRow(m_wBakeColorTintRowLabel, m_wBakeColorTintCheckBox);
+	m_aRowLabels.append(m_wBakeColorTintRowLabel);
+
+	QString sBakeTranslucencyTint = tr("Bake Translucency Maps to Diffuse Maps");
+	m_wBakeTranslucencyTintRowLabel = new QLabel(tr("Translucency"));
+	m_wBakeTranslucencyTintCheckBox = new QCheckBox(sBakeTranslucencyTint);
+	textureBakingOptionsLayout->addRow(m_wBakeTranslucencyTintRowLabel, m_wBakeTranslucencyTintCheckBox);
+	m_aRowLabels.append(m_wBakeTranslucencyTintRowLabel);
+
+	QString sBakeSpecularToMetallic = tr("Bake Specular/Glossy to Metallic/Roughness");
+	m_wBakeSpecularToRoughnessRowLabel = new QLabel(tr("Specular to Metallic"));
+	m_wBakeSpecularToRoughnessCheckBox = new QCheckBox(sBakeSpecularToMetallic);
+	textureBakingOptionsLayout->addRow(m_wBakeSpecularToRoughnessRowLabel, m_wBakeSpecularToRoughnessCheckBox);
+	m_aRowLabels.append(m_wBakeSpecularToRoughnessRowLabel);
+
 	//	mainLayout->addRow("", m_wResizeTexturesGroupBox);
 
 	///////////////////////////////////////
@@ -470,6 +507,8 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	// Texture Resizing Options
 	advancedLayout->addRow(m_wResizeTexturesGroupBox);
+	// Texture Baking
+	advancedLayout->addRow(m_wTextureBakingGroupBox);
 
 	m_wNormalMapsRowLabelWidget = new QLabel(tr("Generate Normal Maps"));
 	advancedLayout->addRow(m_wNormalMapsRowLabelWidget, enableNormalMapGenerationCheckBox);
