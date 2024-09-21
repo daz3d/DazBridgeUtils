@@ -327,10 +327,6 @@ better quality.  **DOES NOT EXPORT MESH**";
 	showFbxDialogCheckBox = new QCheckBox("", this);
 	connect(showFbxDialogCheckBox, SIGNAL(stateChanged(int)), this, SLOT(HandleShowFbxDialogCheckBoxChange(int)));
 
-	// Enable Normal Map Generation checkbox
-	enableNormalMapGenerationCheckBox = new QCheckBox("", this);
-	connect(enableNormalMapGenerationCheckBox, SIGNAL(stateChanged(int)), this, SLOT(HandleEnableNormalMapGenerationCheckBoxChange(int)));
-
 	// Export Material Property CSV option
 	exportMaterialPropertyCSVCheckBox = new QCheckBox("", this);
 	connect(exportMaterialPropertyCSVCheckBox, SIGNAL(stateChanged(int)), this, SLOT(HandleExportMaterialPropertyCSVCheckBoxChange(int)));
@@ -450,16 +446,33 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	// DB 2024-09-21: Texture Baking options
 	m_wTextureBakingGroupBox = new QGroupBox(tr("Texture Baking Options : "));
+	m_wTextureBakingGroupBox->setCheckable(true);
+	m_wTextureBakingGroupBox->setChecked(false);
 	QFormLayout* textureBakingOptionsLayout = new QFormLayout(m_wTextureBakingGroupBox);
 	textureBakingOptionsLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
 	textureBakingOptionsLayout->setSpacing(nStyleMargin);
 	textureBakingOptionsLayout->setMargin(nStyleMargin);
 
+	// Enable Normal Map Generation checkbox
+	QString sBumpMapToNormal = tr("Convert Bump Maps to Normal Maps");
+	m_wNormalMapsRowLabelWidget = new QLabel(tr("Bump to Normal"));
+	m_wConvertBumpToNormalCheckBox = new QCheckBox(sBumpMapToNormal, this);
+	connect(m_wConvertBumpToNormalCheckBox, SIGNAL(stateChanged(int)), this, SLOT(HandleConvertBumpToNormalCheckBoxChange(int)));
+	textureBakingOptionsLayout->addRow(m_wNormalMapsRowLabelWidget, m_wConvertBumpToNormalCheckBox);
+	//	advancedLayout->addRow(m_wNormalMapsRowLabelWidget, m_wConvertBumpToNormalCheckBox);
+	m_aRowLabels.append(m_wNormalMapsRowLabelWidget);
+
 	QString sBakeAlphaChannel = tr("Bake Cutout/Opacity to Diffuse Alpha Channel");
-	m_wBakeAlphaChannelRowLabel = new QLabel(tr("Alpha"));
+	m_wBakeAlphaChannelRowLabel = new QLabel(tr("Opacity Cutout"));
 	m_wBakeAlphaChannelCheckBox = new QCheckBox(sBakeAlphaChannel);
 	textureBakingOptionsLayout->addRow(m_wBakeAlphaChannelRowLabel, m_wBakeAlphaChannelCheckBox);
 	m_aRowLabels.append(m_wBakeAlphaChannelRowLabel);
+
+	QString sBakeColorTint = tr("Bake Color Tints (and Strengths) to Image Maps");
+	m_wBakeColorTintRowLabel = new QLabel(tr("Tint / Strength"));
+	m_wBakeColorTintCheckBox = new QCheckBox(sBakeColorTint);
+	textureBakingOptionsLayout->addRow(m_wBakeColorTintRowLabel, m_wBakeColorTintCheckBox);
+	m_aRowLabels.append(m_wBakeColorTintRowLabel);
 
 	QString sBakeMakeupOverlay = tr("Bake HD Makeup Materials to Diffuse Maps");
 	m_wBakeMakeupOverlayRowLabel = new QLabel(tr("Make-up"));
@@ -467,29 +480,23 @@ better quality.  **DOES NOT EXPORT MESH**";
 	textureBakingOptionsLayout->addRow(m_wBakeMakeupOverlayRowLabel, m_wBakeMakeupOverlayCheckBox);
 	m_aRowLabels.append(m_wBakeMakeupOverlayRowLabel);
 
-	QString sBakeColorTint = tr("Bake Color Tints (and Strengths) to Image Maps");
-	m_wBakeColorTintRowLabel = new QLabel(tr("Tint"));
-	m_wBakeColorTintCheckBox = new QCheckBox(sBakeColorTint);
-	textureBakingOptionsLayout->addRow(m_wBakeColorTintRowLabel, m_wBakeColorTintCheckBox);
-	m_aRowLabels.append(m_wBakeColorTintRowLabel);
-
 	QString sBakeTranslucencyTint = tr("Bake Translucency Maps to Diffuse Maps");
 	m_wBakeTranslucencyTintRowLabel = new QLabel(tr("Translucency"));
 	m_wBakeTranslucencyTintCheckBox = new QCheckBox(sBakeTranslucencyTint);
 	textureBakingOptionsLayout->addRow(m_wBakeTranslucencyTintRowLabel, m_wBakeTranslucencyTintCheckBox);
 	m_aRowLabels.append(m_wBakeTranslucencyTintRowLabel);
 
-	QString sBakeSpecularToMetallic = tr("Bake Specular/Glossy to Metallic/Roughness");
-	m_wBakeSpecularToRoughnessRowLabel = new QLabel(tr("Specular to Metallic"));
-	m_wBakeSpecularToRoughnessCheckBox = new QCheckBox(sBakeSpecularToMetallic);
-	textureBakingOptionsLayout->addRow(m_wBakeSpecularToRoughnessRowLabel, m_wBakeSpecularToRoughnessCheckBox);
-	m_aRowLabels.append(m_wBakeSpecularToRoughnessRowLabel);
-
 	QString sBakeRefractionWeight = tr("Bake Refraction Weight Simulation to Textures");
 	m_wBakeRefractionWeightRowLabel = new QLabel(tr("Refraction Weight"));
 	m_wBakeRefractionWeightCheckBox = new QCheckBox(sBakeRefractionWeight);
 	textureBakingOptionsLayout->addRow(m_wBakeRefractionWeightRowLabel, m_wBakeRefractionWeightCheckBox);
 	m_aRowLabels.append(m_wBakeRefractionWeightRowLabel);
+
+	QString sBakeSpecularToMetallic = tr("Bake Specular/Glossy to Metallic/Roughness");
+	m_wBakeSpecularToMetallicRowLabel = new QLabel(tr("Specular to Metallic"));
+	m_wBakeSpecularToMetallicCheckBox = new QCheckBox(sBakeSpecularToMetallic);
+	textureBakingOptionsLayout->addRow(m_wBakeSpecularToMetallicRowLabel, m_wBakeSpecularToMetallicCheckBox);
+	m_aRowLabels.append(m_wBakeSpecularToMetallicRowLabel);
 
 	///////////////////////////////////////
 	// Add Widgets to Advanced Layout
@@ -509,20 +516,17 @@ better quality.  **DOES NOT EXPORT MESH**";
 	advancedLayout->addRow(m_wShowFbxRowLabelWidget, showFbxDialogCheckBox);
 	m_aRowLabels.append(m_wShowFbxRowLabelWidget);
 
-	// Texture Resizing Options
-	advancedLayout->addRow(m_wResizeTexturesGroupBox);
-	// Texture Baking
-	advancedLayout->addRow(m_wTextureBakingGroupBox);
-
-	m_wNormalMapsRowLabelWidget = new QLabel(tr("Generate Normal Maps"));
-	advancedLayout->addRow(m_wNormalMapsRowLabelWidget, enableNormalMapGenerationCheckBox);
-	m_aRowLabels.append(m_wNormalMapsRowLabelWidget);
 	m_wExportCsvRowLabelWidget = new QLabel(tr("Export Material CSV"));
 	advancedLayout->addRow(m_wExportCsvRowLabelWidget, exportMaterialPropertyCSVCheckBox);
 	m_aRowLabels.append(m_wExportCsvRowLabelWidget);
 	m_wEnableExperimentalRowLabelWidget = new QLabel(tr("Experimental Options"));
 	advancedLayout->addRow(m_wEnableExperimentalRowLabelWidget, m_enableExperimentalOptionsCheckBox);
 	m_aRowLabels.append(m_wEnableExperimentalRowLabelWidget);
+
+	// Texture Resizing Options
+	advancedLayout->addRow(m_wResizeTexturesGroupBox);
+	// Texture Baking
+	advancedLayout->addRow(m_wTextureBakingGroupBox);
 
 	// add main layout to dialog window
 	m_wMainGroupBox = new QGroupBox(tr("Main Export Options : "));
@@ -547,7 +551,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	fbxVersionCombo->setWhatsThis(tr("The version of FBX to use when exporting assets."));
 	showFbxDialogCheckBox->setWhatsThis(tr("Checking this will show the FBX Dialog for adjustments before export."));
 	exportMaterialPropertyCSVCheckBox->setWhatsThis(tr("Checking this will write out a CSV of all the material properties.  Useful for reference when changing materials."));
-	enableNormalMapGenerationCheckBox->setWhatsThis(tr("Checking this will enable generation of Normal Maps for any surfaces that only have Bump Height Maps."));
+	m_wConvertBumpToNormalCheckBox->setWhatsThis(tr("Checking this will enable generation of Normal Maps for any surfaces that only have Bump Height Maps."));
 	//m_wTargetPluginInstaller->setWhatsThis("Install a plugin to use Daz Bridge with the destination software.");
 	QString sEnableLodHelp = tr("Enable Level of Detail (LOD) mesh.  Specific features depend on the destination software.");
 	m_wLodRowLabelWidget->setWhatsThis(sEnableLodHelp);
@@ -672,7 +676,7 @@ bool DzBridgeDialog::loadSavedSettings()
 	}
 	if (!settings->value("EnableNormalMapGeneration").isNull())
 	{
-		enableNormalMapGenerationCheckBox->setChecked(settings->value("EnableNormalMapGeneration").toBool());
+		m_wConvertBumpToNormalCheckBox->setChecked(settings->value("EnableNormalMapGeneration").toBool());
 	}
 	if (!settings->value("ExportMaterialPropertyCSV").isNull())
 	{
@@ -849,7 +853,7 @@ void DzBridgeDialog::HandleExportMaterialPropertyCSVCheckBoxChange(int state)
 	settings->setValue("ExportMaterialPropertyCSV", state == Qt::Checked);
 }
 
-void DzBridgeDialog::HandleEnableNormalMapGenerationCheckBoxChange(int state)
+void DzBridgeDialog::HandleConvertBumpToNormalCheckBoxChange(int state)
 {
 	if (settings == nullptr || m_bDontSaveSettings) return;
 	settings->setValue("EnableNormalMapGeneration", state == Qt::Checked);

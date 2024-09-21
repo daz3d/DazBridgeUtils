@@ -83,7 +83,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE QGroupBox* getAdvancedSettingsGroupBox() { return advancedSettingsGroupBox; }
 		Q_INVOKABLE QComboBox* getFbxVersionCombo() { return fbxVersionCombo; }
 		Q_INVOKABLE QCheckBox* getShowFbxDialogCheckBox() { return showFbxDialogCheckBox; }
-		Q_INVOKABLE QCheckBox* getEnableNormalMapGenerationCheckBox() { return enableNormalMapGenerationCheckBox; }
+		Q_INVOKABLE QCheckBox* getEnableNormalMapGenerationCheckBox() { return m_wConvertBumpToNormalCheckBox; }
 		Q_INVOKABLE QCheckBox* getExportMaterialPropertyCSVCheckBox() { return exportMaterialPropertyCSVCheckBox; }
 		Q_INVOKABLE QPushButton* getTargetPluginInstallerButton() { return m_TargetPluginInstallerButton; }
 		Q_INVOKABLE QComboBox* getTargetSoftwareVersionCombo() { return m_TargetSoftwareVersionCombo; }
@@ -108,7 +108,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE bool getBakeMakeup() { return m_wBakeMakeupOverlayCheckBox->isChecked(); }
 		Q_INVOKABLE bool getBakeColorTint() { return m_wBakeColorTintCheckBox->isChecked(); }
 		Q_INVOKABLE bool getBakeTranslucency() { return m_wBakeTranslucencyTintCheckBox->isChecked(); }
-		Q_INVOKABLE bool getBakeSpecularToMetallic() { return m_wBakeSpecularToRoughnessCheckBox->isChecked(); }
+		Q_INVOKABLE bool getBakeSpecularToMetallic() { return m_wBakeSpecularToMetallicCheckBox->isChecked(); }
 		Q_INVOKABLE bool getBakeRefractionWeight() { return m_wBakeRefractionWeightCheckBox->isChecked(); }
 
 		/** Constructor **/
@@ -151,7 +151,7 @@ namespace DzBridgeNameSpace
 		virtual void HandleFBXVersionChange(const QString& fbxVersion);
 		virtual void HandleShowFbxDialogCheckBoxChange(int state);
 		virtual void HandleExportMaterialPropertyCSVCheckBoxChange(int state);
-		virtual void HandleEnableNormalMapGenerationCheckBoxChange(int state);
+		virtual void HandleConvertBumpToNormalCheckBoxChange(int state);
 		virtual void HandleTargetPluginInstallerButton();
 		virtual void HandleOpenIntermediateFolderButton(QString sFolderPath="");
 		virtual void HandleAssetTypeComboChange(const QString& assetType);
@@ -198,7 +198,6 @@ namespace DzBridgeNameSpace
 		QLabel* m_wSubDRowLabelWidget = nullptr;
 		QLabel* m_wFbxVersionRowLabelWidget = nullptr;
 		QLabel* m_wShowFbxRowLabelWidget = nullptr;
-		QLabel* m_wNormalMapsRowLabelWidget = nullptr;
 		QLabel* m_wExportCsvRowLabelWidget = nullptr;
 		QLabel* m_wEnableExperimentalRowLabelWidget = nullptr;
 
@@ -206,7 +205,6 @@ namespace DzBridgeNameSpace
 		QGroupBox* advancedSettingsGroupBox = nullptr;
 		QComboBox* fbxVersionCombo = nullptr;
 		QCheckBox* showFbxDialogCheckBox = nullptr;
-		QCheckBox* enableNormalMapGenerationCheckBox = nullptr;
 		QCheckBox* exportMaterialPropertyCSVCheckBox = nullptr;
 		QWidget* m_wTargetPluginInstaller = nullptr;
 		QPushButton* m_TargetPluginInstallerButton = nullptr;
@@ -247,16 +245,17 @@ namespace DzBridgeNameSpace
 		QCheckBox* m_wBakeMakeupOverlayCheckBox = nullptr;
 		QCheckBox* m_wBakeColorTintCheckBox = nullptr;
 		QCheckBox* m_wBakeTranslucencyTintCheckBox = nullptr;
-		QCheckBox* m_wBakeSpecularToRoughnessCheckBox = nullptr;
+		QCheckBox* m_wBakeSpecularToMetallicCheckBox = nullptr;
 		QCheckBox* m_wBakeRefractionWeightCheckBox = nullptr;
+		QCheckBox* m_wConvertBumpToNormalCheckBox = nullptr;
 
 		QLabel* m_wBakeAlphaChannelRowLabel = nullptr;
 		QLabel* m_wBakeMakeupOverlayRowLabel = nullptr;
 		QLabel* m_wBakeColorTintRowLabel = nullptr;
 		QLabel* m_wBakeTranslucencyTintRowLabel = nullptr;
-		QLabel* m_wBakeSpecularToRoughnessRowLabel = nullptr;
+		QLabel* m_wBakeSpecularToMetallicRowLabel = nullptr;
 		QLabel* m_wBakeRefractionWeightRowLabel = nullptr;
-
+		QLabel* m_wNormalMapsRowLabelWidget = nullptr;
 
 		QString m_sEmbeddedFilesPath = ":/DazBridge";
 		bool m_bDontSaveSettings = false;
