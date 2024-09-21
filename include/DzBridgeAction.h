@@ -239,6 +239,12 @@ namespace DzBridgeNameSpace
 		bool m_bRecompressIfFileSizeTooBig = false;
 		int m_nFileSizeThresholdToInitiateRecompression = 1024*1024*10; // size in bytes
 		bool m_bForceReEncoding = false;
+
+		bool m_bBakeMakeupOverlay = false;
+		bool m_bBakeTranslucency = false;
+		bool m_bBakeSpecularToMetallic = false;
+		bool m_bBakeRefractionWeight = false;
+
 //		QStringList m_aProcessedFiles;
 		QMap<QString, QString> m_mapProcessedFiles;
 

@@ -103,6 +103,14 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE int getMaxTextureResolution() { return m_wMaxTextureResolutionCombo->itemData(m_wMaxTextureResolutionCombo->currentIndex()).toInt(); }
 		Q_INVOKABLE QString getExportTextureFileFormat() { return m_wExportTextureFileFormatCombo->itemData(m_wExportTextureFileFormatCombo->currentIndex()).toString(); }
 
+		Q_INVOKABLE bool getIsBakeEnabled() { return m_wBakeAlphaChannelCheckBox->isEnabled(); }
+		Q_INVOKABLE bool getBakeAlpha() { return m_wBakeAlphaChannelCheckBox->isChecked(); }
+		Q_INVOKABLE bool getBakeMakeup() { return m_wBakeMakeupOverlayCheckBox->isChecked(); }
+		Q_INVOKABLE bool getBakeColorTint() { return m_wBakeColorTintCheckBox->isChecked(); }
+		Q_INVOKABLE bool getBakeTranslucency() { return m_wBakeTranslucencyTintCheckBox->isChecked(); }
+		Q_INVOKABLE bool getBakeSpecularToMetallic() { return m_wBakeSpecularToRoughnessCheckBox->isChecked(); }
+		Q_INVOKABLE bool getBakeRefractionWeight() { return m_wBakeRefractionWeightCheckBox->isChecked(); }
+
 		/** Constructor **/
 		DzBridgeDialog(QWidget* parent = nullptr, const QString& windowTitle = "");
 
@@ -240,17 +248,20 @@ namespace DzBridgeNameSpace
 		QCheckBox* m_wBakeColorTintCheckBox = nullptr;
 		QCheckBox* m_wBakeTranslucencyTintCheckBox = nullptr;
 		QCheckBox* m_wBakeSpecularToRoughnessCheckBox = nullptr;
+		QCheckBox* m_wBakeRefractionWeightCheckBox = nullptr;
 
 		QLabel* m_wBakeAlphaChannelRowLabel = nullptr;
 		QLabel* m_wBakeMakeupOverlayRowLabel = nullptr;
 		QLabel* m_wBakeColorTintRowLabel = nullptr;
 		QLabel* m_wBakeTranslucencyTintRowLabel = nullptr;
 		QLabel* m_wBakeSpecularToRoughnessRowLabel = nullptr;
+		QLabel* m_wBakeRefractionWeightRowLabel = nullptr;
 
 
 		QString m_sEmbeddedFilesPath = ":/DazBridge";
 		bool m_bDontSaveSettings = false;
 		bool m_bSetupMode = false;
+
 
 #ifdef UNITTEST_DZBRIDGE
 		friend class ::UnitTest_DzBridgeDialog;

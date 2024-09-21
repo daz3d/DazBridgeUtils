@@ -485,7 +485,11 @@ better quality.  **DOES NOT EXPORT MESH**";
 	textureBakingOptionsLayout->addRow(m_wBakeSpecularToRoughnessRowLabel, m_wBakeSpecularToRoughnessCheckBox);
 	m_aRowLabels.append(m_wBakeSpecularToRoughnessRowLabel);
 
-	//	mainLayout->addRow("", m_wResizeTexturesGroupBox);
+	QString sBakeRefractionWeight = tr("Bake Refraction Weight Simulation to Textures");
+	m_wBakeRefractionWeightRowLabel = new QLabel(tr("Refraction Weight"));
+	m_wBakeRefractionWeightCheckBox = new QCheckBox(sBakeRefractionWeight);
+	textureBakingOptionsLayout->addRow(m_wBakeRefractionWeightRowLabel, m_wBakeRefractionWeightCheckBox);
+	m_aRowLabels.append(m_wBakeRefractionWeightRowLabel);
 
 	///////////////////////////////////////
 	// Add Widgets to Advanced Layout

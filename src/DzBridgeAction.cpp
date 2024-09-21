@@ -3913,6 +3913,18 @@ QMessageBox::Yes);
 
 	}
 
+	// Texture Baking options
+	if (BridgeDialog->getIsBakeEnabled())
+	{
+		m_bCombineDiffuseAndAlphaMaps = BridgeDialog->getBakeAlpha();
+		m_bBakeMakeupOverlay = BridgeDialog->getBakeMakeup();
+		m_bMultiplyTextureValues = BridgeDialog->getBakeColorTint();
+		m_bBakeTranslucency = BridgeDialog->getBakeTranslucency();
+		m_bBakeSpecularToMetallic = BridgeDialog->getBakeSpecularToMetallic();
+		m_bBakeRefractionWeight = BridgeDialog->getBakeRefractionWeight();
+
+	}
+
 
 	return true;
 }
