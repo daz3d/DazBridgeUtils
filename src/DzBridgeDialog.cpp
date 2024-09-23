@@ -487,16 +487,16 @@ better quality.  **DOES NOT EXPORT MESH**";
 	m_aRowLabels.append(m_wBakeTranslucencyTintRowLabel);
 
 	QString sBakeRefractionWeight = tr("Bake Refraction Weight Simulation to Textures");
-	m_wBakeRefractionWeightRowLabel = new QLabel(tr("Refraction Weight"));
-	m_wBakeRefractionWeightCheckBox = new QCheckBox(sBakeRefractionWeight);
-	textureBakingOptionsLayout->addRow(m_wBakeRefractionWeightRowLabel, m_wBakeRefractionWeightCheckBox);
-	m_aRowLabels.append(m_wBakeRefractionWeightRowLabel);
+//	m_wBakeRefractionWeightRowLabel = new QLabel(tr("Refraction Weight"));
+//	m_wBakeRefractionWeightCheckBox = new QCheckBox(sBakeRefractionWeight);
+//	textureBakingOptionsLayout->addRow(m_wBakeRefractionWeightRowLabel, m_wBakeRefractionWeightCheckBox);
+//	m_aRowLabels.append(m_wBakeRefractionWeightRowLabel);
 
 	QString sBakeSpecularToMetallic = tr("Bake Specular/Glossy to Metallic/Roughness");
-	m_wBakeSpecularToMetallicRowLabel = new QLabel(tr("Specular to Metallic"));
-	m_wBakeSpecularToMetallicCheckBox = new QCheckBox(sBakeSpecularToMetallic);
-	textureBakingOptionsLayout->addRow(m_wBakeSpecularToMetallicRowLabel, m_wBakeSpecularToMetallicCheckBox);
-	m_aRowLabels.append(m_wBakeSpecularToMetallicRowLabel);
+//	m_wBakeSpecularToMetallicRowLabel = new QLabel(tr("Specular to Metallic"));
+//	m_wBakeSpecularToMetallicCheckBox = new QCheckBox(sBakeSpecularToMetallic);
+//	textureBakingOptionsLayout->addRow(m_wBakeSpecularToMetallicRowLabel, m_wBakeSpecularToMetallicCheckBox);
+//	m_aRowLabels.append(m_wBakeSpecularToMetallicRowLabel);
 
 	///////////////////////////////////////
 	// Add Widgets to Advanced Layout
@@ -1266,5 +1266,18 @@ void DzBridgeDialog::fixRowLabelWidths()
 	}
 
 }
+
+bool DzBridgeDialog::getBakeSpecularToMetallic()
+{
+	if (!m_wBakeSpecularToMetallicCheckBox) return false;
+	return m_wBakeSpecularToMetallicCheckBox->isChecked();
+}
+
+bool DzBridgeDialog::getBakeRefractionWeight()
+{
+	if (!m_wBakeRefractionWeightCheckBox) return false;
+	return m_wBakeRefractionWeightCheckBox->isChecked();
+}
+
 
 #include "moc_DzBridgeDialog.cpp"

@@ -108,8 +108,8 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE bool getBakeMakeup() { return m_wBakeMakeupOverlayCheckBox->isChecked(); }
 		Q_INVOKABLE bool getBakeColorTint() { return m_wBakeColorTintCheckBox->isChecked(); }
 		Q_INVOKABLE bool getBakeTranslucency() { return m_wBakeTranslucencyTintCheckBox->isChecked(); }
-		Q_INVOKABLE bool getBakeSpecularToMetallic() { return m_wBakeSpecularToMetallicCheckBox->isChecked(); }
-		Q_INVOKABLE bool getBakeRefractionWeight() { return m_wBakeRefractionWeightCheckBox->isChecked(); }
+		Q_INVOKABLE bool getBakeSpecularToMetallic();
+		Q_INVOKABLE bool getBakeRefractionWeight();
 
 		/** Constructor **/
 		DzBridgeDialog(QWidget* parent = nullptr, const QString& windowTitle = "");
