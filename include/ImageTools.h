@@ -5,6 +5,18 @@
 #include <QThreadPool>
 #include <QRunnable>
 
+class ImageTools
+{
+public:
+	static void multiplyImageByColorMultithreaded(QImage& image, QColor color);
+	static void multiplyImageByStrengthMultithreaded(QImage& image, double strength);
+	static QString colorToHexString(const QColor& color);
+	static bool isPowerOfTwo(int n);
+	static int nearestPowerOfTwo(int n);
+	static void BlendImagesWithAlphaMultithreaded(QImage& imageA, const QImage& imageB, const QImage& alphaMask);
+
+};
+
 class MultiplyImageByColorTask : public QRunnable
 {
 public:
@@ -89,13 +101,47 @@ private:
 	QImage::Format m_pixelFormat;
 };
 
-class ImageTools
+class BlendImagesWithAlphaTask : public QRunnable
 {
 public:
-	static void multiplyImageByColorMultithreaded(QImage& image, QColor color);
-	static void multiplyImageByStrengthMultithreaded(QImage& image, double strength);
-	static QString colorToHexString(const QColor& color);
-	static bool isPowerOfTwo(int n);
-	static int nearestPowerOfTwo(int n);
+	BlendImagesWithAlphaTask(QImage* imageA, const QImage* imageB, const QImage* alphaMask, int startY, int endY)
+		: m_imageA(imageA), m_imageB(imageB), m_alphaMask(alphaMask), m_startY(startY), m_endY(endY)
+	{
+	}
 
+	void run() override
+	{
+		int width = m_imageA->width();
+		for (int y = m_startY; y < m_endY; ++y)
+		{
+			QRgb* scanLineA = reinterpret_cast<QRgb*>(m_imageA->scanLine(y));
+			const QRgb* scanLineB = reinterpret_cast<const QRgb*>(m_imageB->constScanLine(y));
+			const QRgb* scanLineAlpha = reinterpret_cast<const QRgb*>(m_alphaMask->constScanLine(y));
+
+			for (int x = 0; x < width; ++x)
+			{
+				QRgb pixelA = scanLineA[x];
+				QRgb pixelB = scanLineB[x];
+				QRgb pixelAlpha = scanLineAlpha[x];
+
+				int alpha = qRed(pixelAlpha); // Assuming grayscale alpha mask
+				double alphaF = alpha / 255.0;
+				double invAlphaF = 1.0 - alphaF;
+
+				int r = qBound(0, static_cast<int>(qRed(pixelA) * invAlphaF + qRed(pixelB) * alphaF), 255);
+				int g = qBound(0, static_cast<int>(qGreen(pixelA) * invAlphaF + qGreen(pixelB) * alphaF), 255);
+				int b = qBound(0, static_cast<int>(qBlue(pixelA) * invAlphaF + qBlue(pixelB) * alphaF), 255);
+				int a = qBound(0, static_cast<int>(qAlpha(pixelA) * invAlphaF + qAlpha(pixelB) * alphaF), 255);
+
+				scanLineA[x] = qRgba(r, g, b, a);
+			}
+		}
+	}
+
+private:
+	QImage* m_imageA;
+	const QImage* m_imageB;
+	const QImage* m_alphaMask;
+	int m_startY;
+	int m_endY;
 };

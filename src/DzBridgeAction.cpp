@@ -48,7 +48,6 @@
 #include "dzgroupnode.h"
 #include "dzinstancenode.h"
 
-
 #include <QtCore/qdir.h>
 #include <QtGui/qlineedit.h>
 #include <QtNetwork/qudpsocket.h>
@@ -66,6 +65,7 @@
 #include "ImageTools.h"
 #include "MorphTools.h"
 #include "FbxTools.h"
+#include "dzlayeredtexture.h"
 
 // miniz-lib
 extern "C"
@@ -268,6 +268,25 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 						preProcessProgress.setInfo("Combining Diffuse and Alpha Maps: " + material->getLabel());
 						combineDiffuseAndAlphaMaps(material);
 					}
+
+					/////////////////////
+					// Bake Translucency
+					/////////////////////
+					if (m_bBakeTranslucency)
+					{
+						preProcessProgress.setInfo("Baking Translucency Maps to Diffuse: " + material->getLabel());
+						bakeTranslucency(material);
+					}
+
+					////////////////////
+					// Bake Makeup
+					////////////////////
+					if (m_bBakeMakeupOverlay)
+					{
+						preProcessProgress.setInfo("Baking Makeup Overlay to Diffuse: " + material->getLabel());
+						bakeMakeup(material);
+					}
+
 				}
 			}
 
@@ -6529,5 +6548,277 @@ DzNode* DzBridgeAction::FindNodeByName(DzNode* pRootNode, QString sNodeName)
 	}
 	return NULL;
 }
+
+bool DzBridgeAction::bakeMakeup(DzMaterial* pMaterial)
+{
+		if (!pMaterial) return false;
+	
+		bool bHasMakeup = false;
+		DzProperty* pDiffusePropertySearchResult = pMaterial->findProperty("Diffuse Color");
+		DzProperty* pMakeupEnablePropertySearchResult = pMaterial->findProperty("Makeup Enable");
+		DzProperty* pMakeupWeightPropertySearchResult = pMaterial->findProperty("Makeup Weight");
+		DzProperty* pMakeupBasePropertySearchResult = pMaterial->findProperty("Makeup Base Color");
+	
+		DzColorProperty* pDiffuseColorProperty = qobject_cast<DzColorProperty*>(pDiffusePropertySearchResult);
+		DzBoolProperty* pMakeupEnableBoolProperty = qobject_cast<DzBoolProperty*>(pMakeupEnablePropertySearchResult);
+		DzNumericProperty* pMakeupWeightNumericProperty = qobject_cast<DzNumericProperty*>(pMakeupWeightPropertySearchResult);
+		DzColorProperty* pMakeupBaseColorProperty = qobject_cast<DzColorProperty*>(pMakeupBasePropertySearchResult);
+	
+		// update with more advanced logic in the future if needed
+		if (pDiffuseColorProperty && pMakeupEnableBoolProperty && pMakeupWeightNumericProperty && pMakeupBaseColorProperty) {
+			bHasMakeup = true;
+		}
+	
+		// return false if the code block above fails to find valid makeup
+		if (!bHasMakeup) return false;
+	
+		bool bMakeupEnabled = pMakeupEnableBoolProperty->getBoolValue();
+		if (!bMakeupEnabled)
+			return false;
+
+	bool bResult = bakeOverlayProperty(pMaterial, "Diffuse Color", "Makeup Base Color", "Makeup Weight");
+
+	return bResult;
+}
+
+
+bool DzBridgeAction::bakeTranslucency(DzMaterial* pMaterial)
+{
+	DzProperty* pEnableTranslucencySearchResult = pMaterial->findProperty("Translucency Enable");
+	DzProperty* pEnableTransmissionSearchResult = pMaterial->findProperty("Transmission Enable");
+	DzProperty* pTransmissionColorSearchResult = pMaterial->findProperty("Transmitted Color");
+	DzProperty* pTranslucencyColorSearchResult = pMaterial->findProperty("Translucency Color");
+	DzProperty* pTranslucencyWeightSearchResult = pMaterial->findProperty("Translucency Weight");
+	DzBoolProperty* pEnableTranslucencyBoolProperty = qobject_cast<DzBoolProperty*>(pEnableTranslucencySearchResult);
+	DzBoolProperty* pEnableTransmissionBoolProperty = qobject_cast<DzBoolProperty*>(pEnableTransmissionSearchResult);
+	DzColorProperty* pTransmissionColorProperty = qobject_cast<DzColorProperty*>(pTransmissionColorSearchResult);
+	DzColorProperty* pTranslucencyColorProperty = qobject_cast<DzColorProperty*>(pTranslucencyColorSearchResult);
+	DzNumericProperty* pTranslucencyWeightProperty = qobject_cast<DzNumericProperty*>(pTranslucencyWeightSearchResult);
+	if (!pEnableTranslucencyBoolProperty || !pEnableTransmissionBoolProperty || !pTransmissionColorProperty || !pTranslucencyColorProperty || !pTranslucencyWeightProperty) {
+		return false;
+	}
+	if (!pEnableTranslucencyBoolProperty->getBoolValue()) {
+		return false;
+	}
+	if (!pEnableTransmissionBoolProperty->getBoolValue()) {
+		return false;
+	}
+	if (!pTranslucencyColorProperty->getMapValue()) {
+		return false;
+	}
+
+	// bake transmission color into translucency map
+	QColor colorValue = pTransmissionColorProperty->getColorValue();
+	QString sTranslucencyFilename = pTranslucencyColorProperty->getMapValue()->getFilename();
+	QImage image = dzApp->getImageMgr()->loadImage(sTranslucencyFilename);
+	QString tempPath = dzApp->getTempPath().replace("\\", "/");
+	QString stem = QFileInfo(sTranslucencyFilename).fileName();
+	QString outfile = tempPath + "/" + stem + QString("_%1.png").arg(ImageTools::colorToHexString(colorValue));
+	dzApp->log(QString("DazBridge: Baking transmission color into translucency map: %1").arg(outfile));
+	ImageTools::multiplyImageByColorMultithreaded(image, colorValue);
+	image.save(outfile, 0, 100);
+
+	// create undo record
+	MultiplyTextureValuesUndoData undoData;
+	undoData.materialIndex = pMaterial->getIndex();
+	undoData.materialLabel = pMaterial->getLabel();
+	undoData.textureProperty = pTranslucencyColorProperty;
+	undoData.textureValue = pTranslucencyColorProperty->getColorValue().rgba();
+	undoData.textureMapName = sTranslucencyFilename;
+	m_undoList_MultilpyTextureValues.append(undoData);
+	//
+	MultiplyTextureValuesUndoData undoData2;
+	undoData2.materialIndex = pMaterial->getIndex();
+	undoData2.materialLabel = pMaterial->getLabel();
+	undoData2.textureProperty = pTransmissionColorProperty;
+	undoData2.textureValue = pTransmissionColorProperty->getColorValue().rgba();
+	if (pTransmissionColorProperty->getMapValue()) {
+		undoData2.textureMapName = pTransmissionColorProperty->getMapValue()->getFilename();
+	}
+	m_undoList_MultilpyTextureValues.append(undoData2);
+	//
+	MultiplyTextureValuesUndoData undoData3;
+	undoData3.materialIndex = pMaterial->getIndex();
+	undoData3.materialLabel = pMaterial->getLabel();
+	undoData3.textureProperty = pTranslucencyWeightProperty;
+	double fOriginalWeight = pTranslucencyWeightProperty->getDoubleValue();
+	undoData3.textureValue = fOriginalWeight;
+	if (pTranslucencyWeightProperty->getMapValue()) {
+		undoData3.textureMapName = pTranslucencyWeightProperty->getMapValue()->getFilename();
+	}
+	m_undoList_MultilpyTextureValues.append(undoData3);
+
+	// modify property
+	pTransmissionColorProperty->setColorValue(QColor(255, 255, 255));
+	pTransmissionColorProperty->setMap("");
+	pTranslucencyColorProperty->setMap(outfile);
+	double newWeight = fOriginalWeight;
+	newWeight *= 0.5;
+	pTranslucencyWeightProperty->setDoubleValue(newWeight);
+
+	bool bResult = bakeOverlayProperty(pMaterial, "Diffuse Color", "Translucency Color", "Translucency Weight");
+	if (bResult) 
+	{
+		// set overrides or undo, etc.
+	}
+
+	return bResult;
+}
+
+
+bool DzBridgeAction::bakeOverlayProperty(DzMaterial* pMaterial, QString sPropertyA, QString sPropertyB, QString sAlphaMaskProperty)
+{
+	if (!pMaterial) return false;
+
+	bool bValidBlend = false;
+	DzProperty* pColorPropertyASearchResult = pMaterial->findProperty(sPropertyA);
+	DzProperty* pColorPropertyBSearchResult = pMaterial->findProperty(sPropertyB);
+	DzProperty* pAlphaMaskPropertySearchResult = pMaterial->findProperty(sAlphaMaskProperty);
+
+	DzColorProperty* pColorPropertyA = qobject_cast<DzColorProperty*>(pColorPropertyASearchResult);
+	DzColorProperty* pColorPropertyB = qobject_cast<DzColorProperty*>(pColorPropertyBSearchResult);
+	DzNumericProperty* pNumericPropertyAlphaMask = qobject_cast<DzNumericProperty*>(pAlphaMaskPropertySearchResult);
+
+	// update with more advanced logic in the future if needed
+	if (pColorPropertyA && pColorPropertyB && pNumericPropertyAlphaMask) {
+		bValidBlend = true;
+	}
+
+	// return false if the code block above fails to find valid makeup
+	if (!bValidBlend) return false;
+
+	// get file for propertyA
+	QString sFilenameA = "";
+	// look for override
+	if (m_overrideTable_MaterialImageMaps.contains(pColorPropertyA)) {
+		sFilenameA = m_overrideTable_MaterialImageMaps[pColorPropertyA];
+	}
+	else
+	{
+		DzTexture* pTextureA = pColorPropertyA->getMapValue();
+		DzLayeredTexture* pLayeredTextureA = qobject_cast<DzLayeredTexture*>(pTextureA);
+		if (pTextureA)
+		{
+			if (pLayeredTextureA) {
+				pLayeredTextureA->getPreviewPixmap(1, 1);
+			}
+			sFilenameA = pTextureA->getFilename();
+		}
+	}
+	if (sFilenameA == "")
+	{
+		return false;
+	}
+
+	// get file for propertyA
+	QString sFilenameB = "";
+	// look for override
+	if (m_overrideTable_MaterialImageMaps.contains(pColorPropertyB)) {
+		sFilenameB = m_overrideTable_MaterialImageMaps[pColorPropertyB];
+	}
+	else
+	{
+		DzTexture* pTextureB = pColorPropertyB->getMapValue();
+		DzLayeredTexture* pLayeredTextureB = qobject_cast<DzLayeredTexture*>(pTextureB);
+		if (pTextureB)
+		{
+			if (pLayeredTextureB) {
+				pLayeredTextureB->getPreviewPixmap(1, 1);
+			}
+			sFilenameB = pTextureB->getFilename();
+		}
+	}
+	if (sFilenameB == "")
+	{
+		return false;
+	}
+
+	// get file for Alpha mask
+	QString sFilenameAlphaMask = "";
+	// look for override
+	if (m_overrideTable_MaterialImageMaps.contains(pNumericPropertyAlphaMask)) {
+		sFilenameAlphaMask = m_overrideTable_MaterialImageMaps[pNumericPropertyAlphaMask];
+	}
+	else
+	{
+		DzTexture* pTextureAlphaMask = pNumericPropertyAlphaMask->getMapValue();
+		DzLayeredTexture* pLayeredTextureAlphaMask = qobject_cast<DzLayeredTexture*>(pTextureAlphaMask);
+		if (pTextureAlphaMask)
+		{
+			if (pLayeredTextureAlphaMask) {
+				pLayeredTextureAlphaMask->getPreviewPixmap(1, 1);
+			}
+			sFilenameAlphaMask = pTextureAlphaMask->getFilename();
+		}
+	}
+
+	// Load images
+	QImage imageA;
+	QImage imageB;
+	QImage alphaMask;
+	if (dzApp->getImageMgr()->loadImage(sFilenameA, imageA) != ERROR_SUCCESS) {
+		return false;
+	}
+	if (dzApp->getImageMgr()->loadImage(sFilenameB, imageB) != ERROR_SUCCESS) {
+		return false;
+	}
+	if (sFilenameAlphaMask == "" ||
+		dzApp->getImageMgr()->loadImage(sFilenameAlphaMask, alphaMask) != ERROR_SUCCESS) 
+	{
+		int imageWidth = 32; // Small size since it's a solid color
+		int imageHeight = 32;
+		alphaMask = QImage(imageWidth, imageHeight, QImage::Format_ARGB32);
+		double nMaskWeight = pNumericPropertyAlphaMask->getDoubleValue();
+		int alphaValue = qBound(0, static_cast<int>(nMaskWeight * 255), 255);
+		QColor alphaColor(alphaValue, alphaValue, alphaValue);
+		alphaMask.fill(alphaColor);
+	}
+
+
+	// Check if images are valid
+	if (imageA.isNull() || imageB.isNull() || alphaMask.isNull())
+	{
+		dzApp->log("DazBridge: ERROR: bakeOverlayProperty(): One or more images failed to load: " + pMaterial->getLabel());
+		return false;
+	}
+
+	// Ensure images have same dimensions
+	int width = imageA.width();
+	int height = imageA.height();
+
+	if (imageB.width() != width || imageB.height() != height)
+	{
+		imageB = imageB.scaled(width, height, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+	}
+
+	if (alphaMask.width() != width || alphaMask.height() != height)
+	{
+		alphaMask = alphaMask.scaled(width, height, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
+	}
+
+	// Perform blending using the static utility function
+	ImageTools::BlendImagesWithAlphaMultithreaded(imageA, imageB, alphaMask);
+
+	// Save output image
+	QString tempPath = dzApp->getTempPath().replace("\\", "/");
+	QString stemA = QFileInfo(sFilenameA).fileName();
+	QString stemB = QFileInfo(sFilenameB).fileName();
+	QString outputFilename = tempPath + "/" + stemA + "+" + stemB + ".png"; // TODO: detect if alpha channel present, if not then use jpg (aka, after alpha bake stage)
+
+	if (!imageA.save(outputFilename, 0, 100))
+	{
+		dzApp->log("DazBridge: ERROR: bakeOverlayProperty() Failed to save output image:" + outputFilename + " for material: " + pMaterial->getLabel());
+		return false;
+	}
+
+	// WARNING!!! IF YOU DO NOT APPLY TO DAZ PROPERTY, FURTHER SCENE PROCESSING INVOLVING THIS MATERIAL MAY BE CORRUPTED!!!
+	// Assign the output image to propertyA (or use an override)
+	m_overrideTable_MaterialImageMaps.insert(pColorPropertyA, outputFilename);
+	m_overrideTable_MaterialImageMaps.insert(pColorPropertyB, "");
+	m_overrideTable_MaterialImageMaps.insert(pNumericPropertyAlphaMask, "");
+
+	return true;
+}
+
 
 #include "moc_DzBridgeAction.cpp"

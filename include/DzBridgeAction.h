@@ -408,6 +408,10 @@ namespace DzBridgeNameSpace
 
 		Q_INVOKABLE virtual void writeSceneMaterials(DzJsonWriter& Writer, QTextStream* pCSVstream);
 
+		Q_INVOKABLE virtual bool bakeOverlayProperty(DzMaterial* pMaterial, QString sColorPropertyA, QString sColorPropertyB, QString sNumericPropertyAlphaMask);
+		Q_INVOKABLE virtual bool bakeMakeup(DzMaterial* pMaterial);
+		Q_INVOKABLE virtual bool bakeTranslucency(DzMaterial* pMaterial);
+
 	private:
 		class MaterialGroupExportOrderMetaData
 		{

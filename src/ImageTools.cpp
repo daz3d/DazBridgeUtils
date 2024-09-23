@@ -125,3 +125,35 @@ QString ImageTools::colorToHexString(const QColor& color)
 
 	return hexColor.toUpper();
 }
+
+void ImageTools::BlendImagesWithAlphaMultithreaded(QImage& imageA, const QImage& imageB, const QImage& alphaMask)
+{
+	// Ensure images have same dimensions and format
+	int width = imageA.width();
+	int height = imageA.height();
+	QImage::Format pixelFormat = QImage::Format_ARGB32;
+
+	// Convert images to consistent format if necessary
+	if (imageA.format() != pixelFormat)
+		imageA = imageA.convertToFormat(pixelFormat);
+	QImage imageBConverted = imageB;
+	if (imageBConverted.format() != pixelFormat)
+		imageBConverted = imageBConverted.convertToFormat(pixelFormat);
+	QImage alphaMaskConverted = alphaMask;
+	if (alphaMaskConverted.format() != pixelFormat)
+		alphaMaskConverted = alphaMaskConverted.convertToFormat(pixelFormat);
+
+	// Multithreading setup
+	int numThreads = QThreadPool::globalInstance()->maxThreadCount();
+	int step = height / numThreads;
+
+	for (int i = 0; i < numThreads; ++i)
+	{
+		int startY = i * step;
+		int endY = (i == numThreads - 1) ? height : startY + step;
+		BlendImagesWithAlphaTask* task = new BlendImagesWithAlphaTask(&imageA, &imageBConverted, &alphaMaskConverted, startY, endY);
+		QThreadPool::globalInstance()->start(task);
+	}
+
+	QThreadPool::globalInstance()->waitForDone();
+}
