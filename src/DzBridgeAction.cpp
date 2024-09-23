@@ -6137,6 +6137,9 @@ bool DzBridgeAction::combineDiffuseAndAlphaMaps(DzMaterial* Material)
 			outputImage = diffuseImage;
 			outputImage.convertToFormat(QImage::Format_ARGB32_Premultiplied);
 
+			// DB 2024-09-23: Change alpha raw to alpha srgb colorspace
+			ImageTools::ConvertImageLinearToRgbMultithreaded(alphaImage);
+
 			// Resize Diffuse and Alpha
 			if (outputImage.height() != alphaImage.height() ||
 				outputImage.width() != alphaImage.width())

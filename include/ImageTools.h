@@ -14,6 +14,7 @@ public:
 	static bool isPowerOfTwo(int n);
 	static int nearestPowerOfTwo(int n);
 	static void BlendImagesWithAlphaMultithreaded(QImage& imageA, const QImage& imageB, const QImage& alphaMask);
+	static void ConvertImageLinearToRgbMultithreaded(QImage& image);
 
 };
 
@@ -144,4 +145,53 @@ private:
 	const QImage* m_alphaMask;
 	int m_startY;
 	int m_endY;
+};
+
+class ConvertImageLinearToRgb : public QRunnable
+{
+public:
+	ConvertImageLinearToRgb(QImage* image, int startY, int endY)
+		: m_image(image), m_startY(startY), m_endY(endY)
+	{
+	}
+
+	double linearToRgb(double linear, double gamma=2.2) {
+		double rgb;
+
+		rgb = pow(linear, 1 / gamma);
+
+		return rgb;
+	}
+
+	void run() override
+	{
+		int width = m_image->width();
+		for (int y = m_startY; y < m_endY; ++y)
+		{
+			QRgb* scanLine = reinterpret_cast<QRgb*>(m_image->scanLine(y));
+			for (int x = 0; x < width; ++x)
+			{
+				QRgb pixel = scanLine[x];
+				int red = qRed(pixel);
+				int green = qGreen(pixel);
+				int blue = qBlue(pixel);
+				double fRed = double(red) / 255.0;
+				double fGreen = double(green) / 255.0;
+				double fBlue = double(blue) / 255.0;
+
+
+				int newRed = qMin(255, int(linearToRgb(fRed)*255) );
+				int newGreen = qMin(255, int(linearToRgb(fGreen)*255) );
+				int newBlue = qMin(255, int(linearToRgb(fBlue)*255) );
+
+				scanLine[x] = qRgb(newRed, newGreen, newBlue);
+			}
+		}
+	}
+
+private:
+	QImage* m_image;
+	int m_startY;
+	int m_endY;
+
 };
