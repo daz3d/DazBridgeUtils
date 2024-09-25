@@ -1217,6 +1217,7 @@ void DzBridgeMorphSelectionDialog::addGenesis9FACS(QStringList& MorphsToAdd)
 	MorphsToAdd.append("facs_bs_NoseSneerRight");
 	MorphsToAdd.append("facs_cbs_EyeFullCompressionLeft");
 	MorphsToAdd.append("facs_cbs_EyeFullCompressionRight");
+	MorphsToAdd.append("facs_ctrl_MouthFunnel");
 	MorphsToAdd.append("facs_ctrl_MouthPressLeft");
 	MorphsToAdd.append("facs_ctrl_MouthPressLeft");
 	MorphsToAdd.append("facs_ctrl_MouthPressRight");
@@ -1303,6 +1304,7 @@ void DzBridgeMorphSelectionDialog::addGenesis9FACS(QStringList& MorphsToAdd)
 	MorphsToAdd.append("facs_ctrl_MouthForward-BackUpperLeft");
 	MorphsToAdd.append("facs_ctrl_MouthForward-BackUpperRight");
 
+	
 }
 
 // Add Genesis8 FACS controls for use by WonderStudio conversion
