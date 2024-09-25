@@ -5639,8 +5639,8 @@ DzNodeList DzBridgeAction::FindRootNodes(DzNode* pNode)
 	return figureList + propList;
 }
 
-// WARNING: destructive function that permanently sets invisible root nodes and all its children to visible
-DzNodeList DzBridgeAction::BuildRootNodeList()
+// WARNING:bUnhideNodes is a destructive pathway that permanently sets invisible root nodes and all its children to visible
+DzNodeList DzBridgeAction::BuildRootNodeList(bool bUnhideNodes)
 {
 	DzNodeList rootNodeList;
 
@@ -5652,12 +5652,15 @@ DzNodeList DzBridgeAction::BuildRootNodeList()
 		{
 			if (!node->isVisible() && node->isRootNode())
 			{
-				node->setVisible(true);
-				auto children = node->getNodeChildren(true);
-				foreach(auto childrenElement, children)
+				if (bUnhideNodes) 
 				{
-					DzNode* child = qobject_cast<DzNode*>(childrenElement);
-					child->setVisible(true);
+					node->setVisible(true);
+					auto children = node->getNodeChildren(true);
+					foreach(auto childrenElement, children)
+					{
+						DzNode* child = qobject_cast<DzNode*>(childrenElement);
+						child->setVisible(true);
+					}
 				}
 			}
 
@@ -6512,7 +6515,7 @@ bool DzBridgeAction::undoDuplicateNodeRename()
 	return true;
 }
 
-DzNode* DzBridgeAction::FindBestRootNode(const DzNodeList aNodeList)
+DzNode* DzBridgeAction::ChooseBestSelectedNode(const DzNodeList aNodeList)
 {
 	foreach(DzNode * pNode, aNodeList) {
 		if (pNode->inherits("DzGroupNode") ||
@@ -6823,5 +6826,119 @@ bool DzBridgeAction::bakeOverlayProperty(DzMaterial* pMaterial, QString sPropert
 	return true;
 }
 
+DzSkeleton* DzBridgeAction::GetNonFollowerParent(DzSkeleton* pSkeleton)
+{
+	DzSkeleton* pFollowTarget = pSkeleton->getFollowTarget();
+
+	if (!pFollowTarget) return pSkeleton;
+
+	// redirect to parent of follower
+	while (pFollowTarget->getFollowTarget())
+	{
+		pFollowTarget = pFollowTarget->getFollowTarget();
+	}
+
+	return pFollowTarget;
+}
+
+EAssetType DzBridgeAction::SelectBestRootNodeForTransfer(bool bAvoidFollowers)
+{
+	EAssetType eBestAssetType = EAssetType::None;
+
+	// Build a list of all selected nodes and select the best among them, potentially selecting no node
+	if (dzScene->getNumSelectedNodes() > 1)
+	{
+		DzNodeList selectedNodes;
+		int numMeshes = 0;
+		QObjectList objectList = dzScene->getSelectedNodeList();
+		foreach(auto el, objectList) {
+			DzNode* pNode = qobject_cast<DzNode*>(el);
+			if (pNode) {
+				selectedNodes.append(pNode);
+				if (pNode->getObject()) {
+					numMeshes++;
+				}
+			}
+		}
+		dzScene->selectAllNodes(false);
+		DzNode* pSelection = ChooseBestSelectedNode(selectedNodes);
+		if (pSelection) {
+			pSelection->select(true);
+			dzScene->setPrimarySelection(pSelection);
+			if (numMeshes > 0) {
+				eBestAssetType = EAssetType::Other;
+			}
+
+		}
+	}
+
+	// Build List of Root Nodes in Scene and choose the best among them
+	if (dzScene->getNumSelectedNodes() == 0)
+	{
+		DzNodeList rootNodes = DZ_BRIDGE_NAMESPACE::DzBridgeAction::BuildRootNodeList();
+		if (rootNodes.length() == 1) {
+			dzScene->setPrimarySelection(rootNodes[0]);
+		}
+		else if (rootNodes.length() > 1)
+		{
+			// Switch to default Environment mode
+			DzNode* pSelection = ChooseBestSelectedNode(rootNodes);
+			dzScene->setPrimarySelection(pSelection);
+			eBestAssetType = EAssetType::Other;
+		}
+	}
+
+	DzNode* pSelection = dzScene->getPrimarySelection();
+	if (pSelection && eBestAssetType == EAssetType::None)
+	{
+		DzSkeleton* pSkeleton = qobject_cast<DzSkeleton*>(pSelection);
+		DzBone* pBone = qobject_cast<DzBone*>(pSelection);
+		DzObject* pObject = pSelection->getObject();
+		// if bone, redirect to skeleton
+		if (pBone) {
+			pSkeleton = pBone->getSkeleton();
+		}
+		// if skeleton, assume a figure or legacy figure
+		if (pSkeleton) 
+		{
+			if (bAvoidFollowers) {
+				pSkeleton = GetNonFollowerParent(pSkeleton);
+			}
+			dzScene->selectAllNodes(false);
+			pSkeleton->select(true);
+			dzScene->setPrimarySelection(pSkeleton);
+			eBestAssetType = EAssetType::SkeletalMesh;
+		}
+		else if (pObject) 
+		{
+			// else if object (geometry) exists, assume static
+			// 1. First go up ancestor chain to see if pObject is parented to a figure
+			DzNode* pAncestor = pSelection->getNodeParent();
+			DzSkeleton* pSkeleton = qobject_cast<DzSkeleton*>(pAncestor);
+			while (!pSkeleton && pAncestor->getNodeParent()) {
+				pAncestor = pAncestor->getNodeParent();
+				pSkeleton = qobject_cast<DzSkeleton*>(pAncestor);
+			}
+			if (pSkeleton) {
+				if (bAvoidFollowers) {
+					pSkeleton = GetNonFollowerParent(pSkeleton);
+				}
+				dzScene->selectAllNodes(false);
+				pSkeleton->select(true);
+				dzScene->setPrimarySelection(pSkeleton);
+				eBestAssetType = EAssetType::SkeletalMesh;
+			}
+			else {
+				eBestAssetType = EAssetType::StaticMesh;
+			}
+		}
+		else if (pSelection->inherits("DzGroupNode"))
+		{
+			eBestAssetType = EAssetType::Other;
+		}
+	}
+
+	return eBestAssetType;
+}
 
 #include "moc_DzBridgeAction.cpp"

@@ -29,6 +29,13 @@ namespace DzBridgeNameSpace
 	class DzBridgeSubdivisionDialog;
 	class DzBridgeLodSettingsDialog;
 
+	enum EAssetType {
+		None = -1,
+		SkeletalMesh = 0,
+		StaticMesh = 1,
+		Other = 2
+	};
+
 	struct LodInfo {
 		QString pregenerated_lodlevel_string = "";
 		int export_lodgroup_index = -1;
@@ -142,11 +149,13 @@ namespace DzBridgeNameSpace
 
 		Q_INVOKABLE virtual bool isInteractiveMode();
 
-		Q_INVOKABLE static DzNodeList BuildRootNodeList();
+		Q_INVOKABLE static DzNodeList BuildRootNodeList(bool bUnhideNodes=false);
 		Q_INVOKABLE static DzNodeList FindRootNodes(DzNode* pNode);
 		Q_INVOKABLE static void ReparentFigure(DzNode* figure);
-		Q_INVOKABLE static DzNode* FindBestRootNode(const DzNodeList aNodeList);
+		Q_INVOKABLE static DzNode* ChooseBestSelectedNode(const DzNodeList aNodeList);
 		Q_INVOKABLE static DzNode* FindNodeByName(DzNode* pRootNode, QString sNodeName);
+		Q_INVOKABLE static DzSkeleton* GetNonFollowerParent(DzSkeleton* pSkeleton);
+		Q_INVOKABLE static EAssetType SelectBestRootNodeForTransfer(bool bAvoidFollowers=true);
 
 	protected:
 		// Struct to remember attachment info
