@@ -7073,4 +7073,73 @@ bool DzBridgeAction::forceLieUpdate(DzMaterial* pMaterial)
 	return true;
 }
 
+bool DzBridgeAction::DetectInstancesInScene()
+{
+	auto nodeListIterator = dzScene->nodeListIterator();
+
+	while (nodeListIterator.hasNext())
+	{
+		DzNode* pNode = nodeListIterator.next();
+		DzInstanceNode* pInstance = qobject_cast<DzInstanceNode*>(pNode);
+		if (pInstance)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+bool DzBridgeAction::DetectCustomPivotsInScene()
+{
+	auto nodeListIterator = dzScene->nodeListIterator();
+
+	while (nodeListIterator.hasNext())
+	{
+		DzNode* pNode = nodeListIterator.next();
+		if (pNode->getObject() && pNode->getObject()->getCurrentShape() && pNode->inherits("DzSkeleton")==false)
+		{
+			DzVec3 pivotPoint = pNode->getOrigin(false);
+			if (pivotPoint.m_x != 0 || pivotPoint.m_y != 0 || pivotPoint.m_z != 0)
+			{
+				return true;
+			}
+		}
+	}
+
+	return false;
+}
+
+bool DzBridgeAction::BakePivotsAndInstances()
+{
+	bool bResult;
+	bool bReplace = false;
+	QString sScriptFilename = "bake_pivots_and_instances_nogui.dsa";
+	QString sEmbeddedFolderPath = ":/DazBridgeBlender";
+	QString sEmbeddedFilepath = sEmbeddedFolderPath + "/" + sScriptFilename;
+	QFile srcFile(sEmbeddedFilepath);
+	QString sTempFilepath = dzApp->getTempPath() + "/" + sScriptFilename;
+	bResult = DZ_BRIDGE_NAMESPACE::DzBridgeAction::copyFile(&srcFile, &sTempFilepath, bReplace);
+	srcFile.close();
+	if (!bResult)
+	{
+		dzApp->log(tr("DzBridge: ERROR: BakePivotsAndInstances() Error occured while trying to copy script to temp folder: ") + sTempFilepath);
+	}
+
+	DzScript* Script = new DzScript();
+
+	bResult = Script->loadFromFile(sTempFilepath);
+	if (!bResult) {
+		dzApp->log(tr("DzBridge: CRITICAL ERROR: BakePivotsAndInstances() Error occured while trying to load script file: ") + sTempFilepath + ", aborting script.");
+		return false;
+	}
+
+	bResult = Script->execute();
+
+	// this may cause instability or crashes
+	Script->deleteLater();
+
+	return bResult;
+}
+
 #include "moc_DzBridgeAction.cpp"

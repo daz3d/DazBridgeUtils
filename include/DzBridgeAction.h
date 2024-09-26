@@ -427,6 +427,10 @@ namespace DzBridgeNameSpace
 
 		Q_INVOKABLE virtual bool forceLieUpdate(DzMaterial* pMaterial);
 
+		Q_INVOKABLE static bool DetectInstancesInScene();
+		Q_INVOKABLE static bool DetectCustomPivotsInScene();
+		Q_INVOKABLE static bool BakePivotsAndInstances();
+
 	private:
 		class MaterialGroupExportOrderMetaData
 		{
