@@ -657,23 +657,15 @@ void DzBridgeDialog::showTargetPluginInstaller(bool bShowWidget)
 
 bool DzBridgeDialog::loadSavedSettings()
 {
-	if (settings == nullptr)
-	{
-		return false;
-	}
+#define LOAD_CHECKED(name,widget) if (!settings->value(name).isNull() && widget) widget->setChecked(settings->value(name).toBool());
+#define LOAD_ITEMDATA(name,widget) if (!settings->value(name).isNull() && widget) widget->setCurrentIndex(widget->findData(settings->value(name)));
 
-	if (!settings->value("MorphsEnabled").isNull())
-	{
-		morphsEnabledCheckBox->setChecked(settings->value("MorphsEnabled").toBool());
-	}
-	if (!settings->value("SubdivisionEnabled").isNull())
-	{
-		subdivisionEnabledCheckBox->setChecked(settings->value("SubdivisionEnabled").toBool());
-	}
-	if (!settings->value("ShowFBXDialog").isNull())
-	{
-		showFbxDialogCheckBox->setChecked(settings->value("ShowFBXDialog").toBool());
-	}
+	if (settings == nullptr) return false;
+
+	LOAD_CHECKED("MorphsEnabled", morphsEnabledCheckBox);
+	LOAD_CHECKED("SubdivisionEnabled", subdivisionEnabledCheckBox);
+	LOAD_CHECKED("ShowFBXDialog", showFbxDialogCheckBox);
+
 	if (m_bSetupMode)
 	{
 		this->showOptions();
@@ -690,6 +682,7 @@ bool DzBridgeDialog::loadSavedSettings()
 	{
 		this->hideOptions();
 	}
+
 	if (!settings->value("FBXExportVersion").isNull())
 	{
 		int index = fbxVersionCombo->findText(settings->value("FBXExportVersion").toString());
@@ -698,36 +691,27 @@ bool DzBridgeDialog::loadSavedSettings()
 			fbxVersionCombo->setCurrentIndex(index);
 		}
 	}
-	if (!settings->value("EnableNormalMapGeneration").isNull())
-	{
-		m_wConvertBumpToNormalCheckBox->setChecked(settings->value("EnableNormalMapGeneration").toBool());
-	}
-	if (!settings->value("ExportMaterialPropertyCSV").isNull())
-	{
-		exportMaterialPropertyCSVCheckBox->setChecked(settings->value("ExportMaterialPropertyCSV").toBool());
-	}
+
+	LOAD_CHECKED("EnableNormalMapGeneration", m_wConvertBumpToNormalCheckBox);
+	LOAD_CHECKED("ExportMaterialPropertyCSV", exportMaterialPropertyCSVCheckBox);
+
+	LOAD_CHECKED("ResizeTexturesEnabled", m_wResizeTexturesGroupBox);
+	LOAD_ITEMDATA("MaxTextureFileSize", m_wMaxTextureFileSizeCombo);
+	LOAD_ITEMDATA("MaxTextureResolution", m_wMaxTextureResolutionCombo);
+	LOAD_ITEMDATA("ExportTextureFileFormat", m_wExportTextureFileFormatCombo);
+
+	LOAD_CHECKED("BakeTexturesEnabled", m_wTextureBakingGroupBox);
+	LOAD_CHECKED("BakeAlphaChannel", m_wBakeAlphaChannelCheckBox);
+	LOAD_CHECKED("BakeColorTint", m_wBakeColorTintCheckBox);
+	LOAD_CHECKED("BakeMakeupOverlay", m_wBakeMakeupOverlayCheckBox);
+	LOAD_CHECKED("BakeTranslucencyTint", m_wBakeTranslucencyTintCheckBox);
 
 	// Animation settings
-	if (!settings->value("AnimationExperminentalExport").isNull())
-	{
-		experimentalAnimationExportCheckBox->setChecked(settings->value("AnimationExperminentalExport").toBool());
-	}
-	if (!settings->value("AnimationBake").isNull())
-	{
-		bakeAnimationExportCheckBox->setChecked(settings->value("AnimationBake").toBool());
-	}
-	if (!settings->value("AnimationExportFace").isNull())
-	{
-		faceAnimationExportCheckBox->setChecked(settings->value("AnimationExportFace").toBool());
-	}
-	if (!settings->value("AnimationExportActiveCurves").isNull())
-	{
-		animationExportActiveCurvesCheckBox->setChecked(settings->value("AnimationExportActiveCurves").toBool());
-	}
-	if (!settings->value("AnimationApplyBoneScale").isNull())
-	{
-		animationApplyBoneScaleCheckBox->setChecked(settings->value("AnimationApplyBoneScale").toBool());
-	}
+	LOAD_CHECKED("AnimationExperminentalExport", experimentalAnimationExportCheckBox);
+	LOAD_CHECKED("AnimationBake", bakeAnimationExportCheckBox);
+	LOAD_CHECKED("AnimationExportFace", faceAnimationExportCheckBox);
+	LOAD_CHECKED("AnimationExportActiveCurves", animationExportActiveCurvesCheckBox);
+	LOAD_CHECKED("AnimationApplyBoneScale", animationApplyBoneScaleCheckBox);
 
 	return true;
 }
@@ -735,15 +719,41 @@ bool DzBridgeDialog::loadSavedSettings()
 // Some settings will be saved when Accept is hit so we don't need a hanlder attached to all of them
 void DzBridgeDialog::saveSettings()
 {
-	if (settings == nullptr || m_bDontSaveSettings) return;
-	settings->setValue("ShowAdvancedSettings", this->optionsShown());
+#define SAVE_CHECKED(name, widget) if (widget) settings->setValue(name, widget->isChecked());
+#define SAVE_ITEMDATA(name, widget) if (widget) settings->setValue(name, widget->itemData(widget->currentIndex()));
 
-	if (experimentalAnimationExportCheckBox == nullptr) return;
-	settings->setValue("AnimationExperminentalExport", experimentalAnimationExportCheckBox->isChecked());
-	settings->setValue("AnimationBake", bakeAnimationExportCheckBox->isChecked());
-	settings->setValue("AnimationExportFace", faceAnimationExportCheckBox->isChecked());
-	settings->setValue("AnimationExportActiveCurves", animationExportActiveCurvesCheckBox->isChecked());
-	settings->setValue("AnimationApplyBoneScale", animationApplyBoneScaleCheckBox->isChecked());
+	if (settings == nullptr || m_bDontSaveSettings) return;
+
+	SAVE_CHECKED("MorphsEnabled", morphsEnabledCheckBox);
+	SAVE_CHECKED("SubdivisionEnabled", subdivisionEnabledCheckBox);
+	SAVE_CHECKED("LodEnabled", m_wEnableLodCheckBox);
+
+	if (!m_bSetupMode) settings->setValue("ShowAdvancedSettings", this->optionsShown());
+
+	if (fbxVersionCombo->isEnabled()) settings->setValue("FBXExportVersion", fbxVersionCombo->itemText(fbxVersionCombo->currentIndex()));
+	SAVE_CHECKED("ShowFBXDialog", showFbxDialogCheckBox);
+	SAVE_CHECKED("ExportMaterialPropertyCSV", exportMaterialPropertyCSVCheckBox);
+
+	SAVE_CHECKED("ResizeTexturesEnabled", m_wResizeTexturesGroupBox);
+	SAVE_ITEMDATA("MaxTextureFileSize", m_wMaxTextureFileSizeCombo);
+	SAVE_ITEMDATA("MaxTextureResolution", m_wMaxTextureResolutionCombo);
+	SAVE_ITEMDATA("ExportTextureFileFormat", m_wExportTextureFileFormatCombo);
+
+	SAVE_CHECKED("BakeTexturesEnabled", m_wTextureBakingGroupBox);
+	SAVE_CHECKED("EnableNormalMapGeneration", m_wConvertBumpToNormalCheckBox);
+	SAVE_CHECKED("BakeAlphaChannel", m_wBakeAlphaChannelCheckBox);
+	SAVE_CHECKED("BakeColorTint", m_wBakeColorTintCheckBox);
+	SAVE_CHECKED("BakeMakeupOverlay", m_wBakeMakeupOverlayCheckBox);
+	SAVE_CHECKED("BakeTranslucencyTint", m_wBakeTranslucencyTintCheckBox);
+
+	if (experimentalAnimationExportCheckBox)
+	{
+		if (experimentalAnimationExportCheckBox->isEnabled()) settings->setValue("AnimationExperminentalExport", experimentalAnimationExportCheckBox->isChecked());
+		if (bakeAnimationExportCheckBox->isEnabled()) settings->setValue("AnimationBake", bakeAnimationExportCheckBox->isChecked());
+		if (faceAnimationExportCheckBox->isEnabled()) settings->setValue("AnimationExportFace", faceAnimationExportCheckBox->isChecked());
+		if (animationExportActiveCurvesCheckBox->isEnabled()) settings->setValue("AnimationExportActiveCurves", animationExportActiveCurvesCheckBox->isChecked());
+		if (animationApplyBoneScaleCheckBox->isEnabled()) settings->setValue("AnimationApplyBoneScale", animationApplyBoneScaleCheckBox->isChecked());
+	}
 }
 
 // Update Default GUI Settings based on currently selected asset
