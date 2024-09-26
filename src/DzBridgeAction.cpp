@@ -773,7 +773,8 @@ bool DzBridgeAction::undoPreProcessScene()
 	}
 
 	// Clear Override Tables
-	m_overrideTable_MaterialImageMaps.clear();
+//	m_overrideTable_MaterialImageMaps.clear();
+	m_overrideTable_MaterialProperties.clear();
 	m_undoTable_MorphRename.clear();
 
     DzProgress::setCurrentInfo("Daz Bridge: Undo Export Processing Complete.");
@@ -3039,9 +3040,16 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 		return;
 	}
 	// Check for Override Image Map
-	if (m_overrideTable_MaterialImageMaps.contains(Property))
+	//if (m_overrideTable_MaterialImageMaps.contains(Property))
+	//{
+	//	TextureName = m_overrideTable_MaterialImageMaps[Property];
+	//}
+	if (m_overrideTable_MaterialProperties.contains(Property))
 	{
-		TextureName = m_overrideTable_MaterialImageMaps[Property];
+		MaterialOverride overrideData = m_overrideTable_MaterialProperties[Property];
+		if (overrideData.bHasFilename) TextureName = overrideData.filename;
+		if (overrideData.bHasColor) dtuPropValue = overrideData.color.name();
+		if (overrideData.bHasNumericValue) dtuPropNumericValue = overrideData.numericValue;
 	}
 
 	QString dtuTextureName = TextureName;
@@ -6274,8 +6282,13 @@ bool DzBridgeAction::combineDiffuseAndAlphaMaps(DzMaterial* Material)
 			//colorProp->setMap(outfile);
 			//numericProp->setMap(outfile);
 			// DB, 2023-11-10: Do not modify internal daz data, but just add to DTU overrides
-			m_overrideTable_MaterialImageMaps.insert(colorProp, outfile);
-			m_overrideTable_MaterialImageMaps.insert(numericProp, outfile);
+			//m_overrideTable_MaterialImageMaps.insert(colorProp, outfile);
+			//m_overrideTable_MaterialImageMaps.insert(numericProp, outfile);
+			if (colorProp) m_overrideTable_MaterialProperties.insert(colorProp, MaterialOverride(outfile, QColor(255,255,255)));
+			if (numericProp) m_overrideTable_MaterialProperties.insert(numericProp, MaterialOverride(outfile, 1.0));
+			if (imageProp) m_overrideTable_MaterialProperties.insert(imageProp, MaterialOverride(outfile));
+
+
 		}
 	}
 
@@ -6770,9 +6783,12 @@ bool DzBridgeAction::bakeOverlayProperty(DzMaterial* pMaterial, QString sPropert
 	// get file for propertyA
 	QString sFilenameA = "";
 	// look for override
-	if (m_overrideTable_MaterialImageMaps.contains(pColorPropertyA)) {
-		sFilenameA = m_overrideTable_MaterialImageMaps[pColorPropertyA];
+	if (m_overrideTable_MaterialProperties.contains(pColorPropertyA)) {
+		sFilenameA = m_overrideTable_MaterialProperties[pColorPropertyA].filename;
 	}
+	//if (m_overrideTable_MaterialImageMaps.contains(pColorPropertyA)) {
+	//	sFilenameA = m_overrideTable_MaterialImageMaps[pColorPropertyA];
+	//}
 	else
 	{
 		DzTexture* pTextureA = pColorPropertyA->getMapValue();
@@ -6793,9 +6809,12 @@ bool DzBridgeAction::bakeOverlayProperty(DzMaterial* pMaterial, QString sPropert
 	// get file for propertyA
 	QString sFilenameB = "";
 	// look for override
-	if (m_overrideTable_MaterialImageMaps.contains(pColorPropertyB)) {
-		sFilenameB = m_overrideTable_MaterialImageMaps[pColorPropertyB];
+	if (m_overrideTable_MaterialProperties.contains(pColorPropertyB)) {
+		sFilenameA = m_overrideTable_MaterialProperties[pColorPropertyB].filename;
 	}
+	//if (m_overrideTable_MaterialImageMaps.contains(pColorPropertyB)) {
+	//	sFilenameB = m_overrideTable_MaterialImageMaps[pColorPropertyB];
+	//}
 	else
 	{
 		DzTexture* pTextureB = pColorPropertyB->getMapValue();
@@ -6816,9 +6835,12 @@ bool DzBridgeAction::bakeOverlayProperty(DzMaterial* pMaterial, QString sPropert
 	// get file for Alpha mask
 	QString sFilenameAlphaMask = "";
 	// look for override
-	if (m_overrideTable_MaterialImageMaps.contains(pNumericPropertyAlphaMask)) {
-		sFilenameAlphaMask = m_overrideTable_MaterialImageMaps[pNumericPropertyAlphaMask];
+	if (m_overrideTable_MaterialProperties.contains(pNumericPropertyAlphaMask)) {
+		sFilenameA = m_overrideTable_MaterialProperties[pNumericPropertyAlphaMask].filename;
 	}
+	//if (m_overrideTable_MaterialImageMaps.contains(pNumericPropertyAlphaMask)) {
+	//	sFilenameAlphaMask = m_overrideTable_MaterialImageMaps[pNumericPropertyAlphaMask];
+	//}
 	else
 	{
 		DzTexture* pTextureAlphaMask = pNumericPropertyAlphaMask->getMapValue();
@@ -6893,10 +6915,12 @@ bool DzBridgeAction::bakeOverlayProperty(DzMaterial* pMaterial, QString sPropert
 
 	// WARNING!!! IF YOU DO NOT APPLY TO DAZ PROPERTY, FURTHER SCENE PROCESSING INVOLVING THIS MATERIAL MAY BE CORRUPTED!!!
 	// Assign the output image to propertyA (or use an override)
-	m_overrideTable_MaterialImageMaps.insert(pColorPropertyA, outputFilename);
-	m_overrideTable_MaterialImageMaps.insert(pColorPropertyB, "");
-	m_overrideTable_MaterialImageMaps.insert(pNumericPropertyAlphaMask, "");
-
+	//m_overrideTable_MaterialImageMaps.insert(pColorPropertyA, outputFilename);
+	//m_overrideTable_MaterialImageMaps.insert(pColorPropertyB, "");
+	//m_overrideTable_MaterialImageMaps.insert(pNumericPropertyAlphaMask, "");
+	m_overrideTable_MaterialProperties.insert(pColorPropertyA, MaterialOverride(outputFilename, QColor(255,255,255)));
+	m_overrideTable_MaterialProperties.insert(pColorPropertyB, MaterialOverride("", QColor(0,0,0)));
+	m_overrideTable_MaterialProperties.insert(pNumericPropertyAlphaMask, MaterialOverride("", 0.0));
 	return true;
 }
 

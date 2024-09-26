@@ -487,7 +487,23 @@ namespace DzBridgeNameSpace
 		QMap<QString, QString> m_undoTable_DuplicateNodeRename;
 
 		// Override data structures
-		QMap<DzProperty*, QString> m_overrideTable_MaterialImageMaps;
+		class MaterialOverride
+		{
+		public:
+			MaterialOverride() {};
+			MaterialOverride(QString string) : filename(string) { bHasFilename = true; }
+			MaterialOverride(QString string, QColor color) : filename(string), color(color) { bHasFilename = true; bHasColor = true; }
+			MaterialOverride(QString string, double value) : filename(string), numericValue(value) { bHasFilename = true; bHasNumericValue = true; }
+
+			bool bHasFilename = false;
+			bool bHasNumericValue = false;
+			bool bHasColor = false;
+			QString filename = "";
+			double numericValue;
+			QColor color;
+		};
+		QMap<DzProperty*, MaterialOverride> m_overrideTable_MaterialProperties;
+//		QMap<DzProperty*, QString> m_overrideTable_MaterialImageMaps;
 
 		// NormalMap utility methods
 		double getPixelIntensity(const  QRgb& pixel);
