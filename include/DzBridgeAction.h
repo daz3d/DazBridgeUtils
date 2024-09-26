@@ -425,6 +425,8 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool bakeMakeup(DzMaterial* pMaterial);
 		Q_INVOKABLE virtual bool bakeTranslucency(DzMaterial* pMaterial);
 
+		Q_INVOKABLE virtual bool forceLieUpdate(DzMaterial* pMaterial);
+
 	private:
 		class MaterialGroupExportOrderMetaData
 		{

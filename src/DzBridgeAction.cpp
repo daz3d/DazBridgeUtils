@@ -229,6 +229,11 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 				if (material)
 				{
 					//////////////////
+					// Force LIE Update
+					//////////////////
+					forceLieUpdate(material);
+
+					//////////////////
 					// Rename Duplicate Material
 					/////////////////
 					preProcessProgress.setInfo("Renaming Duplicate Materials: " + material->getLabel());
@@ -7039,6 +7044,33 @@ EAssetType DzBridgeAction::SelectBestRootNodeForTransfer(bool bAvoidFollowers)
 	}
 
 	return eBestAssetType;
+}
+
+bool DzBridgeAction::forceLieUpdate(DzMaterial* pMaterial)
+{
+	if (!pMaterial) return false;
+
+	foreach(QObject* pObject, pMaterial->getPropertyList())
+	{
+//		DzColorProperty* pColorProperty = qobject_cast<DzColorProperty*>(pObject);
+		DzNumericProperty* pNumericProperty = qobject_cast<DzNumericProperty*>(pObject);
+		DzImageProperty* pImageProperty = qobject_cast<DzImageProperty*>(pObject);
+
+		DzTexture* pTexture = NULL;
+		if (pNumericProperty) {
+			pTexture = pNumericProperty->getMapValue();
+		}
+		else if (pImageProperty) {
+			pTexture = pImageProperty->getValue();
+		}
+
+		DzLayeredTexture* pLayeredTexture = qobject_cast<DzLayeredTexture*>(pTexture);
+		if (pLayeredTexture) {
+			pLayeredTexture->getPreviewPixmap(1,1);
+		}
+	}
+
+	return true;
 }
 
 #include "moc_DzBridgeAction.cpp"
