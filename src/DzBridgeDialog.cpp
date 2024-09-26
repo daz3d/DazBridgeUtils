@@ -103,6 +103,8 @@ bool DzBridgeDialog::setBridgeActionObject(QObject* arg) {
 DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
 	DzOptionsDialog(parent, DAZ_BRIDGE_LIBRARY_NAME)
 {
+	this->setObjectName("DzBridge_Base_Dialog");
+
 	if (dzScene->getPrimarySelection() == nullptr)
 	{
 		m_bSetupMode = true;
@@ -258,8 +260,10 @@ better quality.  **DOES NOT EXPORT MESH**";
 	morphsLayout->setContentsMargins(0,0,0,0);
 	morphsLayout->setSpacing(0);
 	morphsButton = new QPushButton(tr("Choose Morphs..."), this);
+	morphsButton->setObjectName("DzBridge_ChoooseMorphs_Button");
 	connect(morphsButton, SIGNAL(released()), this, SLOT(HandleChooseMorphsButton()));
 	morphsEnabledCheckBox = new QCheckBox("", this);
+	morphsEnabledCheckBox->setObjectName("DzBridge_EnableMorphExport_Checkbox");
 	morphsEnabledCheckBox->setMaximumWidth(25);
 	morphsLayout->addWidget(morphsEnabledCheckBox);
 	morphsLayout->addWidget(morphsButton);
@@ -284,8 +288,10 @@ better quality.  **DOES NOT EXPORT MESH**";
 	subdivisionLayout->setContentsMargins(0,0,0,0);
 	subdivisionLayout->setSpacing(0);
 	subdivisionButton = new QPushButton(tr("Bake Subdivision Levels..."), this);
+	subdivisionButton->setObjectName("DzBridge_ConfigureSubdivisionLevels_Button");
 	connect(subdivisionButton, SIGNAL(released()), this, SLOT(HandleChooseSubdivisionsButton()));
 	subdivisionEnabledCheckBox = new QCheckBox("", this);
+	subdivisionEnabledCheckBox->setObjectName("DzBridge_EnableSubdivisionExport_Checkbox");
 	subdivisionEnabledCheckBox->setMaximumWidth(25);
 	subdivisionLayout->addWidget(subdivisionEnabledCheckBox);
 	subdivisionLayout->addWidget(subdivisionButton);
@@ -297,8 +303,10 @@ better quality.  **DOES NOT EXPORT MESH**";
 	lodSettingsLayout->setContentsMargins(0,0,0,0);
 	lodSettingsLayout->setSpacing(0);
 	m_wLodSettingsButton = new QPushButton(tr("Configure LOD Settings..."), this);
+	m_wLodSettingsButton->setObjectName("DzBridge_ConfigureLodSettings_Button");
 	connect(m_wLodSettingsButton, SIGNAL(released()), this, SLOT(HandleLodSettingsButton()));
 	m_wEnableLodCheckBox = new QCheckBox("", this);
+	m_wEnableLodCheckBox->setObjectName("DzBridge_EnableLodExport_Checkbox");
 	m_wEnableLodCheckBox->setMaximumWidth(25);
 	lodSettingsLayout->addWidget(m_wEnableLodCheckBox);
 	lodSettingsLayout->addWidget(m_wLodSettingsButton);
@@ -308,6 +316,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	// FBX Version
 	fbxVersionCombo = new QComboBox(this);
+	fbxVersionCombo->setObjectName("DzBridge_FbxVersion_Combobox");
 	fbxVersionCombo->setFixedHeight(nStyleButtonHeight);
 	fbxVersionCombo->addItem("FBX 2014 -- Binary");
 	fbxVersionCombo->addItem("FBX 2014 -- Ascii");
@@ -325,15 +334,18 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	// Show FBX Dialog option
 	showFbxDialogCheckBox = new QCheckBox("", this);
+	showFbxDialogCheckBox->setObjectName("DzBridge_ShowFbxDialog_Checkbox");
 	connect(showFbxDialogCheckBox, SIGNAL(stateChanged(int)), this, SLOT(HandleShowFbxDialogCheckBoxChange(int)));
 
 	// Export Material Property CSV option
 	exportMaterialPropertyCSVCheckBox = new QCheckBox("", this);
+	exportMaterialPropertyCSVCheckBox->setObjectName("DzBridge_ExportMaterialPropertyCsv_Checkbox");
 	connect(exportMaterialPropertyCSVCheckBox, SIGNAL(stateChanged(int)), this, SLOT(HandleExportMaterialPropertyCSVCheckBoxChange(int)));
 
 	// Use this->getEnableExperimentalOptions() to query state, see HandleAssetTypeComboChange() for example
 	// Enable Experimental Settings
 	m_enableExperimentalOptionsCheckBox = new QCheckBox("", this);
+	m_enableExperimentalOptionsCheckBox->setObjectName("DzBridge_EnableExperimentalOptions_Checkbox");
 	connect(m_enableExperimentalOptionsCheckBox, SIGNAL(clicked(bool)), this, SLOT(HandleExperimentalOptionsCheckBoxClicked()));
 
 	// Install Destination Software Bridge
@@ -347,6 +359,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	m_TargetSoftwareVersionCombo->setFixedHeight(nStyleButtonHeight);
 	m_TargetSoftwareVersionCombo->addItem(tr("Software Version"));
 	m_TargetPluginInstallerButton = new QPushButton(tr("Install Plugin..."), m_wTargetPluginInstaller);
+	m_TargetPluginInstallerButton->setObjectName("DzBridge_InstallTargetPlugin_Button");
 	connect(m_TargetPluginInstallerButton, SIGNAL(clicked(bool)), this, SLOT(HandleTargetPluginInstallerButton()));
 	targetPluginInstallerLayout->addWidget(m_TargetSoftwareVersionCombo, 2);
 	targetPluginInstallerLayout->addWidget(m_TargetPluginInstallerButton, 1);
@@ -359,6 +372,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	// Go To Intermediate Folder
 	m_OpenIntermediateFolderButton = new QPushButton(tr("Open Intermediate Folder..."));
+	m_OpenIntermediateFolderButton->setObjectName("DzBridge_OpenIntermediateFolder_Button");
 	connect(m_OpenIntermediateFolderButton, SIGNAL(clicked(bool)), this, SLOT(HandleOpenIntermediateFolderButton()));
 
 	///////////////////////////////////////
@@ -404,6 +418,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	textureResizingOptionsLayout->setLabelAlignment(Qt::AlignRight | Qt::AlignVCenter);
 
 	m_wMaxTextureFileSizeCombo = new QComboBox(0);
+	m_wMaxTextureFileSizeCombo->setObjectName("DzBridge_MaxTextureFileSize_Combobox");
 	m_wMaxTextureFileSizeCombo->addItem(tr("No Maximum"), QVariant(-1));
 	m_wMaxTextureFileSizeCombo->addItem(tr("1 MB"), QVariant(1024));
 	m_wMaxTextureFileSizeCombo->addItem(tr("2 MB"), QVariant(1024 * 2));
@@ -420,6 +435,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	m_aRowLabels.append(m_wMaxTextureFileSizeRowLabelWidget);
 
 	m_wMaxTextureResolutionCombo = new QComboBox(0);
+	m_wMaxTextureResolutionCombo->setObjectName("DzBridge_MaxTextureResolution_Combobox");
 	m_wMaxTextureResolutionCombo->addItem(tr("No Maximum"), QVariant(-1));
 	m_wMaxTextureResolutionCombo->addItem(tr("512x512"), QVariant(512));
 	m_wMaxTextureResolutionCombo->addItem(tr("1K (1024x1024)"), QVariant(1024));
@@ -435,6 +451,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	m_aRowLabels.append(m_wMaxTextureResolutionRowLabelWidget);
 
 	m_wExportTextureFileFormatCombo = new QComboBox(0);
+	m_wExportTextureFileFormatCombo->setObjectName("DzBridge_ExportTextureFileFormat_Combobox");
 	m_wExportTextureFileFormatCombo->addItem(tr("Keep Original File Format(s)"), QVariant("any"));
 	m_wExportTextureFileFormatCombo->addItem(tr("Convert Everything to JPG Only"), QVariant("jpg"));
 	m_wExportTextureFileFormatCombo->addItem(tr("Convert Everything to PNG Only"), QVariant("png"));
@@ -457,6 +474,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	QString sBumpMapToNormal = tr("Convert Bump Maps to Normal Maps");
 	m_wNormalMapsRowLabelWidget = new QLabel(tr("Bump to Normal"));
 	m_wConvertBumpToNormalCheckBox = new QCheckBox(sBumpMapToNormal, this);
+	m_wConvertBumpToNormalCheckBox->setObjectName("DzBridge_ConvertBumpToNormal_Checkbox");
 	connect(m_wConvertBumpToNormalCheckBox, SIGNAL(stateChanged(int)), this, SLOT(HandleConvertBumpToNormalCheckBoxChange(int)));
 	textureBakingOptionsLayout->addRow(m_wNormalMapsRowLabelWidget, m_wConvertBumpToNormalCheckBox);
 	//	advancedLayout->addRow(m_wNormalMapsRowLabelWidget, m_wConvertBumpToNormalCheckBox);
@@ -465,24 +483,28 @@ better quality.  **DOES NOT EXPORT MESH**";
 	QString sBakeAlphaChannel = tr("Bake Cutout/Opacity to Diffuse Alpha Channel");
 	m_wBakeAlphaChannelRowLabel = new QLabel(tr("Opacity Cutout"));
 	m_wBakeAlphaChannelCheckBox = new QCheckBox(sBakeAlphaChannel);
+	m_wBakeAlphaChannelCheckBox->setObjectName("DzBridge_BakeAlphaChannel_Checkbox");
 	textureBakingOptionsLayout->addRow(m_wBakeAlphaChannelRowLabel, m_wBakeAlphaChannelCheckBox);
 	m_aRowLabels.append(m_wBakeAlphaChannelRowLabel);
 
 	QString sBakeColorTint = tr("Bake Color Tints (and Strengths) to Image Maps");
 	m_wBakeColorTintRowLabel = new QLabel(tr("Tint / Strength"));
 	m_wBakeColorTintCheckBox = new QCheckBox(sBakeColorTint);
+	m_wBakeColorTintCheckBox->setObjectName("DzBridge_BakeColorTint_Checkbox");
 	textureBakingOptionsLayout->addRow(m_wBakeColorTintRowLabel, m_wBakeColorTintCheckBox);
 	m_aRowLabels.append(m_wBakeColorTintRowLabel);
 
 	QString sBakeMakeupOverlay = tr("Bake HD Makeup Materials to Diffuse Maps");
 	m_wBakeMakeupOverlayRowLabel = new QLabel(tr("Make-up"));
 	m_wBakeMakeupOverlayCheckBox = new QCheckBox(sBakeMakeupOverlay);
+	m_wBakeMakeupOverlayCheckBox->setObjectName("DzBridge_BakeMakeupOverlay_Checkbox");
 	textureBakingOptionsLayout->addRow(m_wBakeMakeupOverlayRowLabel, m_wBakeMakeupOverlayCheckBox);
 	m_aRowLabels.append(m_wBakeMakeupOverlayRowLabel);
 
 	QString sBakeTranslucencyTint = tr("Bake Translucency Maps to Diffuse Maps");
 	m_wBakeTranslucencyTintRowLabel = new QLabel(tr("Translucency"));
 	m_wBakeTranslucencyTintCheckBox = new QCheckBox(sBakeTranslucencyTint);
+	m_wBakeTranslucencyTintCheckBox->setObjectName("DzBridge_BakeTranslucencyTint_Checkbox");
 	textureBakingOptionsLayout->addRow(m_wBakeTranslucencyTintRowLabel, m_wBakeTranslucencyTintCheckBox);
 	m_aRowLabels.append(m_wBakeTranslucencyTintRowLabel);
 
@@ -537,6 +559,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	// add advanced layout to options section of dialog window
 	QString sAdvancedOptionsTitle = tr(ADVANCED_OPTIONS_TITLE);
 	advancedSettingsGroupBox = new QGroupBox(sAdvancedOptionsTitle);
+	advancedSettingsGroupBox->setObjectName("DzBridge_AdvancedSettings_Groupbox");
 	advancedSettingsGroupBox->setLayout(advancedLayout);
 	advancedSettingsGroupBox->setCheckable(false);
 	advancedSettingsGroupBox->setChecked(false);
@@ -582,6 +605,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 #endif
 
 	wHelpMenuButton = new DzMenuButton(0, tr("BridgeHelpMenu"));
+	wHelpMenuButton->setObjectName("DzBridge_BridgeHelpMenu_Button");
 	wHelpMenuButton->setIndeterminateText(tr("Help"), true);
 	this->addButton(wHelpMenuButton);
 	wHelpMenuButton->style()->pixelMetric(DZ_PM_ButtonMinWidth);

@@ -81,6 +81,8 @@ using namespace DzBridgeNameSpace;
 DzBridgeAction::DzBridgeAction(const QString& text, const QString& desc) :
 	 DzAction(text, desc)
 {
+	this->setObjectName("DzBridge_Base_Action");
+
 	resetToDefaults();
 	m_bridgeDialog = nullptr;
 	m_subdivisionDialog = nullptr;
