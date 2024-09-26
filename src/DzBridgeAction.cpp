@@ -7115,7 +7115,7 @@ bool DzBridgeAction::BakePivotsAndInstances()
 	bool bResult;
 	bool bReplace = false;
 	QString sScriptFilename = "bake_pivots_and_instances_nogui.dsa";
-	QString sEmbeddedFolderPath = ":/DazBridgeBlender";
+	QString sEmbeddedFolderPath = ":/DazBridge";
 	QString sEmbeddedFilepath = sEmbeddedFolderPath + "/" + sScriptFilename;
 	QFile srcFile(sEmbeddedFilepath);
 	QString sTempFilepath = dzApp->getTempPath() + "/" + sScriptFilename;
