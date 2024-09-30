@@ -628,7 +628,7 @@ better quality.  **DOES NOT EXPORT MESH**";
 	fixRowLabelWidths();
 
 	// detect scene change
-	connect(dzScene, SIGNAL(nodeSelectionListChanged()), this, SLOT(handleSceneSelectionChanged()));
+//	connect(dzScene, SIGNAL(nodeSelectionListChanged()), this, SLOT(handleSceneSelectionChanged()));
 
 	// Set Defaults
 	resetToDefaults();

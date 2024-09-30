@@ -145,7 +145,7 @@ namespace DzBridgeNameSpace
 		virtual void toggleOptions() override { DzOptionsDialog::toggleOptions(); fixRowLabelWidths(); };
 
 	protected:
-		virtual void showEvent(QShowEvent* event) override { QDialog::showEvent(event); fixRowLabelWidths(); }
+		virtual void showEvent(QShowEvent* event) override { handleSceneSelectionChanged(); fixRowLabelWidths(); QDialog::showEvent(event); }
 
 	protected slots:
 		virtual void handleSceneSelectionChanged();
