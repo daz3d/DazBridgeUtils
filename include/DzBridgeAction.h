@@ -446,6 +446,8 @@ namespace DzBridgeNameSpace
 
 		Q_INVOKABLE virtual bool forceLieUpdate(DzMaterial* pMaterial);
 
+		Q_INVOKABLE virtual DzError doPromptableObjectBaking();
+
 	private:
 		class MaterialGroupExportOrderMetaData
 		{

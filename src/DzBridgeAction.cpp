@@ -7235,5 +7235,100 @@ bool DzBridgeAction::BakeRigidFollowNodes(QScopedPointer<DzScript> &Script)
 
 }
 
+DzError DzBridgeAction::doPromptableObjectBaking()
+{
+	bool bInstancesDetected = DetectInstancesInScene();
+	bool bCustomPivotsDetected = DetectCustomPivotsInScene();
+	bool bRigidFollowNodesDetected = DetectRigidFollowNodes();
+
+	int userChoice = QMessageBox::Yes;
+	if (isInteractiveMode())
+	{
+		bool bDoPrompt = false;
+		QString sDetected = "";
+
+		if (bInstancesDetected && m_eBakeInstancesMode == DZ_BRIDGE_NAMESPACE::EBakeMode::Ask)
+		{
+			bDoPrompt = true;
+			if (sDetected != "") sDetected += ", ";
+			sDetected += "instances";
+
+		}
+		if (bCustomPivotsDetected && m_eBakePivotPointsMode == DZ_BRIDGE_NAMESPACE::EBakeMode::Ask)
+		{
+			bDoPrompt = true;
+			if (sDetected != "") sDetected += ", ";
+			sDetected += "custom pivot points";
+		}
+		if (bRigidFollowNodesDetected && m_eBakeRigidFollowNodesMode == DZ_BRIDGE_NAMESPACE::EBakeMode::Ask)
+		{
+			bDoPrompt = true;
+			if (sDetected != "") sDetected += ", ";
+			sDetected += "rigid follow nodes";
+		}
+		int offset = sDetected.indexOf(", ");
+		while (sDetected.indexOf(", ", offset + 1) != -1)
+		{
+			offset = sDetected.indexOf(", ", offset + 1);
+		}
+		if (offset != -1) {
+			sDetected.replace(offset, strlen(", "), " and ");
+		}
+
+		if (bDoPrompt)
+		{
+			QString sMessageCustom = tr("\
+The current scene contains %1 which should be replaced and baked out to avoid conversion errors. \
+These changes can not be undone. Make sure you Abort and save your scene \
+if needed.\n\
+\n\
+Do you want to proceed with these changes?\n\
+Or do you want to Ignore and continue the transfer without making changes?\n\
+You may also Abort the transfer operation.").arg(sDetected);
+
+			QString sBakeObjectsPrompt;
+			sBakeObjectsPrompt = sMessageCustom;
+			userChoice = QMessageBox::information(0,
+				tr("Object Baking Recommended"),
+				sBakeObjectsPrompt,
+				QMessageBox::Yes,
+				QMessageBox::Ignore,
+				QMessageBox::Abort);
+			if (userChoice == QMessageBox::Abort) {
+				return DZ_USER_CANCELLED_OPERATION;
+			}
+		}
+	}
+
+	QScopedPointer<DzScript> Script(new DzScript());
+	if (bInstancesDetected && m_eBakeInstancesMode != DZ_BRIDGE_NAMESPACE::EBakeMode::NeverBake)
+	{
+		if ((m_eBakeInstancesMode == DZ_BRIDGE_NAMESPACE::EBakeMode::AlwaysBake) ||
+			(m_eBakeInstancesMode == DZ_BRIDGE_NAMESPACE::EBakeMode::Ask && userChoice == QMessageBox::Yes))
+		{
+			BakePivotsAndInstances(Script);
+		}
+	}
+	if (bCustomPivotsDetected && m_eBakePivotPointsMode != DZ_BRIDGE_NAMESPACE::EBakeMode::NeverBake)
+	{
+		if ((m_eBakePivotPointsMode == DZ_BRIDGE_NAMESPACE::EBakeMode::AlwaysBake) ||
+			(m_eBakePivotPointsMode == DZ_BRIDGE_NAMESPACE::EBakeMode::Ask && userChoice == QMessageBox::Yes))
+		{
+			BakePivotsAndInstances(Script);
+		}
+	}
+	if (bRigidFollowNodesDetected && m_eBakeRigidFollowNodesMode != DZ_BRIDGE_NAMESPACE::EBakeMode::NeverBake)
+	{
+		if ((m_eBakeRigidFollowNodesMode == DZ_BRIDGE_NAMESPACE::EBakeMode::AlwaysBake) ||
+			(m_eBakeRigidFollowNodesMode == DZ_BRIDGE_NAMESPACE::EBakeMode::Ask && userChoice == QMessageBox::Yes))
+		{
+			BakeRigidFollowNodes(Script);
+		}
+	}
+
+	return DZ_NO_ERROR;
+}
+
+
 
 #include "moc_DzBridgeAction.cpp"
