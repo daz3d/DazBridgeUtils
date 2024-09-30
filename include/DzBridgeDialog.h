@@ -159,7 +159,6 @@ namespace DzBridgeNameSpace
 		virtual void HandleConvertBumpToNormalCheckBoxChange(int state);
 		virtual void HandleTargetPluginInstallerButton();
 		virtual void HandleOpenIntermediateFolderButton(QString sFolderPath="");
-		virtual void HandleAssetTypeComboChange(const QString& assetType);
 		virtual void HandleAssetTypeComboChange(int state);
         virtual void HandleExperimentalOptionsCheckBoxClicked();
         virtual void HandleLodSettingsButton();

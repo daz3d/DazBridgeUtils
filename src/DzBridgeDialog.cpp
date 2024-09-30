@@ -193,8 +193,6 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	assetTypeCombo->addItem("Animation");
 	assetTypeCombo->addItem("Environment");
 	assetTypeCombo->addItem("Pose");
-	connect(assetTypeCombo, SIGNAL(currentIndexChanged(const QString&)), this, SLOT(HandleAssetTypeComboChange(const QString&)));
-	// Connect new asset type handler
 	connect(assetTypeCombo, SIGNAL(activated(int)), this, SLOT(HandleAssetTypeComboChange(int)));
 
 	// Animation Settings
@@ -905,36 +903,36 @@ QList<QString> DzBridgeDialog::GetPoseList()
 void DzBridgeDialog::HandleMorphsCheckBoxChange(int state)
 {
 	morphSettingsGroupBox->setHidden(state != Qt::Checked);
-	if (settings == nullptr || m_bDontSaveSettings) return;
-	settings->setValue("MorphsEnabled", state == Qt::Checked);
+	//if (settings == nullptr || m_bDontSaveSettings) return;
+	//settings->setValue("MorphsEnabled", state == Qt::Checked);
 }
 
 void DzBridgeDialog::HandleSubdivisionCheckBoxChange(int state)
 {
-	if (settings == nullptr || m_bDontSaveSettings) return;
-	settings->setValue("SubdivisionEnabled", state == Qt::Checked);
+	//if (settings == nullptr || m_bDontSaveSettings) return;
+	//settings->setValue("SubdivisionEnabled", state == Qt::Checked);
 }
 
 void DzBridgeDialog::HandleFBXVersionChange(const QString& fbxVersion)
 {
-	if (settings == nullptr || m_bDontSaveSettings) return;
-	settings->setValue("FBXExportVersion", fbxVersion);
+	//if (settings == nullptr || m_bDontSaveSettings) return;
+	//settings->setValue("FBXExportVersion", fbxVersion);
 }
 void DzBridgeDialog::HandleShowFbxDialogCheckBoxChange(int state)
 {
-	if (settings == nullptr || m_bDontSaveSettings) return;
-	settings->setValue("ShowFBXDialog", state == Qt::Checked);
+	//if (settings == nullptr || m_bDontSaveSettings) return;
+	//settings->setValue("ShowFBXDialog", state == Qt::Checked);
 }
 void DzBridgeDialog::HandleExportMaterialPropertyCSVCheckBoxChange(int state)
 {
-	if (settings == nullptr || m_bDontSaveSettings) return;
-	settings->setValue("ExportMaterialPropertyCSV", state == Qt::Checked);
+	//if (settings == nullptr || m_bDontSaveSettings) return;
+	//settings->setValue("ExportMaterialPropertyCSV", state == Qt::Checked);
 }
 
 void DzBridgeDialog::HandleConvertBumpToNormalCheckBoxChange(int state)
 {
-	if (settings == nullptr || m_bDontSaveSettings) return;
-	settings->setValue("EnableNormalMapGeneration", state == Qt::Checked);
+	//if (settings == nullptr || m_bDontSaveSettings) return;
+	//settings->setValue("EnableNormalMapGeneration", state == Qt::Checked);
 }
 
 void DzBridgeDialog::HandleTargetPluginInstallerButton()
@@ -1142,25 +1140,6 @@ void DzBridgeDialog::HandleOpenIntermediateFolderButton(QString sFolderPath)
 
 }
 
-void DzBridgeDialog::HandleAssetTypeComboChange(const QString& assetType)
-{
-#ifdef VODSVERSION
-	animationSettingsGroupBox->setVisible(assetType == "Animation" || assetType == "Pose");
-#else
-    if (this->getEnableExperimentalOptions()) {
-		animationSettingsGroupBox->setVisible(assetType == "Animation" || assetType == "Pose");
-	}
-	else {
-		animationSettingsGroupBox->setVisible(false);
-        experimentalAnimationExportCheckBox->setChecked(false);
-        bakeAnimationExportCheckBox->setChecked(false);
-        faceAnimationExportCheckBox->setChecked(false);
-        animationExportActiveCurvesCheckBox->setChecked(false);
-        animationApplyBoneScaleCheckBox->setChecked(false);
-    }
-#endif
-}
-
 void DzBridgeDialog::HandleAssetTypeComboChange(int state)
 {
 	QString assetNameString = assetNameEdit->text();
@@ -1205,6 +1184,22 @@ void DzBridgeDialog::HandleAssetTypeComboChange(int state)
 		m_wEnableLodCheckBox->setDisabled(true);
 		m_wLodSettingsButton->setDisabled(true);
 	}
+
+#ifdef VODSVERSION
+	animationSettingsGroupBox->setVisible(sAssetType == "Animation" || sAssetType == "Pose");
+#else
+	if (this->getEnableExperimentalOptions()) {
+		animationSettingsGroupBox->setVisible(sAssetType == "Animation" || sAssetType == "Pose");
+	}
+	else {
+		animationSettingsGroupBox->setVisible(false);
+		experimentalAnimationExportCheckBox->setChecked(false);
+		bakeAnimationExportCheckBox->setChecked(false);
+		faceAnimationExportCheckBox->setChecked(false);
+		animationExportActiveCurvesCheckBox->setChecked(false);
+		animationApplyBoneScaleCheckBox->setChecked(false);
+	}
+#endif
 
 }
 
@@ -1256,8 +1251,8 @@ void DzBridgeDialog::HandleLodSettingsButton()
 
 void DzBridgeDialog::HandleEnableLodCheckBoxChange(int state)
 {
-	if (settings == nullptr || m_bDontSaveSettings) return;
-	settings->setValue("LodEnabled", state == Qt::Checked);
+	//if (settings == nullptr || m_bDontSaveSettings) return;
+	//settings->setValue("LodEnabled", state == Qt::Checked);
 }
 
 void DzBridgeDialog::showLodRow(bool bShowWidget)
