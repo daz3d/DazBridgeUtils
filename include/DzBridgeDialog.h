@@ -111,6 +111,11 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE bool getBakeSpecularToMetallic();
 		Q_INVOKABLE bool getBakeRefractionWeight();
 
+		Q_INVOKABLE QString getBakeInstances() { return m_wBakeInstancesComboBox->itemData(m_wBakeInstancesComboBox->currentIndex()).toString(); }
+		Q_INVOKABLE QString getBakePivotPoints() { return m_wBakeCustomPivotsComboBox->itemData(m_wBakeCustomPivotsComboBox->currentIndex()).toString(); }
+		Q_INVOKABLE QString getBakeRigidFollowNodes() { return m_wBakeRigidFollowNodesComboBox->itemData(m_wBakeRigidFollowNodesComboBox->currentIndex()).toString(); }
+
+
 		/** Constructor **/
 		DzBridgeDialog(QWidget* parent = nullptr, const QString& windowTitle = "");
 
@@ -248,7 +253,6 @@ namespace DzBridgeNameSpace
 		QCheckBox* m_wBakeSpecularToMetallicCheckBox = nullptr;
 		QCheckBox* m_wBakeRefractionWeightCheckBox = nullptr;
 		QCheckBox* m_wConvertBumpToNormalCheckBox = nullptr;
-
 		QLabel* m_wBakeAlphaChannelRowLabel = nullptr;
 		QLabel* m_wBakeMakeupOverlayRowLabel = nullptr;
 		QLabel* m_wBakeColorTintRowLabel = nullptr;
@@ -256,6 +260,15 @@ namespace DzBridgeNameSpace
 		QLabel* m_wBakeSpecularToMetallicRowLabel = nullptr;
 		QLabel* m_wBakeRefractionWeightRowLabel = nullptr;
 		QLabel* m_wNormalMapsRowLabelWidget = nullptr;
+
+		// Object Baking Options
+		QGroupBox* m_wObjectBakingGroupBox = nullptr;
+		QComboBox* m_wBakeInstancesComboBox = nullptr;
+		QComboBox* m_wBakeCustomPivotsComboBox = nullptr;
+		QComboBox* m_wBakeRigidFollowNodesComboBox = nullptr;
+		QLabel* m_wBakeInstancesRowLabel = nullptr;
+		QLabel* m_wBakeCustomPivotsRowLabel = nullptr;
+		QLabel* m_wBakeRigidFollowNodesRowLabel = nullptr;
 
 		QString m_sEmbeddedFilesPath = ":/DazBridge";
 		bool m_bDontSaveSettings = false;

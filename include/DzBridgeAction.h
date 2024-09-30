@@ -29,6 +29,12 @@ namespace DzBridgeNameSpace
 	class DzBridgeSubdivisionDialog;
 	class DzBridgeLodSettingsDialog;
 
+	enum EBakeMode {
+		Ask = -1,
+		NeverBake = 0,
+		AlwaysBake = 1
+	};
+
 	enum EAssetType {
 		None = -1,
 		SkeletalMesh = 0,
@@ -157,6 +163,13 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE static DzSkeleton* GetNonFollowerParent(DzSkeleton* pSkeleton);
 		Q_INVOKABLE static EAssetType SelectBestRootNodeForTransfer(bool bAvoidFollowers=true);
 
+		Q_INVOKABLE static bool DetectInstancesInScene();
+		Q_INVOKABLE static bool DetectCustomPivotsInScene();
+		Q_INVOKABLE static bool DetectRigidFollowNodes();
+		Q_INVOKABLE static bool BakePivotsAndInstances(QScopedPointer<DzScript>& Script);
+		Q_INVOKABLE static bool BakeRigidFollowNodes(QScopedPointer<DzScript>& Script);
+
+
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo
@@ -253,6 +266,10 @@ namespace DzBridgeNameSpace
 		bool m_bBakeTranslucency = false;
 		bool m_bBakeSpecularToMetallic = false;
 		bool m_bBakeRefractionWeight = false;
+
+		EBakeMode m_eBakeInstancesMode = EBakeMode::Ask;
+		EBakeMode m_eBakePivotPointsMode = EBakeMode::AlwaysBake;
+		EBakeMode m_eBakeRigidFollowNodesMode = EBakeMode::AlwaysBake;
 
 //		QStringList m_aProcessedFiles;
 		QMap<QString, QString> m_mapProcessedFiles;
@@ -426,10 +443,6 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool bakeTranslucency(DzMaterial* pMaterial);
 
 		Q_INVOKABLE virtual bool forceLieUpdate(DzMaterial* pMaterial);
-
-		Q_INVOKABLE static bool DetectInstancesInScene();
-		Q_INVOKABLE static bool DetectCustomPivotsInScene();
-		Q_INVOKABLE static bool BakePivotsAndInstances();
 
 	private:
 		class MaterialGroupExportOrderMetaData

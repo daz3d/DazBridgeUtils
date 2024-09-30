@@ -3870,6 +3870,7 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 	{
 		m_morphSelectionDialog = DzBridgeMorphSelectionDialog::Get(BridgeDialog);
 	}
+	m_morphSelectionDialog->PrepareDialog();
 
 	// DB 2023-11-02: Moved pre-check Warning User Choice to beginning of method, so that cancelling operation
 	// will not alter any member variables.
@@ -4031,6 +4032,37 @@ QMessageBox::Yes);
 		m_bBakeSpecularToMetallic = BridgeDialog->getBakeSpecularToMetallic();
 		m_bBakeRefractionWeight = BridgeDialog->getBakeRefractionWeight();
 
+	}
+	// Object Baking options
+	QString sBakeInstancesMode = BridgeDialog->getBakeInstances();
+	if (sBakeInstancesMode == "always") {
+		m_eBakeInstancesMode = EBakeMode::AlwaysBake;
+	}
+	else if (sBakeInstancesMode == "ask") {
+		m_eBakeInstancesMode = EBakeMode::Ask;
+	}
+	else if (sBakeInstancesMode == "never") {
+		m_eBakeInstancesMode = EBakeMode::NeverBake;
+	}
+	QString sBakePivotPointsMode = BridgeDialog->getBakePivotPoints();
+	if (sBakePivotPointsMode == "always") {
+		m_eBakePivotPointsMode = EBakeMode::AlwaysBake;
+	}
+	else if (sBakePivotPointsMode == "ask") {
+		m_eBakePivotPointsMode = EBakeMode::Ask;
+	}
+	else if (sBakePivotPointsMode == "never") {
+		m_eBakePivotPointsMode = EBakeMode::NeverBake;
+	}
+	QString sBakeRigidFollowNodesMode = BridgeDialog->getBakeRigidFollowNodes();
+	if (sBakeRigidFollowNodesMode == "always") {
+		m_eBakeRigidFollowNodesMode = EBakeMode::AlwaysBake;
+	}
+	else if (sBakeRigidFollowNodesMode == "ask") {
+		m_eBakeRigidFollowNodesMode = EBakeMode::Ask;
+	}
+	else if (sBakeRigidFollowNodesMode == "never") {
+		m_eBakeRigidFollowNodesMode = EBakeMode::NeverBake;
 	}
 
 
@@ -7081,7 +7113,7 @@ bool DzBridgeAction::DetectInstancesInScene()
 	{
 		DzNode* pNode = nodeListIterator.next();
 		DzInstanceNode* pInstance = qobject_cast<DzInstanceNode*>(pNode);
-		if (pInstance)
+		if (pInstance && pInstance->getTarget() != NULL) 
 		{
 			return true;
 		}
@@ -7110,7 +7142,7 @@ bool DzBridgeAction::DetectCustomPivotsInScene()
 	return false;
 }
 
-bool DzBridgeAction::BakePivotsAndInstances()
+bool DzBridgeAction::BakePivotsAndInstances(QScopedPointer<DzScript>& Script)
 {
 	bool bResult;
 	bool bReplace = false;
@@ -7126,7 +7158,8 @@ bool DzBridgeAction::BakePivotsAndInstances()
 		dzApp->log(tr("DzBridge: ERROR: BakePivotsAndInstances() Error occured while trying to copy script to temp folder: ") + sTempFilepath);
 	}
 
-	DzScript* Script = new DzScript();
+//	DzScript* Script = new DzScript();
+	Script.reset(new DzScript());
 
 	bResult = Script->loadFromFile(sTempFilepath);
 	if (!bResult) {
@@ -7137,9 +7170,61 @@ bool DzBridgeAction::BakePivotsAndInstances()
 	bResult = Script->execute();
 
 	// this may cause instability or crashes
-	Script->deleteLater();
+//	Script->deleteLater();
 
 	return bResult;
 }
+
+bool DzBridgeAction::DetectRigidFollowNodes()
+{
+	auto nodeListIterator = dzScene->nodeListIterator();
+
+	while (nodeListIterator.hasNext())
+	{
+		DzNode* pNode = nodeListIterator.next();
+		if (pNode->inherits("DzRigidFollowNode"))
+		{
+			return true;
+		}
+	}
+
+	return false;
+
+}
+
+bool DzBridgeAction::BakeRigidFollowNodes(QScopedPointer<DzScript> &Script)
+{
+	bool bResult;
+	bool bReplace = false;
+	QString sScriptFilename = "bake_rfn_nogui.dsa";
+	QString sEmbeddedFolderPath = ":/DazBridge";
+	QString sEmbeddedFilepath = sEmbeddedFolderPath + "/" + sScriptFilename;
+	QFile srcFile(sEmbeddedFilepath);
+	QString sTempFilepath = dzApp->getTempPath() + "/" + sScriptFilename;
+	bResult = DZ_BRIDGE_NAMESPACE::DzBridgeAction::copyFile(&srcFile, &sTempFilepath, bReplace);
+	srcFile.close();
+	if (!bResult)
+	{
+		dzApp->log(tr("DzBridge: ERROR: BakePivotsAndInstances() Error occured while trying to copy script to temp folder: ") + sTempFilepath);
+	}
+
+//	DzScript* Script = new DzScript();
+	Script.reset(new DzScript());
+
+	bResult = Script->loadFromFile(sTempFilepath);
+	if (!bResult) {
+		dzApp->log(tr("DzBridge: CRITICAL ERROR: BakePivotsAndInstances() Error occured while trying to load script file: ") + sTempFilepath + ", aborting script.");
+		return false;
+	}
+
+	bResult = Script->execute();
+
+	// this may cause instability or crashes
+//	Script->deleteLater();
+
+	return bResult;
+
+}
+
 
 #include "moc_DzBridgeAction.cpp"

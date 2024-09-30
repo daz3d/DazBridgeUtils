@@ -520,6 +520,41 @@ better quality.  **DOES NOT EXPORT MESH**";
 //	textureBakingOptionsLayout->addRow(m_wBakeSpecularToMetallicRowLabel, m_wBakeSpecularToMetallicCheckBox);
 //	m_aRowLabels.append(m_wBakeSpecularToMetallicRowLabel);
 
+	// Object Baking Options
+	m_wObjectBakingGroupBox = new QGroupBox(tr("Object Baking Options : "), 0);
+	QFormLayout* objectBakingOptionsLayout = new QFormLayout(m_wObjectBakingGroupBox);
+	objectBakingOptionsLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
+	objectBakingOptionsLayout->setSpacing(nStyleMargin);
+	objectBakingOptionsLayout->setMargin(nStyleMargin);
+
+	QString sBakeInstances = tr("Replace Daz Studio Instance Nodes with original objects");
+	m_wBakeInstancesComboBox = new QComboBox(0);
+	m_wBakeInstancesComboBox->addItem(tr("Ask"), "ask");
+	m_wBakeInstancesComboBox->addItem(tr("Do nothing"), "never");
+	m_wBakeInstancesComboBox->addItem(tr("Always replace with objects"), "always");
+	m_wBakeInstancesRowLabel = new QLabel(tr("Daz Instance Nodes"));
+	m_aRowLabels.append(m_wBakeInstancesRowLabel);
+	objectBakingOptionsLayout->addRow(m_wBakeInstancesRowLabel, m_wBakeInstancesComboBox);
+	m_wBakeInstancesComboBox->setCurrentIndex(m_wBakeInstancesComboBox->findData("ask"));
+
+	m_wBakeCustomPivotsComboBox = new QComboBox(0);
+	m_wBakeCustomPivotsComboBox->addItem(tr("Ask"), "ask");
+	m_wBakeCustomPivotsComboBox->addItem(tr("Do nothing"), "never");
+	m_wBakeCustomPivotsComboBox->addItem(tr("Always bake pivots"), "always");
+	m_wBakeCustomPivotsRowLabel = new QLabel(tr("Pivot Points"));
+	m_aRowLabels.append(m_wBakeCustomPivotsRowLabel);
+	objectBakingOptionsLayout->addRow(m_wBakeCustomPivotsRowLabel, m_wBakeCustomPivotsComboBox);
+	m_wBakeCustomPivotsComboBox->setCurrentIndex(m_wBakeInstancesComboBox->findData("always"));
+
+	m_wBakeRigidFollowNodesComboBox = new QComboBox(0);
+	m_wBakeRigidFollowNodesComboBox->addItem(tr("Ask"), "ask");
+	m_wBakeRigidFollowNodesComboBox->addItem(tr("Do nothing"), "never");
+	m_wBakeRigidFollowNodesComboBox->addItem(tr("Always convert to rigged mesh"), "always");
+	m_wBakeRigidFollowNodesRowLabel = new QLabel(tr("Rigid Follow Nodes"));
+	m_aRowLabels.append(m_wBakeRigidFollowNodesRowLabel);
+	objectBakingOptionsLayout->addRow(m_wBakeRigidFollowNodesRowLabel, m_wBakeRigidFollowNodesComboBox);
+	m_wBakeRigidFollowNodesComboBox->setCurrentIndex(m_wBakeInstancesComboBox->findData("always"));
+
 	///////////////////////////////////////
 	// Add Widgets to Advanced Layout
 	///////////////////////////////////////
@@ -549,6 +584,9 @@ better quality.  **DOES NOT EXPORT MESH**";
 	advancedLayout->addRow(m_wResizeTexturesGroupBox);
 	// Texture Baking
 	advancedLayout->addRow(m_wTextureBakingGroupBox);
+
+	// Object Baking
+	advancedLayout->addRow(m_wObjectBakingGroupBox);
 
 	// add main layout to dialog window
 	m_wMainGroupBox = new QGroupBox(tr("Main Export Options : "));
@@ -706,6 +744,10 @@ bool DzBridgeDialog::loadSavedSettings()
 	LOAD_CHECKED("BakeMakeupOverlay", m_wBakeMakeupOverlayCheckBox);
 	LOAD_CHECKED("BakeTranslucencyTint", m_wBakeTranslucencyTintCheckBox);
 
+	LOAD_ITEMDATA("BakeInstances", m_wBakeInstancesComboBox);
+	LOAD_ITEMDATA("BakePivots", m_wBakeCustomPivotsComboBox);
+	LOAD_ITEMDATA("BakeRigidFollowNodes", m_wBakeRigidFollowNodesComboBox);
+
 	// Animation settings
 	LOAD_CHECKED("AnimationExperminentalExport", experimentalAnimationExportCheckBox);
 	LOAD_CHECKED("AnimationBake", bakeAnimationExportCheckBox);
@@ -746,13 +788,17 @@ void DzBridgeDialog::saveSettings()
 	SAVE_CHECKED("BakeMakeupOverlay", m_wBakeMakeupOverlayCheckBox);
 	SAVE_CHECKED("BakeTranslucencyTint", m_wBakeTranslucencyTintCheckBox);
 
+	SAVE_ITEMDATA("BakeInstances", m_wBakeInstancesComboBox);
+	SAVE_ITEMDATA("BakePivots", m_wBakeCustomPivotsComboBox);
+	SAVE_ITEMDATA("BakeRigidFollowNodes", m_wBakeRigidFollowNodesComboBox);
+
 	if (experimentalAnimationExportCheckBox)
 	{
-		if (experimentalAnimationExportCheckBox->isEnabled()) settings->setValue("AnimationExperminentalExport", experimentalAnimationExportCheckBox->isChecked());
-		if (bakeAnimationExportCheckBox->isEnabled()) settings->setValue("AnimationBake", bakeAnimationExportCheckBox->isChecked());
-		if (faceAnimationExportCheckBox->isEnabled()) settings->setValue("AnimationExportFace", faceAnimationExportCheckBox->isChecked());
-		if (animationExportActiveCurvesCheckBox->isEnabled()) settings->setValue("AnimationExportActiveCurves", animationExportActiveCurvesCheckBox->isChecked());
-		if (animationApplyBoneScaleCheckBox->isEnabled()) settings->setValue("AnimationApplyBoneScale", animationApplyBoneScaleCheckBox->isChecked());
+		SAVE_CHECKED("AnimationExperminentalExport", experimentalAnimationExportCheckBox);
+		SAVE_CHECKED("AnimationBake", bakeAnimationExportCheckBox);
+		SAVE_CHECKED("AnimationExportFace", faceAnimationExportCheckBox);
+		SAVE_CHECKED("AnimationExportActiveCurves", animationExportActiveCurvesCheckBox);
+		SAVE_CHECKED("AnimationApplyBoneScale", animationApplyBoneScaleCheckBox);
 	}
 }
 
@@ -826,9 +872,7 @@ void DzBridgeDialog::handleSceneSelectionChanged()
 		setDisabled(false);
 	}
 
-	// DB (2022-Sept-26): Crashfix for changing selection and exporting without opening morphselectiondialog
-	DzBridgeMorphSelectionDialog* morphDialog = DzBridgeMorphSelectionDialog::Get(this);
-	morphDialog->PrepareDialog();
+	// DB, 2024-09-29: morphselectiondialog Crashfix moved to  DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog) line 3873
 
 }
 
