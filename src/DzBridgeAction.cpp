@@ -7057,6 +7057,8 @@ EAssetType DzBridgeAction::SelectBestRootNodeForTransfer(bool bAvoidFollowers)
 		}
 		else if (pObject) 
 		{
+			if (pSelection->isRootNode()) return EAssetType::StaticMesh;
+
 			// else if object (geometry) exists, assume static
 			// 1. First go up ancestor chain to see if pObject is parented to a figure
 			DzNode* pAncestor = pSelection->getNodeParent();
@@ -7237,6 +7239,8 @@ bool DzBridgeAction::BakeRigidFollowNodes(QScopedPointer<DzScript> &Script)
 
 DzError DzBridgeAction::doPromptableObjectBaking()
 {
+	DzNode* pOriginalSelection = dzScene->getPrimarySelection();
+
 	bool bInstancesDetected = DetectInstancesInScene();
 	bool bCustomPivotsDetected = DetectCustomPivotsInScene();
 	bool bRigidFollowNodesDetected = DetectRigidFollowNodes();
@@ -7325,6 +7329,8 @@ You may also Abort the transfer operation.").arg(sDetected);
 			BakeRigidFollowNodes(Script);
 		}
 	}
+
+	dzScene->setPrimarySelection(pOriginalSelection);
 
 	return DZ_NO_ERROR;
 }
