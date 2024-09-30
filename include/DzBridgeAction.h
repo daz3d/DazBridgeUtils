@@ -183,6 +183,8 @@ namespace DzBridgeNameSpace
 		DzBridgeMorphSelectionDialog* m_morphSelectionDialog = nullptr;
 		DzBridgeLodSettingsDialog* m_wLodSettingsDialog = nullptr;
 
+		DzError m_nExecuteActionResult = DZ_OPERATION_FAILED_ERROR;
+
 		int m_nNonInteractiveMode;
 		QString m_sAssetName; // Exported Asset Name, may be separate from export filename
 		QString m_sExportFilename; // Exported filename without extension
