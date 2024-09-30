@@ -3115,6 +3115,9 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 					image.size().height() > m_qTargetTextureSize.height())
 				)
 			{
+				QString sImageOperationMessage = QString(tr("Scaling: ") + filestem + " to " + QString("(%1x%2)").arg(customImageSize.width()).arg(customImageSize.height()) );
+				dzApp->log(sImageOperationMessage);
+				DzProgress::setCurrentInfo(sImageOperationMessage);
 				image = image.scaled(customImageSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 				bSkip = false;
 			}
@@ -3151,6 +3154,9 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 				bool bSaveSuccessful = false;
 				bool bCompressMore = false;
 				do {
+					QString sImageOperationMessage = QString(tr("Encoding: ") + filestem + " to " + fileTypeExtension);
+					dzApp->log(sImageOperationMessage);
+					DzProgress::setCurrentInfo(sImageOperationMessage);
 					bSaveSuccessful = image.save(recompressedFilename, 0, customEncodingQuality);
 					// check if there is file size target
 					int nNewFileSize = QFileInfo(recompressedFilename).size();
@@ -3165,6 +3171,9 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 						// decrease resolution
 						if (customImageSize.height() > 256 && customImageSize.width() > 256) {
 							customImageSize = customImageSize / 2;
+							QString sImageOperationMessage = QString(tr("Re-Scaling: ") + filestem + " to " + QString("(%1x%2)").arg(customImageSize.width()).arg(customImageSize.height()));
+							dzApp->log(sImageOperationMessage);
+							DzProgress::setCurrentInfo(sImageOperationMessage);
 							image = image.scaled(customImageSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 							bCompressMore = true;
 						} 
