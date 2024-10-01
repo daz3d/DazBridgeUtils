@@ -58,7 +58,6 @@ public:
 namespace DzBridgeNameSpace
 {
 	class DzBridgeAction;
-	enum EAssetType;
 
 	class CPP_Export DzBridgeDialog : public DzOptionsDialog {
 		Q_OBJECT
@@ -116,7 +115,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE QString getBakePivotPoints() { return m_wBakeCustomPivotsComboBox->itemData(m_wBakeCustomPivotsComboBox->currentIndex()).toString(); }
 		Q_INVOKABLE QString getBakeRigidFollowNodes() { return m_wBakeRigidFollowNodesComboBox->itemData(m_wBakeRigidFollowNodesComboBox->currentIndex()).toString(); }
 
-		Q_INVOKABLE void setEAssetType(EAssetType assetType) { m_eAssetType = assetType; }
+		Q_INVOKABLE void setEAssetType(int assetType) { m_eAssetType = assetType; }
 
 
 		/** Constructor **/
@@ -276,7 +275,7 @@ namespace DzBridgeNameSpace
 		bool m_bDontSaveSettings = false;
 		bool m_bSetupMode = false;
 
-		EAssetType m_eAssetType;
+		int m_eAssetType; // enum EAssetType
 
 #ifdef UNITTEST_DZBRIDGE
 		friend class ::UnitTest_DzBridgeDialog;

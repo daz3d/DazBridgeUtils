@@ -7128,25 +7128,31 @@ bool DzBridgeAction::forceLieUpdate(DzMaterial* pMaterial)
 {
 	if (!pMaterial) return false;
 
-	foreach(QObject* pObject, pMaterial->getPropertyList())
-	{
-//		DzColorProperty* pColorProperty = qobject_cast<DzColorProperty*>(pObject);
-		DzNumericProperty* pNumericProperty = qobject_cast<DzNumericProperty*>(pObject);
-		DzImageProperty* pImageProperty = qobject_cast<DzImageProperty*>(pObject);
+    auto propertyListIterator = pMaterial->propertyListIterator();
+  
+    while (propertyListIterator.hasNext())
+    {
+        DzProperty* property = propertyListIterator.next();
 
-		DzTexture* pTexture = NULL;
-		if (pNumericProperty) {
-			pTexture = pNumericProperty->getMapValue();
-		}
-		else if (pImageProperty) {
-			pTexture = pImageProperty->getValue();
-		}
+        DzNumericProperty* pNumericProperty = qobject_cast<DzNumericProperty*>(property);
+        DzImageProperty* pImageProperty = qobject_cast<DzImageProperty*>(property);
 
-		DzLayeredTexture* pLayeredTexture = qobject_cast<DzLayeredTexture*>(pTexture);
-		if (pLayeredTexture) {
-			pLayeredTexture->getPreviewPixmap(1,1);
-		}
-	}
+        DzTexture* pTexture = NULL;
+        if (pNumericProperty) {
+            pTexture = pNumericProperty->getMapValue();
+        }
+        else if (pImageProperty) {
+            pTexture = pImageProperty->getValue();
+        }
+
+        DzLayeredTexture* pLayeredTexture = NULL;
+        if (pTexture && pTexture->inherits("DzLayeredTexture")) {
+            pLayeredTexture = qobject_cast<DzLayeredTexture*>(pTexture);
+            if (pLayeredTexture) {
+                pLayeredTexture->getPreviewPixmap(1,1);
+            }
+        }
+    }
 
 	return true;
 }
