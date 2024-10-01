@@ -216,13 +216,19 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 		preProcessProgress.step();
 		DzNode *node = nodeJobList[i];
 
+		// bone conversion incompatibility fix (see line 226 below)
+		if (node->inherits("DzBone")) continue;
+
 		DzObject* object = node->getObject();
 		DzShape* shape = object ? object->getCurrentShape() : NULL;
-		if (shape)
-		{
+
+		if (shape || node->inherits("DzGroupNode")) {
 			// 2024-SEP-10, DB: moved renameDuplicateNodeName inside if (shape) to fix bone conversion and other potential node name change incompatibilities
 			renameDuplicateNodeName(node, existingNodeNameList);
+		}
 
+		if (shape)
+		{
 			for (int i = 0; i < shape->getNumMaterials(); i++)
 			{
 				DzMaterial* material = shape->getMaterial(i);
@@ -6638,11 +6644,11 @@ bool DzBridgeAction::renameDuplicateNodeName(DzNode* node, QStringList& existing
 	QString sNodeName = node->getName();
 	if (existingNodeNameList.contains(sNodeName) == true) {
 		int nDuplicateCount = 1;
-		QString sNewName = QString("%1__DUP_%2").arg(sNodeName).arg(nDuplicateCount, 3, 10, QChar('0'));
+		QString sNewName = QString("%1__DUP_%2").arg(sNodeName).arg(nDuplicateCount, 2, 10, QChar('0'));
 		while (existingNodeNameList.contains(sNewName) == true)
 		{
 			nDuplicateCount++;
-			sNewName = QString("%1__DUP_%2").arg(sNodeName).arg(nDuplicateCount, 3, 10, QChar('0'));
+			sNewName = QString("%1__DUP_%2").arg(sNodeName).arg(nDuplicateCount, 2, 10, QChar('0'));
 			if (nDuplicateCount > 999) {
 				// error, abort
 				dzApp->log("DzBridge: renameDuplicateNodeName(): CRITICAL ERROR: Over 999 duplicates for node name: " + sNodeName + ", aborting rename.");
