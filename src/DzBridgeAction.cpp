@@ -6906,14 +6906,14 @@ bool DzBridgeAction::bakeOverlayProperty(DzMaterial* pMaterial, QString sPropert
 	QImage imageA;
 	QImage imageB;
 	QImage alphaMask;
-	if (dzApp->getImageMgr()->loadImage(sFilenameA, imageA) != ERROR_SUCCESS) {
+	if (dzApp->getImageMgr()->loadImage(sFilenameA, imageA) != DZ_NO_ERROR) {
 		return false;
 	}
-	if (dzApp->getImageMgr()->loadImage(sFilenameB, imageB) != ERROR_SUCCESS) {
+	if (dzApp->getImageMgr()->loadImage(sFilenameB, imageB) != DZ_NO_ERROR) {
 		return false;
 	}
 	if (sFilenameAlphaMask == "" ||
-		dzApp->getImageMgr()->loadImage(sFilenameAlphaMask, alphaMask) != ERROR_SUCCESS) 
+		dzApp->getImageMgr()->loadImage(sFilenameAlphaMask, alphaMask) != DZ_NO_ERROR)
 	{
 		int imageWidth = 32; // Small size since it's a solid color
 		int imageHeight = 32;

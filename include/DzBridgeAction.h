@@ -169,7 +169,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE static bool BakePivots(QScopedPointer<DzScript>& Script);
 		Q_INVOKABLE static bool BakeInstances(QScopedPointer<DzScript>& Script);
 		Q_INVOKABLE static bool BakeRigidFollowNodes(QScopedPointer<DzScript>& Script);
-
+		Q_INVOKABLE DzError getExecutActionResult() { return m_nExecuteActionResult; }
 
 	protected:
 		// Struct to remember attachment info
