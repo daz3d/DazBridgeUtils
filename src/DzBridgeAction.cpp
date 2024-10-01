@@ -7153,11 +7153,11 @@ bool DzBridgeAction::DetectCustomPivotsInScene()
 	return false;
 }
 
-bool DzBridgeAction::BakePivotsAndInstances(QScopedPointer<DzScript>& Script)
+bool DzBridgeAction::BakePivots(QScopedPointer<DzScript>& Script)
 {
 	bool bResult;
 	bool bReplace = false;
-	QString sScriptFilename = "bake_pivots_and_instances_nogui.dsa";
+	QString sScriptFilename = "bake_all_pivots_nogui.dsa";
 	QString sEmbeddedFolderPath = ":/DazBridge";
 	QString sEmbeddedFilepath = sEmbeddedFolderPath + "/" + sScriptFilename;
 	QFile srcFile(sEmbeddedFilepath);
@@ -7166,7 +7166,7 @@ bool DzBridgeAction::BakePivotsAndInstances(QScopedPointer<DzScript>& Script)
 	srcFile.close();
 	if (!bResult)
 	{
-		dzApp->log(tr("DzBridge: ERROR: BakePivotsAndInstances() Error occured while trying to copy script to temp folder: ") + sTempFilepath);
+		dzApp->log(tr("DzBridge: ERROR: BakePivots() Error occured while trying to copy script to temp folder: ") + sTempFilepath);
 	}
 
 //	DzScript* Script = new DzScript();
@@ -7174,7 +7174,40 @@ bool DzBridgeAction::BakePivotsAndInstances(QScopedPointer<DzScript>& Script)
 
 	bResult = Script->loadFromFile(sTempFilepath);
 	if (!bResult) {
-		dzApp->log(tr("DzBridge: CRITICAL ERROR: BakePivotsAndInstances() Error occured while trying to load script file: ") + sTempFilepath + ", aborting script.");
+		dzApp->log(tr("DzBridge: CRITICAL ERROR: BakePivots() Error occured while trying to load script file: ") + sTempFilepath + ", aborting script.");
+		return false;
+	}
+
+	bResult = Script->execute();
+
+	// this may cause instability or crashes
+//	Script->deleteLater();
+
+	return bResult;
+}
+
+bool DzBridgeAction::BakeInstances(QScopedPointer<DzScript>& Script)
+{
+	bool bResult;
+	bool bReplace = false;
+	QString sScriptFilename = "bake_all_instances_nogui.dsa";
+	QString sEmbeddedFolderPath = ":/DazBridge";
+	QString sEmbeddedFilepath = sEmbeddedFolderPath + "/" + sScriptFilename;
+	QFile srcFile(sEmbeddedFilepath);
+	QString sTempFilepath = dzApp->getTempPath() + "/" + sScriptFilename;
+	bResult = DZ_BRIDGE_NAMESPACE::DzBridgeAction::copyFile(&srcFile, &sTempFilepath, bReplace);
+	srcFile.close();
+	if (!bResult)
+	{
+		dzApp->log(tr("DzBridge: ERROR: BakeInstances() Error occured while trying to copy script to temp folder: ") + sTempFilepath);
+	}
+
+	//	DzScript* Script = new DzScript();
+	Script.reset(new DzScript());
+
+	bResult = Script->loadFromFile(sTempFilepath);
+	if (!bResult) {
+		dzApp->log(tr("DzBridge: CRITICAL ERROR: BakeInstances() Error occured while trying to load script file: ") + sTempFilepath + ", aborting script.");
 		return false;
 	}
 
@@ -7310,7 +7343,7 @@ You may also Abort the transfer operation.").arg(sDetected);
 		if ((m_eBakeInstancesMode == DZ_BRIDGE_NAMESPACE::EBakeMode::AlwaysBake) ||
 			(m_eBakeInstancesMode == DZ_BRIDGE_NAMESPACE::EBakeMode::Ask && userChoice == QMessageBox::Yes))
 		{
-			BakePivotsAndInstances(Script);
+			BakeInstances(Script);
 		}
 	}
 	if (bCustomPivotsDetected && m_eBakePivotPointsMode != DZ_BRIDGE_NAMESPACE::EBakeMode::NeverBake)
@@ -7318,7 +7351,7 @@ You may also Abort the transfer operation.").arg(sDetected);
 		if ((m_eBakePivotPointsMode == DZ_BRIDGE_NAMESPACE::EBakeMode::AlwaysBake) ||
 			(m_eBakePivotPointsMode == DZ_BRIDGE_NAMESPACE::EBakeMode::Ask && userChoice == QMessageBox::Yes))
 		{
-			BakePivotsAndInstances(Script);
+			BakePivots(Script);
 		}
 	}
 	if (bRigidFollowNodesDetected && m_eBakeRigidFollowNodesMode != DZ_BRIDGE_NAMESPACE::EBakeMode::NeverBake)

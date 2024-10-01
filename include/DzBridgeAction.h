@@ -166,7 +166,8 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE static bool DetectInstancesInScene();
 		Q_INVOKABLE static bool DetectCustomPivotsInScene();
 		Q_INVOKABLE static bool DetectRigidFollowNodes();
-		Q_INVOKABLE static bool BakePivotsAndInstances(QScopedPointer<DzScript>& Script);
+		Q_INVOKABLE static bool BakePivots(QScopedPointer<DzScript>& Script);
+		Q_INVOKABLE static bool BakeInstances(QScopedPointer<DzScript>& Script);
 		Q_INVOKABLE static bool BakeRigidFollowNodes(QScopedPointer<DzScript>& Script);
 
 
