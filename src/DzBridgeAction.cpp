@@ -3938,13 +3938,40 @@ QMessageBox::Yes);
 		// TEMP WORKAROUND FOR NEW ASSET TYPES
 		QComboBox* wAssetCombo = BridgeDialog->getAssetTypeCombo();
 		int nIndex = wAssetCombo->currentIndex();
-		if (wAssetCombo->itemData(nIndex).isNull())
+		QVariant varItemData = wAssetCombo->itemData(nIndex);
+		if (varItemData.isNull())
 		{
 			m_sAssetType = cleanString(wAssetCombo->currentText());
 		}
-		else
+		else if (varItemData.type() == QVariant::Type::String)
 		{
 			m_sAssetType = wAssetCombo->itemData(nIndex).toString();
+		}
+		else if (varItemData.type() == QVariant::Type::Int)
+		{
+			switch (varItemData.toInt())
+			{
+			case EAssetType::SkeletalMesh:
+				m_sAssetType = "SkeletalMesh";
+				break;
+
+			case EAssetType::StaticMesh:
+				m_sAssetType = "StaticMesh";
+				break;
+
+			case EAssetType::Scene:
+				m_sAssetType = "Environment";
+				break;
+
+			case EAssetType::Animation:
+				m_sAssetType = "Animation";
+				break;
+
+			case EAssetType::Pose:
+				m_sAssetType = "Pose";
+				break;
+
+			}
 		}
 
 		m_bEnableMorphs = BridgeDialog->getMorphsEnabledCheckBox()->isChecked();
@@ -7012,7 +7039,7 @@ EAssetType DzBridgeAction::SelectBestRootNodeForTransfer(bool bAvoidFollowers)
 			pSelection->select(true);
 			dzScene->setPrimarySelection(pSelection);
 			if (numMeshes > 0) {
-				eBestAssetType = EAssetType::Other;
+				eBestAssetType = EAssetType::Scene;
 			}
 
 		}
@@ -7030,7 +7057,7 @@ EAssetType DzBridgeAction::SelectBestRootNodeForTransfer(bool bAvoidFollowers)
 			// Switch to default Environment mode
 			DzNode* pSelection = ChooseBestSelectedNode(rootNodes);
 			dzScene->setPrimarySelection(pSelection);
-			eBestAssetType = EAssetType::Other;
+			eBestAssetType = EAssetType::Scene;
 		}
 	}
 
@@ -7040,6 +7067,7 @@ EAssetType DzBridgeAction::SelectBestRootNodeForTransfer(bool bAvoidFollowers)
 		DzSkeleton* pSkeleton = qobject_cast<DzSkeleton*>(pSelection);
 		DzBone* pBone = qobject_cast<DzBone*>(pSelection);
 		DzObject* pObject = pSelection->getObject();
+
 		// if bone, redirect to skeleton
 		if (pBone) {
 			pSkeleton = pBone->getSkeleton();
@@ -7055,7 +7083,7 @@ EAssetType DzBridgeAction::SelectBestRootNodeForTransfer(bool bAvoidFollowers)
 			dzScene->setPrimarySelection(pSkeleton);
 			eBestAssetType = EAssetType::SkeletalMesh;
 		}
-		else if (pObject) 
+		else if (pObject) // has geometry
 		{
 			if (pSelection->isRootNode()) return EAssetType::StaticMesh;
 
@@ -7063,11 +7091,13 @@ EAssetType DzBridgeAction::SelectBestRootNodeForTransfer(bool bAvoidFollowers)
 			// 1. First go up ancestor chain to see if pObject is parented to a figure
 			DzNode* pAncestor = pSelection->getNodeParent();
 			DzSkeleton* pSkeleton = qobject_cast<DzSkeleton*>(pAncestor);
+			DzObject* pObject2 = pAncestor->getObject();
 			while (!pSkeleton && pAncestor->getNodeParent()) {
 				pAncestor = pAncestor->getNodeParent();
 				pSkeleton = qobject_cast<DzSkeleton*>(pAncestor);
 			}
-			if (pSkeleton) {
+			if (pSkeleton) 
+			{
 				if (bAvoidFollowers) {
 					pSkeleton = GetNonFollowerParent(pSkeleton);
 				}
@@ -7076,13 +7106,18 @@ EAssetType DzBridgeAction::SelectBestRootNodeForTransfer(bool bAvoidFollowers)
 				dzScene->setPrimarySelection(pSkeleton);
 				eBestAssetType = EAssetType::SkeletalMesh;
 			}
-			else {
+			else if (pObject2)
+			{
 				eBestAssetType = EAssetType::StaticMesh;
 			}
+			else
+			{
+				eBestAssetType = EAssetType::Scene;
+			}
 		}
-		else if (pSelection->inherits("DzGroupNode"))
+		else
 		{
-			eBestAssetType = EAssetType::Other;
+			eBestAssetType = EAssetType::Scene;
 		}
 	}
 

@@ -39,7 +39,11 @@ namespace DzBridgeNameSpace
 		None = -1,
 		SkeletalMesh = 0,
 		StaticMesh = 1,
-		Other = 2
+		Other = 2,
+		Scene,
+		Animation,
+		Pose,
+		Light
 	};
 
 	struct LodInfo {
@@ -222,6 +226,7 @@ namespace DzBridgeNameSpace
 		bool m_bShowFbxOptions;
 		bool m_bExportMaterialPropertiesCSV;
 		DzNode* m_pSelectedNode;
+		EAssetType m_eSelectedNodeAssetType = EAssetType::None;
 
 		// Animation Settings
 		bool m_bAnimationUseExperimentalTransfer;

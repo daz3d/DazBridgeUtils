@@ -101,7 +101,7 @@ bool DzBridgeDialog::setBridgeActionObject(QObject* arg) {
 }
 
 DzBridgeDialog::DzBridgeDialog(QWidget *parent, const QString &windowTitle) :
-	DzOptionsDialog(parent, DAZ_BRIDGE_LIBRARY_NAME)
+	DzOptionsDialog(parent, DAZ_BRIDGE_LIBRARY_NAME),  m_eAssetType(EAssetType::None)
 {
 	this->setObjectName("DzBridge_Base_Dialog");
 
@@ -188,11 +188,11 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	// Asset Transfer Type
 	assetTypeCombo = new QComboBox(this);
 	assetTypeCombo->setFixedHeight(nStyleButtonHeight);
-	assetTypeCombo->addItem("Skeletal Mesh");
-	assetTypeCombo->addItem("Static Mesh");
-	assetTypeCombo->addItem("Animation");
-	assetTypeCombo->addItem("Environment");
-	assetTypeCombo->addItem("Pose");
+	assetTypeCombo->addItem("Skeletal Mesh", EAssetType::SkeletalMesh);
+	assetTypeCombo->addItem("Static Mesh", EAssetType::StaticMesh);
+	assetTypeCombo->addItem("Animation", EAssetType::Animation);
+	assetTypeCombo->addItem("Environment", EAssetType::Scene);
+	assetTypeCombo->addItem("Pose", EAssetType::Pose);
 	connect(assetTypeCombo, SIGNAL(activated(int)), this, SLOT(HandleAssetTypeComboChange(int)));
 
 	// Animation Settings
@@ -815,17 +815,25 @@ void DzBridgeDialog::refreshAsset()
 		assetNameEdit->setText(Selection->getLabel().remove(QRegExp("[^A-Za-z0-9_]")));
 	}
 
-	if (qobject_cast<DzSkeleton*>(Selection))
+	if (m_eAssetType == EAssetType::None)
 	{
-//		assetTypeCombo->setCurrentIndex(0);
-		int nSkeletalIndex = assetTypeCombo->findText("Skeletal Mesh");
-		if (nSkeletalIndex != -1) assetTypeCombo->setCurrentIndex(nSkeletalIndex);
+		// LEGACY CODE
+		if (qobject_cast<DzSkeleton*>(Selection))
+		{
+			int nSkeletalIndex = assetTypeCombo->findText("Skeletal Mesh");
+			if (nSkeletalIndex != -1) assetTypeCombo->setCurrentIndex(nSkeletalIndex);
+		}
+		else
+		{
+			int nStaticIndex = assetTypeCombo->findText("Static Mesh");
+			if (nStaticIndex != -1) assetTypeCombo->setCurrentIndex(nStaticIndex);
+		}
 	}
 	else
 	{
-//		assetTypeCombo->setCurrentIndex(1);
-		int nStaticIndex = assetTypeCombo->findText("Static Mesh");
-		if (nStaticIndex != -1) assetTypeCombo->setCurrentIndex(nStaticIndex);
+		// MODERN PATHWAY
+		int index = assetTypeCombo->findData(m_eAssetType);
+		assetTypeCombo->setCurrentIndex(index);
 	}
 
 }
