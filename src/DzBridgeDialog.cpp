@@ -527,8 +527,8 @@ better quality.  **DOES NOT EXPORT MESH**";
 
 	QString sBakeInstances = tr("Replace Daz Studio Instance Nodes with original objects");
 	m_wBakeInstancesComboBox = new QComboBox(0);
-	m_wBakeInstancesComboBox->addItem(tr("Ask"), "ask");
-	m_wBakeInstancesComboBox->addItem(tr("Do nothing"), "never");
+	m_wBakeInstancesComboBox->addItem(tr("Ask for my decision"), "ask");
+	m_wBakeInstancesComboBox->addItem(tr("Disable this step"), "never");
 	m_wBakeInstancesComboBox->addItem(tr("Always replace with objects"), "always");
 	m_wBakeInstancesRowLabel = new QLabel(tr("Daz Instance Nodes"));
 	m_aRowLabels.append(m_wBakeInstancesRowLabel);
@@ -536,22 +536,22 @@ better quality.  **DOES NOT EXPORT MESH**";
 	m_wBakeInstancesComboBox->setCurrentIndex(m_wBakeInstancesComboBox->findData("ask"));
 
 	m_wBakeCustomPivotsComboBox = new QComboBox(0);
-	m_wBakeCustomPivotsComboBox->addItem(tr("Ask"), "ask");
-	m_wBakeCustomPivotsComboBox->addItem(tr("Do nothing"), "never");
+	m_wBakeCustomPivotsComboBox->addItem(tr("Ask for my decision"), "ask");
+	m_wBakeCustomPivotsComboBox->addItem(tr("Disable this step"), "never");
 	m_wBakeCustomPivotsComboBox->addItem(tr("Always bake pivots"), "always");
 	m_wBakeCustomPivotsRowLabel = new QLabel(tr("Pivot Points"));
 	m_aRowLabels.append(m_wBakeCustomPivotsRowLabel);
 	objectBakingOptionsLayout->addRow(m_wBakeCustomPivotsRowLabel, m_wBakeCustomPivotsComboBox);
-	m_wBakeCustomPivotsComboBox->setCurrentIndex(m_wBakeInstancesComboBox->findData("always"));
+	m_wBakeCustomPivotsComboBox->setCurrentIndex(m_wBakeInstancesComboBox->findData("ask"));
 
 	m_wBakeRigidFollowNodesComboBox = new QComboBox(0);
-	m_wBakeRigidFollowNodesComboBox->addItem(tr("Ask"), "ask");
-	m_wBakeRigidFollowNodesComboBox->addItem(tr("Do nothing"), "never");
+	m_wBakeRigidFollowNodesComboBox->addItem(tr("Ask for my decision"), "ask");
+	m_wBakeRigidFollowNodesComboBox->addItem(tr("Disable this step"), "never");
 	m_wBakeRigidFollowNodesComboBox->addItem(tr("Always convert to rigged mesh"), "always");
 	m_wBakeRigidFollowNodesRowLabel = new QLabel(tr("Rigid Follow Nodes"));
 	m_aRowLabels.append(m_wBakeRigidFollowNodesRowLabel);
 	objectBakingOptionsLayout->addRow(m_wBakeRigidFollowNodesRowLabel, m_wBakeRigidFollowNodesComboBox);
-	m_wBakeRigidFollowNodesComboBox->setCurrentIndex(m_wBakeInstancesComboBox->findData("always"));
+	m_wBakeRigidFollowNodesComboBox->setCurrentIndex(m_wBakeInstancesComboBox->findData("ask"));
 
 	///////////////////////////////////////
 	// Add Widgets to Advanced Layout
