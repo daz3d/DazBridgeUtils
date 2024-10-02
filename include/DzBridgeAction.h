@@ -174,6 +174,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE static bool BakeInstances(QScopedPointer<DzScript>& Script);
 		Q_INVOKABLE static bool BakeRigidFollowNodes(QScopedPointer<DzScript>& Script);
 		Q_INVOKABLE DzError getExecutActionResult() { return m_nExecuteActionResult; }
+		Q_INVOKABLE static bool InstallEmbeddedArchive(QString sArchiveFilename, QString sDestinationPath);
 
 	protected:
 		// Struct to remember attachment info

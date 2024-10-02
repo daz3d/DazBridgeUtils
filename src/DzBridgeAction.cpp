@@ -67,6 +67,8 @@
 #include "FbxTools.h"
 #include "dzlayeredtexture.h"
 
+#include "zip.h"
+
 // miniz-lib
 extern "C"
 {
@@ -7415,6 +7417,56 @@ You may also Abort the transfer operation.").arg(sDetected);
 	return DZ_NO_ERROR;
 }
 
+bool DzBridgeAction::InstallEmbeddedArchive(QString sEmbeddedArchivePath, QString sDestinationPath)
+{
+	bool bInstallSuccessful = false;
+
+	QString sArchiveFilename = QFileInfo(sEmbeddedArchivePath).baseName();
+	// copy zip plugin to temp
+	bool replace = true;
+	QFile srcFile(sEmbeddedArchivePath);
+	QString tempPathArchive = dzApp->getTempPath() + sArchiveFilename;
+	DzBridgeAction::copyFile(&srcFile, &tempPathArchive, replace);
+	srcFile.close();
+
+	// extract to destionation
+	::zip_extract(tempPathArchive.toAscii().data(), sDestinationPath.toAscii().data(), nullptr, nullptr);
+
+	// verify extraction was successfull
+	// 1. get filename from archive
+	// 2. test to see if destination path contains filename
+	QStringList archiveFileNames;
+	struct zip_t* zip = ::zip_open(tempPathArchive.toAscii().data(), 0, 'r');
+	int i, n = ::zip_entries_total(zip);
+	for (i = 0; i < n; ++i) {
+		::zip_entry_openbyindex(zip, i);
+		{
+			const char* name = ::zip_entry_name(zip);
+			archiveFileNames.append(QString(name));
+			//int isdir = ::zip_entry_isdir(zip);
+			//unsigned long long size = ::zip_entry_size(zip);
+			//unsigned int crc32 = ::zip_entry_crc32(zip);
+		}
+		::zip_entry_close(zip);
+	}
+	::zip_close(zip);
+	bInstallSuccessful = true;
+	for (QString filename : archiveFileNames)
+	{
+		QString filePath = sDestinationPath + "/" + filename;
+		if (QFile(filePath).exists() == false)
+		{
+			bInstallSuccessful = false;
+			break;
+		}
+	}
+
+	// remove if succcessful, else leave intermediate files for debugging
+	if (bInstallSuccessful)
+		QFile(tempPathArchive).remove();
+
+	return bInstallSuccessful;
+}
 
 
 #include "moc_DzBridgeAction.cpp"
