@@ -1555,7 +1555,7 @@ void DzBridgeAction::exportAnimation()
 #endif
     //qDebug() << "FileName: " << this->m_sDestinationFBX;
 	FbxExporter* Exporter = FbxExporter::Create(SdkManager, "");
-	if (!Exporter->Initialize(this->m_sDestinationFBX.toLocal8Bit().data(), FileFormat, SdkManager->GetIOSettings()))
+	if (!Exporter->Initialize(this->m_sDestinationFBX.toUtf8().data(), FileFormat, SdkManager->GetIOSettings()))
 	{
 		return;
 	}
@@ -1860,9 +1860,9 @@ void DzBridgeAction::exportSkeleton(DzFigure* Figure, DzNode* Node, DzNode* Pare
 		if (DzBone* Bone = qobject_cast<DzBone*>(Node))
 		{
 			// create the bone
-			FbxSkeleton* SkeletonAttribute = FbxSkeleton::Create(Scene, Node->getName().toLocal8Bit().data());
+			FbxSkeleton* SkeletonAttribute = FbxSkeleton::Create(Scene, Node->getName().toUtf8().data());
 			SkeletonAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
-			BoneNode = FbxNode::Create(Scene, Node->getName().toLocal8Bit().data());
+			BoneNode = FbxNode::Create(Scene, Node->getName().toUtf8().data());
 			BoneNode->SetNodeAttribute(SkeletonAttribute);
 
 			// find the bones position
@@ -2006,7 +2006,7 @@ void DzBridgeAction::exportAnimatedProperties(QList<DzNumericProperty*>& Propert
 	foreach(DzNumericProperty * numericProperty, Properties)
 	{
 		FbxNode* RootNode = Scene->FindNodeByName("root");
-		FbxProperty fbxProperty = FbxProperty::Create(RootNode, FbxDoubleDT, numericProperty->getLabel().toLocal8Bit().data());
+		FbxProperty fbxProperty = FbxProperty::Create(RootNode, FbxDoubleDT, numericProperty->getLabel().toUtf8().data());
 		if (fbxProperty.IsValid())
 		{
 			FbxAnimCurveNode* CurveNode = fbxProperty.CreateCurveNode(AnimBaseLayer);
@@ -4788,7 +4788,7 @@ bool DzBridgeAction::upgradeToHD(QString baseFilePath, QString hdFilePath, QStri
 {
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
 	FbxScene* baseMeshScene = openFBX->CreateScene("Base Mesh Scene");
-	if (openFBX->LoadScene(baseMeshScene, baseFilePath.toLocal8Bit().data()) == false)
+	if (openFBX->LoadScene(baseMeshScene, baseFilePath.toUtf8().data()) == false)
 	{
 		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, "Error",
 			"An error occurred while loading the base scene...", QMessageBox::Ok);
@@ -4798,7 +4798,7 @@ bool DzBridgeAction::upgradeToHD(QString baseFilePath, QString hdFilePath, QStri
 	SubdivideFbxScene subdivider = SubdivideFbxScene(baseMeshScene, pLookupTable);
 	subdivider.ProcessScene();
 	FbxScene* hdMeshScene = openFBX->CreateScene("HD Mesh Scene");
-	if (openFBX->LoadScene(hdMeshScene, hdFilePath.toLocal8Bit().data()) == false)
+	if (openFBX->LoadScene(hdMeshScene, hdFilePath.toUtf8().data()) == false)
 	{
 		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, "Error",
 			"An error occurred while loading the base scene...", QMessageBox::Ok);
@@ -4806,7 +4806,7 @@ bool DzBridgeAction::upgradeToHD(QString baseFilePath, QString hdFilePath, QStri
 		return false;
 	}
 	subdivider.SaveClustersToScene(hdMeshScene);
-	if (openFBX->SaveScene(hdMeshScene, outFilePath.toLocal8Bit().data()) == false)
+	if (openFBX->SaveScene(hdMeshScene, outFilePath.toUtf8().data()) == false)
 	{
 		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, "Error",
 			"An error occurred while saving the scene...", QMessageBox::Ok);
@@ -4943,11 +4943,13 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
 	FbxScene* pScene = openFBX->CreateScene("Base Mesh Scene");
-	if (openFBX->LoadScene(pScene, fbxFilePath.toLocal8Bit().data()) == false)
+	if (openFBX->LoadScene(pScene, fbxFilePath.toUtf8().data()) == false)
 	{
-		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, "Error",
-			"An error occurred while processing the Fbx file...", QMessageBox::Ok);
-		printf("\n\nAn error occurred while processing the Fbx file...");
+		QString sFbxErrorMessage = tr("ERROR: DzBridge: openFBX->LoadScene(): ")
+			+ QString("[%1] %2").arg(openFBX->GetErrorCode()).arg(openFBX->GetErrorString());
+		dzApp->log(sFbxErrorMessage);
+		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, tr("Error"),
+			tr("An error occurred while processing the Fbx file:\n\n") + sFbxErrorMessage, QMessageBox::Ok);
 		return false;
 	}
 
@@ -5019,12 +5021,13 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 		}
 	}
 
-	if (openFBX->SaveScene(pScene, fbxFilePath.toLocal8Bit().data()) == false)
+	if (openFBX->SaveScene(pScene, fbxFilePath.toUtf8().data()) == false)
 	{
-		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, "Error",
-			"An error occurred while processing the Fbx file...", QMessageBox::Ok);
-
-		printf("\n\nAn error occurred while processing the Fbx file...");
+		QString sFbxErrorMessage = tr("ERROR: DzBridge: openFBX->SaveScene(): ")
+			+ QString("[%1] %2").arg(openFBX->GetErrorCode()).arg(openFBX->GetErrorString());
+		dzApp->log(sFbxErrorMessage);
+		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, tr("Error"),
+			tr("An error occurred while processing the Fbx file:\n\n") + sFbxErrorMessage, QMessageBox::Ok);
 		return false;
 	}
 
@@ -7421,22 +7424,26 @@ bool DzBridgeAction::InstallEmbeddedArchive(QString sEmbeddedArchivePath, QStrin
 {
 	bool bInstallSuccessful = false;
 
-	QString sArchiveFilename = QFileInfo(sEmbeddedArchivePath).baseName();
+	QString sArchiveFilename = QFileInfo(sEmbeddedArchivePath).fileName();
 	// copy zip plugin to temp
 	bool replace = true;
 	QFile srcFile(sEmbeddedArchivePath);
-	QString tempPathArchive = dzApp->getTempPath() + sArchiveFilename;
+	QString tempPathArchive = dzApp->getTempPath() + "/" + sArchiveFilename;
 	DzBridgeAction::copyFile(&srcFile, &tempPathArchive, replace);
 	srcFile.close();
 
 	// extract to destionation
-	::zip_extract(tempPathArchive.toAscii().data(), sDestinationPath.toAscii().data(), nullptr, nullptr);
+	int zip_result = ::zip_extract(tempPathArchive.toUtf8().data(), sDestinationPath.toUtf8().data(), nullptr, nullptr);
+	if (zip_result != 0) {
+		dzApp->log("DzBridge: ::zip_extract() error=" + QString("%1").arg(zip_result));
+		return bInstallSuccessful;
+	}
 
 	// verify extraction was successfull
 	// 1. get filename from archive
 	// 2. test to see if destination path contains filename
 	QStringList archiveFileNames;
-	struct zip_t* zip = ::zip_open(tempPathArchive.toAscii().data(), 0, 'r');
+	struct zip_t* zip = ::zip_open(tempPathArchive.toUtf8().data(), 0, 'r');
 	int i, n = ::zip_entries_total(zip);
 	for (i = 0; i < n; ++i) {
 		::zip_entry_openbyindex(zip, i);

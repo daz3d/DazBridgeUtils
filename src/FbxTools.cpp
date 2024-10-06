@@ -1166,7 +1166,7 @@ bool FbxTools::SyncDuplicateBones(FbxScene* lCurrentScene)
 			if (sBoneName.contains(".001"))
 			{
 				QString sOrigBoneName = QString(sBoneName).replace(".001", "");
-				FbxNode* pOrigBone = lCurrentScene->FindNodeByName(sOrigBoneName.toLocal8Bit().constData());
+				FbxNode* pOrigBone = lCurrentScene->FindNodeByName(sOrigBoneName.toUtf8().constData());
 				if (pOrigBone)
 				{
 					//pBone->Copy(*pOrigBone);
@@ -1194,7 +1194,7 @@ bool FbxTools::LoadAndPoseBelowHeadOnly(QString poseFilePath, FbxScene* lCurrent
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
 
 	FbxScene* pPoseScene = openFBX->CreateScene("My Scene");
-	if (openFBX->LoadScene(pPoseScene, poseFilePath.toLocal8Bit().data()) == false)
+	if (openFBX->LoadScene(pPoseScene, poseFilePath.toUtf8().data()) == false)
 	{
 		return false;
 	}
@@ -1261,7 +1261,7 @@ bool FbxTools::LoadAndPose(QString poseFilePath, FbxScene* lCurrentScene, DzProg
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
 
 	FbxScene* pPoseScene = openFBX->CreateScene("My Scene");
-	if (openFBX->LoadScene(pPoseScene, poseFilePath.toLocal8Bit().data()) == false)
+	if (openFBX->LoadScene(pPoseScene, poseFilePath.toUtf8().data()) == false)
 	{
 		return false;
 	}
@@ -1326,7 +1326,7 @@ bool FbxTools::LoadAndPose(QString poseFilePath, FbxScene* lCurrentScene, DzProg
 //	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
 //
 //	FbxScene* pPoseScene = openFBX->CreateScene("My Scene");
-//	if (openFBX->LoadScene(pPoseScene, poseFilePath.toLocal8Bit().data()) == false)
+//	if (openFBX->LoadScene(pPoseScene, poseFilePath.toUtf8().data()) == false)
 //	{
 //		return false;
 //	}

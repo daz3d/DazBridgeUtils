@@ -220,7 +220,7 @@ void DzBridgeSubdivisionDialog::CreateList(DzNode* Node)
 				//auto debugGeoName = Geo->getName();
 				//auto debugShapeName = Shape->getName();
 				//auto debugNodeName = Node->getName();
-				//printf("DEBUG: DazBridgeLibrary, DzBridgeSubdivisionDialog.h: Geo VertCount is <= 0: %s", debugNodeName.toAscii().constData());
+				//printf("DEBUG: DazBridgeLibrary, DzBridgeSubdivisionDialog.h: Geo VertCount is <= 0: %s", debugNodeName.toUtf8().constData());
 			}
 		}
 	}
@@ -371,7 +371,7 @@ void DzBridgeSubdivisionDialog::LockSubdivisionProperties(bool subdivisionEnable
 						//{
 						//	lodString = enumProperty->getItem(i);
 						//	dzApp->log(QString("lodlevel[%1]=[%2]").arg(i).arg(lodString));
-						//	printf("DEBUG: lodlevel[%d]=[%s]", i, lodString.toLocal8Bit().constData());
+						//	printf("DEBUG: lodlevel[%d]=[%s]", i, lodString.toUtf8().constData());
 						//}
 						if (targetValue == 0.0)
 						{
@@ -504,7 +504,7 @@ std::map<std::string, int>* DzBridgeSubdivisionDialog::GetLookupTable()
 
 	foreach(QComboBox * combo, SubdivisionCombos)
 	{
-		std::string name(combo->property("Object").toString().toLocal8Bit().data());
+		std::string name(combo->property("Object").toString().toUtf8().data());
 		name = name + ".Shape";
 		int targetValue = combo->currentText().toInt();
 		(*pLookupTable)[name] = targetValue;

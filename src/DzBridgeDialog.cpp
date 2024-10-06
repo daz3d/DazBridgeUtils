@@ -1003,7 +1003,7 @@ QMessageBox::Abort);
 	}
 
 	bool bInstallSuccessful = false;
-	bInstallSuccessful = installEmbeddedArchive(sPluginZipFilename, directoryName);
+	bInstallSuccessful = DzBridgeAction::InstallEmbeddedArchive(sPluginZipFilename, directoryName);
 
 	// verify successful plugin extraction/installation
 	if (bInstallSuccessful)
@@ -1026,54 +1026,8 @@ target software Plugin to: ") + sPluginsPath);
 
 bool DzBridgeDialog::installEmbeddedArchive(QString sArchiveFilename, QString sDestinationPath)
 {
-	bool bInstallSuccessful = false;
-
-	QString sEmbeddedArchivePath = m_sEmbeddedFilesPath + sArchiveFilename;
-
-	// copy zip plugin to temp
-	bool replace = true;
-	QFile srcFile(sEmbeddedArchivePath);
-	QString tempPathArchive = dzApp->getTempPath() + sArchiveFilename;
-	DzBridgeAction::copyFile(&srcFile, &tempPathArchive, replace);
-	srcFile.close();
-
-	// extract to destionation
-	::zip_extract(tempPathArchive.toAscii().data(), sDestinationPath.toAscii().data(), nullptr, nullptr);
-
-	// verify extraction was successfull
-	// 1. get filename from archive
-	// 2. test to see if destination path contains filename
-	QStringList archiveFileNames;
-	struct zip_t* zip = ::zip_open(tempPathArchive.toAscii().data(), 0, 'r');
-	int i, n = ::zip_entries_total(zip);
-	for (i = 0; i < n; ++i) {
-		::zip_entry_openbyindex(zip, i);
-		{
-			const char* name = ::zip_entry_name(zip);
-			archiveFileNames.append(QString(name));
-			//int isdir = ::zip_entry_isdir(zip);
-			//unsigned long long size = ::zip_entry_size(zip);
-			//unsigned int crc32 = ::zip_entry_crc32(zip);
-		}
-		::zip_entry_close(zip);
-	}
-	::zip_close(zip);
-	bInstallSuccessful = true;
-	for (QString filename : archiveFileNames)
-	{
-		QString filePath = sDestinationPath + "/" + filename;
-		if (QFile(filePath).exists() == false)
-		{
-			bInstallSuccessful = false;
-			break;
-		}
-	}
-
-	// remove if succcessful, else leave intermediate files for debugging
-	if (bInstallSuccessful)
-		QFile(tempPathArchive).remove();
-
-	return bInstallSuccessful;
+	QString sEmbeddedFilePath = m_sEmbeddedFilesPath + "/" + sArchiveFilename;
+	return DzBridgeAction::InstallEmbeddedArchive(sEmbeddedFilePath, sDestinationPath);
 }
 
 void DzBridgeDialog::setBridgeVersionStringAndLabel(QString sVersionString, QString sLabel)
@@ -1125,7 +1079,9 @@ void DzBridgeDialog::HandleOpenIntermediateFolderButton(QString sFolderPath)
 	}
 
 #ifdef WIN32
-	ShellExecuteA(NULL, "open", sIntermediateFolderPath.toAscii().data(), NULL, NULL, SW_SHOWDEFAULT);
+//	ShellExecuteA(NULL, "open", sIntermediateFolderPath.toUtf8().data(), NULL, NULL, SW_SHOWDEFAULT);
+	std::wstring wcsIntermediateFolderPath(reinterpret_cast<const wchar_t*>(sIntermediateFolderPath.utf16()));
+	ShellExecuteW(NULL, L"open", wcsIntermediateFolderPath.c_str(), NULL, NULL, SW_SHOWDEFAULT);
 //// The above line does the equivalent as following lines, but has advantage of only opening 1 explorer window
 //// with multiple clicks.
 //

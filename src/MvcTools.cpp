@@ -1532,7 +1532,7 @@ bool MvcTools::makeTestMvcCage_2(QVector<FbxVector4>* &mvc_test_cage_vertexbuffe
 //	QString sFbxFilePath = "c:/dev/sphere2.fbx";
 //	auto oFBX = new OpenFBXInterface();
 //	FbxScene* pScene = oFBX->CreateScene("mvc control cage");
-//	if (oFBX->LoadScene(pScene, sFbxFilePath.toLocal8Bit().data()) == false)
+//	if (oFBX->LoadScene(pScene, sFbxFilePath.toUtf8().data()) == false)
 //	{
 //		return false;
 //	}

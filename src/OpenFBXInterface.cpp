@@ -131,7 +131,7 @@ bool OpenFBXInterface::SaveScene(FbxScene* pScene, QString sFilename, int nFileF
 	m_fbxIOSettings->SetBoolProp(EXP_FBX_ANIMATION, true);
 	m_fbxIOSettings->SetBoolProp(EXP_FBX_GLOBAL_SETTINGS, true);
 
-	if (pExporter->Initialize(sFilename.toLocal8Bit().data(), nFileFormat, m_fbxIOSettings) == false)
+	if (pExporter->Initialize(sFilename.toUtf8().data(), nFileFormat, m_fbxIOSettings) == false)
 	{
 		m_ErrorString = QString(pExporter->GetStatus().GetErrorString());
 		m_ErrorCode = pExporter->GetStatus().GetCode();
@@ -175,7 +175,7 @@ bool OpenFBXInterface::LoadScene(FbxScene* pScene, QString sFilename)
 
 	FbxImporter* pImporter = FbxImporter::Create(m_fbxManager, "");
 
-	if (pImporter->Initialize(sFilename.toLocal8Bit().data(), -1, m_fbxIOSettings) == false)
+	if (pImporter->Initialize(sFilename.toUtf8().data(), -1, m_fbxIOSettings) == false)
 	{
 		m_ErrorString = QString(pImporter->GetStatus().GetErrorString());
 		m_ErrorCode = pImporter->GetStatus().GetCode();
@@ -205,7 +205,7 @@ bool OpenFBXInterface::LoadScene(FbxScene* pScene, QString sFilename)
 
 FbxScene* OpenFBXInterface::CreateScene(QString sSceneName)
 {
-	FbxScene* pNewScene = FbxScene::Create(m_fbxManager, sSceneName.toLocal8Bit().data());
+	FbxScene* pNewScene = FbxScene::Create(m_fbxManager, sSceneName.toUtf8().data());
 
 	return pNewScene;
 }
@@ -229,7 +229,7 @@ FbxGeometry* OpenFBXInterface::FindGeometry(FbxScene* pScene, QString sGeometryN
 
 FbxNode* OpenFBXInterface::FindNode(FbxScene* pScene, QString sNodeName)
 {
-	FbxString fsName(sNodeName.toLocal8Bit().data());
+	FbxString fsName(sNodeName.toUtf8().data());
 	auto result = pScene->FindNodeByName(fsName);
 	return result;
 }

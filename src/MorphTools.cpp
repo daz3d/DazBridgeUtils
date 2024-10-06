@@ -32,7 +32,7 @@ void MorphInfo::log(QString message)
 #if USE_DAZ_LOG
 	dzApp->log(message);
 #else
-	printf(message.toLocal8Bit().constData());
+	printf(message.toUtf8().constData());
 #endif
 }
 
