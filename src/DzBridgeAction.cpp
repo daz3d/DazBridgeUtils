@@ -6614,6 +6614,7 @@ bool DzBridgeAction::isInteractiveMode()
 		break;
 
 	case eNonInteractiveMode::ScriptMode:
+	case eNonInteractiveMode::DzExporterModeRunSilent:
 	default:
 		isInteractive = false;
 		break;
@@ -7361,7 +7362,7 @@ DzError DzBridgeAction::doPromptableObjectBaking()
 			offset = sDetected.indexOf(", ", offset + 1);
 		}
 		if (offset != -1) {
-			sDetected.replace(offset, strlen(", "), " and ");
+			sDetected.replace(offset, (int) strlen(", "), " and ");
 		}
 
 		if (bDoPrompt)
@@ -7474,6 +7475,33 @@ bool DzBridgeAction::InstallEmbeddedArchive(QString sEmbeddedArchivePath, QStrin
 
 	return bInstallSuccessful;
 }
+
+void DzBridgeAction::setAssetType(EAssetType arg_eAssetType)
+{
+	switch (arg_eAssetType) {
+	case EAssetType::Scene:
+		m_sAssetType = "Environment";
+		break;
+		
+	case EAssetType::SkeletalMesh:
+		m_sAssetType = "SkeletalMesh";
+		break;
+
+	case EAssetType::StaticMesh:
+		m_sAssetType = "StaticMesh";
+		break;
+
+	case EAssetType::Animation:
+		m_sAssetType = "Animation";
+		break;
+
+	case EAssetType::Pose:
+		m_sAssetType = "Pose";
+		break;
+
+	}
+}
+
 
 
 #include "moc_DzBridgeAction.cpp"

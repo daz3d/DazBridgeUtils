@@ -21,6 +21,9 @@ class DzNumericProperty;
 
 class UnitTest_DzBridgeAction;
 
+#define BOOL_GETSET(A) Q_INVOKABLE virtual bool get##A() { return m_b##A; }; Q_INVOKABLE virtual void set##A(bool arg) { m_b##A = arg; }
+#define INT_GETSET(A) Q_INVOKABLE virtual int get##A() { return m_n##A; }; Q_INVOKABLE virtual void set##A(int arg) { m_n##A = arg; }
+
 #include "dzbridge.h"
 namespace DzBridgeNameSpace
 {
@@ -59,7 +62,8 @@ namespace DzBridgeNameSpace
 		FullInteractiveMode = 0, // default, all GUI
 		ScriptMode = 1, // script mode, no GUI
 		ReducedPopup = 2, 
-		DzExporterMode = 3 // used by DzBlenderExporter
+		DzExporterMode = 3, // used by DzBlenderExporter
+		DzExporterModeRunSilent = 4 // used by DzBlenderExporter
 	};
 
 	/// <summary>
@@ -158,7 +162,26 @@ namespace DzBridgeNameSpace
 		QList<LodInfo*> m_aLodInfo;
 
 		Q_INVOKABLE virtual bool isInteractiveMode();
+		Q_INVOKABLE DzError getExecutActionResult() { return m_nExecuteActionResult; }
+		BOOL_GETSET(ConvertToPng);
+		BOOL_GETSET(ConvertToJpg);
+		BOOL_GETSET(ExportAllTextures);
+		BOOL_GETSET(CombineDiffuseAndAlphaMaps);
+		BOOL_GETSET(ResizeTextures);
+		Q_INVOKABLE virtual QSize getTargetTexturesSize() { return m_qTargetTextureSize; }
+		Q_INVOKABLE virtual void setTargetTexturesSize(QSize arg) { m_qTargetTextureSize = arg; }
+		BOOL_GETSET(MultiplyTextureValues);
+		BOOL_GETSET(RecompressIfFileSizeTooBig);
+		INT_GETSET(FileSizeThresholdToInitiateRecompression);
+		BOOL_GETSET(ForceReEncoding);
+		BOOL_GETSET(BakeMakeupOverlay);
+		BOOL_GETSET(BakeTranslucency);
+		BOOL_GETSET(BakeSpecularToMetallic);
+		BOOL_GETSET(BakeRefractionWeight);
 
+
+		// Bridge API: Static Functions
+		// Scene Smart Selection API
 		Q_INVOKABLE static DzNodeList BuildRootNodeList(bool bUnhideNodes=false);
 		Q_INVOKABLE static DzNodeList FindRootNodes(DzNode* pNode);
 		Q_INVOKABLE static void ReparentFigure(DzNode* figure);
@@ -166,14 +189,13 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE static DzNode* FindNodeByName(DzNode* pRootNode, QString sNodeName);
 		Q_INVOKABLE static DzSkeleton* GetNonFollowerParent(DzSkeleton* pSkeleton);
 		Q_INVOKABLE static EAssetType SelectBestRootNodeForTransfer(bool bAvoidFollowers=true);
-
+		// Direct Bake API: Instance, Rigid-Follow-Node, Pivot Point
 		Q_INVOKABLE static bool DetectInstancesInScene();
 		Q_INVOKABLE static bool DetectCustomPivotsInScene();
 		Q_INVOKABLE static bool DetectRigidFollowNodes();
 		Q_INVOKABLE static bool BakePivots(QScopedPointer<DzScript>& Script);
 		Q_INVOKABLE static bool BakeInstances(QScopedPointer<DzScript>& Script);
 		Q_INVOKABLE static bool BakeRigidFollowNodes(QScopedPointer<DzScript>& Script);
-		Q_INVOKABLE DzError getExecutActionResult() { return m_nExecuteActionResult; }
 		Q_INVOKABLE static bool InstallEmbeddedArchive(QString sArchiveFilename, QString sDestinationPath);
 
 	protected:
@@ -366,6 +388,7 @@ namespace DzBridgeNameSpace
 
 		Q_INVOKABLE QString getAssetType() { return this->m_sAssetType; };
 		Q_INVOKABLE void setAssetType(QString arg_AssetType) { this->m_sAssetType = arg_AssetType; };
+		Q_INVOKABLE void setAssetType(EAssetType arg_eAssetType);
 		Q_INVOKABLE QString getExportFilename() { return this->m_sExportFilename; };
 		Q_INVOKABLE void setExportFilename(QString arg_Filename) { this->m_sExportFilename = arg_Filename; };
 
