@@ -21,9 +21,6 @@ class DzNumericProperty;
 
 class UnitTest_DzBridgeAction;
 
-#define BOOL_GETSET(A) Q_INVOKABLE virtual bool get##A() { return m_b##A; }; Q_INVOKABLE virtual void set##A(bool arg) { m_b##A = arg; }
-#define INT_GETSET(A) Q_INVOKABLE virtual int get##A() { return m_n##A; }; Q_INVOKABLE virtual void set##A(int arg) { m_n##A = arg; }
-
 #include "dzbridge.h"
 namespace DzBridgeNameSpace
 {
@@ -163,21 +160,34 @@ namespace DzBridgeNameSpace
 
 		Q_INVOKABLE virtual bool isInteractiveMode();
 		Q_INVOKABLE DzError getExecutActionResult() { return m_nExecuteActionResult; }
-		BOOL_GETSET(ConvertToPng);
-		BOOL_GETSET(ConvertToJpg);
-		BOOL_GETSET(ExportAllTextures);
-		BOOL_GETSET(CombineDiffuseAndAlphaMaps);
-		BOOL_GETSET(ResizeTextures);
+		Q_INVOKABLE virtual bool getConvertToPng() { return m_bConvertToPng; }
+		Q_INVOKABLE virtual void setConvertToPng(bool arg) { m_bConvertToPng = arg; }
+		Q_INVOKABLE virtual bool getConvertToJpg() { return m_bConvertToJpg; }
+		Q_INVOKABLE virtual void setConvertToJpg(bool arg) { m_bConvertToJpg = arg; }
+		Q_INVOKABLE virtual bool getExportAllTextures() { return m_bExportAllTextures; }
+		Q_INVOKABLE virtual void setExportAllTextures(bool arg) { m_bExportAllTextures = arg; }
+		Q_INVOKABLE virtual bool getCombineDiffuseAndAlphaMaps() { return m_bCombineDiffuseAndAlphaMaps; }
+		Q_INVOKABLE virtual void setCombineDiffuseAndAlphaMaps(bool arg) { m_bCombineDiffuseAndAlphaMaps = arg; }
+		Q_INVOKABLE virtual bool getResizeTextures() { return m_bResizeTextures; }
+		Q_INVOKABLE virtual void setResizeTextures(bool arg) { m_bResizeTextures = arg; }
 		Q_INVOKABLE virtual QSize getTargetTexturesSize() { return m_qTargetTextureSize; }
 		Q_INVOKABLE virtual void setTargetTexturesSize(QSize arg) { m_qTargetTextureSize = arg; }
-		BOOL_GETSET(MultiplyTextureValues);
-		BOOL_GETSET(RecompressIfFileSizeTooBig);
-		INT_GETSET(FileSizeThresholdToInitiateRecompression);
-		BOOL_GETSET(ForceReEncoding);
-		BOOL_GETSET(BakeMakeupOverlay);
-		BOOL_GETSET(BakeTranslucency);
-		BOOL_GETSET(BakeSpecularToMetallic);
-		BOOL_GETSET(BakeRefractionWeight);
+		Q_INVOKABLE virtual bool getMultiplyTextureValues() { return m_bMultiplyTextureValues; }
+		Q_INVOKABLE virtual void setMultiplyTextureValues(bool arg) { m_bMultiplyTextureValues = arg; }
+		Q_INVOKABLE virtual bool getRecompressIfFileSizeTooBig() { return m_bRecompressIfFileSizeTooBig; }
+		Q_INVOKABLE virtual void setRecompressIfFileSizeTooBig(bool arg) { m_bRecompressIfFileSizeTooBig = arg; }
+		Q_INVOKABLE virtual int getFileSizeThresholdToInitiateRecompression() { return m_nFileSizeThresholdToInitiateRecompression; }
+		Q_INVOKABLE virtual void setFileSizeThresholdToInitiateRecompression(int arg) { m_nFileSizeThresholdToInitiateRecompression = arg; }
+		Q_INVOKABLE virtual bool getForceReEncoding() { return m_bForceReEncoding; }
+		Q_INVOKABLE virtual void setForceReEncoding(bool arg) { m_bForceReEncoding = arg; }
+		Q_INVOKABLE virtual bool getBakeMakeupOverlay() { return m_bBakeMakeupOverlay; }
+		Q_INVOKABLE virtual void setBakeMakeupOverlay(bool arg) { m_bBakeMakeupOverlay = arg; }
+		Q_INVOKABLE virtual bool getBakeTranslucency() { return m_bBakeTranslucency; }
+		Q_INVOKABLE virtual void setBakeTranslucency(bool arg) { m_bBakeTranslucency = arg; }
+		Q_INVOKABLE virtual bool getBakeSpecularToMetallic() { return m_bBakeSpecularToMetallic; }
+		Q_INVOKABLE virtual void setBakeSpecularToMetallic(bool arg) { m_bBakeSpecularToMetallic = arg; }
+		Q_INVOKABLE virtual bool getBakeRefractionWeight() { return m_bBakeRefractionWeight; }
+		Q_INVOKABLE virtual void setBakeRefractionWeight(bool arg) { m_bBakeRefractionWeight = arg; }
 
 
 		// Bridge API: Static Functions
