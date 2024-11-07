@@ -4009,74 +4009,81 @@ QMessageBox::Yes);
 	// LOD settings
 	m_bEnableLodGeneration = BridgeDialog->getEnableLodCheckBox()->isChecked();
 
-	// Texture Resizing options
-	bool bSkipTextureResizing = BridgeDialog->getSkipResizeTextures();
-
-	if (bSkipTextureResizing == false)
+	// DB 2024-11-07: NOTE: The below codeblock will not run for Scripts or FileExportRunSilent pathway. **This will be an issue for interactive "RunSilent" where the user may expect the previous GUI settings to be preserved.**
+	// CORRECT Behavior would be to preserve GUI settings but allow override from DzFileIOSettings or scripted API;
+	// IDEALLY, we need to refactor to split export function from executeAction and split settings from gui dialog
+	if (isInteractiveMode())
 	{
-		bool bEnableTextureResizing = BridgeDialog->getResizeTextures();
-		if (bEnableTextureResizing)
+		// Texture Resizing options
+		bool bSkipTextureResizing = BridgeDialog->getSkipResizeTextures();
+
+		if (bSkipTextureResizing == false)
 		{
-			int maxTextureFileSize = BridgeDialog->getMaxTextureFileSize();
-			if (maxTextureFileSize > 0) {
-				m_nFileSizeThresholdToInitiateRecompression = maxTextureFileSize * 1024;
-				m_bRecompressIfFileSizeTooBig = true;
+			bool bEnableTextureResizing = BridgeDialog->getResizeTextures();
+			if (bEnableTextureResizing)
+			{
+				int maxTextureFileSize = BridgeDialog->getMaxTextureFileSize();
+				if (maxTextureFileSize > 0) {
+					m_nFileSizeThresholdToInitiateRecompression = maxTextureFileSize * 1024;
+					m_bRecompressIfFileSizeTooBig = true;
+				}
+				else {
+					m_bRecompressIfFileSizeTooBig = false;
+				}
+				int maxDimension = BridgeDialog->getMaxTextureResolution();
+				if (maxDimension != -1) {
+					m_qTargetTextureSize = QSize(maxDimension, maxDimension);
+					m_bResizeTextures = true;
+				}
+				else {
+					m_bResizeTextures = false;
+				}
+				QString formatString = BridgeDialog->getExportTextureFileFormat();
+				if (formatString == "any") {
+					m_bConvertToJpg = true;
+					m_bConvertToPng = true;
+					m_bForceReEncoding = false;
+				}
+				else if (formatString == "png+jpg") {
+					m_bConvertToJpg = true;
+					m_bConvertToPng = true;
+					m_bForceReEncoding = true;
+				}
+				else if (formatString == "png") {
+					m_bConvertToJpg = false;
+					m_bConvertToPng = true;
+					m_bForceReEncoding = true;
+				}
+				else if (formatString == "jpg") {
+					m_bConvertToJpg = true;
+					m_bConvertToPng = false;
+					m_bForceReEncoding = true;
+				}
 			}
-			else {
+			else
+			{
 				m_bRecompressIfFileSizeTooBig = false;
-			}
-			int maxDimension = BridgeDialog->getMaxTextureResolution();
-			if (maxDimension != -1) {
-				m_qTargetTextureSize = QSize(maxDimension, maxDimension);
-				m_bResizeTextures = true;
-			}
-			else {
 				m_bResizeTextures = false;
-			}
-			QString formatString = BridgeDialog->getExportTextureFileFormat();
-			if (formatString == "any") {
-				m_bConvertToJpg = true;
-				m_bConvertToPng = true;
+	//			m_bConvertToJpg = true;
+	//			m_bConvertToPng = true;
 				m_bForceReEncoding = false;
 			}
-			else if (formatString == "png+jpg") {
-				m_bConvertToJpg = true;
-				m_bConvertToPng = true;
-				m_bForceReEncoding = true;
-			}
-			else if (formatString == "png") {
-				m_bConvertToJpg = false;
-				m_bConvertToPng = true;
-				m_bForceReEncoding = true;
-			}
-			else if (formatString == "jpg") {
-				m_bConvertToJpg = true;
-				m_bConvertToPng = false;
-				m_bForceReEncoding = true;
-			}
+
 		}
-		else
+
+		// Texture Baking options
+		if (BridgeDialog->getIsBakeEnabled())
 		{
-			m_bRecompressIfFileSizeTooBig = false;
-			m_bResizeTextures = false;
-//			m_bConvertToJpg = true;
-//			m_bConvertToPng = true;
-			m_bForceReEncoding = false;
+			m_bCombineDiffuseAndAlphaMaps = BridgeDialog->getBakeAlpha();
+			m_bBakeMakeupOverlay = BridgeDialog->getBakeMakeup();
+			m_bMultiplyTextureValues = BridgeDialog->getBakeColorTint();
+			m_bBakeTranslucency = BridgeDialog->getBakeTranslucency();
+			m_bBakeSpecularToMetallic = BridgeDialog->getBakeSpecularToMetallic();
+			m_bBakeRefractionWeight = BridgeDialog->getBakeRefractionWeight();
+
 		}
-
 	}
 
-	// Texture Baking options
-	if (BridgeDialog->getIsBakeEnabled())
-	{
-		m_bCombineDiffuseAndAlphaMaps = BridgeDialog->getBakeAlpha();
-		m_bBakeMakeupOverlay = BridgeDialog->getBakeMakeup();
-		m_bMultiplyTextureValues = BridgeDialog->getBakeColorTint();
-		m_bBakeTranslucency = BridgeDialog->getBakeTranslucency();
-		m_bBakeSpecularToMetallic = BridgeDialog->getBakeSpecularToMetallic();
-		m_bBakeRefractionWeight = BridgeDialog->getBakeRefractionWeight();
-
-	}
 	// Object Baking options
 	QString sBakeInstancesMode = BridgeDialog->getBakeInstances();
 	if (sBakeInstancesMode == "always") {
