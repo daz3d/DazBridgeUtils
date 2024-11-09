@@ -7509,6 +7509,32 @@ void DzBridgeAction::setAssetType(EAssetType arg_eAssetType)
 	}
 }
 
+// DB 2024-11-080: Used for Work around to correct Character Morphs using non - standard Object ERC Offset
+bool DzBridgeTools::CalculateRawOffset(const DzNode* pNode, DzVec3 &vOffset)
+{
+	if (pNode == NULL) return false;
+
+	auto pPropX = pNode->getXPosControl();
+	auto pPropY = pNode->getYPosControl();
+	auto pPropZ = pNode->getZPosControl();
+
+	if (pPropX == NULL || pPropY == NULL || pPropZ == NULL) return false;
+
+	double baseX = pPropX->getValue();
+	double baseY = pPropY->getValue();
+	double baseZ = pPropZ->getValue();
+
+	double rawX = pPropX->getRawValue();
+	double rawY = pPropY->getRawValue();
+	double rawZ = pPropZ->getRawValue();
+
+	vOffset.m_x = rawX - baseX;
+	vOffset.m_y = rawY - baseY;
+	vOffset.m_z = rawZ - baseZ;
+
+	return true;
+}
+
 
 
 #include "moc_DzBridgeAction.cpp"

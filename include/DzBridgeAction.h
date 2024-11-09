@@ -63,6 +63,12 @@ namespace DzBridgeNameSpace
 		DzExporterModeRunSilent = 4 // used by DzBlenderExporter
 	};
 
+	class DzBridgeTools
+	{
+	public:
+		static bool CalculateRawOffset(const DzNode* pNode, DzVec3 &vOffset);
+	};
+
 	/// <summary>
 	/// Abstract base class that manages exporting of assets to Target Software via FBX/DTU
 	/// intermediate files.  Manages destination filepaths, morphs, subdivisions, animations, etc.
