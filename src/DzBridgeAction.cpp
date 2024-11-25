@@ -4950,9 +4950,10 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
 	FbxScene* pScene = openFBX->CreateScene("Base Mesh Scene");
-	if (openFBX->LoadScene(pScene, fbxFilePath.toUtf8().data()) == false)
+	if (openFBX->LoadScene(pScene, fbxFilePath) == false)
 	{
 		QString sFbxErrorMessage = tr("ERROR: DzBridge: openFBX->LoadScene(): ")
+			+ QString("(File: \"%1\") ").arg(fbxFilePath)
 			+ QString("[%1] %2").arg(openFBX->GetErrorCode()).arg(openFBX->GetErrorString());
 		dzApp->log(sFbxErrorMessage);
 		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, tr("Error"),
@@ -5028,9 +5029,10 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 		}
 	}
 
-	if (openFBX->SaveScene(pScene, fbxFilePath.toUtf8().data()) == false)
+	if (openFBX->SaveScene(pScene, fbxFilePath) == false)
 	{
 		QString sFbxErrorMessage = tr("ERROR: DzBridge: openFBX->SaveScene(): ")
+			+ QString("(File: \"%1\") ").arg(fbxFilePath)
 			+ QString("[%1] %2").arg(openFBX->GetErrorCode()).arg(openFBX->GetErrorString());
 		dzApp->log(sFbxErrorMessage);
 		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, tr("Error"),
