@@ -21,6 +21,8 @@ class DzNumericProperty;
 
 class UnitTest_DzBridgeAction;
 
+class ImageToolsJobsManager;
+
 #include "dzbridge.h"
 namespace DzBridgeNameSpace
 {
@@ -325,6 +327,11 @@ namespace DzBridgeNameSpace
 		bool m_bFixTwistBones = true;
 		bool m_bMLDeformerExportFace = false;
 
+		// DB 2024-12-03, multi-threaded image re-encoding
+		ImageToolsJobsManager *m_ImageToolsJobsManager;
+		// If True, defers processing of ImageTools Jobs until actively called via m_ImageToolsJobsManager->processJobs()
+		bool m_bDeferProcessingImageToolsJobs = false;
+
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }
 
@@ -429,6 +436,7 @@ namespace DzBridgeNameSpace
 		virtual void writePropertyTexture(DzJsonWriter& Writer, QString sName, QString sLabel, QString sValue, QString sType, QString sTexture);
 		virtual void writePropertyTexture(DzJsonWriter& Writer, QString sName, QString sLabel, double dValue, QString sType, QString sTexture);
 		virtual QString makeUniqueFilename(QString sTargetFilename, QString sOriginalFilename="");
+		virtual QString generateExportAssetFilename(QString sFilename, QString sAssetMaterialName);
 
 		Q_INVOKABLE bool getGenerateNormalMaps() { return this->m_bGenerateNormalMaps; };
 		Q_INVOKABLE void setGenerateNormalMaps(bool arg_GenerateNormalMaps) { this->m_bGenerateNormalMaps = arg_GenerateNormalMaps; };
@@ -493,6 +501,8 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool forceLieUpdate(DzMaterial* pMaterial);
 
 		Q_INVOKABLE virtual DzError doPromptableObjectBaking();
+
+		
 
 	private:
 		class MaterialGroupExportOrderMetaData

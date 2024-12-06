@@ -5,6 +5,12 @@
 #include <QThreadPool>
 #include <QRunnable>
 
+
+class DzProgress;
+class QThread;
+
+class JobReEncodeImage;
+
 class ImageTools
 {
 public:
@@ -194,4 +200,80 @@ private:
 	int m_startY;
 	int m_endY;
 
+};
+
+class ImageToolsJob : public QObject
+{
+	Q_OBJECT
+public:
+	ImageToolsJob(QString sJobName, QString sInputFilename, QString sOutputFilename)
+	{
+		m_sJobName = sJobName;
+		m_sInputFilename = sInputFilename;
+		m_sOutputFilename = sOutputFilename;
+	}
+	QString m_sJobName;
+	QString m_sInputFilename;
+	QString m_sOutputFilename;
+	bool m_bSuccessful = false;
+
+	virtual void performJob() = 0;
+
+	static void StaticPerformJob(ImageToolsJob* job)
+	{
+		job->performJob();
+	};
+
+};
+
+class JobReEncodeImage : public ImageToolsJob
+{
+	Q_OBJECT
+public:
+	// nCustomEncodingQuality = 1-100, 
+	// m_nFileSizeThresholdToInitiateRecompression = size in bytes
+	JobReEncodeImage(QString sJobName, QString sTextureName, QString sRecompressedFilename, 
+		int nCustomEncodingQuality, QSize sizeCustomImageSize, 
+		bool bRecompressIfFileSizeTooBig, 
+		int nFileSizeThresholdToInitiateRecompression,
+		bool bResizeTextures,
+		QSize sizeTargetTextureSize
+	) : ImageToolsJob(sJobName, sTextureName, sRecompressedFilename)
+	{
+		m_sJobName = sJobName;
+		m_sTextureName = sTextureName; 
+		m_sRecompressedFilename = sRecompressedFilename;
+		m_nCustomEncodingQuality = nCustomEncodingQuality;
+		m_sizeCustomImageSize = sizeCustomImageSize;
+		m_bRecompressIfFileSizeTooBig = bRecompressIfFileSizeTooBig;
+		m_nFileSizeThresholdToInitiateRecompression = nFileSizeThresholdToInitiateRecompression;
+		m_bResizeTextures = bResizeTextures;
+		m_sizeTargetTextureSize = sizeTargetTextureSize;
+	};
+	// settings
+	QString m_sJobName;
+	QString m_sTextureName;
+	QString m_sRecompressedFilename;
+	int m_nCustomEncodingQuality;
+	QSize m_sizeCustomImageSize;
+	bool m_bRecompressIfFileSizeTooBig;
+	int m_nFileSizeThresholdToInitiateRecompression; // size in bytes
+	bool m_bResizeTextures;
+	QSize m_sizeTargetTextureSize;
+
+	virtual void performJob() override;
+
+};
+
+#include <qmap>
+class ImageToolsJobsManager
+{
+public:
+	QMap<QString, ImageToolsJob*> m_JobPool;
+
+	ImageToolsJobsManager() {};
+	~ImageToolsJobsManager() { clearJobs(); };
+	void clearJobs();
+	bool processJobs();
+	bool addJob(ImageToolsJob* job);
 };

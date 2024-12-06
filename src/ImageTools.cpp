@@ -183,3 +183,101 @@ void ImageTools::ConvertImageLinearToRgbMultithreaded(QImage& image)
 
 	QThreadPool::globalInstance()->waitForDone();
 }
+
+#include <dzimagemgr.h>
+#include <qfileinfo.h>
+#include <dzprogress.h>
+
+void JobReEncodeImage::performJob()
+{
+	DzImageMgr* imageMgr = dzApp->getImageMgr();
+	QImage image = imageMgr->loadImage(m_sTextureName);
+	QFileInfo fileInfo(m_sTextureName);
+	QString filestem = fileInfo.fileName();
+	QString fileTypeExtension = fileInfo.suffix().toLower();
+
+	// resize image if needed
+	if (m_sizeCustomImageSize != m_sizeTargetTextureSize ||
+		m_bResizeTextures &&
+		(image.size().width() > m_sizeTargetTextureSize.width() ||
+			image.size().height() > m_sizeTargetTextureSize.height())
+		)
+	{
+		QString sImageOperationMessage = QString(tr("Scaling: ") + filestem + " to " + QString("(%1x%2)").arg(m_sizeCustomImageSize.width()).arg(m_sizeCustomImageSize.height()));
+		dzApp->log(sImageOperationMessage);
+		DzProgress::setCurrentInfo(sImageOperationMessage);
+		image = image.scaled(m_sizeCustomImageSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+	}
+
+	bool bSaveSuccessful = false;
+	bool bCompressMore = false;
+	do {
+		QString sImageOperationMessage = QString(tr("Encoding: ") + filestem + " to " + fileTypeExtension);
+		dzApp->log(sImageOperationMessage);
+		DzProgress::setCurrentInfo(sImageOperationMessage);
+		bSaveSuccessful = image.save(m_sRecompressedFilename, 0, m_nCustomEncodingQuality);
+		// check if there is file size target
+		int nNewFileSize = QFileInfo(m_sRecompressedFilename).size();
+		bCompressMore = false;
+		if (m_bRecompressIfFileSizeTooBig && nNewFileSize > m_nFileSizeThresholdToInitiateRecompression)
+		{
+			// decrease quality
+			if (m_nCustomEncodingQuality > 10) {
+				m_nCustomEncodingQuality -= 5;
+				bCompressMore = true;
+			}
+			// decrease resolution
+			if (m_sizeCustomImageSize.height() > 256 && m_sizeCustomImageSize.width() > 256) {
+				m_sizeCustomImageSize = m_sizeCustomImageSize / 2;
+				QString sImageOperationMessage = QString(tr("Re-Scaling: ") + filestem + " to " + QString("(%1x%2)").arg(m_sizeCustomImageSize.width()).arg(m_sizeCustomImageSize.height()));
+				dzApp->log(sImageOperationMessage);
+				DzProgress::setCurrentInfo(sImageOperationMessage);
+				image = image.scaled(m_sizeCustomImageSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+				bCompressMore = true;
+			}
+		}
+	} while (bCompressMore);
+
+	m_bSuccessful = bSaveSuccessful;
+}
+
+void ImageToolsJobsManager::clearJobs()
+{
+	foreach(ImageToolsJob *job, m_JobPool.values())
+	{
+		job->deleteLater();
+	}
+	m_JobPool.clear();
+}
+
+#include <QtCore>
+#include <QThread>
+#include <QList>
+
+bool ImageToolsJobsManager::processJobs()
+{
+#ifdef __SINGLE_THREAD_DEBUG
+	foreach(JobReEncodeImage *job, m_JobPool.values())
+	{
+		job->performJob();
+	}
+#elif defined(__APPLE__)
+	std::vector<JobReEncodeImage*> jobs;
+	for (JobReEncodeImage* job : m_JobPool.values())
+	{
+		jobs.push_back(job);
+	}
+	QtConcurrent::blockingMap(jobs, JobReEncodeImage::StaticPerformJob);
+#else
+	QtConcurrent::blockingMap(m_JobPool.values(), JobReEncodeImage::StaticPerformJob);
+#endif
+
+	return true;
+}
+
+bool ImageToolsJobsManager::addJob(ImageToolsJob* job)
+{
+	m_JobPool.insert(job->m_sJobName, job);
+
+	return true;
+}

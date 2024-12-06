@@ -106,6 +106,8 @@ DzBridgeAction::DzBridgeAction(const QString& text, const QString& desc) :
 	 m_bEnableLodGeneration = false;
 	 m_bCreateLodGroup = false;
 
+	 m_ImageToolsJobsManager = new ImageToolsJobsManager();
+
 }
 
 DzBridgeAction::~DzBridgeAction()
@@ -2689,11 +2691,47 @@ bool DzBridgeAction::isTemporaryFile(QString sFilename)
 	return false;
 }
 
+QString DzBridgeAction::generateExportAssetFilename(QString sFilename, QString sAssetMaterialName)
+{
+	if (sFilename.isEmpty())
+		return sFilename;
+
+	QString cleanedFilename = sFilename.toLower().replace("\\", "/");
+	QString cleanedTempPath = dzApp->getTempPath().toLower().replace("\\", "/");
+	QString cleanedAssetMaterialName = sAssetMaterialName;
+	cleanedAssetMaterialName.remove(QRegExp("[^A-Za-z0-9_]"));
+
+	QString exportPath = this->m_sRootFolder.replace("\\", "/") + "/" + this->m_sExportSubfolder.replace("\\", "/");
+	QString fileStem = QFileInfo(sFilename).fileName();
+	// DB 2023-Oct-20: add partial path for short filenames
+	QString sNameTest = QFileInfo(sFilename).baseName().remove(QRegExp("[^A-Za-z]")).remove("base").remove("color").remove("normal").remove("roughness").remove("metallic").remove("height").remove("opengl");
+	if (isTemporaryFile(sFilename) == false &&
+		sNameTest.length() < 3 &&
+		QFileInfo(sFilename).baseName().length() < 20)
+	{
+		QStringList filePathArray = cleanedFilename.remove(" ").split("/");
+		int len = filePathArray.count();
+		for (int i = 2; i < 5; i++)
+		{
+			if (i > len) break;
+			fileStem = filePathArray[len - i] + "_" + fileStem;
+		}
+	}
+
+	exportPath += "/ExportTextures/";
+	QDir().mkpath(exportPath);
+	//	QString exportFilename = exportPath + cleanedAssetMaterialName + "_" + fileStem;
+	QString exportFilename = exportPath + fileStem;
+
+	return exportFilename;
+}
+
 QString DzBridgeAction::exportAssetWithDtu(QString sFilename, QString sAssetMaterialName)
 {
 	if (sFilename.isEmpty())
 		return sFilename;
 
+/*
 	QString cleanedFilename = sFilename.toLower().replace("\\", "/");
 	QString cleanedTempPath = dzApp->getTempPath().toLower().replace("\\", "/");
 	QString cleanedAssetMaterialName = sAssetMaterialName;
@@ -2721,6 +2759,9 @@ QString DzBridgeAction::exportAssetWithDtu(QString sFilename, QString sAssetMate
 //	QString exportFilename = exportPath + cleanedAssetMaterialName + "_" + fileStem;
 	QString exportFilename = exportPath + fileStem;
 
+	exportFilename = makeUniqueFilename(exportFilename, sFilename);
+*/
+	QString exportFilename = generateExportAssetFilename(sFilename, sAssetMaterialName);
 	exportFilename = makeUniqueFilename(exportFilename, sFilename);
 
 	if (QFile(sFilename).copy(exportFilename) == true)
@@ -2777,6 +2818,7 @@ unsigned int DzBridgeAction::calcCRC32(QString sFilename)
 	return crc32Result;
 }
 
+// DB NOTES: use sOriginalFilename to check if sTargetFilename is the same file
 // 2023-Oct-23: Method now works (mostly), size file check supplemented with CRC32 as file content hash.
 QString DzBridgeAction::makeUniqueFilename(QString sTargetFilename, QString sOriginalFilename)
 {
@@ -3079,6 +3121,8 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 		// 3. ResizeTextures takes highest priority
 		// 4. RecompressIfFileSizeTooBig is second
 		// 5. Convert non-PNG/JPG to PNG/JPG takes third
+		QString sReEncodedFilename = "";
+		bool bUseReEncodedFilename = false;
 		if (m_bForceReEncoding || m_bResizeTextures || m_bRecompressIfFileSizeTooBig || m_bConvertToPng || m_bConvertToJpg)
 		{
 			DzImageMgr* imageMgr = dzApp->getImageMgr();
@@ -3123,10 +3167,10 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 					image.size().height() > m_qTargetTextureSize.height())
 				)
 			{
-				QString sImageOperationMessage = QString(tr("Scaling: ") + filestem + " to " + QString("(%1x%2)").arg(customImageSize.width()).arg(customImageSize.height()) );
-				dzApp->log(sImageOperationMessage);
-				DzProgress::setCurrentInfo(sImageOperationMessage);
-				image = image.scaled(customImageSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+				//QString sImageOperationMessage = QString(tr("Scaling: ") + filestem + " to " + QString("(%1x%2)").arg(customImageSize.width()).arg(customImageSize.height()) );
+				//dzApp->log(sImageOperationMessage);
+				//DzProgress::setCurrentInfo(sImageOperationMessage);
+				//image = image.scaled(customImageSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
 				bSkip = false;
 			}
 
@@ -3153,71 +3197,77 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 			if (!bSkip)
 			{
 				// finally, save out file with final resized image, quality level and encoding format
-				QString recompressedFilename = cleanedTempPath + "/" + filestem + "." + fileTypeExtension;
-				if (recompressedFilename.split(".").count() > 3)
-				{
-					dzApp->log("WARNING: multiple file extensions possibly detected: " + recompressedFilename);
-				}
-
-				bool bSaveSuccessful = false;
-				bool bCompressMore = false;
-				do {
-					QString sImageOperationMessage = QString(tr("Encoding: ") + filestem + " to " + fileTypeExtension);
-					dzApp->log(sImageOperationMessage);
-					DzProgress::setCurrentInfo(sImageOperationMessage);
-					bSaveSuccessful = image.save(recompressedFilename, 0, customEncodingQuality);
-					// check if there is file size target
-					int nNewFileSize = QFileInfo(recompressedFilename).size();
-					bCompressMore = false;
-					if (m_bRecompressIfFileSizeTooBig && nNewFileSize > m_nFileSizeThresholdToInitiateRecompression)
-					{
-						// decrease quality
-						if (customEncodingQuality > 10) {
-							customEncodingQuality -= 5;
-							bCompressMore = true;
-						}
-						// decrease resolution
-						if (customImageSize.height() > 256 && customImageSize.width() > 256) {
-							customImageSize = customImageSize / 2;
-							QString sImageOperationMessage = QString(tr("Re-Scaling: ") + filestem + " to " + QString("(%1x%2)").arg(customImageSize.width()).arg(customImageSize.height()));
-							dzApp->log(sImageOperationMessage);
-							DzProgress::setCurrentInfo(sImageOperationMessage);
-							image = image.scaled(customImageSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-							bCompressMore = true;
-						} 
-					}
-				} while (bCompressMore);
-
-				if (bSaveSuccessful)
-				{
-					// only perform if save was successful
-					dtuTextureName = TextureName = recompressedFilename;
+				if (m_bExportAllTextures) {
+					sReEncodedFilename = generateExportAssetFilename(TextureName, Node->getLabel() + "_" + Material->getName());
+					sReEncodedFilename += "." + fileTypeExtension;
+					bUseReEncodedFilename = true;
 				}
 				else
 				{
-					dzApp->log("ERROR: saving file failed: " + recompressedFilename);
+					sReEncodedFilename = cleanedTempPath + "/" + filestem + "." + fileTypeExtension;
+				}
+				if (m_bDeferProcessingImageToolsJobs) {
+					// create unique only if using deferred image jobs, copy original to use as reference placeholder
+					sReEncodedFilename = makeUniqueFilename(sReEncodedFilename, TextureName);
+					QFile placeHolder(TextureName);
+					placeHolder.copy(sReEncodedFilename);
+				}
+				else
+				{
+					// if performing jobs immediately, unable to check uniqueness since will be modifying from original
+					// so do nothing and assume filename collisions at this point in the execution are the same file
+				}
+
+				if (sReEncodedFilename.split(".").count() > 3)
+				{
+					dzApp->log("WARNING: multiple file extensions possibly detected: " + sReEncodedFilename);
+				}
+
+				JobReEncodeImage* job = new JobReEncodeImage("myJob" + TextureName, TextureName, sReEncodedFilename,
+					customEncodingQuality, customImageSize, m_bRecompressIfFileSizeTooBig, m_nFileSizeThresholdToInitiateRecompression,
+					m_bResizeTextures, m_qTargetTextureSize);
+				if (m_bDeferProcessingImageToolsJobs) 
+				{
+					m_ImageToolsJobsManager->addJob(job);
+					// prepare re-encoded filename for deferred use
+					bUseReEncodedFilename = true;
+				}
+				else 
+				{
+					job->performJob();
+					if (job->m_bSuccessful) {
+						dtuTextureName = TextureName = sReEncodedFilename;
+					}
+					else {
+						dzApp->log("ERROR: saving file failed: " + sReEncodedFilename);
+					}
+
 				}
 
 			}
-
 		///////////////////////
 		}
 
-
-
-		if (m_bExportAllTextures)
+		if (bUseReEncodedFilename == false)
 		{
-			dtuTextureName = exportAssetWithDtu(TextureName, Node->getLabel() + "_" + Material->getName());
+			if (m_bExportAllTextures)
+			{
+				dtuTextureName = exportAssetWithDtu(TextureName, Node->getLabel() + "_" + Material->getName());
+			}
+			else if (m_bUseRelativePaths)
+			{
+				dtuTextureName = dzApp->getContentMgr()->getRelativePath(TextureName, true);
+			}
+			else if (isTemporaryFile(TextureName))
+			{
+				dtuTextureName = exportAssetWithDtu(TextureName, Node->getLabel() + "_" + Material->getName());
+			}
+			m_mapProcessedFiles.insert(TextureName.toLower(), dtuTextureName);
 		}
-		else if (m_bUseRelativePaths)
+		else
 		{
-			dtuTextureName = dzApp->getContentMgr()->getRelativePath(TextureName, true);
+			m_mapProcessedFiles.insert(TextureName.toLower(), sReEncodedFilename);
 		}
-		else if (isTemporaryFile(TextureName))
-		{
-			dtuTextureName = exportAssetWithDtu(TextureName, Node->getLabel() + "_" + Material->getName());
-		}
-		m_mapProcessedFiles.insert(TextureName.toLower(), dtuTextureName);
 	}
 	else if (!TextureName.isEmpty())
 	{
