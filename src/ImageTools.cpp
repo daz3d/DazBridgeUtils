@@ -257,19 +257,19 @@ void ImageToolsJobsManager::clearJobs()
 bool ImageToolsJobsManager::processJobs()
 {
 #ifdef __SINGLE_THREAD_DEBUG
-	foreach(JobReEncodeImage *job, m_JobPool.values())
+	foreach(ImageToolsJob *job, m_JobPool.values())
 	{
 		job->performJob();
 	}
 #elif defined(__APPLE__)
-	std::vector<JobReEncodeImage*> jobs;
-	for (JobReEncodeImage* job : m_JobPool.values())
+	std::vector<ImageToolsJob*> jobs;
+	foreach (ImageToolsJob* job , m_JobPool.values())
 	{
 		jobs.push_back(job);
 	}
-	QtConcurrent::blockingMap(jobs, JobReEncodeImage::StaticPerformJob);
+	QtConcurrent::blockingMap(jobs, ImageToolsJob::StaticPerformJob);
 #else
-	QtConcurrent::blockingMap(m_JobPool.values(), JobReEncodeImage::StaticPerformJob);
+	QtConcurrent::blockingMap(m_JobPool.values(), ImageToolsJob::StaticPerformJob);
 #endif
 
 	return true;
