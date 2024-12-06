@@ -3231,12 +3231,13 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 					m_ImageToolsJobsManager->addJob(job);
 					// prepare re-encoded filename for deferred use
 					bUseReEncodedFilename = true;
+					dtuTextureName = sReEncodedFilename;
 				}
 				else 
 				{
 					job->performJob();
 					if (job->m_bSuccessful) {
-						dtuTextureName = TextureName = sReEncodedFilename;
+						dtuTextureName = sReEncodedFilename;
 					}
 					else {
 						dzApp->log("ERROR: saving file failed: " + sReEncodedFilename);
@@ -3266,7 +3267,7 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 		}
 		else
 		{
-			m_mapProcessedFiles.insert(TextureName.toLower(), sReEncodedFilename);
+			m_mapProcessedFiles.insert(TextureName.toLower(), dtuTextureName);
 		}
 	}
 	else if (!TextureName.isEmpty())
