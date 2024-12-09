@@ -108,6 +108,24 @@ DzBridgeAction::DzBridgeAction(const QString& text, const QString& desc) :
 
 	 m_ImageToolsJobsManager = new ImageToolsJobsManager();
 
+	 // Create List of Known Intermediate Folder File Extensions
+	 char* acharExtensionList[] = {
+		 "fbx", "dtu",
+		 "py", "pyc", "bat",
+		 "jpg", "jpeg", "png", "bmp", "tif", "gif"
+	 };
+	 int numExtensions = 11;
+	 for (int i = 0; i < numExtensions; i++) {
+		 try {
+			 m_aKnownIntermediateFileExtensionsList += QString(acharExtensionList[i]);
+		 }
+		 catch (...) {
+			 dzApp->log("DEBUG: StringListMaker: end of char array");
+			 break;
+		 }
+		 dzApp->log("DEBUG: StringListMaker: added string: " + m_aKnownIntermediateFileExtensionsList[i]);
+	 }
+
 }
 
 DzBridgeAction::~DzBridgeAction()
@@ -6592,34 +6610,18 @@ bool DzBridgeAction::undoMultiplyTextureValues()
 	return true;
 }
 
-bool DzBridgeAction::deleteDir(QString folderPath)
-{
-	QDir qDir(folderPath);
-	QList<QString> aFolderPaths;
-
-	// Delete all files
-	foreach(QFileInfo fileInfo, QDir(folderPath).entryInfoList())
-	{
-		QString filePath = fileInfo.filePath();
-		if (fileInfo.fileName() == "." || fileInfo.fileName() == "..")
-			continue;
-		if (fileInfo.isDir())
-		{
-			aFolderPaths.push_front(filePath);
-			continue;
-		}
-		qDir.remove(filePath);
-	}
-
-	foreach(QString subFolderPath, aFolderPaths)
-	{
-		deleteDir(subFolderPath);
-	}
-
-	qDir.rmdir(folderPath);
-
-	return true;
-}
+/** DB 2024-12-9
+*   Removing deleteDir from API due to danger of operation.
+*	Needing to use this function within a bridge plugin probably represents
+*	a design flaw in the solution -- consider alternative solutions such as
+*	deleting known hardcoded folders (without using recursion) or deleting
+*	known files.
+*/
+//// recursively delete directory and all its contents
+//bool DzBridgeAction::deleteDir(QString folderPath)
+//{
+// ....
+//}
 
 bool DzBridgeAction::isAssetMorphCompatible(QString sAssetType)
 {
@@ -7562,6 +7564,87 @@ void DzBridgeAction::setAssetType(EAssetType arg_eAssetType)
 	}
 }
 
+// DB 2024-12-09: new CleanIntermediateFolder method to replace the more dangerous deleteDir method
+// This method will delete specific files of a specified type that are contained with an explicitly specified subfolder string
+// that can be resolved into an existing subfolder found within the specified root intermediate folder.  Several safety checks
+// are performed to minimize risk of unintentionally deleting large amoutns of data.
+// Pass "*.*" to clean entire Intermediate Folder
+bool DzBridgeAction::cleanIntermediateSubFolder(QString sSubFolder)
+{
+	bool bResult = false;
+
+	// sanity check
+	if (sSubFolder == "") return false;
+
+	if (m_sRootFolder == "") {
+		if (isInteractiveMode()) {
+			return false;
+		}
+		m_sRootFolder = this->readGuiRootFolder();
+	}
+
+	if (sSubFolder == "*.*") {
+		// clean entire Intermediate Folder
+		// perform sanity check that root folder is not global root and not user documents or other important folder
+		if (DzBridgeTools::IsDangerousPath(m_sRootFolder))
+		{
+			dzApp->log("CRITICAL ERROR: cleanIntermediateSubFolder() can not run because target folder is set to dangerous sPath: " + m_sRootFolder);
+			return false;
+		}
+		dzApp->log("DEBUG: WARNING: cleanIntermediateSubFolder() attempting to clean Intermedediate folder: " + m_sRootFolder);
+		// clean each intermediate subfolder
+		QDir dirRootIntermediateFolder(m_sRootFolder);
+		if (dirRootIntermediateFolder.exists()) {
+			foreach(QFileInfo fi, dirRootIntermediateFolder.entryInfoList())
+			{
+				if (fi.isDir()) {
+					bResult = this->cleanIntermediateSubFolder(fi.baseName());
+				}
+			}
+		}
+		return bResult;
+	}
+	else
+	{
+		QString sSubFolderPath = m_sRootFolder + "/" + sSubFolder;
+		if (DzBridgeTools::IsDangerousPath(sSubFolderPath))
+		{
+			dzApp->log("CRITICAL ERROR: cleanIntermediateSubFolder() can not run because target folder is set to dangerous sPath: " + sSubFolderPath);
+			return false;
+		}
+
+		// clean asset subfolder
+		QDir qdirSubFolder(sSubFolderPath);
+		if (qdirSubFolder.exists() == false)
+		{
+			return false;
+		}
+		dzApp->log("DEBUG: cleanIntermediateSubFolder() attempting to clean Intermedediate subfolder: " + sSubFolderPath);
+		// clean hardcoded folders and known file
+		// delete ExportTextures subfolder
+		bResult = DzBridgeTools::SafeCleanIntermediateSubFolder(
+			sSubFolderPath + "/ExportTextures",
+			m_aKnownIntermediateFileExtensionsList);
+		//// delete scripts subfolder
+		bResult = DzBridgeTools::SafeCleanIntermediateSubFolder(
+			sSubFolderPath + "/scripts/__pycache__",
+			m_aKnownIntermediateFileExtensionsList
+		);
+		bResult = DzBridgeTools::SafeCleanIntermediateSubFolder(
+			sSubFolderPath + "/scripts",
+			m_aKnownIntermediateFileExtensionsList
+		);
+		// clean main asset subfolder
+		bResult = DzBridgeTools::SafeCleanIntermediateSubFolder(
+			sSubFolderPath,
+			m_aKnownIntermediateFileExtensionsList
+		);
+
+	}
+
+	return bResult;
+}
+
 // DB 2024-11-080: Used for Work around to correct Character Morphs using non - standard Object ERC Offset
 bool DzBridgeTools::CalculateRawOffset(const DzNode* pNode, DzVec3 &vOffset)
 {
@@ -7586,6 +7669,98 @@ bool DzBridgeTools::CalculateRawOffset(const DzNode* pNode, DzVec3 &vOffset)
 	vOffset.m_z = rawZ - baseZ;
 
 	return true;
+}
+
+bool DzBridgeTools::IsFileTypeInList(QFileInfo fi, QStringList aExtensionsList) {
+
+
+	QString sExtension = fi.suffix().toLower();
+	if (sExtension.isEmpty() || sExtension == "") {
+		return false;
+	}
+
+	foreach(QString sKnownExtension, aExtensionsList) {
+		if (sExtension == sKnownExtension) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+// aExtensionsList - QStringList of extensions to DELETE
+// sSubFolderPath - QString of full path to subfolder to clean contents and RMDIR
+bool DzBridgeTools::SafeCleanIntermediateSubFolder(QString sSubFolderPath, QStringList aExtensionsToDelete)
+{
+	QDir qdirScripts(sSubFolderPath);
+	if (qdirScripts.exists()) {
+		// remove all known image files within it (nonrecursively)
+		foreach(QFileInfo fi, qdirScripts.entryInfoList())
+		{
+			if (fi.isFile() && DzBridgeTools::IsFileTypeInList(fi, aExtensionsToDelete)) {
+				qdirScripts.remove(fi.filePath());
+			}
+		}
+	}
+	bool bResult = qdirScripts.rmdir(qdirScripts.absolutePath());
+
+	return bResult;
+}
+
+QString DzBridgeTools::CleanTrailingSeparator(QString sFolderPath)
+{
+	QString sResult = sFolderPath;
+	sResult = sResult.replace("\\", "/").toLower();
+
+	while (sResult.endsWith("/") && sResult.length() > 2)
+	{
+		sResult.chop(1);
+	}
+
+	if (sResult == "/") {
+		return "";
+	}
+
+	return sResult;
+}
+
+bool DzBridgeTools::IsDangerousPath(const QString& sPath)
+{
+	if (sPath.isEmpty()) {
+		return true;
+	}
+
+	QDir dir(sPath);
+	// Normalize path
+	QString sNormalizedPath = dir.canonicalPath(); // Removes symbolic links, redundant "." and ".."
+	sNormalizedPath = sNormalizedPath.replace("\\", "/").toLower(); // Normalize directory separators
+
+	// Check common dangerous paths
+	if (sNormalizedPath.isEmpty() ||
+		sNormalizedPath == "/" ||
+		sNormalizedPath == "~" ||
+		sNormalizedPath == QDir::homePath() ||
+		sNormalizedPath == QDir::rootPath() ||
+		sNormalizedPath == QDir::tempPath()) // system temporary directory
+	{
+		return true;
+	}
+
+	// Optionally add platform-specific checks
+#ifdef Q_OS_WIN
+	if (sNormalizedPath == "c:/" || sNormalizedPath == "d:/") {
+		return true;
+	}
+	QStringList sSplit = sNormalizedPath.split(":");
+	if (sSplit.length() == 2) {
+		QString cleanedString = DzBridgeTools::CleanTrailingSeparator(sSplit[1]);
+		if (cleanedString == "/windows") {
+			return true;
+		}
+	}
+#endif
+
+	return false;
 }
 
 

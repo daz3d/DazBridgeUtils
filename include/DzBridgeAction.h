@@ -12,6 +12,7 @@
 
 #include <fbxsdk.h>
 
+class QFileInfo;
 class DzProgress;
 class DzGeometry;
 class DzFigure;
@@ -19,9 +20,10 @@ class DzSkinBinding;
 class DzColorProperty;
 class DzNumericProperty;
 
-class UnitTest_DzBridgeAction;
-
+// from ImageTools library (imagetools.h)
 class ImageToolsJobsManager;
+
+class UnitTest_DzBridgeAction;
 
 #include "dzbridge.h"
 namespace DzBridgeNameSpace
@@ -69,6 +71,10 @@ namespace DzBridgeNameSpace
 	{
 	public:
 		static bool CalculateRawOffset(const DzNode* pNode, DzVec3 &vOffset);
+		static bool IsFileTypeInList(QFileInfo fi, QStringList aExtensionsList);
+		static bool SafeCleanIntermediateSubFolder(QString sSubFolderPath, QStringList aExtensionsToDelete);
+		static bool IsDangerousPath(const QString& sPath);
+		static QString CleanTrailingSeparator(QString sFolderPath);
 	};
 
 	/// <summary>
@@ -483,7 +489,6 @@ namespace DzBridgeNameSpace
 
 		Q_INVOKABLE virtual bool multiplyTextureValues(DzMaterial* Material);
 		Q_INVOKABLE virtual bool undoMultiplyTextureValues();
-		Q_INVOKABLE virtual bool deleteDir(QString folderPath);
 
 		// DB 2023-11-15: Custom Asset Type Support, override these methods to support custom asset types
 		Q_INVOKABLE virtual bool isAssetMorphCompatible(QString sAssetType);
@@ -502,7 +507,9 @@ namespace DzBridgeNameSpace
 
 		Q_INVOKABLE virtual DzError doPromptableObjectBaking();
 
-		
+		Q_INVOKABLE virtual bool cleanIntermediateSubFolder(QString sSubFolder);
+
+		QStringList m_aKnownIntermediateFileExtensionsList;
 
 	private:
 		class MaterialGroupExportOrderMetaData
