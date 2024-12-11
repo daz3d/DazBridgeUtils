@@ -111,7 +111,7 @@ DzBridgeAction::DzBridgeAction(const QString& text, const QString& desc) :
 	 // Create List of Known Intermediate Folder File Extensions
 	 char* acharExtensionList[] = {
 		 "fbx", "dtu",
-		 "py", "pyc", "bat",
+		 "py", "pyc", "bat", "sh",
 		 "jpg", "jpeg", "png", "bmp", "tif", "gif"
 	 };
 	 int numExtensions = 11;
