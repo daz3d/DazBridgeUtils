@@ -27,7 +27,7 @@ var metallicOverlayImagePath = [
 ];
     
 function processArguments() {
-    print("Sanity Checking...");
+//    print("apply_modesty_overlay_aArgs.dsa: Sanity Checking...");
     if (!aArgs || Array.isArray(aArgs) == false) {
         App.log("apply_modesty_overlay_aArgs.dsa, processArguments(): CRITCIAL ERROR: Arguments are not an array; continuing with default values.");
         return false;
@@ -86,7 +86,7 @@ function processArguments() {
 // SubFunction to replace diffuse map with layered texture
 function replaceColorPropertyWithLayeredTexture(material, colorProperty, overlayImagePath) {
     if (!overlayImagePath || overlayImagePath == "") {
-        print("No overlay image path found.");
+//        print("apply_modesty_overlay_aArgs.dsa: No overlay image path found.");
         return;
     }
 
@@ -101,7 +101,7 @@ function replaceColorPropertyWithLayeredTexture(material, colorProperty, overlay
     // Get the current texture map
     var currentTextureMap = colorProperty.getMapValue();
     if (!currentTextureMap) {
-        print("No current texture map found.");
+//        print("apply_modesty_overlay_aArgs.dsa: No current texture map found.");
         return;
     }
 
@@ -140,35 +140,35 @@ function replaceColorPropertyWithLayeredTexture(material, colorProperty, overlay
 // Function to replace the texture map with a layered texture
 function replaceMaterialWithLayeredTextures(material, overlay_index) {
     if (!material) {
-        print("Material is not valid.");
+        print("apply_modesty_overlay_aArgs.dsa: Material is not valid.");
         return;
     }
 
     // Access the "Diffuse Color" property of the material
     var diffuseColor = material.findProperty("Diffuse Color");
     if (!diffuseColor) {
-        print("Material does not have a 'Diffuse Color' property.");
+        print("apply_modesty_overlay_aArgs.dsa: Material does not have a 'Diffuse Color' property.");
     } else {
         replaceColorPropertyWithLayeredTexture(material, diffuseColor, diffuseOverlayImagePath[overlay_index]);
     }
 
     var diffuseColor = material.findProperty("Translucency Color");
     if (!diffuseColor) {
-        print("Material does not have a 'Diffuse Color' property.");
+        print("apply_modesty_overlay_aArgs.dsa: Material does not have a 'Diffuse Color' property.");
     } else {
         replaceColorPropertyWithLayeredTexture(material, diffuseColor, diffuseOverlayImagePath[overlay_index]);
     }
 
     var normalMap = material.findProperty("Normal Map");
     if (!normalMap) {
-        print("Material does not have a 'Normal Map' property.");
+        print("apply_modesty_overlay_aArgs.dsa: Material does not have a 'Normal Map' property.");
     } else {
         replaceColorPropertyWithLayeredTexture(material, normalMap, normalOverlayImagePath[overlay_index]);
     }
 
     var normalMap = material.findProperty("Detail Normal Map");
     if (!normalMap) {
-        print("Material does not have a 'Normal Map' property.");
+        print("apply_modesty_overlay_aArgs.dsa: Material does not have a 'Normal Map' property.");
     } else {
         replaceColorPropertyWithLayeredTexture(material, normalMap, normalOverlayImagePath[overlay_index]);
     }
@@ -189,40 +189,40 @@ function replaceMaterialWithLayeredTextures(material, overlay_index) {
         }
     }
     if (specularMap && specularMap.getMapValue()) {
-        print("DEBUG: applying specular overlay...");
+        print("DEBUG: apply_modesty_overlay_aArgs.dsa: applying specular overlay...");
         replaceColorPropertyWithLayeredTexture(material, specularMap, roughnessOverlayImagePath[overlay_index]);
     }
 
     var metallicMap = material.findProperty("Metallic Weight");
     if (metallicMap && metallicMap.getMapValue()) {
-        print("DEBUG: applying metallic overlay...");
+        print("DEBUG: apply_modesty_overlay_aArgs.dsa: applying metallic overlay...");
         replaceColorPropertyWithLayeredTexture(material, metallicMap, metallicOverlayImagePath[overlay_index]);
     }
 
-    print("Replaced texture map with layered texture for material: " + material.name);
+    print("apply_modesty_overlay_aArgs.dsa: Replaced texture map with layered texture for material: " + material.name);
 }
 
 
 // Modified function to enumerate materials of the currently selected node
 function main() {
     if (!processArguments()) {
-        print("Failed to process arguments, using default values, see Log for details.");
+        print("apply_modesty_overlay_aArgs.dsa: Failed to process arguments, using default values, see Log for details.");
     }
 
     var selectedNode = Scene.getPrimarySelection();
     
     if (selectedNode) {
-        print("Selected Node: " + selectedNode.name);
+        print("apply_modesty_overlay_aArgs.dsa: Selected Node: " + selectedNode.name);
         var object = selectedNode.getObject();
         
         if (object) {
             var shape = object.getCurrentShape();
             var materialCount = shape.getNumMaterials();
-            print("Number of Materials: " + materialCount);
+            print("apply_modesty_overlay_aArgs.dsa: Number of Materials: " + materialCount);
             
             for (var i = 0; i < materialCount; i++) {
                 var material = shape.getMaterial(i);
-                print("Material " + (i + 1) + ": " + material.name);
+//                print("DEBUG: apply_modesty_overlay_aArgs.dsa: Material " + (i + 1) + ": " + material.name);
                 if (material.name == "Body") {
                     // Process selected ColorMaps of each body material
                     replaceMaterialWithLayeredTextures(material, 0);
@@ -235,10 +235,10 @@ function main() {
                 }
             }
         } else {
-            print("The selected node is not a figure or prop with materials.");
+            print("apply_modesty_overlay_aArgs.dsa: The selected node is not a figure or prop with materials.");
         }
     } else {
-        print("No node is currently selected.");
+        print("apply_modesty_overlay_aArgs.dsa: No node is currently selected.");
     }
 }
 

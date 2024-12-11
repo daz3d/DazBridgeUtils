@@ -31,7 +31,7 @@ function resetPoseExceptHandsAndFeet(node, skip) {
             child.name.indexOf("l_foot") != -1 ||
             child.name.indexOf("r_foot") != -1
         )) {
-        	print("DEBUG: skipping: " + child.name);
+        	print("DEBUG: bake_hands_and_feet_nogui.dsa: skipping: " + child.name);
             continue;
         }
         if (child.inherits("DzBone")) {
@@ -42,7 +42,7 @@ function resetPoseExceptHandsAndFeet(node, skip) {
 }
 
 function findMorphProperty(figure, morphName) {
-    print("DEBUG: findMorphProperty: " + figure.name + ", " + morphName);
+    print("DEBUG: bake_hands_and_feet_nogui.dsa: findMorphProperty: " + figure.name + ", " + morphName);
     var obj = figure.getObject();
     if (obj) {
         var modifier = obj.findModifier(morphName);
@@ -74,7 +74,7 @@ function getCachedGeom(figure) {
 }
 
 function generateMorph(figure, geo, morphName) {
-    print("DEBUG: generateMorph: " + figure.name + ", " + morphName);
+    print("DEBUG: bake_hands_and_feet_nogui.dsa: generateMorph: " + figure.name + ", " + morphName);
     var morphLoader = new DzMorphLoader();
     var realMorphName = figure.name + "_" + morphName;
     morphLoader.setMorphName(morphName);
@@ -83,7 +83,7 @@ function generateMorph(figure, geo, morphName) {
     morphLoader.setPreserveExistingDeltas(true);
     morphLoader.setOverwriteExisting(true);
     var logText = morphLoader.createMorphFromMesh(geo, figure, false, true);
-    print("DEBUG: morphLoader: " + logText);
+    print("DEBUG: bake_hands_and_feet_nogui.dsa: morphLoader: " + logText);
 }
 
 function forceUpdateAll(node) {
@@ -110,7 +110,7 @@ function main() {
     // 1. Get selected figure (assuming Genesis 9)
     var figure = Scene.getPrimarySelection();
     if (!figure || !figure.inherits("DzFigure")) {
-        if (figure) print("DEBUG: figure is class: " + figure.className() );
+        if (figure) print("DEBUG: bake_hands_and_feet_nogui.dsa: figure is class: " + figure.className() );
         MessageBox.information("Please select a Genesis 9 figure.", "Error", "OK");
         return;
     }

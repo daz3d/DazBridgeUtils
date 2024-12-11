@@ -19,7 +19,7 @@ function processNode(node) {
 	Scene.selectAllNodes(false);
 	Scene.setPrimarySelection(node);
 
-    print("DEBUG: node object name == " + node.name);
+//    print("DEBUG: generate_texture_parts.dsa: node object name == " + node.name);
 	// Step 2: Load a settings file
 	if (node.name == "Genesis9") {
 		mapTransfer.loadConfiguration(g9body_maptransfer_settings_file);
@@ -50,7 +50,7 @@ function processNode(node) {
 
 function main() {
 	// make output folder if does not exist
-	print("DEBUG: sMapTransferOutputFolder == " + sMapTransferOutputFolder);
+	print("DEBUG: generate_texture_parts.dsa: sMapTransferOutputFolder == " + sMapTransferOutputFolder);
 	var aFiles = [];
 	var sFullFilepath = "";
 	var i = 0;
@@ -95,23 +95,25 @@ function main() {
 	}
 
 	// Check if there's a selected node and it's a figure
+	var childList;
+	var child;
 	var selectedNode = Scene.getPrimarySelection();
 	if (selectedNode && selectedNode.inherits("DzFigure")) {
 		processNode(selectedNode);
-		var childList = selectedNode.getNodeChildren(true);
+		childList = selectedNode.getNodeChildren(true);
 		for (i = 0; i < childList.length; i++) {
-			var child = childList[i];
+			child = childList[i];
 			if (child.inherits("DzFigure")) {
 				processNode(child);
 			}
 
 		}
-	    print("Map transfer operation executed on the selected figure.");
+	    print("generate_texture_parts.dsa: Map transfer operation executed on the selected figure: " + selectedNode.name);
 	    // reset primary selection
 		Scene.selectAllNodes(false);
 	    Scene.setPrimarySelection(selectedNode);
 	} else {
-	    print("Please select a figure to apply the map transfer operation.");
+	    print("generate_texture_parts.dsa: Please select a figure to apply the map transfer operation.");
 	}	
 	
 }

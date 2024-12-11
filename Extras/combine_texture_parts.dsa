@@ -1,17 +1,12 @@
 // DAZ Studio version 4.22.0.15 filetype DAZ Script
 
 (function(){
-var nTextureWidth = 4096;
-var nTextureHeight = 4096;
 
 var sDazTempFolder = App.getTempPath();
 var sMapTransferOutputFolder = sDazTempFolder + "/MapTransfer";
 var sMapTransferInputFolder = sDazTempFolder + "/textureConvert";
-
-var sCombinedDiffuseColorImage = sMapTransferOutputFolder + "/combined diffuse test.png";
-var sCombinedNormalMapImage = sMapTransferOutputFolder + "/combined normal test.png";
-var sCombinedSpecularMapImage = sMapTransferOutputFolder + "/combined specular test.png";
-var sCombinedMetallicMapImage = sMapTransferOutputFolder + "/combined metallic test.png";
+var nTextureWidth = 4096;
+var nTextureHeight = 4096;
 
 // Template Names: "Diffuse Color.png", "Normal Map.png", "Specular Lob 1 Roughness.png", "Dual Lobe Specular Weight.png"
 
@@ -24,14 +19,14 @@ function combineImages(aImageList) {
     var width=nTextureWidth, height=nTextureHeight;
     var format = 5;
     var oImageA = new Image(width, height, format);
-    //print("DEBUG: creating empty image: width = " + oImageA.width + ", height = " + oImageA.height + ", format=" + oImageA.format);
+    //print("DEBUG: combine_texture_parts.dsa: creating empty image: width = " + oImageA.width + ", height = " + oImageA.height + ", format=" + oImageA.format);
     var blank = Color(0, 0, 0, 0);
     oImageA.fill(blank);
     for (var i = 0; i < aImageList.length; i++) {
         var oImageB = new Image();
         if (oImageB.load(aImageList[i])) {
-	        print("Component Image:" + aImageList[i]);
-		    print("DEBUG: width = " + oImageB.width + ", height = " + oImageB.height + ", format=" + oImageB.format);
+	        print("DEBUG: combine_texture_parts.dsa: Component Image:" + aImageList[i]);
+//		    print("DEBUG: combine_texture_parts.dsa: width = " + oImageB.width + ", height = " + oImageB.height + ", format=" + oImageB.format);
 		    if (oImageA.size != oImageB.size) {
 		    	oImageB = oImageB.smoothScale(oImageA.size);
 		    }
@@ -76,37 +71,41 @@ function main() {
     
     // diffuse color
     if (aDiffuseColorImages.length > 0) {
-        print("DEBUG: output = " + sCombinedDiffuseColorImage);
+        var sOutputFilename = sMapTransferOutputFolder + "/combined diffuse texture.png";
+        print("DEBUG: combine_texture_parts.dsa: output = " + sOutputFilename);
         var oCombinedImage = combineImages(aDiffuseColorImages);
-        oCombinedImage.save(sCombinedDiffuseColorImage);
+        oCombinedImage.save(sOutputFilename);
         oCombinedImage.deleteLater();    
     }
 
     // normal
     if (aNormalMapImages.length > 0) {
-        print("DEBUG: output = " + sCombinedNormalMapImage);
+        var sOutputFilename = sMapTransferOutputFolder + "/combined normal texture.png";
+        print("DEBUG: combine_texture_parts.dsa: output = " + sOutputFilename);
         var oCombinedImage = combineImages(aNormalMapImages);
-        oCombinedImage.save(sCombinedNormalMapImage);
+        oCombinedImage.save(sOutputFilename);
         oCombinedImage.deleteLater();
     }
     
     // specular
     if (aSpecularMapImages.length > 0) {
-        print("DEBUG: output = " + sCombinedSpecularMapImage);
+        var sOutputFilename = sMapTransferOutputFolder + "/combined specular texture.png";
+        print("DEBUG: combine_texture_parts.dsa: output = " + sOutputFilename);
         var oCombinedImage = combineImages(aSpecularMapImages);
-        oCombinedImage.save(sCombinedSpecularMapImage);
+        oCombinedImage.save(sOutputFilename);
         oCombinedImage.deleteLater();
     }
 
     // metallic
     if (aMetallicMapImages.length > 0) {
-        print("DEBUG: output = " + sCombinedMetallicMapImage);
+        var sOutputFilename = sMapTransferOutputFolder + "/combined metallic texture.png";
+        print("DEBUG: combine_texture_parts.dsa: output = " + sOutputFilename);
         var oCombinedImage = combineImages(aMetallicMapImages);
-        oCombinedImage.save(sCombinedMetallicMapImage);
+        oCombinedImage.save(sOutputFilename);
         oCombinedImage.deleteLater();
     }
 
-	print("done");
+	print("combine_texture_parts.dsa: done");
 }
 
 main();

@@ -7,15 +7,15 @@
 var sDazTempFolder = App.getTempPath();
 var sMapTransferOutputFolder = sDazTempFolder + "/MapTransfer";
 
-var sCombinedDiffuseColorImage = sMapTransferOutputFolder + "/combined diffuse test.png";
-var sCombinedNormalMapImage = sMapTransferOutputFolder + "/combined normal test.png";
-var sCombinedSpecularMapImage = sMapTransferOutputFolder + "/combined specular test.png";
-var sCombinedMetallicMapImage = sMapTransferOutputFolder + "/combined metallic test.png";
+var sCombinedDiffuseColorImage = sMapTransferOutputFolder + "/combined diffuse texture.png";
+var sCombinedNormalMapImage = sMapTransferOutputFolder + "/combined normal texture.png";
+var sCombinedSpecularMapImage = sMapTransferOutputFolder + "/combined specular texture.png";
+var sCombinedMetallicMapImage = sMapTransferOutputFolder + "/combined metallic texture.png";
 
 function assignCombinedTextures(oNode) {
     if (oNode) {
         if (oNode.inherits("DzFigure")) {
-        	print("DEBUG: node=" + oNode.name);
+        	print("DEBUG: assign_combined_textures.dsa: node=" + oNode.name);
 
             var oObject = oNode.getObject();
             if (oObject) {
@@ -25,7 +25,7 @@ function assignCombinedTextures(oNode) {
                 for (var i = 0; i < nMatCount; i++) {
                     var oMaterial = oShape.getMaterial(i);
                     if (oMaterial) {
-                        print("DEBUG: material=" + oMaterial.name);
+//                        print("DEBUG: assign_combined_textures.dsa: material=" + oMaterial.name);
                         var oDiffuseColorProperty = oMaterial.findProperty("Diffuse Color");
                         if (oDiffuseColorProperty && DzFileInfo(sCombinedDiffuseColorImage).exists()) {
                             oDiffuseColorProperty.setMap(sCombinedDiffuseColorImage);
@@ -40,7 +40,7 @@ function assignCombinedTextures(oNode) {
                             oSpecularMapProperty.getMapValue().getFilename().length > 0 &&
                             DzFileInfo(sCombinedSpecularMapImage).exists()
                             ) {
-							print("DEBUG: setting specular lobe 1 roughness for " + oMaterial.name);
+							print("DEBUG: assign_combined_textures.dsa: setting specular lobe 1 roughness for " + oMaterial.name);
                             oSpecularMapProperty.setMap(sCombinedSpecularMapImage);
                         } else {
 	                        oSpecularMapProperty = oMaterial.findProperty("Dual Lobe Specular Weight");
@@ -49,7 +49,7 @@ function assignCombinedTextures(oNode) {
                                 oSpecularMapProperty.getMapValue().getFilename().length > 0 &&
                                 DzFileInfo(sCombinedSpecularMapImage).exists()
                                 ) {
-								 print("DEBUG: dual lobe specular weight for " + oMaterial.name);
+								 print("DEBUG: assign_combined_textures.dsa: dual lobe specular weight for " + oMaterial.name);
 	                            oSpecularMapProperty.setMap(sCombinedSpecularMapImage);
 	                        } else {
                                 oSpecularMapProperty = oMaterial.findProperty("Dual Lobe Specular Reflectivity");
@@ -58,7 +58,7 @@ function assignCombinedTextures(oNode) {
                                     oSpecularMapProperty.getMapValue().getFilename().length > 0 &&
                                     DzFileInfo(sCombinedSpecularMapImage).exists()
                                     ) {
-                                     print("DEBUG: dual lobe specular weight for " + oMaterial.name);
+                                     print("DEBUG: assign_combined_textures.dsa: dual lobe specular weight for " + oMaterial.name);
                                     oSpecularMapProperty.setMap(sCombinedSpecularMapImage);
                                 }    
                             }
@@ -72,10 +72,10 @@ function assignCombinedTextures(oNode) {
                         var oUVSet = oMaterial.findProperty("UV Set");
                         if (oUVSet) {
                             originalUVSetName = oUVSet.getStringValue();
-                            print("DEBUG: originalUVSetName=" + originalUVSetName);
+//                            print("DEBUG: assign_combined_textures.dsa: originalUVSetName=" + originalUVSetName);
                             oUVSet.setValueFromString("Combined Head And Body");
                             newUVSetName = oUVSet.getStringValue();
-                            print("DEBUG: newUVSetName=" + newUVSetName);
+//                            print("DEBUG: assign_combined_textures.dsa: newUVSetName=" + newUVSetName);
                         }
                     }
     
