@@ -51,17 +51,46 @@ function processNode(node) {
 function main() {
 	// make output folder if does not exist
 	print("DEBUG: sMapTransferOutputFolder == " + sMapTransferOutputFolder);
+	var aFiles = [];
+	var sFullFilepath = "";
+	var i = 0;
+
 	var oDir = new DzDir(sMapTransferOutputFolder);
-	if (!oDir.exists) {
-		print("DEBUG: creating output folder: " + sMapTransferOutputFolder);
+	if (!oDir.exists()) {
+		print("DEBUG: generate_texture_parts.dsa: creating output folder: " + sMapTransferOutputFolder);
 		oDir.mkpath(sMapTransferOutputFolder);
 	} else {
 		// clear the folder
-		print("DEBUG: clearing output folder: " + sMapTransferOutputFolder);
-		var aFiles = oDir.getFilesFromDir(["*.*"], true);
-		for (var i = 0; i < aFiles.length; i++) {
-			print("DEBUG: deleting " + aFiles[i]);
-			oDir.remove(aFiles[i]);
+		if (typeof(oDir.entryListRecurse) == "function") {
+			print("DEBUG: generate_texture_parts.dsa: DzDir::entryListRecurse(): cleaning output folder: " + sMapTransferOutputFolder);
+			aFiles = oDir.entryListRecurse(["*.png", "*.jpg"], DzDir.Files | DzDir.NoDotAndDotDot);
+			for (i = 0; i < aFiles.length; i++) {
+				sFullFilepath = sMapTransferOutputFolder + "/" + aFiles[i];
+				if (
+					(sFullFilepath.toLowerCase().indexOf(sMapTransferOutputFolder.toLowerCase()) != -1) &&
+					(sFullFilepath.toLowerCase().endsWith(".png") || sFullFilepath.toLowerCase().endsWith(".jpg")) 
+					)
+				{
+					print("DEBUG: generate_texture_parts.dsa: deleting " + sFullFilepath);
+					oDir.remove(sFullFilepath);	
+				}
+			}
+		}
+		else 
+		{
+			print("DEBUG: generate_texture_parts.dsa: DzDir::getFilesFromDir(): cleaning output folder: " + sMapTransferOutputFolder);
+			aFiles = oDir.getFilesFromDir(["*.png", "*.jpg"], false);
+			for (i = 0; i < aFiles.length; i++) {
+				sFullFilepath = aFiles[i];
+				if (
+					(sFullFilepath.toLowerCase().indexOf(sMapTransferOutputFolder.toLowerCase()) != -1) &&
+					(sFullFilepath.toLowerCase().endsWith(".png") || sFullFilepath.toLowerCase().endsWith(".jpg")) 
+					)
+				{
+					print("DEBUG: generate_texture_parts.dsa: deleting " + sFullFilepath);
+					oDir.remove(sFullFilepath);	
+				}
+			}
 		}
 	}
 
