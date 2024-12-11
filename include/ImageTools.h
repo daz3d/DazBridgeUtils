@@ -4,7 +4,7 @@
 #include <QColor>
 #include <QThreadPool>
 #include <QRunnable>
-
+#include <cmath>
 
 class DzProgress;
 class QThread;
@@ -164,7 +164,7 @@ public:
 	double linearToRgb(double linear, double gamma=2.2) {
 		double rgb;
 
-		rgb = pow(linear, 1 / gamma);
+		rgb = std::pow(linear, 1 / gamma);
 
 		return rgb;
 	}
