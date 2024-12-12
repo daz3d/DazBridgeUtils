@@ -7567,7 +7567,7 @@ void DzBridgeAction::setAssetType(EAssetType arg_eAssetType)
 // DB 2024-12-09: new CleanIntermediateFolder method to replace the more dangerous deleteDir method
 // This method will delete specific files of a specified type that are contained with an explicitly specified subfolder string
 // that can be resolved into an existing subfolder found within the specified root intermediate folder.  Several safety checks
-// are performed to minimize risk of unintentionally deleting large amoutns of data.
+// are performed to minimize risk of unintentionally deleting large amounts of data.
 // Pass "*.*" to clean entire Intermediate Folder
 bool DzBridgeAction::cleanIntermediateSubFolder(QString sSubFolder)
 {
@@ -7591,7 +7591,7 @@ bool DzBridgeAction::cleanIntermediateSubFolder(QString sSubFolder)
 			dzApp->log("CRITICAL ERROR: cleanIntermediateSubFolder() can not run because target folder is set to dangerous sPath: " + m_sRootFolder);
 			return false;
 		}
-		dzApp->log("DEBUG: WARNING: cleanIntermediateSubFolder() attempting to clean Intermedediate folder: " + m_sRootFolder);
+		dzApp->log("DEBUG: WARNING: cleanIntermediateSubFolder() attempting to clean Intermediate folder: " + m_sRootFolder);
 		// clean each intermediate subfolder
 		QDir dirRootIntermediateFolder(m_sRootFolder);
 		if (dirRootIntermediateFolder.exists()) {
@@ -7692,9 +7692,13 @@ bool DzBridgeTools::IsFileTypeInList(QFileInfo fi, QStringList aExtensionsList) 
 // sSubFolderPath - QString of full path to subfolder to clean contents and RMDIR
 bool DzBridgeTools::SafeCleanIntermediateSubFolder(QString sSubFolderPath, QStringList aExtensionsToDelete)
 {
+	if (IsDangerousPath(sSubFolderPath)) {
+		return false;
+	}
+
 	QDir qdirScripts(sSubFolderPath);
 	if (qdirScripts.exists()) {
-		// remove all known image files within it (nonrecursively)
+		// remove all known intermediate file types within it (nonrecursively)
 		foreach(QFileInfo fi, qdirScripts.entryInfoList())
 		{
 			if (fi.isFile() && DzBridgeTools::IsFileTypeInList(fi, aExtensionsToDelete)) {
