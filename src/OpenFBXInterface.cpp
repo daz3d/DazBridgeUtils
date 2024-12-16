@@ -18,6 +18,8 @@
 #endif
 #include <fbxsdk.h>
 
+#include <dzapp.h>
+
 #include "OpenFBXInterface.h"
 
 OpenFBXInterface* OpenFBXInterface::singleton = nullptr;
@@ -179,8 +181,35 @@ bool OpenFBXInterface::LoadScene(FbxScene* pScene, QString sFilename)
 	{
 		m_ErrorString = QString(pImporter->GetStatus().GetErrorString());
 		m_ErrorCode = pImporter->GetStatus().GetCode();
-		pImporter->Destroy();
-		return false;
+		if (m_ErrorCode == fbxsdk::FbxStatus::EStatusCode::eFailure) 
+		{
+			// wait 1 second and retry
+			QString sErrorMessage = QString("OpenFbxInterface()::LoadScene(): FbxImporter::Initialize(%1) failed. [EStatusCode=%2]").arg(sFilename).arg(m_ErrorCode);
+#ifdef DAZ_APP_H
+			dzApp->log("ERROR: DzBridge: " + sErrorMessage + " - retrying after 1 second wait....");
+#endif
+			int nSleepTimeMs = 1000; // 1000 ms
+#ifdef __APPLE__
+			struct timespec ts = { nSleepTimeMs / 1000, (nSleepTimeMs % 1000) * 1000 * 1000 };
+			nanosleep(&ts, NULL);
+#else
+			 _sleep(nSleepTimeMs);
+#endif
+			if (pImporter->Initialize(sFilename.toUtf8().data(), -1, m_fbxIOSettings) == false)
+			{
+				m_ErrorString = QString(pImporter->GetStatus().GetErrorString());
+				m_ErrorCode = pImporter->GetStatus().GetCode();
+				pImporter->Destroy();
+				return false;
+			}
+			m_ErrorCode = 0;
+			m_ErrorString = "";
+		}
+		else 
+		{
+			pImporter->Destroy();
+			return false;
+		}
 	}
 
 	if (pImporter->IsFBX() == false)
