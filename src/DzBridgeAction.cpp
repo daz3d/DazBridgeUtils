@@ -2939,8 +2939,9 @@ void DzBridgeAction::writeAllMaterials(DzNode* Node, DzJsonWriter& Writer, QText
 
 	if (!bRecursive)
 	{
-//		m_aProcessedFiles.clear();
-		m_mapProcessedFiles.clear();
+		if (m_nNonInteractiveMode != eNonInteractiveMode::ScriptMode) {
+			m_mapProcessedFiles.clear();
+		}
 		Writer.startMemberArray("Materials", true);
 	}
 
@@ -3140,6 +3141,9 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 		// 4. RecompressIfFileSizeTooBig is second
 		// 5. Convert non-PNG/JPG to PNG/JPG takes third
 		QString sReEncodedFilename = "";
+		// bUseReEncodedFilename is the flag used below to use the ReEncodedFilename string without doing any other operations upon it.
+		// This is necessary for deferred operations where the path is invalid until later in the pipeline, so nothing else can be done
+		// until the path becomes valid.
 		bool bUseReEncodedFilename = false;
 		if (m_bForceReEncoding || m_bResizeTextures || m_bRecompressIfFileSizeTooBig || m_bConvertToPng || m_bConvertToJpg)
 		{
@@ -3267,26 +3271,30 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 		///////////////////////
 		}
 
+		// DB 2024-12-16: NB: dtuTexture is initialized to be used as a proxy for TextureName above.  it may be redirected
+		// from TextureNme by above rescaling/re-encoding operations.  Therefore, dtueTextureName defines the current active
+		// instance of TextureName after any image processing operation.
 		if (bUseReEncodedFilename == false)
 		{
 			if (m_bExportAllTextures)
 			{
-				dtuTextureName = exportAssetWithDtu(TextureName, Node->getLabel() + "_" + Material->getName());
+				// use dtuTexture as source instead of TextureName since TextureName may already be redirected by above operations
+				dtuTextureName = exportAssetWithDtu(dtuTextureName, Node->getLabel() + "_" + Material->getName());
 			}
 			else if (m_bUseRelativePaths)
 			{
-				dtuTextureName = dzApp->getContentMgr()->getRelativePath(TextureName, true);
+				// use dtuTexture as source instead of TextureName since TextureName may already be redirected by above operations
+				dtuTextureName = dzApp->getContentMgr()->getRelativePath(dtuTextureName, true);
 			}
-			else if (isTemporaryFile(TextureName))
+			else if (isTemporaryFile(dtuTextureName))
 			{
-				dtuTextureName = exportAssetWithDtu(TextureName, Node->getLabel() + "_" + Material->getName());
+				// use dtuTexture as source instead of TextureName since TextureName may already be redirected by above operations
+				dtuTextureName = exportAssetWithDtu(dtuTextureName, Node->getLabel() + "_" + Material->getName());
 			}
-			m_mapProcessedFiles.insert(TextureName.toLower(), dtuTextureName);
 		}
-		else
-		{
-			m_mapProcessedFiles.insert(TextureName.toLower(), dtuTextureName);
-		}
+		// This command maps the original TextureName to the current active redirected image filepath
+		m_mapProcessedFiles.insert(TextureName.toLower(), dtuTextureName);
+
 	}
 	else if (!TextureName.isEmpty())
 	{
@@ -6688,7 +6696,9 @@ bool DzBridgeAction::isInteractiveMode()
 // DB 2024-08-29: Convenience function for exporting full scene using Raw Environment Export
 void DzBridgeAction::writeSceneMaterials(DzJsonWriter& Writer, QTextStream* pCSVstream)
 {
-	m_mapProcessedFiles.clear();
+	if (m_nNonInteractiveMode != eNonInteractiveMode::ScriptMode) {
+		m_mapProcessedFiles.clear();
+	}
 	Writer.startMemberArray("Materials", true);
 
 	DzNodeList rootNodes = BuildRootNodeList();
