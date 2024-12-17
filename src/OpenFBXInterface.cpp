@@ -181,7 +181,7 @@ bool OpenFBXInterface::LoadScene(FbxScene* pScene, QString sFilename)
 	{
 		m_ErrorString = QString(pImporter->GetStatus().GetErrorString());
 		m_ErrorCode = pImporter->GetStatus().GetCode();
-		if (m_ErrorCode == fbxsdk::FbxStatus::EStatusCode::eFailure) 
+		if (m_ErrorCode == FbxStatus::EStatusCode::eFailure) 
 		{
 			// wait 1 second and retry
 			QString sErrorMessage = QString("OpenFbxInterface()::LoadScene(): FbxImporter::Initialize(%1) failed. [EStatusCode=%2]").arg(sFilename).arg(m_ErrorCode);
