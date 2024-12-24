@@ -222,6 +222,13 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE static bool BakeRigidFollowNodes(QScopedPointer<DzScript>& Script, QString sScriptPath = "");
 		Q_INVOKABLE static bool InstallEmbeddedArchive(QString sArchiveFilename, QString sDestinationPath);
 
+		Q_INVOKABLE virtual int getBakeInstancesMode() { return (int) m_eBakeInstancesMode; }
+		Q_INVOKABLE virtual void setBakeInstancesMode(int arg) { m_eBakeInstancesMode = (EBakeMode) arg; }
+		Q_INVOKABLE virtual int getBakePivotPointsMode() { return (int) m_eBakePivotPointsMode; }
+		Q_INVOKABLE virtual void setBakePivotPointsMode(int arg) { m_eBakePivotPointsMode = (EBakeMode) arg; }
+		Q_INVOKABLE virtual int getBakeRigidFollowNodesMode() { return (int) m_eBakeRigidFollowNodesMode; }
+		Q_INVOKABLE virtual void setBakeRigidFollowNodesMode(int arg) { m_eBakeRigidFollowNodesMode = (EBakeMode) arg; }
+
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo

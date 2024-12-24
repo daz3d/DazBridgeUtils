@@ -4159,40 +4159,40 @@ QMessageBox::Yes);
 			m_bBakeRefractionWeight = BridgeDialog->getBakeRefractionWeight();
 
 		}
-	}
 
-	// Object Baking options
-	QString sBakeInstancesMode = BridgeDialog->getBakeInstances();
-	if (sBakeInstancesMode == "always") {
-		m_eBakeInstancesMode = EBakeMode::AlwaysBake;
-	}
-	else if (sBakeInstancesMode == "ask") {
-		m_eBakeInstancesMode = EBakeMode::Ask;
-	}
-	else if (sBakeInstancesMode == "never") {
-		m_eBakeInstancesMode = EBakeMode::NeverBake;
-	}
-	QString sBakePivotPointsMode = BridgeDialog->getBakePivotPoints();
-	if (sBakePivotPointsMode == "always") {
-		m_eBakePivotPointsMode = EBakeMode::AlwaysBake;
-	}
-	else if (sBakePivotPointsMode == "ask") {
-		m_eBakePivotPointsMode = EBakeMode::Ask;
-	}
-	else if (sBakePivotPointsMode == "never") {
-		m_eBakePivotPointsMode = EBakeMode::NeverBake;
-	}
-	QString sBakeRigidFollowNodesMode = BridgeDialog->getBakeRigidFollowNodes();
-	if (sBakeRigidFollowNodesMode == "always") {
-		m_eBakeRigidFollowNodesMode = EBakeMode::AlwaysBake;
-	}
-	else if (sBakeRigidFollowNodesMode == "ask") {
-		m_eBakeRigidFollowNodesMode = EBakeMode::Ask;
-	}
-	else if (sBakeRigidFollowNodesMode == "never") {
-		m_eBakeRigidFollowNodesMode = EBakeMode::NeverBake;
-	}
+		// Object Baking options
+		QString sBakeInstancesMode = BridgeDialog->getBakeInstances();
+		if (sBakeInstancesMode == "always") {
+			m_eBakeInstancesMode = EBakeMode::AlwaysBake;
+		}
+		else if (sBakeInstancesMode == "ask") {
+			m_eBakeInstancesMode = EBakeMode::Ask;
+		}
+		else if (sBakeInstancesMode == "never") {
+			m_eBakeInstancesMode = EBakeMode::NeverBake;
+		}
+		QString sBakePivotPointsMode = BridgeDialog->getBakePivotPoints();
+		if (sBakePivotPointsMode == "always") {
+			m_eBakePivotPointsMode = EBakeMode::AlwaysBake;
+		}
+		else if (sBakePivotPointsMode == "ask") {
+			m_eBakePivotPointsMode = EBakeMode::Ask;
+		}
+		else if (sBakePivotPointsMode == "never") {
+			m_eBakePivotPointsMode = EBakeMode::NeverBake;
+		}
+		QString sBakeRigidFollowNodesMode = BridgeDialog->getBakeRigidFollowNodes();
+		if (sBakeRigidFollowNodesMode == "always") {
+			m_eBakeRigidFollowNodesMode = EBakeMode::AlwaysBake;
+		}
+		else if (sBakeRigidFollowNodesMode == "ask") {
+			m_eBakeRigidFollowNodesMode = EBakeMode::Ask;
+		}
+		else if (sBakeRigidFollowNodesMode == "never") {
+			m_eBakeRigidFollowNodesMode = EBakeMode::NeverBake;
+		}
 
+	}
 
 	return true;
 }
@@ -5909,9 +5909,9 @@ DzNodeList DzBridgeAction::BuildRootNodeList(bool bUnhideNodes)
 		DzNode* node = qobject_cast<DzNode*>(nodeListElement);
 		if (node)
 		{
-			if (!node->isVisible() && node->isRootNode())
+			if (bUnhideNodes)
 			{
-				if (bUnhideNodes) 
+				if (!node->isVisible() && node->isRootNode())
 				{
 					node->setVisible(true);
 					auto children = node->getNodeChildren(true);
