@@ -5449,7 +5449,12 @@ void DzBridgeAction::writeHeadTailData(DzNode* Node, DzJsonWriter& writer)
 	}
 
 	// Calculate Bone Offset (aka ERC y-translate offset)
-	DzVec3 vecBoneOffset = calculateBoneOffset(qobject_cast<DzBone*>(aBoneList[0]));
+	DzVec3 vecBoneOffset(0, 0, 0);
+	if (aBoneList.length() <= 0) {
+		dzApp->log("DazBridge: ERROR: DzSkeleton for Node: " + Node->getName() + ", has no bones.  Using (0,0,0) for bone offset in HeadTailData of DTU.");
+	} else {
+		vecBoneOffset = calculateBoneOffset(qobject_cast<DzBone*>(aBoneList[0]));
+	}
 
 	double nSkeletonScale = pSkeleton->getScaleControl()->getValue();
 
