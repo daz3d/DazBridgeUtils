@@ -217,9 +217,9 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE static bool DetectInstancesInScene();
 		Q_INVOKABLE static bool DetectCustomPivotsInScene();
 		Q_INVOKABLE static bool DetectRigidFollowNodes();
-		Q_INVOKABLE static bool BakePivots(QScopedPointer<DzScript>& Script);
-		Q_INVOKABLE static bool BakeInstances(QScopedPointer<DzScript>& Script);
-		Q_INVOKABLE static bool BakeRigidFollowNodes(QScopedPointer<DzScript>& Script);
+		Q_INVOKABLE static bool BakePivots(QScopedPointer<DzScript>& Script, QString sScriptPath="");
+		Q_INVOKABLE static bool BakeInstances(QScopedPointer<DzScript>& Scrip, QString sScriptPath = "");
+		Q_INVOKABLE static bool BakeRigidFollowNodes(QScopedPointer<DzScript>& Script, QString sScriptPath = "");
 		Q_INVOKABLE static bool InstallEmbeddedArchive(QString sArchiveFilename, QString sDestinationPath);
 
 	protected:
@@ -510,6 +510,8 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool cleanIntermediateSubFolder(QString sSubFolder);
 
 		QStringList m_aKnownIntermediateFileExtensionsList;
+
+		QString m_sEmbeddedFolderPath = ":/DazBridge";
 
 	private:
 		class MaterialGroupExportOrderMetaData

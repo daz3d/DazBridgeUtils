@@ -7283,14 +7283,21 @@ bool DzBridgeAction::DetectCustomPivotsInScene()
 	return false;
 }
 
-bool DzBridgeAction::BakePivots(QScopedPointer<DzScript>& Script)
+bool DzBridgeAction::BakePivots(QScopedPointer<DzScript>& Script, QString sScriptPath)
 {
 	bool bResult;
 	bool bReplace = false;
 	QString sScriptFilename = "bake_all_pivots_nogui.dsa";
 	QString sEmbeddedFolderPath = ":/DazBridge";
 	QString sEmbeddedFilepath = sEmbeddedFolderPath + "/" + sScriptFilename;
+	if (sScriptPath != "") {
+		sEmbeddedFilepath = sScriptPath;
+	}
 	QFile srcFile(sEmbeddedFilepath);
+	if (srcFile.exists() == false) {
+		dzApp->log(tr("DzBridge: ERROR: BakePivots() Invalid Script Path: ") + sScriptFilename);
+		return false;
+	}
 	QString sTempFilepath = dzApp->getTempPath() + "/" + sScriptFilename;
 	bResult = DZ_BRIDGE_NAMESPACE::DzBridgeAction::copyFile(&srcFile, &sTempFilepath, bReplace);
 	srcFile.close();
@@ -7316,14 +7323,21 @@ bool DzBridgeAction::BakePivots(QScopedPointer<DzScript>& Script)
 	return bResult;
 }
 
-bool DzBridgeAction::BakeInstances(QScopedPointer<DzScript>& Script)
+bool DzBridgeAction::BakeInstances(QScopedPointer<DzScript>& Script, QString sScriptPath)
 {
 	bool bResult;
 	bool bReplace = false;
 	QString sScriptFilename = "bake_all_instances_nogui.dsa";
 	QString sEmbeddedFolderPath = ":/DazBridge";
 	QString sEmbeddedFilepath = sEmbeddedFolderPath + "/" + sScriptFilename;
+	if (sScriptPath != "") {
+		sEmbeddedFilepath = sScriptPath;
+	}
 	QFile srcFile(sEmbeddedFilepath);
+	if (srcFile.exists() == false) {
+		dzApp->log(tr("DzBridge: ERROR: BakeInstances() Invalid Script Path: ") + sScriptFilename);
+		return false;
+	}
 	QString sTempFilepath = dzApp->getTempPath() + "/" + sScriptFilename;
 	bResult = DZ_BRIDGE_NAMESPACE::DzBridgeAction::copyFile(&srcFile, &sTempFilepath, bReplace);
 	srcFile.close();
@@ -7366,20 +7380,27 @@ bool DzBridgeAction::DetectRigidFollowNodes()
 
 }
 
-bool DzBridgeAction::BakeRigidFollowNodes(QScopedPointer<DzScript> &Script)
+bool DzBridgeAction::BakeRigidFollowNodes(QScopedPointer<DzScript> &Script, QString sScriptPath)
 {
 	bool bResult;
 	bool bReplace = false;
 	QString sScriptFilename = "bake_rfn_nogui.dsa";
 	QString sEmbeddedFolderPath = ":/DazBridge";
 	QString sEmbeddedFilepath = sEmbeddedFolderPath + "/" + sScriptFilename;
+	if (sScriptPath != "") {
+		sEmbeddedFilepath = sScriptPath;
+	}
 	QFile srcFile(sEmbeddedFilepath);
+	if (srcFile.exists() == false) {
+		dzApp->log(tr("DzBridge: ERROR: BakeRigidFollowNodes() Invalid Script Path: ") + sScriptFilename);
+		return false;
+	}
 	QString sTempFilepath = dzApp->getTempPath() + "/" + sScriptFilename;
 	bResult = DZ_BRIDGE_NAMESPACE::DzBridgeAction::copyFile(&srcFile, &sTempFilepath, bReplace);
 	srcFile.close();
 	if (!bResult)
 	{
-		dzApp->log(tr("DzBridge: ERROR: BakePivotsAndInstances() Error occured while trying to copy script to temp folder: ") + sTempFilepath);
+		dzApp->log(tr("DzBridge: ERROR: BakeRigidFollowNodes() Error occured while trying to copy script to temp folder: ") + sTempFilepath);
 	}
 
 //	DzScript* Script = new DzScript();
@@ -7387,7 +7408,7 @@ bool DzBridgeAction::BakeRigidFollowNodes(QScopedPointer<DzScript> &Script)
 
 	bResult = Script->loadFromFile(sTempFilepath);
 	if (!bResult) {
-		dzApp->log(tr("DzBridge: CRITICAL ERROR: BakePivotsAndInstances() Error occured while trying to load script file: ") + sTempFilepath + ", aborting script.");
+		dzApp->log(tr("DzBridge: CRITICAL ERROR: BakeRigidFollowNodes() Error occured while trying to load script file: ") + sTempFilepath + ", aborting script.");
 		return false;
 	}
 
@@ -7473,7 +7494,9 @@ You may also Abort the transfer operation.").arg(sDetected);
 		if ((m_eBakeInstancesMode == DZ_BRIDGE_NAMESPACE::EBakeMode::AlwaysBake) ||
 			(m_eBakeInstancesMode == DZ_BRIDGE_NAMESPACE::EBakeMode::Ask && userChoice == QMessageBox::Yes))
 		{
-			BakeInstances(Script);
+			QString sScriptFilename = "bake_all_instances_nogui.dsa";
+			QString sEmbeddedFilepath = m_sEmbeddedFolderPath + "/" + sScriptFilename;
+			BakeInstances(Script, sEmbeddedFilepath);
 		}
 	}
 	if (bCustomPivotsDetected && m_eBakePivotPointsMode != DZ_BRIDGE_NAMESPACE::EBakeMode::NeverBake)
@@ -7481,7 +7504,9 @@ You may also Abort the transfer operation.").arg(sDetected);
 		if ((m_eBakePivotPointsMode == DZ_BRIDGE_NAMESPACE::EBakeMode::AlwaysBake) ||
 			(m_eBakePivotPointsMode == DZ_BRIDGE_NAMESPACE::EBakeMode::Ask && userChoice == QMessageBox::Yes))
 		{
-			BakePivots(Script);
+			QString sScriptFilename = "bake_all_pivots_nogui.dsa";
+			QString sEmbeddedFilepath = m_sEmbeddedFolderPath + "/" + sScriptFilename;
+			BakePivots(Script, sEmbeddedFilepath);
 		}
 	}
 	if (bRigidFollowNodesDetected && m_eBakeRigidFollowNodesMode != DZ_BRIDGE_NAMESPACE::EBakeMode::NeverBake)
@@ -7489,7 +7514,9 @@ You may also Abort the transfer operation.").arg(sDetected);
 		if ((m_eBakeRigidFollowNodesMode == DZ_BRIDGE_NAMESPACE::EBakeMode::AlwaysBake) ||
 			(m_eBakeRigidFollowNodesMode == DZ_BRIDGE_NAMESPACE::EBakeMode::Ask && userChoice == QMessageBox::Yes))
 		{
-			BakeRigidFollowNodes(Script);
+			QString sScriptFilename = "bake_rfn_nogui.dsa";
+			QString sEmbeddedFilepath = m_sEmbeddedFolderPath + "/" + sScriptFilename;
+			BakeRigidFollowNodes(Script, sEmbeddedFilepath);
 		}
 	}
 
