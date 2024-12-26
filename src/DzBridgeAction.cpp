@@ -3129,177 +3129,15 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 	}
 
 	QString dtuTextureName = TextureName;
-//	if ( !TextureName.isEmpty() && m_aProcessedFiles.contains(TextureName, Qt::CaseInsensitive)==false)
 	if (!TextureName.isEmpty() && m_mapProcessedFiles.contains(TextureName.toLower()) == false)
 	{
-
-		// DB, 2023-10-27: New integrated resizing/re-encoding integrated save pathway
-		// Execution Flow:
-		// 1. Check if any re-encoding operation is enabled (m_bResizeTextures || m_bRecompressIfFileSizeTooBig || m_bConverToPng || m_bConverToJpg)
-		// 2. If so then use the following order of operations:
-		// 3. ResizeTextures takes highest priority
-		// 4. RecompressIfFileSizeTooBig is second
-		// 5. Convert non-PNG/JPG to PNG/JPG takes third
-		QString sReEncodedFilename = "";
-		// bUseReEncodedFilename is the flag used below to use the ReEncodedFilename string without doing any other operations upon it.
-		// This is necessary for deferred operations where the path is invalid until later in the pipeline, so nothing else can be done
-		// until the path becomes valid.
-		bool bUseReEncodedFilename = false;
-		if (m_bForceReEncoding || m_bResizeTextures || m_bRecompressIfFileSizeTooBig || m_bConvertToPng || m_bConvertToJpg)
-		{
-			DzImageMgr* imageMgr = dzApp->getImageMgr();
-			QImage image = imageMgr->loadImage(TextureName);
-			QString cleanedTempPath = dzApp->getTempPath().toLower().replace("\\", "/");
-			QFileInfo fileInfo(TextureName);
-			QString filestem = fileInfo.fileName();
-			QString fileTypeExtension = fileInfo.suffix().toLower();
-			int customEncodingQuality = 95;
-			QSize customImageSize = m_qTargetTextureSize;
-			bool bHasAlpha = image.hasAlphaChannel();
-			bool bSkip = true;
-
-			if (m_bForceReEncoding) bSkip = false;
-			if (fileTypeExtension == "jpeg") fileTypeExtension = "jpg";
-			if (fileTypeExtension == "jpg") customEncodingQuality = 95;
-			if (fileTypeExtension == "png") customEncodingQuality = 75;
-
-			// adjust on target quality/compression level if needed
-			if (m_bRecompressIfFileSizeTooBig &&
-				(QFileInfo(TextureName).size() > m_nFileSizeThresholdToInitiateRecompression)
-				)
-			{
-				fileTypeExtension = "jpg";
-				if (bHasAlpha && m_bConvertToPng) // default to jpg, unless png=true and jpg=false
-					fileTypeExtension = "png";
-				// if image.size is already <= m_qTargetTextureSize, then reduce even further
-				if (image.size().width() <= m_qTargetTextureSize.width() &&
-					image.size().height() <= m_qTargetTextureSize.height())
-				{
-					customImageSize = m_qTargetTextureSize / 2;
-				}
-				// decrease encoding quality if file was originally JPG, note: check against original name/ext
-				customEncodingQuality -= 25;
-				bSkip = false;
-			}
-
-			// resize image if needed
-			if (customImageSize != m_qTargetTextureSize ||
-					m_bResizeTextures && 
-					(image.size().width() > m_qTargetTextureSize.width() ||
-					image.size().height() > m_qTargetTextureSize.height())
-				)
-			{
-				//QString sImageOperationMessage = QString(tr("Scaling: ") + filestem + " to " + QString("(%1x%2)").arg(customImageSize.width()).arg(customImageSize.height()) );
-				//dzApp->log(sImageOperationMessage);
-				//DzProgress::setCurrentInfo(sImageOperationMessage);
-				//image = image.scaled(customImageSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
-				bSkip = false;
-			}
-
-			// decide on target encoding
-			if (m_bConvertToPng &&
-					(fileTypeExtension.compare("png", Qt::CaseInsensitive) != 0)
-				)
-			{
-				fileTypeExtension = "png";
-				bSkip = false;
-			}
-
-			// decide on target encoding (JPG will override PNG above)
-			if (m_bConvertToJpg &&
-					(fileTypeExtension.compare("jpg", Qt::CaseInsensitive) != 0)
-				)
-			{
-				fileTypeExtension = "jpg";
-				if (m_bConvertToPng && bHasAlpha) // png+alpha takes priority over jpg
-					fileTypeExtension = "png";
-				bSkip = false;
-			}
-
-			if (!bSkip)
-			{
-				// finally, save out file with final resized image, quality level and encoding format
-				if (m_bExportAllTextures) {
-					sReEncodedFilename = generateExportAssetFilename(TextureName, Node->getLabel() + "_" + Material->getName());
-					sReEncodedFilename += "." + fileTypeExtension;
-					bUseReEncodedFilename = true;
-				}
-				else
-				{
-					sReEncodedFilename = cleanedTempPath + "/" + filestem + "." + fileTypeExtension;
-				}
-				if (m_bDeferProcessingImageToolsJobs) {
-					// create unique only if using deferred image jobs, copy original to use as reference placeholder
-					sReEncodedFilename = makeUniqueFilename(sReEncodedFilename, TextureName);
-					QFile placeHolder(TextureName);
-					placeHolder.copy(sReEncodedFilename);
-				}
-				else
-				{
-					// if performing jobs immediately, unable to check uniqueness since will be modifying from original
-					// so do nothing and assume filename collisions at this point in the execution are the same file
-				}
-
-				if (sReEncodedFilename.split(".").count() > 3)
-				{
-					dzApp->log("WARNING: multiple file extensions possibly detected: " + sReEncodedFilename);
-				}
-
-				JobReEncodeImage* job = new JobReEncodeImage("myJob" + TextureName, TextureName, sReEncodedFilename,
-					customEncodingQuality, customImageSize, m_bRecompressIfFileSizeTooBig, m_nFileSizeThresholdToInitiateRecompression,
-					m_bResizeTextures, m_qTargetTextureSize);
-				if (m_bDeferProcessingImageToolsJobs) 
-				{
-					m_ImageToolsJobsManager->addJob(job);
-					// prepare re-encoded filename for deferred use
-					bUseReEncodedFilename = true;
-					dtuTextureName = sReEncodedFilename;
-				}
-				else 
-				{
-					job->performJob();
-					if (job->m_bSuccessful) {
-						dtuTextureName = sReEncodedFilename;
-					}
-					else {
-						dzApp->log("ERROR: saving file failed: " + sReEncodedFilename);
-					}
-
-				}
-
-			}
-		///////////////////////
-		}
-
-		// DB 2024-12-16: NB: dtuTexture is initialized to be used as a proxy for TextureName above.  it may be redirected
-		// from TextureNme by above rescaling/re-encoding operations.  Therefore, dtueTextureName defines the current active
-		// instance of TextureName after any image processing operation.
-		if (bUseReEncodedFilename == false)
-		{
-			if (m_bExportAllTextures)
-			{
-				// use dtuTexture as source instead of TextureName since TextureName may already be redirected by above operations
-				dtuTextureName = exportAssetWithDtu(dtuTextureName, Node->getLabel() + "_" + Material->getName());
-			}
-			else if (m_bUseRelativePaths)
-			{
-				// use dtuTexture as source instead of TextureName since TextureName may already be redirected by above operations
-				dtuTextureName = dzApp->getContentMgr()->getRelativePath(dtuTextureName, true);
-			}
-			else if (isTemporaryFile(dtuTextureName))
-			{
-				// use dtuTexture as source instead of TextureName since TextureName may already be redirected by above operations
-				dtuTextureName = exportAssetWithDtu(dtuTextureName, Node->getLabel() + "_" + Material->getName());
-			}
-		}
-		// This command maps the original TextureName to the current active redirected image filepath
-		m_mapProcessedFiles.insert(TextureName.toLower(), dtuTextureName);
-
+		dtuTextureName = scaleAndReEncodeMaterialProperties(Node, Material, Property);
 	}
 	else if (!TextureName.isEmpty())
 	{
 		dtuTextureName = m_mapProcessedFiles.value(TextureName.toLower());
 	}
+
 	if (bUseNumeric)
 		writePropertyTexture(Writer, Name, sLabel, dtuPropNumericValue, dtuPropType, dtuTextureName);
 	else
@@ -7807,6 +7645,331 @@ bool DzBridgeTools::IsDangerousPath(const QString& sPath)
 #endif
 
 	return false;
+}
+
+QString DzBridgeAction::scaleAndReEncodeMaterialProperties(DzNode* Node, DzMaterial* Material, DzProperty* Property)
+{
+	if (Node == nullptr || Material == nullptr || Property == nullptr)
+		return "";
+
+	QString Name = Property->getName();
+	QString sLabel = Property->getLabel();
+	QString TextureName = "";
+	QString dtuPropType = "";
+	QString dtuPropValue = "";
+	double dtuPropNumericValue = 0.0;
+	bool bUseNumeric = false;
+
+	DzImageProperty* ImageProperty = qobject_cast<DzImageProperty*>(Property);
+	DzNumericProperty* NumericProperty = qobject_cast<DzNumericProperty*>(Property);
+	DzColorProperty* ColorProperty = qobject_cast<DzColorProperty*>(Property);
+	if (ImageProperty)
+	{
+		if (ImageProperty->getValue())
+		{
+			TextureName = ImageProperty->getValue()->getFilename();
+		}
+		dtuPropValue = Material->getDiffuseColor().name();
+		dtuPropType = QString("Texture");
+
+		// Check if this is a Normal Map with Strength stored in lookup table
+		if (m_imgPropertyTable_NormalMapStrength.contains(ImageProperty))
+		{
+			dtuPropType = QString("Double");
+			dtuPropNumericValue = m_imgPropertyTable_NormalMapStrength[ImageProperty];
+			bUseNumeric = true;
+		}
+	}
+	// DzColorProperty is subclass of DzNumericProperty
+	else if (ColorProperty)
+	{
+		if (ColorProperty->getMapValue())
+		{
+			TextureName = ColorProperty->getMapValue()->getFilename();
+		}
+		dtuPropValue = ColorProperty->getColorValue().name();
+		dtuPropType = QString("Color");
+	}
+	else if (NumericProperty)
+	{
+		if (NumericProperty->getMapValue())
+		{
+			TextureName = NumericProperty->getMapValue()->getFilename();
+		}
+		dtuPropType = QString("Double");
+		dtuPropNumericValue = NumericProperty->getDoubleValue();
+		bUseNumeric = true;
+	}
+	else
+	{
+		// unsupported property type
+		return TextureName;
+	}
+	// Check for Override Image Map
+	//if (m_overrideTable_MaterialImageMaps.contains(Property))
+	//{
+	//	TextureName = m_overrideTable_MaterialImageMaps[Property];
+	//}
+	if (m_overrideTable_MaterialProperties.contains(Property))
+	{
+		MaterialOverride overrideData = m_overrideTable_MaterialProperties[Property];
+		if (overrideData.bHasFilename) TextureName = overrideData.filename;
+		if (overrideData.bHasColor) dtuPropValue = overrideData.color.name();
+		if (overrideData.bHasNumericValue) dtuPropNumericValue = overrideData.numericValue;
+	}
+
+	QString dtuTextureName = TextureName;
+	//	if ( !TextureName.isEmpty() && m_aProcessedFiles.contains(TextureName, Qt::CaseInsensitive)==false)
+	if (!TextureName.isEmpty() && m_mapProcessedFiles.contains(TextureName.toLower()) == false)
+	{
+
+		// DB, 2023-10-27: New integrated resizing/re-encoding integrated save pathway
+		// Execution Flow:
+		// 1. Check if any re-encoding operation is enabled (m_bResizeTextures || m_bRecompressIfFileSizeTooBig || m_bConverToPng || m_bConverToJpg)
+		// 2. If so then use the following order of operations:
+		// 3. ResizeTextures takes highest priority
+		// 4. RecompressIfFileSizeTooBig is second
+		// 5. Convert non-PNG/JPG to PNG/JPG takes third
+		QString sReEncodedFilename = "";
+		// bUseReEncodedFilename is the flag used below to use the ReEncodedFilename string without doing any other operations upon it.
+		// This is necessary for deferred operations where the path is invalid until later in the pipeline, so nothing else can be done
+		// until the path becomes valid.
+		bool bUseReEncodedFilename = false;
+		if (m_bForceReEncoding || m_bResizeTextures || m_bRecompressIfFileSizeTooBig || m_bConvertToPng || m_bConvertToJpg)
+		{
+			DzImageMgr* imageMgr = dzApp->getImageMgr();
+			QImage image = imageMgr->loadImage(TextureName);
+			QString cleanedTempPath = dzApp->getTempPath().toLower().replace("\\", "/");
+			QFileInfo fileInfo(TextureName);
+			QString filestem = fileInfo.fileName();
+			QString fileTypeExtension = fileInfo.suffix().toLower();
+			int customEncodingQuality = 95;
+			QSize customImageSize = m_qTargetTextureSize;
+			bool bHasAlpha = image.hasAlphaChannel();
+			bool bSkip = true;
+
+			if (m_bForceReEncoding) bSkip = false;
+			if (fileTypeExtension == "jpeg") fileTypeExtension = "jpg";
+			if (fileTypeExtension == "jpg") customEncodingQuality = 95;
+			if (fileTypeExtension == "png") customEncodingQuality = 75;
+
+			// adjust on target quality/compression level if needed
+			if (m_bRecompressIfFileSizeTooBig &&
+				(QFileInfo(TextureName).size() > m_nFileSizeThresholdToInitiateRecompression)
+				)
+			{
+				fileTypeExtension = "jpg";
+				if (bHasAlpha && m_bConvertToPng) // default to jpg, unless png=true and jpg=false
+					fileTypeExtension = "png";
+				// if image.size is already <= m_qTargetTextureSize, then reduce even further
+				if (image.size().width() <= m_qTargetTextureSize.width() &&
+					image.size().height() <= m_qTargetTextureSize.height())
+				{
+					customImageSize = m_qTargetTextureSize / 2;
+				}
+				// decrease encoding quality if file was originally JPG, note: check against original name/ext
+				customEncodingQuality -= 25;
+				bSkip = false;
+			}
+
+			// resize image if needed
+			if (customImageSize != m_qTargetTextureSize ||
+				m_bResizeTextures &&
+				(image.size().width() > m_qTargetTextureSize.width() ||
+					image.size().height() > m_qTargetTextureSize.height())
+				)
+			{
+				//QString sImageOperationMessage = QString(tr("Scaling: ") + filestem + " to " + QString("(%1x%2)").arg(customImageSize.width()).arg(customImageSize.height()) );
+				//dzApp->log(sImageOperationMessage);
+				//DzProgress::setCurrentInfo(sImageOperationMessage);
+				//image = image.scaled(customImageSize, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+				bSkip = false;
+			}
+
+			// decide on target encoding
+			if (m_bConvertToPng &&
+				(fileTypeExtension.compare("png", Qt::CaseInsensitive) != 0)
+				)
+			{
+				fileTypeExtension = "png";
+				bSkip = false;
+			}
+
+			// decide on target encoding (JPG will override PNG above)
+			if (m_bConvertToJpg &&
+				(fileTypeExtension.compare("jpg", Qt::CaseInsensitive) != 0)
+				)
+			{
+				fileTypeExtension = "jpg";
+				if (m_bConvertToPng && bHasAlpha) // png+alpha takes priority over jpg
+					fileTypeExtension = "png";
+				bSkip = false;
+			}
+
+			if (!bSkip)
+			{
+				// finally, save out file with final resized image, quality level and encoding format
+				if (m_bExportAllTextures) {
+					sReEncodedFilename = generateExportAssetFilename(TextureName, Node->getLabel() + "_" + Material->getName());
+					sReEncodedFilename += "." + fileTypeExtension;
+					bUseReEncodedFilename = true;
+				}
+				else
+				{
+					sReEncodedFilename = cleanedTempPath + "/" + filestem + "." + fileTypeExtension;
+				}
+				if (m_bDeferProcessingImageToolsJobs) {
+					// create unique only if using deferred image jobs, copy original to use as reference placeholder
+					sReEncodedFilename = makeUniqueFilename(sReEncodedFilename, TextureName);
+					QFile placeHolder(TextureName);
+					placeHolder.copy(sReEncodedFilename);
+				}
+				else
+				{
+					// if performing jobs immediately, unable to check uniqueness since will be modifying from original
+					// so do nothing and assume filename collisions at this point in the execution are the same file
+				}
+
+				if (sReEncodedFilename.split(".").count() > 3)
+				{
+					dzApp->log("WARNING: multiple file extensions possibly detected: " + sReEncodedFilename);
+				}
+
+				JobReEncodeImage* job = new JobReEncodeImage("myJob" + TextureName, TextureName, sReEncodedFilename,
+					customEncodingQuality, customImageSize, m_bRecompressIfFileSizeTooBig, m_nFileSizeThresholdToInitiateRecompression,
+					m_bResizeTextures, m_qTargetTextureSize);
+				if (m_bDeferProcessingImageToolsJobs)
+				{
+					m_ImageToolsJobsManager->addJob(job);
+					// prepare re-encoded filename for deferred use
+					bUseReEncodedFilename = true;
+					dtuTextureName = sReEncodedFilename;
+				}
+				else
+				{
+					job->performJob();
+					if (job->m_bSuccessful) {
+						dtuTextureName = sReEncodedFilename;
+					}
+					else {
+						dzApp->log("ERROR: saving file failed: " + sReEncodedFilename);
+					}
+
+				}
+
+			}
+			///////////////////////
+		}
+
+		// DB 2024-12-16: NB: dtuTexture is initialized to be used as a proxy for TextureName above.  it may be redirected
+		// from TextureNme by above rescaling/re-encoding operations.  Therefore, dtueTextureName defines the current active
+		// instance of TextureName after any image processing operation.
+		if (bUseReEncodedFilename == false)
+		{
+			if (m_bExportAllTextures)
+			{
+				// use dtuTexture as source instead of TextureName since TextureName may already be redirected by above operations
+				dtuTextureName = exportAssetWithDtu(dtuTextureName, Node->getLabel() + "_" + Material->getName());
+			}
+			else if (m_bUseRelativePaths)
+			{
+				// use dtuTexture as source instead of TextureName since TextureName may already be redirected by above operations
+				dtuTextureName = dzApp->getContentMgr()->getRelativePath(dtuTextureName, true);
+			}
+			else if (isTemporaryFile(dtuTextureName))
+			{
+				// use dtuTexture as source instead of TextureName since TextureName may already be redirected by above operations
+				dtuTextureName = exportAssetWithDtu(dtuTextureName, Node->getLabel() + "_" + Material->getName());
+			}
+		}
+		// This command maps the original TextureName to the current active redirected image filepath
+		m_mapProcessedFiles.insert(TextureName.toLower(), dtuTextureName);
+
+	}
+	else if (!TextureName.isEmpty())
+	{
+		dtuTextureName = m_mapProcessedFiles.value(TextureName.toLower());
+	}
+
+	return dtuTextureName;
+
+}
+
+bool DzBridgeAction::writeSceneDefinition(DzJsonWriter& Writer, DzNode* RootNode)
+{
+	Writer.startMemberArray("SceneDefinition", true);
+	QMap<QString, DzMatrix3> WritingInstances;
+	QList<DzGeometry*> ExportedGeometry;
+
+	DzNodeList aNodeStack;
+	if (RootNode == NULL) {
+		aNodeStack = BuildRootNodeList();
+	} else {
+		aNodeStack.append(RootNode);
+	}
+
+	while (aNodeStack.isEmpty() == false)
+	{
+		// depth first
+		DzNode* Node = aNodeStack.last();
+		aNodeStack.removeLast();
+
+		writeSceneDefinitionNode(Node, Writer);
+		for (int nChildIndex = 0; nChildIndex < Node->getNumNodeChildren(); nChildIndex++)
+		{
+			DzNode* pChildNode = Node->getNodeChild(nChildIndex);
+			aNodeStack.append(pChildNode);
+		}
+	}
+	Writer.finishArray();
+
+	return true;
+}
+
+bool DzBridgeAction::writeSceneDefinitionNode(DzNode* Node, DzJsonWriter& Writer)
+{
+	QString SceneAssetUri = Node->getAssetUri().toString();
+	DzNode* pNodeParent = Node->getNodeParent();
+	QString sParentAssetUri = "";
+	if (pNodeParent) {
+		sParentAssetUri = pNodeParent->getAssetUri().toString();
+	}
+
+	Writer.startObject(true);
+	Writer.addMember("Version", 4);
+	Writer.addMember("StudioNodeName", Node->getName());
+	Writer.addMember("StudioNodeLabel", Node->getLabel());
+	Writer.addMember("StudioSceneID", SceneAssetUri);
+	Writer.addMember("ClassName", Node->className());
+	Writer.addMember("ParentNodeSceneID", sParentAssetUri);
+
+	//Writer.addMember("TranslationX", Node->getWSPos().m_x);
+	//Writer.addMember("TranslationY", Node->getWSPos().m_y);
+	//Writer.addMember("TranslationZ", Node->getWSPos().m_z);
+	//DzQuat RotationQuat = Node->getWSRot();
+	//DzVec3 Rotation;
+	//RotationQuat.getValue(Node->getRotationOrder(), Rotation);
+	//Writer.addMember("RotationX", Rotation.m_x);
+	//Writer.addMember("RotationY", Rotation.m_y);
+	//Writer.addMember("RotationZ", Rotation.m_z);
+	//DzMatrix3 Scale = Node->getWSScale();
+	//Writer.addMember("ScaleX", Scale.row(0).length());
+	//Writer.addMember("ScaleY", Scale.row(1).length());
+	//Writer.addMember("ScaleZ", Scale.row(2).length());
+
+	if (Node->inherits("DzInstanceNode"))
+	{
+		QString sTargetSceneAssetUri = "";
+		DzNode* pNodeTarget = qobject_cast<DzInstanceNode*>(Node)->getTarget();
+		if (pNodeTarget != NULL)
+		{
+			sTargetSceneAssetUri = pNodeTarget->getAssetUri().toString();
+		}
+		Writer.addMember("TargetSceneID", sTargetSceneAssetUri);
+	}
+	Writer.finishObject();
+
+	return true;
 }
 
 

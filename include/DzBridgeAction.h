@@ -377,6 +377,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual void startMaterialBlock(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCSVstream, DzMaterial* Material);
 		Q_INVOKABLE virtual void finishMaterialBlock(DzJsonWriter& Writer);
 		Q_INVOKABLE virtual void writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCSVstream, DzMaterial* Material, DzProperty* Property);
+		Q_INVOKABLE virtual QString scaleAndReEncodeMaterialProperties(DzNode* Node, DzMaterial* Material, DzProperty* Property);
 
 		Q_INVOKABLE virtual void writeAllMorphs(DzJsonWriter& Writer);
 		Q_INVOKABLE virtual void writeMorphProperties(DzJsonWriter& writer, const QString& key, const QString& value);
@@ -392,6 +393,8 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual void writeEnvironment(DzJsonWriter& writer);
 		Q_INVOKABLE virtual void writeInstances(DzNode* Node, DzJsonWriter& Writer, QMap<QString, DzMatrix3>& WritenInstances, QList<DzGeometry*>& ExportedGeometry, QUuid ParentID = QUuid());
 		Q_INVOKABLE virtual QUuid writeInstance(DzNode* Node, DzJsonWriter& Writer, QUuid ParentID);
+		Q_INVOKABLE virtual bool writeSceneDefinition(DzJsonWriter& Writer, DzNode* RootNode=NULL);
+		Q_INVOKABLE virtual bool writeSceneDefinitionNode(DzNode* Node, DzJsonWriter& Writer);
 
 		Q_INVOKABLE virtual void writeAllPoses(DzJsonWriter& writer);
 

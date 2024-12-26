@@ -9,6 +9,13 @@ Requirements:
     - Python 3+
     - Blender 3.6+
 
+Version: 1.30
+
+2024-12-25
+- Added process_dtu_scene_definition() and DzInstance recreation
+2024-12-23
+- Fixed bug in process_dtu() causing infinite loop because bpy.data.objects is an active collection, not a static list.
+
 """
 from pathlib import Path
 script_dir = str(Path( __file__ ).parent.absolute())
@@ -442,6 +449,7 @@ def process_material(mat, lowres_mode=None):
         links.new(shader_node.outputs["BSDF"], output_node.inputs["Surface"])
 
     bsdf_inputs = nodes["Principled BSDF"].inputs
+    color_node = None
 
     if (colorMap != ""):
         if (not os.path.exists(colorMap)):
@@ -454,7 +462,8 @@ def process_material(mat, lowres_mode=None):
             # bsdf_inputs["Base Color"].default_value = color_value
             # links = data.node_tree.links
             # link = links.new(node_tex.outputs["Color"], bsdf_inputs["Base Color"])
-            load_cached_image_to_material(matName, "Base Color", "Color", colorMap, color_value)
+            link = load_cached_image_to_material(matName, "Base Color", "Color", colorMap, color_value)
+            color_node = link.from_node
     else:
         bsdf_inputs["Base Color"].default_value = color_value
 
@@ -516,11 +525,20 @@ def process_material(mat, lowres_mode=None):
         else:
             bsdf_inputs["Specular"].default_value = reflectivity_value
     elif (dual_lobe_specular_weight != 0.0):
-        bsdf_inputs["Specular"].default_value = dual_lobe_specular_weight
+        if bpy.app.version[0] >= 4:
+            bsdf_inputs["Specular IOR Level"].default_value = dual_lobe_specular_weight
+        else:
+            bsdf_inputs["Specular"].default_value = dual_lobe_specular_weight
     elif (glossy_weight != 0.0):
-        bsdf_inputs["Specular"].default_value = glossy_weight
+        if bpy.app.version[0] >= 4:
+            bsdf_inputs["Specular IOR Level"].default_value = glossy_weight
+        else:
+            bsdf_inputs["Specular"].default_value = glossy_weight
     else:
-        bsdf_inputs["Specular"].default_value = 0.0
+        if bpy.app.version[0] >= 4:
+            bsdf_inputs["Specular IOR Level"].default_value = 0.0
+        else:
+            bsdf_inputs["Specular"].default_value = 0.0
 
     if (roughnessMap != ""):
         if (not os.path.exists(roughnessMap)):
@@ -551,19 +569,21 @@ def process_material(mat, lowres_mode=None):
             # links = data.node_tree.links
             # link = links.new(node_tex.outputs["Color"], bsdf_inputs["Emission"])
             
+            bsdf_inputs["Emission Strength"].default_value = 1.0
             # if blender version 4, use Emission Strength instead of Emission
             if bpy.app.version[0] >= 4:
-                _add_to_log("DEBUG: process_dtu(): using Emission Strength instead of emission for blender version 4")
-                load_cached_image_to_material(matName, "Emission Strength", "Color", emissionMap, 0.0, "Non-Color")
+                _add_to_log("DEBUG: process_dtu(): using Emission Color & Strength instead of emission for blender version 4")
+                load_cached_image_to_material(matName, "Emission Color", "Color", emissionMap, [0, 0, 0, 1], "Non-Color")
             else:
-                load_cached_image_to_material(matName, "Emission", "Color", emissionMap, [0, 0, 0, 0], "Non-Color")
+                load_cached_image_to_material(matName, "Emission", "Color", emissionMap, [0, 0, 0, 1], "Non-Color")
     else:
+        bsdf_inputs["Emission Strength"].default_value = 0.0
         # if blender version 4, use emission strength instead of emission
         if bpy.app.version[0] >= 4:
             _add_to_log("DEBUG: process_dtu(): using Emission Strength instead of emission for blender version 4")
-            bsdf_inputs["Emission Strength"].default_value = 0.0
+            bsdf_inputs["Emission Color"].default_value = [0, 0, 0, 1]
         else:
-            bsdf_inputs["Emission"].default_value = [0, 0, 0, 0]
+            bsdf_inputs["Emission"].default_value = [0, 0, 0, 1]
 
     if (normalMap != ""):
         if (not os.path.exists(normalMap)):
@@ -604,7 +624,13 @@ def process_material(mat, lowres_mode=None):
     if (cutoutMap != ""):
         if data.blend_method == "OPAQUE" or data.blend_method == "BLEND":
             data.blend_method = "HASHED"
-        load_cached_image_to_material(matName, "Alpha", "Color", cutoutMap, opacity_strength, "Non-Color")
+        # DB 2024-09-23: bugfix cutout baked into diffuse
+        if (cutoutMap == colorMap and color_node is not None):
+            bsdf_inputs["Alpha"].default_value = opacity_strength
+            links = data.node_tree.links
+            link = links.new(color_node.outputs["Alpha"], bsdf_inputs["Alpha"])
+        else:
+            load_cached_image_to_material(matName, "Alpha", "Color", cutoutMap, opacity_strength, "Non-Color")
     else:
         bsdf_inputs["Alpha"].default_value = opacity_strength
 
@@ -649,6 +675,25 @@ def process_material(mat, lowres_mode=None):
     NodeArrange.toNodeArrange(data.node_tree.nodes)
     _add_to_log("DEBUG: process_dtu(): done processing material: " + matName)
 
+def load_dtu(jsonPath):
+    _add_to_log("DEBUG: process_dtu(): json file = " + jsonPath)
+    jsonObj = {}
+    dtuVersion = -1
+    assetName = ""
+    materialsList = []
+    with open(jsonPath, "r") as file:
+        jsonObj = json.load(file)
+    # parse DTU
+    try:
+        dtuVersion = jsonObj["DTU Version"]
+        assetName = jsonObj["Asset Name"]
+        materialsList = jsonObj["Materials"]
+    except:
+        _add_to_log("ERROR: process_dtu(): unable to parse DTU: " + jsonPath)
+        return None
+    return jsonObj
+
+
 def process_dtu(jsonPath, lowres_mode=None):
     _add_to_log("DEBUG: process_dtu(): json file = " + jsonPath)
     jsonObj = {}
@@ -681,9 +726,10 @@ def process_dtu(jsonPath, lowres_mode=None):
             obj_data_dict[obj_asset_name] = obj_data
 
     # process objects, mapping to DTU data
-    for obj in bpy.data.objects:
-        if obj.type != "MESH":
-            continue
+    original_list = list(bpy.data.objects)
+    for obj in original_list:
+        # if obj.type != "MESH":
+        #     continue
         obj_data = None
         studio_label = None
         studio_name = None
@@ -694,7 +740,7 @@ def process_dtu(jsonPath, lowres_mode=None):
             studio_name = obj["StudioNodeName"]
             has_custom_properties = True
         except:
-            print("ERROR: process_dtu(): unable to retrieve StudioNodeLabel/StudioNodeName Custom Proeprties for object: " + obj.name)
+            print("ERROR: process_dtu(): unable to retrieve StudioNodeLabel/StudioNodeName Custom Properties for object: " + obj.name)
             studio_name = obj.name.replace(".Shape", "")            
         if studio_name in obj_data_dict:
             obj_data = obj_data_dict[studio_name]
@@ -713,6 +759,42 @@ def process_dtu(jsonPath, lowres_mode=None):
                 continue
             print("DEBUG: process_dtu(): renaming object: " + obj.name + " to " + studio_label)
             obj.name = studio_label
+            if obj.type == "MESH":
+                obj.name = studio_label + ".Shape"
+            elif obj.type == "EMPTY":
+                obj.name = studio_label + ".Node"
+
+    apply_dtu_materials(jsonObj, lowres_mode)
+
+    _add_to_log("DEBUG: process_dtu(): done processing DTU: " + jsonPath)
+    return jsonObj
+
+def clear_all_materials():
+    for mat in bpy.data.materials:
+        nodes = mat.node_tree.nodes
+        for node in nodes:
+#            _add_to_log("DEBUG: process_dtu(): removing node: " + node.name)
+            nodes.remove(node)
+
+def force_mixamo_compatible_materials():
+    for mat in bpy.data.materials:
+        if mat.node_tree is None:
+            continue
+        _add_to_log("DEBUG: force_mixamo_compatible_materials(): processing material: " + mat.name)
+        nodes = mat.node_tree.nodes
+        if "Principled BSDF" in nodes:
+            bsdf_node = mat.node_tree.nodes["Principled BSDF"]
+            # loop through all inputs and unlink them except for Base Color, Normal, Alpha
+            for input in bsdf_node.inputs:
+                # skip base color
+                if input.name == "Base Color" or input.name == "Normal" or input.name == "Alpha":
+                    continue
+                if input.is_linked:
+                    for link in input.links:
+                        mat.node_tree.links.remove(link)
+
+def apply_dtu_materials(jsonObj, lowres_mode=None):
+    materialsList = jsonObj["Materials"]
 
     # delete all nodes from materials so that we can rebuild them
     for mat in materialsList:
@@ -735,12 +817,11 @@ def process_dtu(jsonPath, lowres_mode=None):
 #                raise e
                 pass
 
-    _add_to_log("DEBUG: process_dtu(): done processing DTU: " + jsonPath)
-    return jsonObj
-
-def import_fbx(fbxPath):
+def import_fbx(fbxPath, force_connect_bones=False):
     _add_to_log("DEBUG: import_fbx(): fbx file = " + fbxPath)
-    bpy.ops.import_scene.fbx(filepath=fbxPath, use_prepost_rot=1)
+    bpy.ops.import_scene.fbx(filepath=fbxPath,
+                             force_connect_children=force_connect_bones,
+                             use_prepost_rot=True)
 
 def delete_all_items():
 #    bpy.ops.object.mode_set(mode="OBJECT");
@@ -775,3 +856,204 @@ def center_all_viewports():
                     override = {'area': area, 'region': region}
                     bpy.ops.view3d.view_all(override, center=False)
 
+
+# insert new bone after parent bone
+def insert_bone(arm, parent_name, new_bone_name):
+    new_bone = None
+    bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.select_all(action='DESELECT')
+    arm.select_set(True)
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.armature.select_all(action='DESELECT')
+    parent_bone = arm.data.edit_bones.get(parent_name)
+    if parent_bone is not None:
+        new_bone = arm.data.edit_bones.new(name=new_bone_name)
+        if new_bone is not None:
+            new_bone.head = parent_bone.head
+            new_bone.tail = parent_bone.tail
+            new_bone.roll = parent_bone.roll
+            new_bone.use_connect = False
+            # move all children from parent to new bone
+            for child in parent_bone.children:
+                child.parent = new_bone
+            new_bone.parent = parent_bone
+        else:
+            _add_to_log("ERROR: insert_bone(): unable to create new bone: " + new_bone_name)
+    else:
+        _add_to_log("ERROR: insert_bone(): parent bone not found: " + parent_name)
+    bpy.ops.object.mode_set(mode='OBJECT')
+    return new_bone
+
+def remove_from_inline(arm, bone_name):
+    bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.select_all(action='DESELECT')
+    arm.select_set(True)
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.armature.select_all(action='DESELECT')
+    bone_to_remove = arm.data.edit_bones.get(bone_name)
+    if bone_to_remove is None:
+        _add_to_log("ERROR: remove_from_inline(): bone not found: " + bone_name)
+        return
+    parent_bone = bone_to_remove.parent
+    if parent_bone is not None:
+        # move all children from bone_to_remove to parent_bone
+        for child in bone_to_remove.children:
+            child.parent = parent_bone
+    else:
+        _add_to_log("ERROR: remove_from_inline(): parent bone not found: " + bone_name)
+    bpy.ops.object.mode_set(mode='OBJECT')
+    return
+
+# add missing Unreal Bones to unreal rig
+def fix_unreal_rig():
+    arm = None
+    for obj in bpy.data.objects:
+        if obj.type == 'ARMATURE':
+            arm = obj
+            break
+    if arm is None:
+        return
+
+    bpy.ops.object.mode_set(mode="OBJECT")
+    bpy.ops.object.select_all(action='DESELECT')
+    arm.select_set(True)
+    bpy.context.view_layer.objects.active = arm
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.armature.select_all(action='DESELECT')
+
+    # duplicate spin_03
+    spine_04 = insert_bone(arm, "spine_03", "spine_04")
+
+    # # reparent pectorals to spine_05
+    # spine_05 = arm.data.edit_bones.get("spine_05")
+    # if spine_05 is not None:
+    #     pec_l = arm.data.edit_bones.get("clavicle_pec_l")
+    #     if pec_l is not None:
+    #         pec_l.parent = spine_05
+    #     pec_r = arm.data.edit_bones.get("clavicle_pec_r")
+    #     if pec_r is not None:
+    #         pec_r.parent = spine_05
+
+    # remove twist bones from inline
+    remove_from_inline(arm, "thigh_twist_01_l")
+    remove_from_inline(arm, "thigh_twist_01_r")
+    remove_from_inline(arm, "upperarm_twist_01_l")
+    remove_from_inline(arm, "upperarm_twist_01_r")
+    remove_from_inline(arm, "lowerarm_twist_01_l")
+    remove_from_inline(arm, "lowerarm_twist_01_r")
+
+    print("DEBUG: fix_unreal_rig() done.")
+    return
+
+##################### DTU Scene Definition Processing #####################
+# abstracted dictionary insertion for potential key optimization
+def map_object_to_uri(obj, uri, uri_to_obj_dict):
+    # create sub-dictionary if not present
+    if uri not in uri_to_obj_dict:
+        uri_to_obj_dict[uri] = obj
+    else:
+        print("DEBUG: URI " + uri + " already exists in uri_to_obj_dict")
+    return uri
+
+# abstracted dictionary lookup for potential key optimization
+def find_object_by_uri(uri, uri_to_obj_dict):
+    if uri in uri_to_obj_dict:
+        return uri_to_obj_dict[uri]
+    print("DEBUG: Could not find object with URI " + uri)
+    return None
+
+def create_linked_duplicate(source_obj, destination_parent_obj):
+    # deselect all objects
+    bpy.ops.object.select_all(action='DESELECT')
+    # select source_obj then perform linked duplicate
+    source_obj.select_set(True)
+    bpy.context.view_layer.objects.active = source_obj
+    bpy.ops.object.duplicate(linked=True)
+    dup = bpy.context.active_object
+    dup.name = destination_parent_obj.name + ".Shape"
+    # deselect all objects
+    bpy.ops.object.select_all(action='DESELECT')
+    # perform parent without inverse to destination_parent_obj
+    dup.select_set(True)
+    destination_parent_obj.select_set(True)
+    bpy.context.view_layer.objects.active = destination_parent_obj
+    bpy.ops.object.parent_no_inverse_set(keep_transform=False)
+    return dup
+
+def build_uri_to_obj_mapping(scene_definitions):
+    uri_to_obj_dict = {}
+    for node_definition in scene_definitions:
+        node_uri = node_definition["StudioSceneID"]
+        node_label = node_definition["StudioNodeLabel"]
+        node_class = node_definition["ClassName"]
+        # build node_ID (uri) to blender obj mapping
+        obj = None
+        search_label = node_label + ".Node"
+        if bpy.data.objects.find(search_label) != -1:
+            obj = bpy.data.objects[search_label]
+        if obj:
+            do_mapping = False
+            # double-check if obj is correct
+            if obj["StudioSceneID"] == node_uri:
+                do_mapping = True
+            else:
+                alternative_uri = "#" + node_uri.split("#")[1].replace("%20", " ")
+                if alternative_uri in obj["StudioSceneID"]:
+                    do_mapping = True
+                elif "Instance" in node_class:
+                    # print("INFO: StudioSceneID mismatch for instance node " + node_label + " [" + node_class + "] with obj_ID \"" + node_ID + "\", blind mapping to DTU based StudioSceneID.")
+                    do_mapping = True
+                else:
+                    print("DEBUG: StudioSceneID mismatch for object " + node_label + " [" + node_class + "] with URI \"" + node_uri + "\", skipping...")
+                    continue
+            if do_mapping:
+                map_object_to_uri(obj, node_uri, uri_to_obj_dict)
+        else:
+            print("DEBUG: Could not find object with label " + search_label + ", skipping...")
+    return uri_to_obj_dict
+
+def recreate_instances(scene_definitions, uri_to_obj_dict):
+    restored_instance_count = 0
+    for node_definition in scene_definitions:
+        node_class = node_definition["ClassName"]
+        if "Instance" not in node_class:
+            continue
+        node_uri = node_definition["StudioSceneID"]
+        node_label = node_definition["StudioNodeLabel"]
+        target_ID = node_definition["TargetSceneID"]
+        obj = find_object_by_uri(node_uri, uri_to_obj_dict)
+        if not obj:
+            print("ERROR: Could not find object with URI " + node_uri + ", skipping...")
+            continue
+        if obj and target_ID != "":
+            target_obj = find_object_by_uri(target_ID, uri_to_obj_dict)
+            if target_obj:
+                # get child of obj of type MESH
+                mesh = None
+                for child in target_obj.children:
+                    if child.type == "MESH":
+                        mesh = child
+                        break
+                if mesh:
+                    restored_instance_count += 1
+                    print("INFO: [" + str(restored_instance_count) + "] linking instance " + node_label + " to target " + target_obj.name)
+                    create_linked_duplicate(mesh, obj)
+                    continue
+            else:
+                print("ERROR: Could not find target object with URI " + target_ID + ", skipping...")
+                continue
+    return
+
+def process_scene_definition(dtu_dict):
+    if "SceneDefinition" not in dtu_dict:
+        print("DEBUG: No SceneDefinition found in DTU file.")
+        return
+
+    scene_definitions = dtu_dict["SceneDefinition"]
+    uri_to_obj_dict = build_uri_to_obj_mapping(scene_definitions)
+    recreate_instances(scene_definitions, uri_to_obj_dict)
+
+    return
+##################### DTU Scene Definition Processing #####################
