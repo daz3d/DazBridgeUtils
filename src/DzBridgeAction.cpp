@@ -209,12 +209,18 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 	DzNodeList nodeJobList;
 	DzNodeList tempQueue;
 	DzNode *node_ptr = parentNode;
-	if (node_ptr == nullptr)
-		node_ptr = dzScene->getPrimarySelection();
-	if (node_ptr == nullptr)
-		return false;
 
-	tempQueue.append(node_ptr);
+	if (m_sAssetType == "Environment") {
+		tempQueue = BuildRootNodeList();
+	}
+	else {
+		if (node_ptr == nullptr)
+			node_ptr = dzScene->getPrimarySelection();
+		if (node_ptr == nullptr)
+			return false;
+		tempQueue.append(node_ptr);
+	}
+
 	while (!tempQueue.isEmpty())
 	{
 		node_ptr = tempQueue.first();
@@ -244,7 +250,7 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 		DzObject* object = node->getObject();
 		DzShape* shape = object ? object->getCurrentShape() : NULL;
 
-		if (shape || node->inherits("DzGroupNode")) {
+		if (shape || node->inherits("DzGroupNode") || node->inherits("DzInstanceNode")) {
 			// 2024-SEP-10, DB: moved renameDuplicateNodeName inside if (shape) to fix bone conversion and other potential node name change incompatibilities
 			renameDuplicateNodeName(node, existingNodeNameList);
 		}
