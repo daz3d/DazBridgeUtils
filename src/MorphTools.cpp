@@ -58,7 +58,7 @@ bool MorphInfo::isValidMorph(DzProperty* pMorphProperty)
 	if (pMorphProperty == nullptr)
 	{
 		// issue error message or alternatively: throw exception
-		dzApp->log("ERROR: DazBridge: DzBridgeMorphSelectionDialog.cpp, isValidMorph(): nullptr passed as argument.");
+		dzApp->warning("ERROR: DazBridge: DzBridgeMorphSelectionDialog.cpp, isValidMorph(): nullptr passed as argument.");
 		return false;
 	}
 	QString sMorphName = getMorphPropertyName(pMorphProperty);
@@ -591,7 +591,7 @@ QStringList MorphTools::getFinalizedMorphList(QList<QString> m_morphsToExport, Q
 		}
 		else
 		{
-			dzApp->log("ERROR: Morph To Export was not found in available Morphs: " + morphName);
+			dzApp->warning("ERROR: Morph To Export was not found in available Morphs: " + morphName);
 		}
 	}
 

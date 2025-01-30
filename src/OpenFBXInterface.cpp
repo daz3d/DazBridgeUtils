@@ -186,7 +186,7 @@ bool OpenFBXInterface::LoadScene(FbxScene* pScene, QString sFilename)
 			// wait 1 second and retry
 			QString sErrorMessage = QString("OpenFbxInterface()::LoadScene(): FbxImporter::Initialize(%1) failed. [EStatusCode=%2]").arg(sFilename).arg(m_ErrorCode);
 #ifdef DAZ_APP_H
-			dzApp->log("ERROR: DzBridge: " + sErrorMessage + " - retrying after 1 second wait....");
+			dzApp->warning("ERROR: DzBridge: " + sErrorMessage + " - retrying after 1 second wait....");
 #endif
 			int nSleepTimeMs = 1000; // 1000 ms
 #ifdef __APPLE__

@@ -212,7 +212,7 @@ FbxVector4 FbxTools::CalculatePointCloudAverage(FbxMesh* pMesh, QList<int>* pVer
 
 	if (pMesh == nullptr || pVertexIndexes == nullptr || pVertexIndexes->count() <= 0)
 	{
-		dzApp->log("ERROR: CalculatePointCloudCenter recieved invalid inputs");
+		dzApp->warning("ERROR: CalculatePointCloudCenter recieved invalid inputs");
 		return nullptr;
 	}
 
@@ -240,7 +240,7 @@ FbxVector4 FbxTools::CalculatePointCloudCenter(FbxMesh* pMesh, QList<int>* pVert
 
 	if (pMesh == nullptr || pVertexIndexes == nullptr || pVertexIndexes->count() <= 0)
 	{
-		dzApp->log("ERROR: CalculatePointCloudCenter recieved invalid inputs");
+		dzApp->warning("ERROR: CalculatePointCloudCenter recieved invalid inputs");
 		return nullptr;
 	}
 
@@ -1513,7 +1513,7 @@ FbxVector4 FbxTools::CalculatePointCloudCenter(FbxVector4 *pVertexBuffer, int nu
 
 	if (pVertexBuffer == nullptr || numVertices <= 0)
 	{
-		dzApp->log("ERROR: CalculatePointCloudCenter recieved invalid inputs");
+		dzApp->warning("ERROR: CalculatePointCloudCenter recieved invalid inputs");
 		return nullptr;
 	}
 

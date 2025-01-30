@@ -1516,7 +1516,7 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 			}
 			catch (std::exception& e) {
 				result = -1;
-				dzApp->log("ERROR: Exception caught during FBX Export for: " + m_sDestinationPath + ", e=" + QString(e.what()));
+				dzApp->warning("ERROR: Exception caught during FBX Export for: " + m_sDestinationPath + ", e=" + QString(e.what()));
 				QMessageBox::critical(0, tr("DzBridge Critical Exception"),
 					tr("A critical exception error occured during the FBX export operation using DzExporter::writeFile().") + "\n" +
 					tr("Please refer to the Daz Studio log.txt file for details."), QMessageBox::Ok);
@@ -1530,7 +1530,7 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 					dzApp->log("INFO: User cancelled FBX Export for: " + m_sDestinationFBX);
 				}
 				else {
-					dzApp->log("ERROR: Error occured during FBX Export for: " + m_sDestinationFBX + " , DzError=" + QString("%1").arg((int)result));
+					dzApp->warning("ERROR: Error occured during FBX Export for: " + m_sDestinationFBX + " , DzError=" + QString("%1").arg((int)result));
 				}
 				bReturnResult = false;
 			}
@@ -2799,13 +2799,13 @@ QString DzBridgeAction::exportAssetWithDtu(QString sFilename, QString sAssetMate
 	int bFirstCRCResult = getCalcCRC32ResultCode();
 	if (bFirstCRCResult != CalcCRC32ResultCodes::SUCCESS)
 	{
-		dzApp->log("ERROR: exportAssetWithDTU(): CalcCRC32 was not successful for: " + sFilename);
+		dzApp->warning("ERROR: exportAssetWithDTU(): CalcCRC32 was not successful for: " + sFilename);
 	}
 	ulong crc32_Dest = calcCRC32(exportFilename);
 	int bSecondCRCResult = getCalcCRC32ResultCode();
 	if (bSecondCRCResult != CalcCRC32ResultCodes::SUCCESS)
 	{
-		dzApp->log("ERROR: exportAssetWithDTU(): CalcCRC32 was not successful for: " + exportFilename);
+		dzApp->warning("ERROR: exportAssetWithDTU(): CalcCRC32 was not successful for: " + exportFilename);
 	}
 	if ( QFileInfo(exportFilename).exists() &&
 		QFileInfo(sFilename).size() == QFileInfo(exportFilename).size() &&
@@ -2817,7 +2817,7 @@ QString DzBridgeAction::exportAssetWithDtu(QString sFilename, QString sAssetMate
 	}
 
 	// return original source string if failed
-	dzApp->log("ERROR: exportAssetWithDTU(): Unexpected error occured while preparing file: " + sFilename);
+	dzApp->warning("ERROR: exportAssetWithDTU(): Unexpected error occured while preparing file: " + sFilename);
 	return sFilename;
 
 }
@@ -6123,7 +6123,7 @@ void DzBridgeAction::setLodMethod(int arg)
 	}
 	else
 	{
-		dzApp->log("ERROR: DzBridgeAction::setLodMethod(): index out of range.");
+		dzApp->warning("ERROR: DzBridgeAction::setLodMethod(): index out of range.");
 	}
 }
 
