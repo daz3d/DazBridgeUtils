@@ -1,5 +1,7 @@
 #pragma once
 
+#define MORPH_EXPORT_PREFIX "export____"
+
 #include <qstring.h>
 #include <qmap.h>
 

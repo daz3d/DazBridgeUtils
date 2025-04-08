@@ -366,10 +366,10 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 			continue;
 
 		// rename Morph Property with prefix, if prefix is not already present
-		if (m_AvailableMorphsTable[key].Name.contains("export____") == false)
+		if (m_AvailableMorphsTable[key].Name.contains(MORPH_EXPORT_PREFIX) == false)
 		{
 			MorphInfo morphInfo = m_AvailableMorphsTable[key];
-			QString sExportName = "export____" + m_AvailableMorphsTable[key].Name;
+			QString sExportName = MORPH_EXPORT_PREFIX + m_AvailableMorphsTable[key].Name;
 			DzProperty* morphProperty = m_AvailableMorphsTable[key].Property;
 			DzElement* owner = nullptr;
 			if (morphProperty)
@@ -3305,6 +3305,8 @@ void DzBridgeAction::writeMorphLinks(DzJsonWriter& writer)
 				auto controllerOwner = controllerProperty->getOwner();
 				QString sLinkBone = "None";
 				QString sLinkProperty = controllerProperty->getName();
+				// DB 2025-Apr-8: Bugfix: Remove any MORPH_EXPORT_PREFIX ("export____")
+				sLinkProperty = QString(sLinkProperty).replace(MORPH_EXPORT_PREFIX, "");
 				int iLinkType = ercLink->getType();
 				double fLinkScalar = ercLink->getScalar();
 				double fLinkAddend = ercLink->getAddend();
@@ -4883,7 +4885,7 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 	}
 
     // Remove Morph Export Prefix from FBX
-    FbxTools::removeMorphExportPrefixFromNode(pScene->GetRootNode(), "export____");
+    FbxTools::removeMorphExportPrefixFromNode(pScene->GetRootNode(), MORPH_EXPORT_PREFIX);
 
 	// Remove Extra Geograft nodes and geometry
 	if (m_bRemoveDuplicateGeografts)

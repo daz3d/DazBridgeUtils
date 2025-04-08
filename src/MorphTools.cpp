@@ -579,7 +579,7 @@ QStringList MorphTools::getFinalizedMorphList(QList<QString> m_morphsToExport, Q
 	foreach(QString morphName, combinedList)
 	{
 		QString sExportName = morphName;
-		QString sCorrectedKey = QString(morphName).replace("export____", "");
+		QString sCorrectedKey = QString(morphName).replace(MORPH_EXPORT_PREFIX, "");
 		if (availableMorphsTable.contains(sCorrectedKey))
 		{
 			MorphInfo morphInfo = availableMorphsTable[sCorrectedKey];
@@ -767,7 +767,7 @@ QList<JointLinkInfo> MorphTools::GetJointControlledMorphInfo(DzProperty* propert
 			//}
 
 			bool bMorphInfoFound = false;
-			QString sCorrectedKey = QString(linkLabel).replace("export____", "");
+			QString sCorrectedKey = QString(linkLabel).replace(MORPH_EXPORT_PREFIX, "");
 
 			if (availableMorphsTable.contains(linkLabel))
 			{
@@ -816,7 +816,7 @@ void MorphTools::AddActiveJointControlledMorphs(QList<QString> &m_morphsToExport
 		QString linkLabel = linkInfo.MorphName;
 		MorphInfo morphInfo = linkInfo.LinkMorphInfo;
 
-		QString sCorrectedKey = QString(linkLabel).replace("export____", "");
+		QString sCorrectedKey = QString(linkLabel).replace(MORPH_EXPORT_PREFIX, "");
 		if (availableMorphsTable.contains(sCorrectedKey) && !m_morphsToExport.contains(linkLabel))
 		{
 			m_morphsToExport.append(linkLabel);
@@ -824,7 +824,7 @@ void MorphTools::AddActiveJointControlledMorphs(QList<QString> &m_morphsToExport
 
 		// repeat for dq2lb
 		linkLabel += "_dq2lb";
-		sCorrectedKey = QString(linkLabel).replace("export____", "");
+		sCorrectedKey = QString(linkLabel).replace(MORPH_EXPORT_PREFIX, "");
 		if (availableMorphsTable.contains(sCorrectedKey) && !m_morphsToExport.contains(linkLabel))
 		{
 			m_morphsToExport.append(linkLabel);
