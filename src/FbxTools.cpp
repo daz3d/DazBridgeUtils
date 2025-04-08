@@ -1447,6 +1447,11 @@ FbxCluster* FbxTools::FindClusterFromNode(FbxNode* pNode)
 
 void FbxTools::removeMorphExportPrefixFromBlendShapeChannel(FbxBlendShapeChannel* pChannel, const char* prefix)
 {
+	// DB 2025-04-08: rename deformer (blendshapechannel)
+	FbxString newChannelName = pChannel->GetName();
+	newChannelName.FindAndReplace(prefix, "", 0);
+	pChannel->SetName(newChannelName.Buffer());
+
 	int shapeCount = pChannel->GetTargetShapeCount();
 	for (int shapeIndex = 0; shapeIndex < shapeCount; ++shapeIndex)
 	{
