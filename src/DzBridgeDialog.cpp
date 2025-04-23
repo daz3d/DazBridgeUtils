@@ -34,6 +34,7 @@
 #include "common_version.h"
 
 #include "zip.h"
+#include "MorphTools.h"
 
 /*****************************
 Local definitions
@@ -273,12 +274,37 @@ better quality.  **DOES NOT EXPORT MESH**";
 	morphSettingsLayout->setContentsMargins(nStyleMargin, nStyleMargin, nStyleMargin, nStyleMargin);
 	morphSettingsLayout->setSpacing(nStyleMargin);
 	morphSettingsGroupBox->setLayout(morphSettingsLayout);
+	morphSettingsGroupBox->setVisible(false);
 
 	QString sMorphLockBoneTranslationOption = tr("Lock Bone Translations");
 	morphLockBoneTranslationCheckBox = new QCheckBox(sMorphLockBoneTranslationOption, morphSettingsGroupBox);
 	morphLockBoneTranslationCheckBox->setChecked(false);
 	morphSettingsLayout->addRow(morphLockBoneTranslationCheckBox);
-	morphSettingsGroupBox->setVisible(false);
+
+	// 2025-04-14, DB: Refactor MorphSelectionDialog Settings (move to main export options dialog)
+	m_wAutoJCMCheckBox = new QCheckBox("Auto JCM");
+	m_wAutoJCMCheckBox->setChecked(false);
+	m_wAutoJCMCheckBox->setVisible(false);
+	morphSettingsLayout->addRow(m_wAutoJCMCheckBox);
+
+	m_wFakeDualQuatCheckBox = new QCheckBox("Fake Dual Quat");
+	m_wFakeDualQuatCheckBox->setChecked(false);
+	m_wFakeDualQuatCheckBox->setVisible(false);
+	m_wFakeDualQuatCheckBox->setWhatsThis("Adds additional JCMs that fake the difference between Linear Blending and Dual Quaternion Skinning.");
+	morphSettingsLayout->addRow(m_wFakeDualQuatCheckBox);
+
+	m_wAllowMorphDoubleDippingCheckBox = new QCheckBox(tr("Allow Morph Double-Dipping"));
+	m_wAllowMorphDoubleDippingCheckBox->setChecked(false);
+	m_wAllowMorphDoubleDippingCheckBox->setVisible(true);
+	QString sAllowDoubleDippingHelpText = QString(tr("\
+Allow Connected Morphs such as Victoria 9 and Victoria 9 Head and Victoria 9 Body to all fully contribute \n\
+to the exported blendshape when they are exported simultaneously. \n\n\
+WARNING: this will cause 200% or similar morph distortion when they are all applied together and may break \n\
+functionality for some Morph and JCM products.\
+"));
+	m_wAllowMorphDoubleDippingCheckBox->setWhatsThis(sAllowDoubleDippingHelpText);
+	m_wAllowMorphDoubleDippingCheckBox->setToolTip(sAllowDoubleDippingHelpText);
+	morphSettingsLayout->addRow(m_wAllowMorphDoubleDippingCheckBox);
 
 	// Subdivision
 	QHBoxLayout* subdivisionLayout = new QHBoxLayout();
@@ -702,6 +728,11 @@ bool DzBridgeDialog::loadSavedSettings()
 	LOAD_CHECKED("SubdivisionEnabled", subdivisionEnabledCheckBox);
 	LOAD_CHECKED("ShowFBXDialog", showFbxDialogCheckBox);
 
+	// 2025-04-14, DB: MorphSelectionDialog Settings Refactor
+	LOAD_CHECKED("AutoJCMEnabled", m_wAutoJCMCheckBox);
+	LOAD_CHECKED("FakeDualQuatEnabled", m_wFakeDualQuatCheckBox);
+	LOAD_CHECKED("AllowMorphDoubleDipping", m_wAllowMorphDoubleDippingCheckBox);
+
 	if (m_bSetupMode)
 	{
 		this->showOptions();
@@ -767,6 +798,11 @@ void DzBridgeDialog::saveSettings()
 	SAVE_CHECKED("MorphsEnabled", morphsEnabledCheckBox);
 	SAVE_CHECKED("SubdivisionEnabled", subdivisionEnabledCheckBox);
 	SAVE_CHECKED("LodEnabled", m_wEnableLodCheckBox);
+
+	// 2025-04-14, DB: MorphSelectionDialog Settings Refactor
+	SAVE_CHECKED("AutoJCMEnabled", m_wAutoJCMCheckBox);
+	SAVE_CHECKED("FakeDualQuatEnabled", m_wFakeDualQuatCheckBox);
+	SAVE_CHECKED("AllowMorphDoubleDipping", m_wAllowMorphDoubleDippingCheckBox);
 
 	if (!m_bSetupMode) settings->setValue("ShowAdvancedSettings", this->optionsShown());
 
@@ -838,8 +874,42 @@ void DzBridgeDialog::refreshAsset()
 
 }
 
+bool DzBridgeDialog::sanityChecksAndWarnUser()
+{
+	// 2025-04-23, DB: perform checks to allow graceful cancel back to dialog
+	if (getMorphsEnabled())
+	{
+		DzNode* pSelection = dzScene->getPrimarySelection();
+		DzBridgeMorphSelectionDialog* morphDialog = DzBridgeMorphSelectionDialog::Get(this);
+		if (pSelection && morphDialog && !getAllowMorphDoubleDipping())
+		{
+			QList<QString> aMorphNamesToExport = morphDialog->GetMorphNamesToExport();
+			if (MorphTools::CheckForIrreversibleOperations_in_disconnectOverrideControllers(pSelection, aMorphNamesToExport))
+			{
+				// warn user
+				auto userChoice = QMessageBox::question(0, "Daz Bridge",
+					tr("You are exporting morph controllers that are \"connected\" or controlling \n\
+the strength of other morphs that are also being exported. \n\n\
+To prevent morph values from exponential growth to 200% or more \n\
+(aka \"Double-Dipping\"), we must now disconnect all linked morph \n\
+controllers. This may cause irreversible changes to your scene.\n\n\
+Are you ready to proceed, or do you want to Cancel to save your changes?"),
+QMessageBox::Yes | QMessageBox::Cancel,
+QMessageBox::Yes);
+				if (userChoice == QMessageBox::StandardButton::Cancel)
+					return false;
+			}
+		}
+	}
+
+	return true;
+}
+
 void DzBridgeDialog::accept()
 {
+	if (sanityChecksAndWarnUser() == false)
+		return;
+
 	if (m_bSetupMode)
 		return  DzBasicDialog::reject();
 
@@ -1054,6 +1124,10 @@ void DzBridgeDialog::setDisabled(bool bDisabled)
 
 	morphsEnabledCheckBox->setDisabled(bDisabled);
 	morphLockBoneTranslationCheckBox->setDisabled(bDisabled);
+	// 2025-04-14, DB: MorphSelectionDialog Refactor
+	m_wAutoJCMCheckBox->setDisabled(bDisabled);
+	m_wFakeDualQuatCheckBox->setDisabled(bDisabled);
+	m_wAllowMorphDoubleDippingCheckBox->setDisabled(bDisabled);
 	subdivisionEnabledCheckBox->setDisabled(bDisabled);
 	m_wLodSettingsButton->setDisabled(bDisabled);
 	m_wEnableLodCheckBox->setDisabled(bDisabled);

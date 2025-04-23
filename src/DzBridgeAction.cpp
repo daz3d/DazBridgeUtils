@@ -1266,12 +1266,15 @@ bool DzBridgeAction::exportAsset()
 		QList<QString> DisconnectedModifiers;
 		if (m_bEnableMorphs)
 		{
-			if (m_morphSelectionDialog->IsAutoJCMEnabled() && m_morphSelectionDialog->IsFakeDualQuatEnabled())
+			if (m_bEnableAutoJcm && m_bEnableFakeDualQuat) 
 			{
 				exportJCMDualQuatDiff();
 			}
-            DzProgress::setCurrentInfo("SkeletalMesh Export: Disconnecting Override Controllers... ");
-			DisconnectedModifiers = disconnectOverrideControllers();
+			if (m_bAllowMorphDoubleDipping == false) 
+			{
+				DzProgress::setCurrentInfo("SkeletalMesh Export: Disconnecting Override Controllers... ");
+				DisconnectedModifiers = disconnectOverrideControllers();
+			}
 		}
 		DzNode* Selection = dzScene->getPrimarySelection();
         DzProgress::setCurrentInfo("SkeletalMesh Export: Exporting Selection: " + Selection->getLabel());
@@ -3443,7 +3446,7 @@ void DzBridgeAction::writeAllMorphs(DzJsonWriter& writer)
 
 	if (m_bEnableMorphs)
 	{
-		if (m_morphSelectionDialog->IsAutoJCMEnabled())
+		if (m_bEnableAutoJcm)
 		{
 			writer.startMemberArray("JointLinks", true);
 			QList<JointLinkInfo> JointLinks = m_morphSelectionDialog->GetActiveJointControlledMorphs(m_pSelectedNode);
@@ -3812,47 +3815,6 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 	}
 	m_morphSelectionDialog->PrepareDialog();
 
-	// DB 2023-11-02: Moved pre-check Warning User Choice to beginning of method, so that cancelling operation
-	// will not alter any member variables.
-	// Check for irreversible operations, warn user and give opportunity to cancel
-	bool preCheckEnableMorphs = BridgeDialog->getMorphsEnabledCheckBox()->isChecked();
-	// DB, 2023-11-02: should not need variable below, since its state is already used to generate data being checked in function below
-	bool preCheckMorphDoubleDipping = m_morphSelectionDialog->IsAllowMorphDoubleDippingEnabled();
-	resetArray_ControllersToDisconnect();
-	int debug_NumControllersToDisconnect = m_ControllersToDisconnect.count();
-	m_ControllersToDisconnect.append(m_morphSelectionDialog->getMorphNamesToDisconnectList());
-	int debug_NewNumControllersToDisconnect = m_ControllersToDisconnect.count();
-//	m_mMorphNameToLabel = BridgeDialog->GetMorphMappingFromMorphSelectionDialog();
-	m_MorphNamesToExport.clear();
-	m_AvailableMorphsTable.clear();
-	m_MorphNamesToExport = m_morphSelectionDialog->GetMorphNamesToExport();
-	m_AvailableMorphsTable = m_morphSelectionDialog->GetAvailableMorphsTable();
-
-	if (preCheckEnableMorphs)
-	{
-		if (checkForIrreversibleOperations_in_disconnectOverrideControllers() == true && m_nNonInteractiveMode == 0 )
-		{
-			// Sanity Check:  should always be false in this execution pathway
-			if (preCheckMorphDoubleDipping == true)
-			{
-				dzApp->log("WARNING: DazBridge: unexpected value for preCheckMorphDoubleDipping(=true).");
-			}
-
-			// warn user
-			auto userChoice = QMessageBox::question(0, "Daz Bridge",
-				tr("You are exporting morph controllers that are \"connected\" or controlling \n\
-the strength of other morphs that are also being exported. \n\n\
-To prevent morph values from exponential growth to 200% or more \n\
-(aka \"Double-Dipping\"), we must now disconnect all linked morph \n\
-controllers. This may cause irreversible changes to your scene.\n\n\
-Are you ready to proceed, or do you want to Cancel to save your changes?"),
-QMessageBox::Yes | QMessageBox::Cancel,
-QMessageBox::Yes);
-			if (userChoice == QMessageBox::StandardButton::Cancel)
-				return false;
-		}
-	}
-
 	// Collect the values from the dialog fields
 	if (m_sAssetName == "" || isInteractiveMode() ) m_sAssetName = BridgeDialog->getAssetNameEdit()->text();
 	if (m_sExportFilename == "" || isInteractiveMode() ) m_sExportFilename = m_sAssetName;
@@ -3928,6 +3890,26 @@ QMessageBox::Yes);
 	m_bAnimationApplyBoneScale = BridgeDialog->getAnimationApplyBoneScaleCheckBox()->isChecked();
 
 	m_bMorphLockBoneTranslation = BridgeDialog->getMorphLockBoneTranslationCheckBox()->isChecked();
+	m_bEnableAutoJcm = BridgeDialog->getAutoJCM();
+	m_bEnableFakeDualQuat = BridgeDialog->getFakeDualQuat();
+	m_bAllowMorphDoubleDipping = BridgeDialog->getAllowMorphDoubleDipping();
+
+	/////////////////////////////////////////////
+	//// POPULATE m_MorphNamesToExport ////
+	/////////////////////////////////////////////
+	m_MorphNamesToExport.clear();
+	m_AvailableMorphsTable.clear();
+	m_MorphNamesToExport = m_morphSelectionDialog->GetMorphNamesToExport();
+	m_AvailableMorphsTable = m_morphSelectionDialog->GetAvailableMorphsTable();
+
+	//////////////////////////////////////////////////
+	//// POPULATE m_ControllersToDisconnect ////
+	//////////////////////////////////////////////////
+	resetArray_ControllersToDisconnect();
+	QList<QString> aFinalizedMorphList = MorphTools::getFinalizedMorphList(m_MorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm);
+	if (m_bAllowMorphDoubleDipping == false) {
+		m_ControllersToDisconnect.append(MorphTools::GetMorphNamesToDisconnectList(aFinalizedMorphList, m_pSelectedNode));
+	}
 
 	// LOD settings
 	m_bEnableLodGeneration = BridgeDialog->getEnableLodCheckBox()->isChecked();

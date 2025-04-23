@@ -297,6 +297,9 @@ namespace DzBridgeNameSpace
 
 		// Morph Settings;
 		bool m_bMorphLockBoneTranslation;
+		bool m_bEnableAutoJcm;
+		bool m_bEnableFakeDualQuat;
+		bool m_bAllowMorphDoubleDipping;
 
 		// LOD generation settings
 		bool m_bEnableLodGeneration = false; // enable level-of-detail generation

@@ -117,6 +117,10 @@ namespace DzBridgeNameSpace
 
 		Q_INVOKABLE void setEAssetType(int assetType) { m_eAssetType = assetType; }
 
+		Q_INVOKABLE bool getAllowMorphDoubleDipping() { return m_wAllowMorphDoubleDippingCheckBox->isChecked(); }
+		Q_INVOKABLE bool getAutoJCM() { return m_wAutoJCMCheckBox->isChecked(); }
+		Q_INVOKABLE bool getFakeDualQuat() { return m_wFakeDualQuatCheckBox->isChecked(); }
+		Q_INVOKABLE bool getMorphsEnabled() { return morphsEnabledCheckBox->isChecked(); }
 
 		/** Constructor **/
 		DzBridgeDialog(QWidget* parent = nullptr, const QString& windowTitle = "");
@@ -136,6 +140,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual void setBridgeVersionStringAndLabel(QString sVersionString, QString sLabel="");
 		Q_INVOKABLE virtual void setDisabled(bool bDisable);
 		Q_INVOKABLE virtual void showLodRow(bool bShowWidget = true);
+		Q_INVOKABLE virtual bool sanityChecksAndWarnUser();
 
 		void accept() override;
 
@@ -229,6 +234,10 @@ namespace DzBridgeNameSpace
 		// Morph settings
 		QGroupBox* morphSettingsGroupBox = nullptr;
 		QCheckBox* morphLockBoneTranslationCheckBox = nullptr;
+		// 2025-04-14, DB: Refactor MorphSelectionDialog Settings
+		QCheckBox* m_wAutoJCMCheckBox = nullptr;
+		QCheckBox* m_wFakeDualQuatCheckBox = nullptr;
+		QCheckBox* m_wAllowMorphDoubleDippingCheckBox = nullptr;
 
 		// LOD settings
 		QPushButton* m_wLodSettingsButton = nullptr;

@@ -1,4 +1,5 @@
 #define USE_DAZ_LOG 1
+#define EPSILON 0.000001
 
 #include "MorphTools.h"
 
@@ -268,13 +269,13 @@ bool MorphInfo::hasPoseErc()
 
 
 // Return list of Morphs to disable if the morph has a controller that is also being exported
-QList<QString> getMorphNamesToDisconnectList(QList<MorphInfo> m_morphsToExport_finalized)
+QList<QString> MorphTools::GetMorphNamesToDisconnectList(QList<MorphInfo> aMorphInfosToExport)
 {
-	QList<QString> morphsToDisconnect;
+	QList<QString> aMorphNamesToDisconnect;
 
-	foreach(MorphInfo exportMorph, m_morphsToExport_finalized)
+	foreach(MorphInfo oThisMorphInfo, aMorphInfosToExport)
 	{
-		DzProperty* morphProperty = exportMorph.Property;
+		DzProperty* morphProperty = oThisMorphInfo.Property;
 		// DB (2022-Sept-26): crashfix
 		if (morphProperty == nullptr)
 			continue;
@@ -286,80 +287,118 @@ QList<QString> getMorphNamesToDisconnectList(QList<MorphInfo> m_morphsToExport_f
 			if (ercLink == nullptr)
 				continue;
 			auto controllerProperty = ercLink->getProperty();
-			QString sControllerName = MorphInfo::getMorphPropertyName(controllerProperty);
+			QString sMorphControllerName = MorphInfo::getMorphPropertyName(controllerProperty);
 			// iterate through each exported morph
-			foreach(MorphInfo compareMorph, m_morphsToExport_finalized)
+			foreach(MorphInfo oOtherMorphInfo, aMorphInfosToExport)
 			{
-				if (compareMorph.Name == sControllerName)
+				if (oOtherMorphInfo.Name == sMorphControllerName)
 				{
-					morphsToDisconnect.append(exportMorph.Name);
+					aMorphNamesToDisconnect.append(oThisMorphInfo.Name);
 					break;
 				}
 			}
 		}
 	}
 
-	return morphsToDisconnect;
+	return aMorphNamesToDisconnect;
+}
+
+// Return list of Morphs to disable if the morph has a controller that is also being exported
+QList<QString> MorphTools::GetMorphNamesToDisconnectList(QList<QString> aMorphNamesToExport, DzNode* pNode)
+{
+	QList<QString> aMorphNamesToDisconnect;
+	QMap<QString, MorphInfo>* pMorphInfoTable = MorphTools::getAvailableMorphs(pNode);
+
+	foreach(QString sThisMorphName , aMorphNamesToExport)
+	{
+		// Get data from MorphName instead of MorphInfo
+		MorphInfo oThisMorphInfo = pMorphInfoTable->value(sThisMorphName);
+		DzProperty* morphProperty = oThisMorphInfo.Property;
+		// DB (2022-Sept-26): crashfix
+		if (morphProperty == nullptr)
+			continue;
+
+		// DB, 2022-June-07: NOTE: using iterator may be more efficient due to potentially large number of controllers
+		for (auto iterator = morphProperty->controllerListIterator(); iterator.hasNext(); )
+		{
+			DzERCLink* ercLink = qobject_cast<DzERCLink*>(iterator.next());
+			if (ercLink == nullptr)
+				continue;
+			auto controllerProperty = ercLink->getProperty();
+			QString sMorphControllerName = MorphInfo::getMorphPropertyName(controllerProperty);
+			int matchIndex = aMorphNamesToExport.indexOf(sMorphControllerName);
+			if (matchIndex >= 0) {
+				aMorphNamesToDisconnect.append(oThisMorphInfo.Name);
+				break;
+			}
+		}
+	}
+
+	MorphTools::safeDeleteMorphInfoTable(pMorphInfoTable);
+	return aMorphNamesToDisconnect;
 }
 
 
 // DB 2023-11-02: TODO: Fix method so that it is not dependent on member variables being set by readGUI() --
 // in other words, it should be able to function prior to readGUI() being called or being completed.
-bool checkForIrreversibleOperations_in_disconnectOverrideControllers(DzNode* Selection, QList<MorphInfo> )
+bool MorphTools::CheckForIrreversibleOperations_in_disconnectOverrideControllers(DzNode* Selection, QList<QString> aMorphNamesToExport )
 {
 	if (Selection == nullptr)
 		return false;
 
-	//QList<QString> m_ControllersToDisconnect = getMorphNamesToDisconnectList(m_mMorphNameToLabel.keys());
+	QList<QString> aMorphNamesToDisconnect = MorphTools::GetMorphNamesToDisconnectList(aMorphNamesToExport, Selection);
 
-	//DzNumericProperty* previousProperty = nullptr;
-	//for (int index = 0; index < Selection->getNumProperties(); index++)
-	//{
-	//	DzProperty* property = Selection->getProperty(index);
-	//	DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
-	//	if (numericProperty && !numericProperty->isOverridingControllers())
-	//	{
-	//		QString propName = property->getName();
-	//		if (m_mMorphNameToLabel.contains(propName) && m_ControllersToDisconnect.contains(propName))
-	//		{
-	//			double propValue = numericProperty->getDoubleValue();
-	//			if (propValue != 0)
-	//			{
-	//				return true;
-	//			}
-	//		}
-	//	}
-	//}
+	int debug_NumControllersToDisconnect = aMorphNamesToDisconnect.count();
+	int debug_NumMorphsToExport = aMorphNamesToExport.count();
 
-	//DzObject* Object = Selection->getObject();
-	//if (Object)
-	//{
-	//	for (int index = 0; index < Object->getNumModifiers(); index++)
-	//	{
-	//		DzModifier* modifier = Object->getModifier(index);
-	//		DzMorph* mod = qobject_cast<DzMorph*>(modifier);
-	//		if (mod)
-	//		{
-	//			for (int propindex = 0; propindex < modifier->getNumProperties(); propindex++)
-	//			{
-	//				DzProperty* property = modifier->getProperty(propindex);
-	//				DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
-	//				if (numericProperty && !numericProperty->isOverridingControllers())
-	//				{
-	//					QString propName = DzBridgeMorphSelectionDialog::getMorphPropertyName(property);
-	//					if (m_mMorphNameToLabel.contains(modifier->getName()) && m_ControllersToDisconnect.contains(modifier->getName()))
-	//					{
-	//						double propValue = numericProperty->getDoubleValue();
-	//						if (propValue != 0)
-	//						{
-	//							return true;
-	//						}
-	//					}
-	//				}
-	//			}
-	//		}
-	//	}
-	//}
+	DzNumericProperty* previousProperty = nullptr;
+	for (int index = 0; index < Selection->getNumProperties(); index++)
+	{
+		DzProperty* property = Selection->getProperty(index);
+		DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
+		if (numericProperty && !numericProperty->isOverridingControllers())
+		{
+			QString propName = property->getName();
+			if ( aMorphNamesToDisconnect.contains(propName) )
+			{
+				double propValue = numericProperty->getDoubleValue();
+				if ( abs(propValue) > EPSILON )
+				{
+					return true;
+				}
+			}
+		}
+	}
+
+	DzObject* Object = Selection->getObject();
+	if (Object)
+	{
+		for (int index = 0; index < Object->getNumModifiers(); index++)
+		{
+			DzModifier* modifier = Object->getModifier(index);
+			DzMorph* mod = qobject_cast<DzMorph*>(modifier);
+			if (mod)
+			{
+				for (int propindex = 0; propindex < modifier->getNumProperties(); propindex++)
+				{
+					DzProperty* property = modifier->getProperty(propindex);
+					DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
+					if (numericProperty && !numericProperty->isOverridingControllers())
+					{
+						QString propName = MorphInfo::getMorphPropertyName(property);
+						if ( aMorphNamesToDisconnect.contains(modifier->getName()) )
+						{
+							double propValue = numericProperty->getDoubleValue();
+							if (abs(propValue) > EPSILON)
+							{
+								return true;
+							}
+						}
+					}
+				}
+			}
+		}
+	}
 
 	return false;
 }

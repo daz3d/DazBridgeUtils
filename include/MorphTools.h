@@ -101,6 +101,10 @@ public:
 	static QMap<QString, MorphInfo>* getAvailableMorphs(DzNode* Node);
 	static void safeDeleteMorphInfoTable(QMap<QString, MorphInfo>*);
 
+	static QList<QString> GetMorphNamesToDisconnectList(QList<MorphInfo> aMorphInfosToExport);
+	static QList<QString> GetMorphNamesToDisconnectList(QList<QString> aMorphNamesToExport, DzNode* pNode);
+	static bool CheckForIrreversibleOperations_in_disconnectOverrideControllers(DzNode* Selection, QList<QString> aMorphNamesToExport);
+
 private:
 	static void AddActiveJointControlledMorphs(QList<QString> &m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node = nullptr);
 	static QList<JointLinkInfo> GetActiveJointControlledMorphs(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node = nullptr);
