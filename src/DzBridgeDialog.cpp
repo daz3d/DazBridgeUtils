@@ -907,11 +907,13 @@ QMessageBox::Yes);
 
 void DzBridgeDialog::accept()
 {
+	if (m_bSetupMode) {
+		saveSettings();
+		return  DzBasicDialog::reject();
+	}
+
 	if (sanityChecksAndWarnUser() == false)
 		return;
-
-	if (m_bSetupMode)
-		return  DzBasicDialog::reject();
 
 	saveSettings();
 	return DzBasicDialog::accept();
