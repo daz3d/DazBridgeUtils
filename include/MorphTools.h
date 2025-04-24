@@ -100,10 +100,14 @@ public:
 	// DB 2024-06-07: get available morphs independent of GUI
 	static QMap<QString, MorphInfo>* getAvailableMorphs(DzNode* Node);
 	static void safeDeleteMorphInfoTable(QMap<QString, MorphInfo>*);
+	// 2025-04-24, DB: hassle-free version of getAavailableMorphs()
+	static QMap<QString, MorphInfo> GetAvailableMorphs(DzNode* Node);
 
 	static QList<QString> GetMorphNamesToDisconnectList(QList<MorphInfo> aMorphInfosToExport);
 	static QList<QString> GetMorphNamesToDisconnectList(QList<QString> aMorphNamesToExport, DzNode* pNode);
 	static bool CheckForIrreversibleOperations_in_disconnectOverrideControllers(DzNode* Selection, QList<QString> aMorphNamesToExport);
+	static QString GetMorphLabelFromName(QString sMorphName, DzNode* pNode);
+	static QList<JointLinkInfo> GetActiveJointControlledMorphs(QList<QString> aMorphNamesToExport, DzNode* pNode);
 
 private:
 	static void AddActiveJointControlledMorphs(QList<QString> &m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node = nullptr);

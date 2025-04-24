@@ -345,15 +345,16 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 		}
 	}
 
-	auto availables = m_morphSelectionDialog->GetAvailableMorphs(m_pSelectedNode);
+	auto availables = MorphTools::GetAvailableMorphs(m_pSelectedNode);
 	int debug_num_availables = availables.count();
 	int debug_num_AvailableMorphsTable = m_AvailableMorphsTable.count();
 	if (debug_num_availables > debug_num_AvailableMorphsTable)
 	{
+		// This code block used when FakeDualQuat (dq2lb) is enabled and _dq2lb morphs are generated
 		m_AvailableMorphsTable.clear();
 		m_AvailableMorphsTable = availables;
 	}
-	QStringList morphNamesToExport = MorphTools::getCombinedMorphList(m_MorphNamesToExport, m_AvailableMorphsTable, m_morphSelectionDialog->IsAutoJCMEnabled());
+	QStringList morphNamesToExport = MorphTools::getCombinedMorphList(m_MorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm);
 
 	// PreProcess MorphsToExport
 //	foreach (MorphInfo &morphInfo, m_MorphsToExport)
@@ -1461,7 +1462,7 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 			ExportOptions.setBoolValue("doAnims", false);
 		}
 		// DB 2023-11-15: Morph Selection Overhaul
-		m_sMorphSelectionRule = MorphTools::getMorphString(m_MorphNamesToExport, m_AvailableMorphsTable, getMorphSelectionDialog()->IsAutoJCMEnabled());
+		m_sMorphSelectionRule = MorphTools::getMorphString(m_MorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm);
 		// DB 2023-11-15: Custom Asset Type Support
 		if (isAssetMorphCompatible(m_sAssetType) && m_bEnableMorphs && m_sMorphSelectionRule != "")
 		{
@@ -2094,7 +2095,7 @@ void DzBridgeAction::exportJCMDualQuatDiff()
 	DzNode* FigureNode = m_pSelectedNode;
 	//foreach(DzNode * FigureNode, FigureNodeList)
 	{
-		QList<JointLinkInfo> JointLinks = m_morphSelectionDialog->GetActiveJointControlledMorphs(FigureNode);
+		QList<JointLinkInfo> JointLinks = MorphTools::GetActiveJointControlledMorphs(m_MorphNamesToExport, m_pSelectedNode);
 		for (auto JointLink : JointLinks)
 		{
 			if (JointLink.IsBaseJCM)
@@ -3449,7 +3450,7 @@ void DzBridgeAction::writeAllMorphs(DzJsonWriter& writer)
 		if (m_bEnableAutoJcm)
 		{
 			writer.startMemberArray("JointLinks", true);
-			QList<JointLinkInfo> JointLinks = m_morphSelectionDialog->GetActiveJointControlledMorphs(m_pSelectedNode);
+			QList<JointLinkInfo> JointLinks = MorphTools::GetActiveJointControlledMorphs(m_MorphNamesToExport, m_pSelectedNode);
 			foreach(JointLinkInfo linkInfo, JointLinks)
 			{
 				writeMorphJointLinkInfo(writer, linkInfo);
@@ -3899,14 +3900,15 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 	/////////////////////////////////////////////
 	m_MorphNamesToExport.clear();
 	m_AvailableMorphsTable.clear();
-	m_MorphNamesToExport = m_morphSelectionDialog->GetMorphNamesToExport();
-	m_AvailableMorphsTable = m_morphSelectionDialog->GetAvailableMorphsTable();
+	m_AvailableMorphsTable = MorphTools::GetAvailableMorphs(m_pSelectedNode);
+	QList<QString> aUnfinalizedMorphNamesToExport = m_morphSelectionDialog->GetMorphNamesToExport();
+	QList<QString> aFinalizedMorphList = MorphTools::getFinalizedMorphList(aUnfinalizedMorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm);
+	m_MorphNamesToExport = aFinalizedMorphList;
 
 	//////////////////////////////////////////////////
 	//// POPULATE m_ControllersToDisconnect ////
 	//////////////////////////////////////////////////
 	resetArray_ControllersToDisconnect();
-	QList<QString> aFinalizedMorphList = MorphTools::getFinalizedMorphList(m_MorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm);
 	if (m_bAllowMorphDoubleDipping == false) {
 		m_ControllersToDisconnect.append(MorphTools::GetMorphNamesToDisconnectList(aFinalizedMorphList, m_pSelectedNode));
 	}
