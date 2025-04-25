@@ -649,8 +649,14 @@ QString MorphTools::getMorphString(QList<QString> m_morphsToExport, QMap<QString
 	return morphString;
 }
 
+QString MorphTools::GetMorphString(QList<QString> aMorphsToExport, DzNode* pNode, bool bAutoJCMEnabled)
+{
+	QMap<QString, MorphInfo> oAvailableMorphsTable = GetAvailableMorphs(pNode);
+	return getMorphString(aMorphsToExport, oAvailableMorphsTable, bAutoJCMEnabled);
+}
+
 // Recursive function for finding all active JCM morphs for a node
-QList<JointLinkInfo> MorphTools::GetActiveJointControlledMorphs(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node)
+QList<JointLinkInfo> MorphTools::GetActiveJointControlledMorphs( QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node)
 {
 	QList<JointLinkInfo> returnMorphs;
 	if (bAutoJCMEnabled)
@@ -681,7 +687,7 @@ QList<JointLinkInfo> MorphTools::GetActiveJointControlledMorphs(QList<QString> m
 		for (int index = 0; index < Node->getNumProperties(); index++)
 		{
 			DzProperty* property = Node->getProperty(index);
-			returnMorphs.append(GetJointControlledMorphInfo(property, m_morphsToExport, availableMorphsTable));
+			returnMorphs.append(GetJointControlledMorphInfo(property, availableMorphsTable));
 		}
 
 		if (Object)
@@ -697,7 +703,7 @@ QList<JointLinkInfo> MorphTools::GetActiveJointControlledMorphs(QList<QString> m
 					for (int propindex = 0; propindex < modifier->getNumProperties(); propindex++)
 					{
 						DzProperty* property = modifier->getProperty(propindex);
-						returnMorphs.append(GetJointControlledMorphInfo(property, m_morphsToExport, availableMorphsTable));
+						returnMorphs.append(GetJointControlledMorphInfo(property, availableMorphsTable));
 					}
 
 				}
@@ -710,7 +716,7 @@ QList<JointLinkInfo> MorphTools::GetActiveJointControlledMorphs(QList<QString> m
 	return returnMorphs;
 }
 
-QList<JointLinkInfo> MorphTools::GetJointControlledMorphInfo(DzProperty* property, QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable)
+QList<JointLinkInfo> MorphTools::GetJointControlledMorphInfo(DzProperty* property, QMap<QString, MorphInfo> availableMorphsTable)
 {
 	QList<JointLinkInfo> returnMorphs;
 
@@ -847,7 +853,7 @@ QList<JointLinkInfo> MorphTools::GetJointControlledMorphInfo(DzProperty* propert
 
 void MorphTools::AddActiveJointControlledMorphs(QList<QString> &m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node)
 {
-	QList<JointLinkInfo> activeJCMs = GetActiveJointControlledMorphs(m_morphsToExport, availableMorphsTable, bAutoJCMEnabled, Node);
+	QList<JointLinkInfo> activeJCMs = GetActiveJointControlledMorphs( availableMorphsTable, bAutoJCMEnabled, Node);
 
 	for (JointLinkInfo linkInfo : activeJCMs)
 	{
@@ -1007,8 +1013,7 @@ void MorphTools::safeDeleteMorphInfoTable(QMap<QString, MorphInfo>* pMorphInfoTa
 	return;
 }
 
-// DB 2024-06-07: need available morph table independent of GUI
-// NOTE: User must free table after done using
+// 2025-04-24, DB: hassle-free version of getAavailableMorphs(), i.e. no gui depenedency, no required memory management
 QMap<QString, MorphInfo> MorphTools::GetAvailableMorphs(DzNode* Node)
 {
 	// Build morphinfo table to return
@@ -1079,10 +1084,13 @@ QMap<QString, MorphInfo> MorphTools::GetAvailableMorphs(DzNode* Node)
 	return oMorphInfoTable;
 }
 
-QList<JointLinkInfo> MorphTools::GetActiveJointControlledMorphs(QList<QString> aMorphNamesToExport, DzNode* pNode)
+QList<JointLinkInfo> MorphTools::GetActiveJointControlledMorphs( DzNode* pNode)
 {
+	if (pNode == nullptr) {
+		pNode = dzScene->getPrimarySelection();
+	}
 	QMap<QString, MorphInfo> availableMorphsTable = GetAvailableMorphs(pNode);
-	return MorphTools::GetActiveJointControlledMorphs(aMorphNamesToExport, availableMorphsTable, true, pNode);
+	return MorphTools::GetActiveJointControlledMorphs( availableMorphsTable, true, pNode);
 }
 
 // Retrieve label based on morph name

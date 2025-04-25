@@ -61,8 +61,8 @@ bool UnitTest_DzBridgeMorphSelectionDialog::PrepareDialog(UnitTest::TestResult* 
 bool UnitTest_DzBridgeMorphSelectionDialog::GetMorphString(UnitTest::TestResult* testResult)
 {
 	bool bResult = true;
-	TRY_METHODCALL(qobject_cast<DzBridgeMorphSelectionDialog*>(m_testObject)->GetMorphString());
-	return bResult;
+//	TRY_METHODCALL(qobject_cast<DzBridgeMorphSelectionDialog*>(m_testObject)->GetMorphString());
+	return false;
 }
 
 bool UnitTest_DzBridgeMorphSelectionDialog::GetMorphCSVString(UnitTest::TestResult* testResult)
@@ -75,22 +75,22 @@ bool UnitTest_DzBridgeMorphSelectionDialog::GetMorphCSVString(UnitTest::TestResu
 bool UnitTest_DzBridgeMorphSelectionDialog::GetMorphMapping(UnitTest::TestResult* testResult)
 {
 	bool bResult = true;
-	TRY_METHODCALL(qobject_cast<DzBridgeMorphSelectionDialog*>(m_testObject)->GetMorphMapping());
-	return bResult;
+//	TRY_METHODCALL(qobject_cast<DzBridgeMorphSelectionDialog*>(m_testObject)->GetMorphMapping());
+	return false;
 }
 
 bool UnitTest_DzBridgeMorphSelectionDialog::IsAutoJCMEnabled(UnitTest::TestResult* testResult)
 {
 	bool bResult = true;
-	TRY_METHODCALL(qobject_cast<DzBridgeMorphSelectionDialog*>(m_testObject)->IsAutoJCMEnabled());
-	return bResult;
+//	TRY_METHODCALL(qobject_cast<DzBridgeMorphSelectionDialog*>(m_testObject)->IsAutoJCMEnabled());
+	return false;
 }
 
 bool UnitTest_DzBridgeMorphSelectionDialog::GetActiveJointControlledMorphs(UnitTest::TestResult* testResult)
 {
 	bool bResult = true;
-	TRY_METHODCALL(qobject_cast<DzBridgeMorphSelectionDialog*>(m_testObject)->GetActiveJointControlledMorphs());
-	return bResult;
+//	TRY_METHODCALL(qobject_cast<DzBridgeMorphSelectionDialog*>(m_testObject)->GetActiveJointControlledMorphs());
+	return false;
 }
 
 bool UnitTest_DzBridgeMorphSelectionDialog::GetMorphLabelFromName(UnitTest::TestResult* testResult)
@@ -180,8 +180,8 @@ bool UnitTest_DzBridgeMorphSelectionDialog::HandleFaceFXGenesis8Button(UnitTest:
 bool UnitTest_DzBridgeMorphSelectionDialog::HandleAutoJCMCheckBoxChange(UnitTest::TestResult* testResult)
 {
 	bool bResult = true;
-	TRY_METHODCALL(qobject_cast<DzBridgeMorphSelectionDialog*>(m_testObject)->HandleAutoJCMCheckBoxChange(false));
-	return bResult;
+//	TRY_METHODCALL(qobject_cast<DzBridgeMorphSelectionDialog*>(m_testObject)->HandleAutoJCMCheckBoxChange(false));
+	return false;
 }
 
 #include "moc_UnitTest_DzBridgeMorphSelectionDialog.cpp"

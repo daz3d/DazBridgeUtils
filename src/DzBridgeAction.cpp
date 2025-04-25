@@ -2095,7 +2095,7 @@ void DzBridgeAction::exportJCMDualQuatDiff()
 	DzNode* FigureNode = m_pSelectedNode;
 	//foreach(DzNode * FigureNode, FigureNodeList)
 	{
-		QList<JointLinkInfo> JointLinks = MorphTools::GetActiveJointControlledMorphs(m_MorphNamesToExport, m_pSelectedNode);
+		QList<JointLinkInfo> JointLinks = MorphTools::GetActiveJointControlledMorphs( m_pSelectedNode );
 		for (auto JointLink : JointLinks)
 		{
 			if (JointLink.IsBaseJCM)
@@ -3450,7 +3450,7 @@ void DzBridgeAction::writeAllMorphs(DzJsonWriter& writer)
 		if (m_bEnableAutoJcm)
 		{
 			writer.startMemberArray("JointLinks", true);
-			QList<JointLinkInfo> JointLinks = MorphTools::GetActiveJointControlledMorphs(m_MorphNamesToExport, m_pSelectedNode);
+			QList<JointLinkInfo> JointLinks = MorphTools::GetActiveJointControlledMorphs( m_pSelectedNode );
 			foreach(JointLinkInfo linkInfo, JointLinks)
 			{
 				writeMorphJointLinkInfo(writer, linkInfo);

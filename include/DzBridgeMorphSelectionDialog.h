@@ -37,27 +37,13 @@ namespace DzBridgeNameSpace
 		// Singleton access
 		Q_INVOKABLE static DzBridgeMorphSelectionDialog* Get(QWidget* Parent);
 
-		// Get the morph string (aka m_morphsToExport) in the format for the Daz FBX Export
-		Q_INVOKABLE QString GetMorphString();
-
 		// Get the morph string (aka m_morphsToExport) in the format used for presets
 		Q_INVOKABLE QString GetMorphCSVString(bool bUseFinalizedList = true);
 
-		// Get the morph string (aka m_morphsToExport) in an internal name = friendly name format
 		// Used to rename them to the friendly name in Unreal
-		Q_INVOKABLE QMap<QString, QString> GetMorphMapping();
 		Q_INVOKABLE QMap<QString, MorphInfo> GetAvailableMorphsTable();
 		// Morph Selection Overhaul
 		Q_INVOKABLE QList<QString> GetMorphNamesToExport();
-
-		Q_INVOKABLE bool IsAutoJCMEnabled() { return autoJCMCheckBox->isChecked(); }
-		Q_INVOKABLE bool IsFakeDualQuatEnabled() { return fakeDualQuatCheckBox->isChecked(); }
-		Q_INVOKABLE bool IsAllowMorphDoubleDippingEnabled() { return allowMorphDoubleDippingCheckBox->isChecked(); }
-
-		// Recursive function for finding all active JCM morphs for a node
-		Q_INVOKABLE QList<JointLinkInfo> GetActiveJointControlledMorphs(DzNode* Node = nullptr);
-		// Find and ADD JCMs
-		Q_INVOKABLE void AddActiveJointControlledMorphs(DzNode* Node = nullptr);
 
 		// Retrieve label based on morph name
 		// DB Dec-21-2021, Created for scripting.
@@ -66,15 +52,9 @@ namespace DzBridgeNameSpace
 		// Get MorphInfo from morph name
 		// DB June-01-2022, Created for MorphLinks Generation for Blender Bridge Morphs Support
 		Q_INVOKABLE MorphInfo GetMorphInfoFromName(QString morphName);
-		Q_INVOKABLE void SetAutoJCMVisible(bool bVisible);
-		Q_INVOKABLE void SetAutoJCMEnabled(bool bEnabled);
-		// DB 2023-July-10
-		Q_INVOKABLE void SetAllowMorphDoubleDippingVisible(bool bVisible);
-		Q_INVOKABLE void SetAllowMorphDoubleDippingEnabled(bool bEnabled);
 
 		// get morph property name
 		Q_INVOKABLE static QString getMorphPropertyName(DzProperty* pMorphProperty);
-		Q_INVOKABLE QList<QString> getMorphNamesToDisconnectList();
 
 		// Get Pose list.  Similart to morphs, but without AutoJCM or FakeDualQuat items
 		Q_INVOKABLE QList<QString> GetPoseList();
@@ -91,8 +71,6 @@ namespace DzBridgeNameSpace
 		void HandleTorsoJCMMorphsButton();
 		void HandleARKitGenesis81MorphsButton();
 		void HandleFaceFXGenesis8Button();
-		void HandleAutoJCMCheckBoxChange(bool checked);
-		void HandleFakeDualQuatCheckBoxChange(bool checked);
 		void HandleAddConnectedMorphs();
 		void HandleDialogAccepted(bool bSavePreset = true);
 
@@ -161,11 +139,7 @@ namespace DzBridgeNameSpace
 
 		QTreeWidgetItem* fullBodyMorphTreeItem;
 		QTreeWidgetItem* charactersTreeItem;
-		QCheckBox* autoJCMCheckBox;
-		QCheckBox* fakeDualQuatCheckBox;
 		QPushButton* addConnectedMorphsButton;
-
-		QCheckBox* allowMorphDoubleDippingCheckBox;
 
 		QSettings* settings;
 

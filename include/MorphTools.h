@@ -93,6 +93,7 @@ public:
 
 	static QMap<QString, MorphInfo> enumerateMorphInfoTable(DzNode* Node);
 	static QString getMorphString(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled);
+	static QString GetMorphString(QList<QString> aMorphsToExport, DzNode* pNode, bool bAutoJCMEnabled=false);
 	static QStringList getAvailableMorphNames(DzNode* Node);
 	static QStringList getFinalizedMorphList(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled);
 	static QStringList getCombinedMorphList(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled);
@@ -107,11 +108,11 @@ public:
 	static QList<QString> GetMorphNamesToDisconnectList(QList<QString> aMorphNamesToExport, DzNode* pNode);
 	static bool CheckForIrreversibleOperations_in_disconnectOverrideControllers(DzNode* Selection, QList<QString> aMorphNamesToExport);
 	static QString GetMorphLabelFromName(QString sMorphName, DzNode* pNode);
-	static QList<JointLinkInfo> GetActiveJointControlledMorphs(QList<QString> aMorphNamesToExport, DzNode* pNode);
+	static QList<JointLinkInfo> GetActiveJointControlledMorphs( DzNode* pNode = nullptr );
 
 private:
 	static void AddActiveJointControlledMorphs(QList<QString> &m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node = nullptr);
-	static QList<JointLinkInfo> GetActiveJointControlledMorphs(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node = nullptr);
-	static QList<JointLinkInfo> GetJointControlledMorphInfo(DzProperty* property, QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable);
+	static QList<JointLinkInfo> GetActiveJointControlledMorphs(QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node = nullptr);
+	static QList<JointLinkInfo> GetJointControlledMorphInfo(DzProperty* property, QMap<QString, MorphInfo> availableMorphsTable);
 
 };
