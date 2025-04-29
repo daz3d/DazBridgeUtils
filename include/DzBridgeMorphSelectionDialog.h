@@ -72,6 +72,7 @@ namespace DzBridgeNameSpace
 		void HandleARKitGenesis81MorphsButton();
 		void HandleFaceFXGenesis8Button();
 		void HandleAddConnectedMorphs();
+		void HandleAddConnectedJcms();
 		void HandleDialogAccepted(bool bSavePreset = true);
 
 	protected:
@@ -140,6 +141,7 @@ namespace DzBridgeNameSpace
 		QTreeWidgetItem* fullBodyMorphTreeItem;
 		QTreeWidgetItem* charactersTreeItem;
 		QPushButton* addConnectedMorphsButton;
+		QPushButton* m_wAddConnectedJcmsButton;
 
 		QSettings* settings;
 

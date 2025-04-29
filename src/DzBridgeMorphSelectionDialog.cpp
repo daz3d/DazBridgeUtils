@@ -196,10 +196,16 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	// 2025-04-25, DB: Moved JCM and other Morph options to main options dialog (DzBridgeDialog)
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	addConnectedMorphsButton = new QPushButton("Add Connected Morphs");
-	addConnectedMorphsButton->setVisible(false);
+	addConnectedMorphsButton->setVisible(true);
 	QString sAddConnectedMorphsHelpText = QString(tr("Add any morphs or property sliders which can contribute to strength of exported morphs."));
 	addConnectedMorphsButton->setWhatsThis(sAddConnectedMorphsHelpText);
 	addConnectedMorphsButton->setToolTip(sAddConnectedMorphsHelpText);
+
+	m_wAddConnectedJcmsButton = new QPushButton("Add Connected JCMs");
+	m_wAddConnectedJcmsButton->setVisible(true);
+	QString sAddConnectedJcmsHelpText = QString(tr("Add any JCMs which can contribute to strength of exported morphs."));
+	m_wAddConnectedJcmsButton->setWhatsThis(sAddConnectedJcmsHelpText);
+	m_wAddConnectedJcmsButton->setToolTip(sAddConnectedJcmsHelpText);
 
 	((QGridLayout*)JCMGroupBox->layout())->addWidget(ArmsJCMButton, 0, 0);
 	((QGridLayout*)JCMGroupBox->layout())->addWidget(LegsJCMButton, 0, 1);
@@ -210,6 +216,7 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	MorphGroupBox->layout()->addWidget(JCMGroupBox);
 	MorphGroupBox->layout()->addWidget(FaceGroupBox);
 	MorphGroupBox->layout()->addWidget(addConnectedMorphsButton);
+	MorphGroupBox->layout()->addWidget(m_wAddConnectedJcmsButton);
 
 	connect(ArmsJCMButton, SIGNAL(released()), this, SLOT(HandleArmJCMMorphsButton()));
 	connect(LegsJCMButton, SIGNAL(released()), this, SLOT(HandleLegJCMMorphsButton()));
@@ -217,6 +224,7 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	connect(ARKit81Button, SIGNAL(released()), this, SLOT(HandleARKitGenesis81MorphsButton()));
 	connect(FaceFX8Button, SIGNAL(released()), this, SLOT(HandleFaceFXGenesis8Button()));
 	connect(addConnectedMorphsButton, SIGNAL(clicked(bool)), this, SLOT(HandleAddConnectedMorphs()));
+	connect(m_wAddConnectedJcmsButton, SIGNAL(clicked(bool)), this, SLOT(HandleAddConnectedJcms()));
 
 	treeLayout->addWidget(MorphGroupBox);
 	morphsLayout->addLayout(treeLayout);
@@ -1450,17 +1458,9 @@ void DzBridgeMorphSelectionDialog::HandleAddConnectedMorphs()
 		return;
 	}
 
-	QList<JointLinkInfo> jointLinks = MorphTools::GetActiveJointControlledMorphs();
-
-	/////////////////////////////////////////////////////////////////////////////////////
-	// foreach (MorphInfo exportMorph, m_morphsToExport)
-	// {
-	// 	DzProperty *morphProperty = exportMorph.Property;
-	/////////////////////////////////////////////////////////////////////////////////////
-	foreach (JointLinkInfo jointLink, jointLinks)
+	foreach (MorphInfo exportMorph, m_morphsToExport)
 	{
-		DzProperty *morphProperty = jointLink.LinkMorphInfo.Property;
-	/////////////////////////////////////////////////////////////////////////////////////
+	 	DzProperty *morphProperty = exportMorph.Property;
 		if (morphProperty == nullptr)
 		{
 			// log unexpected error
@@ -1470,6 +1470,42 @@ void DzBridgeMorphSelectionDialog::HandleAddConnectedMorphs()
 		{
 			DzProperty *controllerProperty = slaveControllerIterator.next()->getOwner();
 			if (isValidMorph(controllerProperty)==false)
+				continue;
+			QString sMorphName = getMorphPropertyName(controllerProperty);
+
+			// Add the list for export
+			if (m_morphInfoMap.contains(sMorphName) && !m_morphsToExport.contains(m_morphInfoMap[sMorphName]))
+			{
+				m_morphsToExport.append(m_morphInfoMap[sMorphName]);
+			}
+
+		}
+	}
+	RefreshExportMorphList();
+}
+
+// Load morphs controlling the morphs in the export list
+void DzBridgeMorphSelectionDialog::HandleAddConnectedJcms()
+{
+	// sanity check
+	if (m_morphsToExport.length() == 0)
+	{
+		return;
+	}
+
+	QList<JointLinkInfo> jointLinks = MorphTools::GetActiveJointControlledMorphs();
+	foreach(JointLinkInfo jointLink, jointLinks)
+	{
+		DzProperty* morphProperty = jointLink.LinkMorphInfo.Property;
+		if (morphProperty == nullptr)
+		{
+			// log unexpected error
+			continue;
+		}
+		for (auto slaveControllerIterator = morphProperty->slaveControllerListIterator(); slaveControllerIterator.hasNext(); )
+		{
+			DzProperty* controllerProperty = slaveControllerIterator.next()->getOwner();
+			if (isValidMorph(controllerProperty) == false)
 				continue;
 			QString sMorphName = getMorphPropertyName(controllerProperty);
 
