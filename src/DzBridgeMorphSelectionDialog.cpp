@@ -547,6 +547,12 @@ QMap<QString, MorphInfo> DzBridgeMorphSelectionDialog::GetAvailableMorphs(DzNode
 	return m_morphInfoMap;
 }
 
+/////////////////////////
+// 2025-04-30, DB: Merge Conflict Resolution Note:
+//		GetJointControlledMorphInfo() and other functions moved to MorphTools
+//		Github commit (Fix for AutoJCM taking JCMs from other characters.) applied to MorphTools version
+/////////////////////////
+
 // Build out the left tree
 void DzBridgeMorphSelectionDialog::UpdateMorphsTree()
 {

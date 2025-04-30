@@ -737,7 +737,7 @@ QList<JointLinkInfo> MorphTools::GetJointControlledMorphInfo(DzProperty* propert
 		QString linkAxis;
 		QString linkBodyType;
 		double bodyStrength = 0.0f;
-		double currentBodyScalar = 0.0f;
+		double currentBodyScalar = 1.0f;
 		double linkScalar = 0.0f;
 		bool isJCM = false;
 		bool isBaseJCM = false;
@@ -784,7 +784,7 @@ QList<JointLinkInfo> MorphTools::GetJointControlledMorphInfo(DzProperty* propert
 				{
 					linkBodyType = linkObject;
 					bodyStrength = value;
-					currentBodyScalar = currentValue;
+					currentBodyScalar *= currentValue;
 					if (linkProperty == "body_ctrl_basejointcorrectives" ||
 						linkProperty == "BaseJointCorrectives")
 					{
