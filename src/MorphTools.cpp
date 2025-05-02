@@ -799,28 +799,26 @@ QList<JointLinkInfo> MorphTools::GetJointControlledMorphInfo(DzProperty* propert
 			JointLinkInfo linkInfo;
 			linkInfo.Bone = linkBone;
 			linkInfo.Axis = linkAxis;
-			linkInfo.MorphName = linkLabel;
+			linkInfo.MorphName = "BROKEN_FIXME____" + linkLabel;
 			linkInfo.Scalar = linkScalar;
 			linkInfo.Alpha = currentBodyScalar;
 			linkInfo.Keys = linkKeys;
 			linkInfo.IsBaseJCM = isBaseJCM;
 
-			//if (m_morphInfoMap.contains(linkLabel))
-			//{
-			//	linkInfo.LinkMorphInfo = m_morphInfoMap[linkLabel];
-			//}
-
 			bool bMorphInfoFound = false;
 			QString sCorrectedKey = QString(linkLabel).replace(MORPH_EXPORT_PREFIX, "");
 
-			if (availableMorphsTable.contains(linkLabel))
-			{
-				linkInfo.LinkMorphInfo = availableMorphsTable[linkLabel];
-				bMorphInfoFound = true;
-			}
-			else if (availableMorphsTable.contains(sCorrectedKey))
+			// 2025-05-02, DB: BUGFIX - check for correctedkey FIRST
+			if (availableMorphsTable.contains(sCorrectedKey))
 			{
 				linkInfo.LinkMorphInfo = availableMorphsTable[sCorrectedKey];
+				linkInfo.MorphName = sCorrectedKey;
+				bMorphInfoFound = true;
+			}
+			else if (availableMorphsTable.contains(linkLabel))
+			{
+				linkInfo.LinkMorphInfo = availableMorphsTable[linkLabel];
+				linkInfo.MorphName = linkInfo.LinkMorphInfo.Name;
 				bMorphInfoFound = true;
 			}
 
@@ -949,7 +947,8 @@ QMap<QString, MorphInfo>* MorphTools::getAvailableMorphs(DzNode* Node)
 		if (presentation)
 		{
 			MorphInfo morphInfo;
-			morphInfo.Name = propName;
+			QString sCorrectedMorphName = QString(propName).replace(MORPH_EXPORT_PREFIX, "");
+			morphInfo.Name = sCorrectedMorphName;
 			morphInfo.Label = propLabel;
 			morphInfo.Path = Node->getLabel() + "/" + property->getPath();
 			morphInfo.Type = presentation->getType();
@@ -981,7 +980,8 @@ QMap<QString, MorphInfo>* MorphTools::getAvailableMorphs(DzNode* Node)
 					if (presentation)
 					{
 						MorphInfo morphInfoProp;
-						morphInfoProp.Name = modName;
+						QString sCorrectedMorphName = QString(modName).replace(MORPH_EXPORT_PREFIX, "");
+						morphInfoProp.Name = sCorrectedMorphName;
 						morphInfoProp.Label = propLabel;
 						morphInfoProp.Path = Node->getLabel() + "/" + property->getPath();
 						morphInfoProp.Type = presentation->getType();
@@ -1031,7 +1031,8 @@ QMap<QString, MorphInfo> MorphTools::GetAvailableMorphs(DzNode* Node)
 		if (presentation)
 		{
 			MorphInfo morphInfo;
-			morphInfo.Name = propName;
+			QString sCorrectedMorphName = QString(propName).replace(MORPH_EXPORT_PREFIX, "");
+			morphInfo.Name = sCorrectedMorphName;
 			morphInfo.Label = propLabel;
 			morphInfo.Path = Node->getLabel() + "/" + property->getPath();
 			morphInfo.Type = presentation->getType();
@@ -1063,7 +1064,8 @@ QMap<QString, MorphInfo> MorphTools::GetAvailableMorphs(DzNode* Node)
 					if (presentation)
 					{
 						MorphInfo morphInfoProp;
-						morphInfoProp.Name = modName;
+						QString sCorrectedMorphName = QString(modName).replace(MORPH_EXPORT_PREFIX, "");
+						morphInfoProp.Name = sCorrectedMorphName;
 						morphInfoProp.Label = propLabel;
 						morphInfoProp.Path = Node->getLabel() + "/" + property->getPath();
 						morphInfoProp.Type = presentation->getType();

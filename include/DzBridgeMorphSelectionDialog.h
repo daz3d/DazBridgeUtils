@@ -91,9 +91,6 @@ namespace DzBridgeNameSpace
 		// function for finding all morphs for a node
 		QMap<QString, MorphInfo> GetAvailableMorphs(DzNode* Node);
 
-		//
-		QList<JointLinkInfo> GetJointControlledMorphInfo(DzProperty* property);
-
 		void UpdateMorphsTree();
 
 		// Returns the tree node for the morph name (with path)

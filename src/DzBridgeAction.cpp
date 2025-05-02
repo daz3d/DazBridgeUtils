@@ -3309,8 +3309,6 @@ void DzBridgeAction::writeMorphLinks(DzJsonWriter& writer)
 				auto controllerOwner = controllerProperty->getOwner();
 				QString sLinkBone = "None";
 				QString sLinkProperty = controllerProperty->getName();
-				// DB 2025-Apr-8: Bugfix: Remove any MORPH_EXPORT_PREFIX ("export____")
-				sLinkProperty = QString(sLinkProperty).replace(MORPH_EXPORT_PREFIX, "");
 				int iLinkType = ercLink->getType();
 				double fLinkScalar = ercLink->getScalar();
 				double fLinkAddend = ercLink->getAddend();
@@ -3325,6 +3323,8 @@ void DzBridgeAction::writeMorphLinks(DzJsonWriter& writer)
 				}
 				writer.startObject();
 				writer.addMember("Bone", sLinkBone);
+				// DB 2025-May-2: Bugfix of April Bugfix: Remove any MORPH_EXPORT_PREFIX ("export____")
+				sLinkProperty = QString(sLinkProperty).replace(MORPH_EXPORT_PREFIX, "");
 				writer.addMember("Property", sLinkProperty);
 				writer.addMember("Type", iLinkType);
 				writer.addMember("Scalar", fLinkScalar);
@@ -3370,6 +3370,8 @@ void DzBridgeAction::writeMorphLinks(DzJsonWriter& writer)
 					double fLinkAddend = ercLink->getAddend();
 					writer.startObject();
 					writer.addMember("Bone", sLinkBone);
+					// DB 2025-May-2: Bugfix of April Bugfix: Remove any MORPH_EXPORT_PREFIX ("export____")
+					sLinkProperty = QString(sLinkProperty).replace(MORPH_EXPORT_PREFIX, "");
 					writer.addMember("Property", sLinkProperty);
 					writer.addMember("Type", iLinkType);
 					writer.addMember("Scalar", fLinkScalar);
@@ -3474,7 +3476,10 @@ void DzBridgeAction::writeMorphJointLinkInfo(DzJsonWriter& writer, const JointLi
 	writer.startObject(true);
 	writer.addMember("Bone", linkInfo.Bone);
 	writer.addMember("Axis", linkInfo.Axis);
-	writer.addMember("Morph", linkInfo.MorphName);
+	// DB 2025-May-2: Bugfix of April Bugfix: Remove any MORPH_EXPORT_PREFIX ("export____")
+	QString sCorrectedMorphName = linkInfo.MorphName;
+	sCorrectedMorphName = QString(sCorrectedMorphName).replace(MORPH_EXPORT_PREFIX, "");
+	writer.addMember("Morph", sCorrectedMorphName);
 	writer.addMember("Scalar", linkInfo.Scalar);
 	writer.addMember("Alpha", linkInfo.Alpha);
 	if (linkInfo.Keys.count() > 0)
