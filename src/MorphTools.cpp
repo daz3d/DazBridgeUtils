@@ -618,6 +618,12 @@ QStringList MorphTools::getFinalizedMorphList(QList<QString> m_morphsToExport, Q
 	{
 		QString sExportName = morphName;
 		QString sCorrectedKey = QString(morphName).replace(MORPH_EXPORT_PREFIX, "");
+		// 2025-04-30, DB: bugfix to remove duplicate entries
+		if (morphNamesToExport.contains(sExportName)) 
+		{
+			dzApp->debug("MorphTools::getFinalizedMorphList(): morph name already in export array: " + sExportName + ", skipping...");
+			continue;
+		}
 		if (availableMorphsTable.contains(sCorrectedKey))
 		{
 			MorphInfo morphInfo = availableMorphsTable[sCorrectedKey];
@@ -849,6 +855,7 @@ QList<JointLinkInfo> MorphTools::GetJointControlledMorphInfo(DzProperty* propert
 	return returnMorphs;
 }
 
+// WARNING: Modifies-In-Place: QStringList m_morphsToExport
 void MorphTools::AddActiveJointControlledMorphs(QList<QString> &m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node)
 {
 	QList<JointLinkInfo> activeJCMs = GetActiveJointControlledMorphs( availableMorphsTable, bAutoJCMEnabled, Node);
