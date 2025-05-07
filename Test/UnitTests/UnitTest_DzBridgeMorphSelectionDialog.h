@@ -18,7 +18,6 @@ private:
 	bool GetMorphMapping(UnitTest::TestResult* testResult);
 	bool IsAutoJCMEnabled(UnitTest::TestResult* testResult);
 	bool GetActiveJointControlledMorphs(UnitTest::TestResult* testResult);
-	bool GetMorphLabelFromName(UnitTest::TestResult* testResult);
 	bool FilterChanged(UnitTest::TestResult* testResult);
 	bool ItemSelectionChanged(UnitTest::TestResult* testResult);
 	bool HandleAddMorphsButton(UnitTest::TestResult* testResult);

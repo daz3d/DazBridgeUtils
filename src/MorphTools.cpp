@@ -31,58 +31,10 @@
 void MorphInfo::log(QString message)
 {
 #if USE_DAZ_LOG
-	dzApp->log(message);
+	dzApp->log("MorphTools::MorphInfo: " + message);
 #else
 	printf(message.toUtf8().constData());
 #endif
-}
-
-QString MorphInfo::getMorphPropertyName(DzProperty* pMorphProperty)
-{
-	if (pMorphProperty == nullptr)
-	{
-		// issue error message or alternatively: throw exception
-		printf("ERROR: DazBridge: DzBridgeMorphSelectionDialog.cpp, getPropertyName(): nullptr passed as argument.");
-		return "";
-	}
-	QString sPropertyName = pMorphProperty->getName();
-	auto owner = pMorphProperty->getOwner();
-	if (owner && owner->inherits("DzMorph"))
-	{
-		sPropertyName = owner->getName();
-	}
-	return sPropertyName;
-}
-
-bool MorphInfo::isValidMorph(DzProperty* pMorphProperty)
-{
-	if (pMorphProperty == nullptr)
-	{
-		// issue error message or alternatively: throw exception
-		dzApp->warning("ERROR: DazBridge: DzBridgeMorphSelectionDialog.cpp, isValidMorph(): nullptr passed as argument.");
-		return false;
-	}
-	QString sMorphName = getMorphPropertyName(pMorphProperty);
-	QStringList ignoreConditionList;
-	ignoreConditionList += "x"; ignoreConditionList += "y"; ignoreConditionList += "z";
-	for (auto ignoreCondition : ignoreConditionList)
-	{
-		if (sMorphName.toLower()[0] == ignoreCondition[0])
-			return false;
-	}
-	for (auto iterator = pMorphProperty->controllerListIterator(); iterator.hasNext(); )
-	{
-		DzERCLink* ercLink = qobject_cast<DzERCLink*>(iterator.next());
-		if (ercLink == nullptr)
-			continue;
-		if (ercLink->getType() == 3) // Multiply
-		{
-			auto controllerProperty = ercLink->getProperty();
-			if (controllerProperty && controllerProperty->getDoubleValue() == 0)
-				return false;
-		}
-	}
-	return true;
 }
 
 bool MorphInfo::hasErcLink()
@@ -102,7 +54,7 @@ bool MorphInfo::hasErcLink()
 		auto controllerProperty = ercLink->getProperty();
 		if (controllerProperty)
 		{
-			QString sControllerName = MorphInfo::getMorphPropertyName(controllerProperty);
+			QString sControllerName = MorphTools::GetMorphPropertyName(controllerProperty);
 			if (sControllerName.isEmpty() == false)
 			{
 				return true;
@@ -121,11 +73,17 @@ int MorphInfo::getNumErcLinks()
 	if (morphProperty == nullptr)
 		return -1;
 
-	if (m_ErcList == nullptr)
+	if (m_PrimaryErcList == nullptr)
 	{
-		m_ErcList = getErcList();
+		m_PrimaryErcList = getPrimaryErcList();
 	}
-	numERCLinks = m_ErcList->count();
+	numERCLinks = m_PrimaryErcList->count();
+
+	if (m_SecondaryErcList == nullptr)
+	{
+		m_SecondaryErcList = getSecondaryErcList();
+	}
+	numERCLinks += m_SecondaryErcList->count();
 
 	return numERCLinks;
 }
@@ -140,22 +98,34 @@ DzProperty* MorphInfo::getErcController(int ercIndex)
 
 	int ercCount = 0;
 
-	if (m_ErcList == nullptr)
+	if (m_PrimaryErcList == nullptr)
 	{
-		m_ErcList = getErcList();
+		m_PrimaryErcList = getPrimaryErcList();
 	}
-	pErcControllerProperty = m_ErcList->at(ercIndex);
+	if (m_SecondaryErcList == nullptr)
+	{
+		m_SecondaryErcList = getSecondaryErcList();
+	}
+	if (ercIndex < m_PrimaryErcList->count()) {
+		pErcControllerProperty = m_PrimaryErcList->at(ercIndex);
+	}
+	else {
+		int nSecondaryIndex = ercIndex - m_PrimaryErcList->count();
+		pErcControllerProperty = m_SecondaryErcList->at(nSecondaryIndex);
+	}
 
 	return pErcControllerProperty;
 }
 
-QList<DzProperty*>* MorphInfo::getErcList(bool bGetMorphs, bool bGetPoses)
+QList<DzProperty*>* MorphInfo::getErcList(bool bGetMorphs, bool bGetPoses, bool bPrimaryErcOnly, bool bSecondaryErcOnly, bool bAllNonPrimaryDescendants)
 {
 	QList<DzProperty*> *ercList = new QList<DzProperty*>();
 
 	DzProperty* morphProperty = this->Property;
 	if (morphProperty == nullptr)
 		return ercList;
+
+	QString sThisPropertyName = MorphTools::GetModifierName(morphProperty);
 
 	QList<DzProperty*> toDoList;
 
@@ -173,7 +143,12 @@ QList<DzProperty*>* MorphInfo::getErcList(bool bGetMorphs, bool bGetPoses)
 			DzElement* owner = controllerProperty->getOwner();
 			if (owner && ercList->contains(controllerProperty) == false)
 			{
-				ercList->append(controllerProperty);
+				QString propertyName = controllerProperty->getOwner()->getName();
+				if (bSecondaryErcOnly == false) 
+				{
+//					MorphInfo::log("getErcList(): adding primary Property to ErcList: " + propertyName + ", [" + sThisPropertyName + "]");
+					ercList->append(controllerProperty);
+				}
 			//	if (
 			//		(bGetMorphs && owner->inherits("DzMorph")) ||
 			//		(bGetPoses && owner->inherits("DzBone"))
@@ -189,13 +164,17 @@ QList<DzProperty*>* MorphInfo::getErcList(bool bGetMorphs, bool bGetPoses)
 
 				if (controllerProperty->hasSlaveControllers() && toDoList.contains(controllerProperty) == false)
 				{
-					QString propertyName = controllerProperty->getOwner()->getName();
-					MorphInfo::log("adding controller to todolist: " + propertyName);
+					//MorphInfo::log("getErcList(): adding Erc Property to todoList: " + propertyName);
 					toDoList.append(controllerProperty);
 				}
 			}
 
 		}
+	}
+
+	if (bPrimaryErcOnly)
+	{
+		return ercList;
 	}
 
 	while (toDoList.isEmpty() == false)
@@ -213,13 +192,17 @@ QList<DzProperty*>* MorphInfo::getErcList(bool bGetMorphs, bool bGetPoses)
 				DzElement* owner = controllerProperty->getOwner();
 				if (owner && ercList->contains(controllerProperty) == false)
 				{
+					QString propertyName = controllerProperty->getOwner()->getName();
+//					MorphInfo::log("getErcList(): adding secondary Property to ErcList: " + propertyName + ", [" + sThisPropertyName + "]");
 					ercList->append(controllerProperty);
 
-					if (controllerProperty->hasSlaveControllers() && toDoList.contains(controllerProperty) == false)
+					if (bAllNonPrimaryDescendants) 
 					{
-						QString propertyName = controllerProperty->getOwner()->getName();
-						MorphInfo::log("adding controller to todolist: " + propertyName);
-						toDoList.append(controllerProperty);
+						if (controllerProperty->hasSlaveControllers() && toDoList.contains(controllerProperty) == false)
+						{
+							//MorphInfo::log("getErcList(): adding property to todoList: " + propertyName);
+							toDoList.append(controllerProperty);
+						}
 					}
 				}
 			}
@@ -231,12 +214,12 @@ QList<DzProperty*>* MorphInfo::getErcList(bool bGetMorphs, bool bGetPoses)
 
 bool MorphInfo::hasMorphErc()
 {
-	if (m_ErcList == nullptr)
+	if (m_SecondaryErcList == nullptr)
 	{
-		m_ErcList = getErcList();
+		m_SecondaryErcList = getSecondaryErcList();
 	}
 
-	for (DzProperty* erc : *m_ErcList)
+	foreach (DzProperty* erc, *m_SecondaryErcList)
 	{
 		DzElement *owner = erc->getOwner();
 		if (owner && owner->inherits("DzMorph"))
@@ -248,12 +231,12 @@ bool MorphInfo::hasMorphErc()
 
 bool MorphInfo::hasPoseErc()
 {
-	if (m_ErcList == nullptr)
+	if (m_SecondaryErcList == nullptr)
 	{
-		m_ErcList = getErcList();
+		m_SecondaryErcList = getSecondaryErcList();
 	}
 
-	for (DzProperty* erc : *m_ErcList)
+	foreach (DzProperty* erc, *m_SecondaryErcList)
 	{
 		QString propName = erc->getName();
 		DzElement *owner = erc->getOwner();
@@ -265,6 +248,27 @@ bool MorphInfo::hasPoseErc()
 	}
 
 	return false;
+}
+
+bool MorphInfo::hasPoseData()
+{
+	if (m_PrimaryErcList == nullptr) {
+		m_PrimaryErcList = getPrimaryErcList();
+	}
+
+	foreach (DzProperty* erc, *m_PrimaryErcList)
+	{
+		QString propName = erc->getName();
+		DzElement* owner = erc->getOwner();
+		//		if (owner && owner->inherits("DzBone") && propName.contains("rotate", Qt::CaseInsensitive))
+		if (owner && owner->inherits("DzBone"))
+		{
+			return true;
+		}
+	}
+
+	return false;
+
 }
 
 
@@ -287,7 +291,7 @@ QList<QString> MorphTools::GetMorphNamesToDisconnectList(QList<MorphInfo> aMorph
 			if (ercLink == nullptr)
 				continue;
 			auto controllerProperty = ercLink->getProperty();
-			QString sMorphControllerName = MorphInfo::getMorphPropertyName(controllerProperty);
+			QString sMorphControllerName = MorphTools::GetMorphPropertyName(controllerProperty);
 			// iterate through each exported morph
 			foreach(MorphInfo oOtherMorphInfo, aMorphInfosToExport)
 			{
@@ -325,7 +329,7 @@ QList<QString> MorphTools::GetMorphNamesToDisconnectList(QList<QString> aMorphNa
 			if (ercLink == nullptr)
 				continue;
 			auto controllerProperty = ercLink->getProperty();
-			QString sMorphControllerName = MorphInfo::getMorphPropertyName(controllerProperty);
+			QString sMorphControllerName = MorphTools::GetMorphPropertyName(controllerProperty);
 			int matchIndex = aMorphNamesToExport.indexOf(sMorphControllerName);
 			if (matchIndex >= 0) {
 				aMorphNamesToDisconnect.append(oThisMorphInfo.Name);
@@ -360,10 +364,37 @@ bool MorphTools::CheckForIrreversibleOperations_in_disconnectOverrideControllers
 			QString propName = property->getName();
 			if ( aMorphNamesToDisconnect.contains(propName) )
 			{
-				double propValue = numericProperty->getDoubleValue();
+				// 2025-05-06, DB: zero any controllers affecting this control
+				auto aErcList = GetUpstreamErcList(property, true, false, false);
+				QMap<DzNumericProperty*, double> oUndoUpstreamZeroTable;
+				foreach(auto upstreamErc, aErcList)
+				{
+					QString sUpstreamErcName = MorphTools::GetModifierName(upstreamErc);
+					if (aMorphNamesToDisconnect.contains(sUpstreamErcName))
+					{
+						DzNumericProperty* upstreamNumericProp = qobject_cast<DzNumericProperty*>(upstreamErc);
+						if (upstreamNumericProp)
+						{
+							double upstreamValue = upstreamNumericProp->getDoubleValue();
+							oUndoUpstreamZeroTable[upstreamNumericProp] = upstreamValue;
+							double defaultValue = upstreamNumericProp->getDoubleDefaultValue();
+							upstreamNumericProp->setDoubleValue(defaultValue);
+						}
+					}
+				}
+
+				double currentValue = numericProperty->getDoubleValue();
+				double defaultValue = numericProperty->getDoubleDefaultValue();
+				double propValue = currentValue - defaultValue;
 				if ( abs(propValue) > EPSILON )
 				{
 					return true;
+				}
+
+				foreach(auto undoUpstreamProp, oUndoUpstreamZeroTable.keys())
+				{
+					double upstreamUndoValue = oUndoUpstreamZeroTable[undoUpstreamProp];
+					undoUpstreamProp->setDoubleValue(upstreamUndoValue);
 				}
 			}
 		}
@@ -384,13 +415,40 @@ bool MorphTools::CheckForIrreversibleOperations_in_disconnectOverrideControllers
 					DzNumericProperty* numericProperty = qobject_cast<DzNumericProperty*>(property);
 					if (numericProperty && !numericProperty->isOverridingControllers())
 					{
-						QString propName = MorphInfo::getMorphPropertyName(property);
+						QString propName = MorphTools::GetMorphPropertyName(property);
 						if ( aMorphNamesToDisconnect.contains(modifier->getName()) )
 						{
-							double propValue = numericProperty->getDoubleValue();
+							// 2025-05-06, DB: zero any controllers affecting this control
+							auto aErcList = GetUpstreamErcList(property, true, false, false);
+							QMap<DzNumericProperty*, double> oUndoUpstreamZeroTable;
+							foreach(auto upstreamErc, aErcList)
+							{
+								QString sUpstreamErcName = MorphTools::GetModifierName(upstreamErc);
+								if (aMorphNamesToDisconnect.contains(sUpstreamErcName))
+								{
+									DzNumericProperty* upstreamNumericProp = qobject_cast<DzNumericProperty*>(upstreamErc);
+									if (upstreamNumericProp)
+									{
+										double upstreamValue = upstreamNumericProp->getDoubleValue();
+										oUndoUpstreamZeroTable[upstreamNumericProp] = upstreamValue;
+										double defaultValue = upstreamNumericProp->getDoubleDefaultValue();
+										upstreamNumericProp->setDoubleValue(defaultValue);
+									}
+								}
+							}
+
+							double currentValue = numericProperty->getDoubleValue();
+							double defaultValue = numericProperty->getDoubleDefaultValue();
+							double propValue = - currentValue - defaultValue;
 							if (abs(propValue) > EPSILON)
 							{
 								return true;
+							}
+
+							foreach(auto undoUpstreamProp, oUndoUpstreamZeroTable.keys())
+							{
+								double upstreamUndoValue = oUndoUpstreamZeroTable[undoUpstreamProp];
+								undoUpstreamProp->setDoubleValue(upstreamUndoValue);
 							}
 						}
 					}
@@ -504,7 +562,7 @@ void MorphTools::bakePoseMorphPerNode(DzFloatProperty* morphProperty, DzNode* no
 
 	if (newMorphName.isEmpty())
 	{
-		newMorphName = MorphInfo::getMorphPropertyName(morphProperty) + "_baked";
+		newMorphName = MorphTools::GetMorphPropertyName(morphProperty) + "_baked";
 	}
 	createMorph(newMorphName, CachedDualQuaternionMesh, node);
 
@@ -528,7 +586,7 @@ QString MorphTools::bakePoseMorph(DzFloatProperty* morphProperty, QString newMor
 
 	if (newMorphName.isEmpty())
 	{
-		QString newMorphName = MorphInfo::getMorphPropertyName(morphProperty) + "_baked";
+		QString newMorphName = MorphTools::GetMorphPropertyName(morphProperty) + "_baked";
 	}
 	bakePoseMorphPerNode(morphProperty, Selection, newMorphName);
 	return newMorphName;
@@ -1121,3 +1179,229 @@ QString MorphTools::GetMorphLabelFromName(QString sMorphName, DzNode* pNode)
 	}
 
 }
+
+QString MorphTools::GetModifierName(DzProperty* pModifierProperty)
+{
+	if (pModifierProperty == nullptr)
+	{
+		// issue error message or alternatively: throw exception
+		dzApp->warning("ERROR: MorphTools: GetModifierName(): nullptr passed as argument.");
+		return "";
+	}
+	QString sPropertyName = pModifierProperty->getName();
+	auto owner = pModifierProperty->getOwner();
+	if (owner && owner->inherits("DzModifier"))
+	{
+		sPropertyName = owner->getName();
+	}
+	return sPropertyName;
+}
+
+QString MorphTools::GetMorphPropertyName(DzProperty* pMorphProperty)
+{
+	if (pMorphProperty == nullptr)
+	{
+		// issue error message or alternatively: throw exception
+		dzApp->warning("ERROR: MorphTools: getMorphPropertyName(): nullptr passed as argument.");
+		return "";
+	}
+	QString sPropertyName = pMorphProperty->getName();
+	auto owner = pMorphProperty->getOwner();
+	if (owner && owner->inherits("DzMorph"))
+	{
+		sPropertyName = owner->getName();
+	}
+	return sPropertyName;
+}
+
+bool MorphTools::IsValidMorph(DzProperty* pMorphProperty)
+{
+	if (pMorphProperty == nullptr)
+	{
+		// issue error message or alternatively: throw exception
+		dzApp->warning("ERROR: MorphTools: isValidMorph(): nullptr passed as argument.");
+		return false;
+	}
+	QString sMorphName = MorphTools::GetMorphPropertyName(pMorphProperty);
+	QStringList ignoreConditionList;
+	ignoreConditionList += "x"; ignoreConditionList += "y"; ignoreConditionList += "z";
+	for (auto ignoreCondition : ignoreConditionList)
+	{
+		if (sMorphName.toLower()[0] == ignoreCondition[0])
+			return false;
+	}
+	for (auto iterator = pMorphProperty->controllerListIterator(); iterator.hasNext(); )
+	{
+		DzERCLink* ercLink = qobject_cast<DzERCLink*>(iterator.next());
+		if (ercLink == nullptr)
+			continue;
+		if (ercLink->getType() == 3) // Multiply
+		{
+			auto controllerProperty = ercLink->getProperty();
+			if (controllerProperty && controllerProperty->getDoubleValue() == 0)
+				return false;
+		}
+	}
+	return true;
+}
+
+QList<DzProperty*> MorphTools::GetDownstreamErcList(DzProperty* pProperty, bool bPrimaryErcOnly, bool bSecondaryErcOnly, bool bAllNonPrimaryDescendants)
+{
+	QList<DzProperty*> ercList;
+
+	if (pProperty == nullptr)
+		return ercList;
+
+	QString sThisPropertyName = MorphTools::GetModifierName(pProperty);
+
+	QList<DzProperty*> toDoList;
+
+	for (auto iterator = pProperty->slaveControllerListIterator(); iterator.hasNext(); )
+	{
+		DzERCLink* ercLink = qobject_cast<DzERCLink*>(iterator.next());
+		if (ercLink == nullptr)
+			continue;
+
+		auto controllerProperty = ercLink->getOwner();
+		if (controllerProperty)
+		{
+			DzElement* owner = controllerProperty->getOwner();
+			if (owner && ercList.contains(controllerProperty) == false)
+			{
+				QString propertyName = controllerProperty->getOwner()->getName();
+				if (bSecondaryErcOnly == false)
+				{
+					MorphInfo::log("getErcList(): adding primary Property to ErcList: " + propertyName + ", [" + sThisPropertyName + "]");
+					ercList.append(controllerProperty);
+				}
+
+				if (controllerProperty->hasSlaveControllers() && toDoList.contains(controllerProperty) == false)
+				{
+					//MorphInfo::log("getErcList(): adding Erc Property to todoList: " + propertyName);
+					toDoList.append(controllerProperty);
+				}
+			}
+
+		}
+	}
+
+	if (bPrimaryErcOnly)
+	{
+		return ercList;
+	}
+
+	while (toDoList.isEmpty() == false)
+	{
+		DzProperty* morphProperty = toDoList.takeFirst();
+		for (auto iterator = morphProperty->slaveControllerListIterator(); iterator.hasNext(); )
+		{
+			DzERCLink* ercLink = qobject_cast<DzERCLink*>(iterator.next());
+			if (ercLink == nullptr)
+				continue;
+
+			auto controllerProperty = ercLink->getOwner();
+			if (controllerProperty)
+			{
+				DzElement* owner = controllerProperty->getOwner();
+				if (owner && ercList.contains(controllerProperty) == false)
+				{
+					QString propertyName = controllerProperty->getOwner()->getName();
+					MorphInfo::log("getErcList(): adding secondary Property to ErcList: " + propertyName + ", [" + sThisPropertyName + "]");
+					ercList.append(controllerProperty);
+
+					if (bAllNonPrimaryDescendants)
+					{
+						if (controllerProperty->hasSlaveControllers() && toDoList.contains(controllerProperty) == false)
+						{
+							//MorphInfo::log("getErcList(): adding property to todoList: " + propertyName);
+							toDoList.append(controllerProperty);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return ercList;
+}
+
+QList<DzProperty*> MorphTools::GetUpstreamErcList(DzProperty* pProperty, bool bPrimaryErcOnly, bool bSecondaryErcOnly, bool bAllNonPrimaryAncestors)
+{
+	QList<DzProperty*> ercList;
+
+	if (pProperty == nullptr)
+		return ercList;
+
+	QString sThisPropertyName = MorphTools::GetModifierName(pProperty);
+
+	QList<DzProperty*> toDoList;
+
+	for (auto iterator = pProperty->controllerListIterator(); iterator.hasNext(); )
+	{
+		DzERCLink* ercLink = qobject_cast<DzERCLink*>(iterator.next());
+		if (ercLink == nullptr)
+			continue;
+
+		auto controllerProperty = ercLink->getOwner();
+		if (controllerProperty)
+		{
+			DzElement* owner = controllerProperty->getOwner();
+			if (owner && ercList.contains(controllerProperty) == false)
+			{
+				QString propertyName = controllerProperty->getOwner()->getName();
+				if (bSecondaryErcOnly == false)
+				{
+					dzApp->log("GetUpstreamErcList(): adding primary Property to ErcList: " + propertyName + ", [" + sThisPropertyName + "]");
+					ercList.append(controllerProperty);
+				}
+
+				if (controllerProperty->hasControllers() && toDoList.contains(controllerProperty) == false)
+				{
+					//MorphInfo::log("getErcList(): adding Erc Property to todoList: " + propertyName);
+					toDoList.append(controllerProperty);
+				}
+			}
+
+		}
+	}
+
+	if (bPrimaryErcOnly)
+	{
+		return ercList;
+	}
+
+	while (toDoList.isEmpty() == false)
+	{
+		DzProperty* morphProperty = toDoList.takeFirst();
+		for (auto iterator = morphProperty->controllerListIterator(); iterator.hasNext(); )
+		{
+			DzERCLink* ercLink = qobject_cast<DzERCLink*>(iterator.next());
+			if (ercLink == nullptr)
+				continue;
+
+			auto controllerProperty = ercLink->getOwner();
+			if (controllerProperty)
+			{
+				DzElement* owner = controllerProperty->getOwner();
+				if (owner && ercList.contains(controllerProperty) == false)
+				{
+					QString propertyName = controllerProperty->getOwner()->getName();
+					dzApp->log("GetUpstreamErcList(): adding secondary Property to ErcList: " + propertyName + ", [" + sThisPropertyName + "]");
+					ercList.append(controllerProperty);
+
+					if (bAllNonPrimaryAncestors)
+					{
+						if (controllerProperty->hasControllers() && toDoList.contains(controllerProperty) == false)
+						{
+							//MorphInfo::log("getErcList(): adding property to todoList: " + propertyName);
+							toDoList.append(controllerProperty);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	return ercList;
+}
+

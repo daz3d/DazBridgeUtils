@@ -490,7 +490,6 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual QStringList checkForMorphOnChild(DzNode* pNode, QString sBoneName, QStringList& controlledMeshList);
 
 		virtual void resetArray_ControllersToDisconnect();
-		Q_INVOKABLE virtual bool checkForIrreversibleOperations_in_disconnectOverrideControllers();
 		Q_INVOKABLE virtual bool exportObj(QString filepath);
 		Q_INVOKABLE virtual bool exportGeograftMorphs(DzNode *Node, QString destinationFolder);
 		Q_INVOKABLE virtual bool prepareGeograftMorphsToExport(DzNode* Node, bool bZeroMorphForExport=false);

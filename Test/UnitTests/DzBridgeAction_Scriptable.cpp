@@ -105,8 +105,7 @@ void DzBridgeAction_Scriptable::executeAction()
 			m_MorphNamesToExport.clear();
 			foreach(QString morphName, m_aMorphListOverride)
 			{
-				QString label = m_morphSelectionDialog->GetMorphLabelFromName(morphName);
-				// m_mMorphNameToLabel.insert(morphName, label);
+//				QString label = MorphTools::GetMorphLabelFromName(morphName, dzScene->getPrimarySelection());
 				m_MorphNamesToExport.append(morphName);
 			}
 		}

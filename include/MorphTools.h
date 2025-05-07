@@ -22,7 +22,8 @@ public:
 	DzProperty* Property;
 	DzNode* Node;
 
-	QList<DzProperty*>* m_ErcList;
+	QList<DzProperty*>* m_PrimaryErcList;
+	QList<DzProperty*>* m_SecondaryErcList;
 
 	MorphInfo()
 	{
@@ -33,18 +34,20 @@ public:
 		Path = QString();
 		Property = nullptr;
 		Node = nullptr;
-		m_ErcList = nullptr;
+		m_PrimaryErcList = nullptr;
+		m_SecondaryErcList = nullptr;
 	}
 
-	static QString getMorphPropertyName(DzProperty* pMorphProperty);
-	static bool isValidMorph(DzProperty* pMorphProperty);
 	static void log(QString message);
 	bool hasErcLink();
 	int getNumErcLinks();
 	DzProperty* getErcController(int ercIndex);
-	QList<DzProperty*>* getErcList(bool bGetMorphs=true, bool bGetPoses=true);
+	QList<DzProperty*>* getErcList(bool bGetMorphs=true, bool bGetPoses=true, bool bPrimaryErcOnly=false, bool bSecondaryErcOnly=false, bool bAllNonPrimaryDescendants=false);
+	QList<DzProperty*>* getPrimaryErcList() { return getErcList(true, true, true); };
+	QList<DzProperty*>* getSecondaryErcList() { return getErcList(true, true, false, true); };
 	bool hasMorphErc();
 	bool hasPoseErc();
+	bool hasPoseData();
 
 	inline bool operator==(MorphInfo other)
 	{
@@ -86,6 +89,10 @@ public:
 class MorphTools
 {
 public:
+	static QString GetModifierName(DzProperty* pModifierProperty);
+	static QString GetMorphPropertyName(DzProperty* pMorphProperty);
+	static bool IsValidMorph(DzProperty* pMorphProperty);
+
 	static void createMorph(const QString NewMorphName, DzVertexMesh* Mesh, DzNode* Node);
 	static QString bakePoseMorph(DzFloatProperty* morphProperty, QString);
 	static int setMeshResolution(DzNode* node, int desiredResolutionIndex);
@@ -109,6 +116,8 @@ public:
 	static bool CheckForIrreversibleOperations_in_disconnectOverrideControllers(DzNode* Selection, QList<QString> aMorphNamesToExport);
 	static QString GetMorphLabelFromName(QString sMorphName, DzNode* pNode);
 	static QList<JointLinkInfo> GetActiveJointControlledMorphs( DzNode* pNode = nullptr );
+	static QList<DzProperty*> MorphTools::GetDownstreamErcList(DzProperty* pProperty, bool bPrimaryErcOnly, bool bSecondaryErcOnly, bool bAllNonPrimaryDescendants);
+	static QList<DzProperty*> MorphTools::GetUpstreamErcList(DzProperty* pProperty, bool bPrimaryErcOnly, bool bSecondaryErcOnly, bool bAllNonPrimaryAncestors);
 
 private:
 	static void AddActiveJointControlledMorphs(QList<QString> &m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node = nullptr);

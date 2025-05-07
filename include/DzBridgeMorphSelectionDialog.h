@@ -45,17 +45,6 @@ namespace DzBridgeNameSpace
 		// Morph Selection Overhaul
 		Q_INVOKABLE QList<QString> GetMorphNamesToExport();
 
-		// Retrieve label based on morph name
-		// DB Dec-21-2021, Created for scripting.
-		Q_INVOKABLE QString GetMorphLabelFromName(QString morphName);
-
-		// Get MorphInfo from morph name
-		// DB June-01-2022, Created for MorphLinks Generation for Blender Bridge Morphs Support
-		Q_INVOKABLE MorphInfo GetMorphInfoFromName(QString morphName);
-
-		// get morph property name
-		Q_INVOKABLE static QString getMorphPropertyName(DzProperty* pMorphProperty);
-
 		// Get Pose list.  Similart to morphs, but without AutoJCM or FakeDualQuat items
 		Q_INVOKABLE QList<QString> GetPoseList();
 
@@ -78,13 +67,10 @@ namespace DzBridgeNameSpace
 	protected:
 		virtual void addGenesis9FACS(QStringList& MorphsToAdd); // similar to ARKit G81 method, but adds a set of FACS specifically for WonderStudio
 		virtual void addGenesis81FACS(QStringList& MorphsToAdd); // similar to ARKit G81 method, but adds a set of FACS specifically for WonderStudio
-		virtual bool decorateMorphListItem(SortingListItem* item, MorphInfo morphInfo, bool bAnalyzeErc=false);
+		virtual bool decorateMorphListItem(SortingListItem* item, MorphInfo morphInfo, bool bFast=false);
 		virtual MorphExportSettings getMorphExportSettings();
 
 	private:
-		// check if Morph is Valid
-		bool isValidMorph(DzProperty* pMorphProperty);
-
 		// Refresh the list of possible presets from disk
 		void RefreshPresetsCombo();
 

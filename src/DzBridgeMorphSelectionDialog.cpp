@@ -37,6 +37,7 @@
 #include "dznumericnodeproperty.h"
 #include "dzerclink.h"
 #include "dzbone.h"
+#include <dzmorphdeltas.h>
 
 #include "QtGui/qlayout.h"
 #include "QtGui/qlineedit.h"
@@ -165,8 +166,8 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 
 	// Left Tree
 	QVBoxLayout* treeLayout = new QVBoxLayout();
-	treeLayout->addWidget(new QLabel("Morph Groups"));
-	treeLayout->addWidget(new QLabel("Select to see available morphs"));
+	treeLayout->addWidget(new QLabel(tr("Morphs for each mesh")));
+	treeLayout->addWidget(new QLabel(tr("Select a mesh or category to see available morphs")));
 	treeLayout->addWidget(m_morphTreeWidget);
 
 	// Buttons for quickly adding certain JCMs
@@ -195,7 +196,7 @@ DzBridgeMorphSelectionDialog::DzBridgeMorphSelectionDialog(QWidget *parent) :
 	/////////////////////////////////////////////////////////////////////////////////////////////
 	// 2025-04-25, DB: Moved JCM and other Morph options to main options dialog (DzBridgeDialog)
 	/////////////////////////////////////////////////////////////////////////////////////////////
-	addConnectedMorphsButton = new QPushButton("Add Connected Morphs");
+	addConnectedMorphsButton = new QPushButton(tr("Add Child Morphs"));
 	addConnectedMorphsButton->setVisible(true);
 	QString sAddConnectedMorphsHelpText = QString(tr("Add any morphs or property sliders which can contribute to strength of exported morphs."));
 	addConnectedMorphsButton->setWhatsThis(sAddConnectedMorphsHelpText);
@@ -320,7 +321,7 @@ void DzBridgeMorphSelectionDialog::PrepareDialog()
 }
 
 // add icons, tooltips, whatsthis, font changes to items in the center and right morph list columns
-bool DzBridgeMorphSelectionDialog::decorateMorphListItem(SortingListItem* item, MorphInfo morphInfo, bool bAnalyzeErc)
+bool DzBridgeMorphSelectionDialog::decorateMorphListItem(SortingListItem* item, MorphInfo morphInfo, bool bFast)
 {
 	if (item == NULL)
 	{
@@ -332,71 +333,99 @@ bool DzBridgeMorphSelectionDialog::decorateMorphListItem(SortingListItem* item, 
 	int normalFontSize = normalFont.pointSize() == -1 ? 8 : normalFont.pointSize();
 	QString normalFontFamily = normalFont.family();
 
-	bool bIsMorph = false;
-//	if (morphInfo.Type.contains("shape", Qt::CaseInsensitive))
-	if (morphInfo.Property->getOwner()->inherits("DzMorph"))
-	{
-		bIsMorph = true;
-	}
-	bool bIsPose = false;
-	if (morphInfo.Type.contains("pose", Qt::CaseInsensitive))
-//	if (morphInfo.Property->getOwner()->inherits("DzBone"))
-	{
-		bIsPose = true;
-	}
-	bool bHasMorphs = false;
-	if (bAnalyzeErc && morphInfo.hasMorphErc())
-	{
-		bHasMorphs = true;
-	}
-	bool bHasPoses = false;
-	if (bAnalyzeErc && morphInfo.hasPoseErc())
-	{
-		bHasPoses = true;
-	}
+	bool bHasShapeData = false;
+	bool bHasPoseData = false;
+	bool bHasChildShapes = false;
+	bool bHasChildPoses = false;
 	bool bHasErc = false;
-	if (morphInfo.m_ErcList && morphInfo.m_ErcList->count() > 0)
+
+	if (bFast == false) 
 	{
-		bHasErc = true;
+		if (morphInfo.Property->getOwner()->inherits("DzMorph"))
+		{
+			DzMorph* pMorph = qobject_cast<DzMorph*>(morphInfo.Property->getOwner());
+			if (pMorph) {
+				DzMorphDeltas* pMorphDeltas = pMorph->getDeltas();
+				bool bLoaded = pMorphDeltas->hasDeltas();
+				if (bLoaded == false) pMorphDeltas->loadDeltas();
+				int numDeltas = pMorphDeltas->getNumDeltas();
+				if (numDeltas > 0) {
+					bHasShapeData = true;
+				}
+				if (bLoaded == false) pMorphDeltas->unLoadDeltas();
+			}
+		}
+
+		if (morphInfo.hasPoseData())
+		{
+			bHasPoseData = true;
+		}
+
+		if (morphInfo.hasMorphErc())
+		{
+			bHasChildShapes = true;
+		}
+		if (morphInfo.hasPoseErc())
+		{
+			bHasChildPoses = true;
+		}
+		if (morphInfo.getNumErcLinks() > 0)
+		{
+			bHasErc = true;
+		}
+
 	}
 
 
 //	if (morphInfo.Type.contains("pose", Qt::CaseInsensitive))
-	if (bHasPoses || !bIsMorph && bIsPose)
+	if (bHasChildPoses || !bHasShapeData && bHasPoseData)
 	{
-		//item->setBackground(QBrush(Qt::red, Qt::SolidPattern));
-		//item->setForeground(QBrush(Qt::white));
+		item->setBackground(QBrush(Qt::red, Qt::SolidPattern));
+		item->setForeground(QBrush(Qt::white));
 		item->setFont(QFont(normalFontFamily, -1, -1, true));
 		item->setIcon(style()->standardIcon(QStyle::SP_MessageBoxWarning));
 	}
 //	else if (morphInfo.Type.contains("shape", Qt::CaseInsensitive))
-	else if (bHasMorphs || bIsMorph)
+	else if (bHasChildShapes || bHasShapeData)
 	{
-		//item->setBackground(QBrush(Qt::green, Qt::SolidPattern));
+		item->setBackground(QBrush(Qt::green, Qt::SolidPattern));
 		item->setFont(QFont(normalFontFamily, -1, QFont::Bold, false));
 		item->setIcon(style()->standardIcon(QStyle::SP_FileIcon));
 	}
 	else
 	{
-		//item->setBackground(QBrush(Qt::red, Qt::SolidPattern));
-		//item->setForeground(QBrush(Qt::white));
+		item->setBackground(QBrush(Qt::red, Qt::SolidPattern));
+		item->setForeground(QBrush(Qt::white));
 		item->setFont(QFont(normalFontFamily, -1, -1, true));
 		item->setIcon(style()->standardIcon(QStyle::SP_MessageBoxQuestion));
 	}
 	QString flagString = "";
-	if (bHasErc)
+	if (bHasShapeData)
 	{
-		flagString += " +ERC";
+		if (!flagString.isEmpty()) flagString += "<br>";
+		flagString += "- Has Shape Data";
 	}
-	if (bHasMorphs)
+	if (bHasPoseData)
 	{
-		flagString += " +Morphs";
+		if (!flagString.isEmpty()) flagString += "<br>";
+		flagString += "- Has Pose Data";
 	}
-	if (bHasPoses)
+	//if (bHasErc)
+	//{
+	//	if (!flagString.isEmpty()) flagString += "<br>";
+	//	flagString += " +ERC";
+	//}
+	if (bHasChildShapes)
 	{
-		flagString += " +Poses";
+		if (!flagString.isEmpty()) flagString += "<br>";
+		flagString += "- Has Child Shapes";
 	}
-	QString sToolTip = QString("<b>%2</b><br><i>\"%1\"</i><br>(%3)").arg(morphInfo.Name).arg(morphInfo.Type).arg(morphInfo.Node->getLabel());
+	if (bHasChildPoses)
+	{
+		if (!flagString.isEmpty()) flagString += "<br>";
+		flagString += "- Has Child Poses";
+	}
+	QString sToolTip = QString("<b>%2</b><br><i>\"%1\"</i><br>(mesh: %3)").arg(morphInfo.Name).arg(morphInfo.Type).arg(morphInfo.Node->getLabel());
 	if (flagString.isEmpty() == false)
 	{
 		sToolTip += "<br>" + flagString;
@@ -404,27 +433,26 @@ bool DzBridgeMorphSelectionDialog::decorateMorphListItem(SortingListItem* item, 
 	item->setToolTip(sToolTip);
 	QString sWhatsThis = QString("<b>%1</b><br>").arg(morphInfo.Label);
 	QString sNoChange = sWhatsThis;
-	QString whatsThisErc = "<b>+ERC:</b> ERC Links allow this element to modify the value of other controls. An example is Victoria 9 controlling Victoria 9 Head and Victoria 9 Body.<br>";
-	QString whatsThisMorphs = "<b>+Morphs:</b> This element has ERC Links to control other Morph controls.  This may cause double-dipping in programs outside Daz Studio, where the final morph effect is applied multiple times (once for each linked morph).<br>";
-	QString whatsThisPoses = "<b>+Poses:</b> This element has ERC Links to control Pose controls.  This will require the bone poses to be baked into the exported morph.<br>";
+	QString whatsThisErc = "<b>Has ERC Links:</b> ERC Links allow this element to modify the value of other controls. An example is Victoria 9 controlling Victoria 9 Head and Victoria 9 Body.<br>";
+	QString whatsThisErcShapes = "<b>Has Child Shapes:</b> This element has ERC Links to control other Shape controls.  This may cause double-dipping in programs outside Daz Studio, where the final shape effect is applied multiple times (once for each linked shape).<br>";
+	QString whatsThisErcPoses = "<b>Has Child Poses:</b> This element has ERC Links to control Pose controls.  This will require the bone poses to be baked into the exported shape.<br>";
 	if (bHasErc)
 	{
 		sWhatsThis += "<br>" + whatsThisErc;
 	}
-	if (bHasMorphs)
+	if (bHasChildShapes)
 	{
-		sWhatsThis += "<br>" + whatsThisMorphs;
+		sWhatsThis += "<br>" + whatsThisErcShapes;
 	}
-	if (bHasPoses)
+	if (bHasChildPoses)
 	{
-		sWhatsThis += "<br>" + whatsThisPoses;
+		sWhatsThis += "<br>" + whatsThisErcPoses;
 	}
 	if (sWhatsThis == sNoChange)
 	{
 		sWhatsThis += "<br>" + sToolTip;
 	}
 	item->setWhatsThis(sWhatsThis);
-
 
 	return true;
 
@@ -438,6 +466,7 @@ void DzBridgeMorphSelectionDialog::FilterChanged(const QString& filter)
 	QString newFilter = filter;
 	m_morphListWidget->clear();
 	m_morphListWidget->setIconSize(QSize(16, 16));
+	int nMorphInfoCount = m_selectedInTree.count();
 	foreach(MorphInfo morphInfo, m_selectedInTree)
 	{
 		if (newFilter == NULL || newFilter.isEmpty() || morphInfo.Label.contains(newFilter, Qt::CaseInsensitive))
@@ -446,7 +475,7 @@ void DzBridgeMorphSelectionDialog::FilterChanged(const QString& filter)
 			item->setText(morphInfo.Label);
 			item->setData(Qt::UserRole, morphInfo.Name);
 
-			decorateMorphListItem(item, morphInfo);
+			decorateMorphListItem(item, morphInfo, true);
 
 			m_morphListWidget->addItem(item);
 		}
@@ -619,6 +648,7 @@ QTreeWidgetItem* DzBridgeMorphSelectionDialog::FindTreeItem(QTreeWidgetItem* par
 // For selection changes in the Left Tree
 void DzBridgeMorphSelectionDialog::ItemSelectionChanged()
 {
+	dzApp->setBusyCursor();
 	m_selectedInTree.clear();
 	foreach(QTreeWidgetItem* selectedItem, m_morphTreeWidget->selectedItems())
 	{
@@ -626,6 +656,7 @@ void DzBridgeMorphSelectionDialog::ItemSelectionChanged()
 	}
 
 	FilterChanged(filterEdit->text());
+	dzApp->clearBusyCursor();
 }
 
 // Updates the list of selected morphs in the Left Tree
@@ -1270,7 +1301,7 @@ void DzBridgeMorphSelectionDialog::RefreshExportMorphList()
 		item->setText(morphInfo.Label);
 		item->setData(Qt::UserRole, morphInfo.Name);
 
-		decorateMorphListItem(item, morphInfo, true);
+		decorateMorphListItem(item, morphInfo, false);
 
 		m_morphExportListWidget->addItem(item);
 	}
@@ -1371,90 +1402,6 @@ QMap<QString, MorphInfo> DzBridgeMorphSelectionDialog::GetAvailableMorphsTable()
 	return m_morphInfoMap;
 }
 
-// Retrieve label based on morph name
-// DB Dec-21-2021, Created for scripting.
-QString DzBridgeMorphSelectionDialog::GetMorphLabelFromName(QString morphName)
-{
-	if (m_morphInfoMap.isEmpty()) return QString();
-
-	if (m_morphInfoMap.contains(morphName))
-	{
-		MorphInfo morph = m_morphInfoMap[morphName];
-		return morph.Label;
-	}
-	else
-	{
-		return QString();
-	}
-
-}
-
-// Get MorphInfo from morph name
-// DB June-01-2022, Created for MorphLinks Generation for Blender Bridge Morphs Support
-MorphInfo DzBridgeMorphSelectionDialog::GetMorphInfoFromName(QString morphName)
-{
-	if (m_morphInfoMap.isEmpty()) return MorphInfo();
-
-	if (m_morphInfoMap.contains(morphName))
-	{
-		MorphInfo morph = m_morphInfoMap[morphName];
-		return morph;
-	}
-	else
-	{
-		return MorphInfo();
-	}
-
-}
-
-QString DzBridgeMorphSelectionDialog::getMorphPropertyName(DzProperty* pMorphProperty)
-{
-	if (pMorphProperty == nullptr)
-	{
-		// issue error message or alternatively: throw exception
-		printf("ERROR: DazBridge: DzBridgeMorphSelectionDialog.cpp, getPropertyName(): nullptr passed as argument.");
-		return "";
-	}
-	QString sPropertyName = pMorphProperty->getName();
-	auto owner = pMorphProperty->getOwner();
-	if (owner && owner->inherits("DzMorph"))
-	{
-		sPropertyName = owner->getName();
-	}
-	return sPropertyName;
-}
-
-bool DzBridgeMorphSelectionDialog::isValidMorph(DzProperty* pMorphProperty)
-{
-	if (pMorphProperty == nullptr)
-	{
-		// issue error message or alternatively: throw exception
-		dzApp->warning("ERROR: DazBridge: DzBridgeMorphSelectionDialog.cpp, isValidMorph(): nullptr passed as argument.");
-		return false;
-	}
-	QString sMorphName = getMorphPropertyName(pMorphProperty);
-	QStringList ignoreConditionList;
-	ignoreConditionList += "x"; ignoreConditionList += "y"; ignoreConditionList += "z";
-	for (auto ignoreCondition : ignoreConditionList)
-	{
-		if (sMorphName.toLower()[0] == ignoreCondition[0])
-			return false;
-	}
-	for (auto iterator = pMorphProperty->controllerListIterator(); iterator.hasNext(); )
-	{
-		DzERCLink* ercLink = qobject_cast<DzERCLink*>(iterator.next());
-		if (ercLink == nullptr)
-			continue;
-		if (ercLink->getType() == 3) // Multiply
-		{
-			auto controllerProperty = ercLink->getProperty();
-			if (controllerProperty && controllerProperty->getDoubleValue() == 0)
-				return false;
-		}
-	}
-	return true;
-}
-
 // Load morphs controlling the morphs in the export list
 void DzBridgeMorphSelectionDialog::HandleAddConnectedMorphs()
 {
@@ -1475,9 +1422,9 @@ void DzBridgeMorphSelectionDialog::HandleAddConnectedMorphs()
 		for (auto slaveControllerIterator = morphProperty->slaveControllerListIterator(); slaveControllerIterator.hasNext(); )
 		{
 			DzProperty *controllerProperty = slaveControllerIterator.next()->getOwner();
-			if (isValidMorph(controllerProperty)==false)
+			if (MorphTools::IsValidMorph(controllerProperty)==false)
 				continue;
-			QString sMorphName = getMorphPropertyName(controllerProperty);
+			QString sMorphName = MorphTools::GetMorphPropertyName(controllerProperty);
 
 			// Add the list for export
 			if (m_morphInfoMap.contains(sMorphName) && !m_morphsToExport.contains(m_morphInfoMap[sMorphName]))
@@ -1511,9 +1458,9 @@ void DzBridgeMorphSelectionDialog::HandleAddConnectedJcms()
 		for (auto slaveControllerIterator = morphProperty->slaveControllerListIterator(); slaveControllerIterator.hasNext(); )
 		{
 			DzProperty* controllerProperty = slaveControllerIterator.next()->getOwner();
-			if (isValidMorph(controllerProperty) == false)
+			if (MorphTools::IsValidMorph(controllerProperty) == false)
 				continue;
-			QString sMorphName = getMorphPropertyName(controllerProperty);
+			QString sMorphName = MorphTools::GetMorphPropertyName(controllerProperty);
 
 			// Add the list for export
 			if (m_morphInfoMap.contains(sMorphName) && !m_morphsToExport.contains(m_morphInfoMap[sMorphName]))
