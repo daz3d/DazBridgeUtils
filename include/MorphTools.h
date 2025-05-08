@@ -109,7 +109,7 @@ public:
 	static QMap<QString, MorphInfo>* getAvailableMorphs(DzNode* Node);
 	static void safeDeleteMorphInfoTable(QMap<QString, MorphInfo>*);
 	// 2025-04-24, DB: hassle-free version of getAavailableMorphs()
-	static QMap<QString, MorphInfo> GetAvailableMorphs(DzNode* Node);
+	static QMap<QString, MorphInfo> GetAvailableMorphs(DzNode* Node, bool bRecursive=false);
 
 	static QList<QString> GetMorphNamesToDisconnectList(QList<MorphInfo> aMorphInfosToExport);
 	static QList<QString> GetMorphNamesToDisconnectList(QList<QString> aMorphNamesToExport, DzNode* pNode);

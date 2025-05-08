@@ -110,7 +110,7 @@ DzBridgeAction::DzBridgeAction(const QString& text, const QString& desc) :
 
 	 // Create List of Known Intermediate Folder File Extensions
 	 char* acharExtensionList[] = {
-		 "fbx", "dtu",
+		 "fbx", "dtu", "obj",
 		 "py", "pyc", "bat", "sh",
 		 "jpg", "jpeg", "png", "bmp", "tif", "gif"
 	 };
@@ -3832,7 +3832,7 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 	/////////////////////////////////////////////
 	m_MorphNamesToExport.clear();
 	m_AvailableMorphsTable.clear();
-	m_AvailableMorphsTable = MorphTools::GetAvailableMorphs(m_pSelectedNode);
+	m_AvailableMorphsTable = MorphTools::GetAvailableMorphs(m_pSelectedNode, true);
 	QList<QString> aUnfinalizedMorphNamesToExport = m_morphSelectionDialog->GetMorphNamesToExport();
 	QList<QString> aFinalizedMorphList = MorphTools::getFinalizedMorphList(aUnfinalizedMorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm);
 	m_MorphNamesToExport = aFinalizedMorphList;
@@ -5921,7 +5921,6 @@ bool DzBridgeAction::exportGeograftMorphs(DzNode *Node, QString sDestinationFold
 		if (numericProperty && !numericProperty->isOverridingControllers())
 		{
 			QString propName = property->getName();
-//			if (m_mMorphNameToLabel.contains(propName))
 			if (m_MorphNamesToExport.contains(propName))
 			{
 				oGeograftMorphsToExport.append(QPair<QString, DzNumericProperty*>(propName, numericProperty));
@@ -5946,7 +5945,6 @@ bool DzBridgeAction::exportGeograftMorphs(DzNode *Node, QString sDestinationFold
 					if (numericProperty && !numericProperty->isOverridingControllers())
 					{
 						QString propName = MorphTools::GetMorphPropertyName(property);
-//						if (m_mMorphNameToLabel.contains(modifier->getName()) )
 						if (m_MorphNamesToExport.contains(modifier->getName()) )
 						{
 							oGeograftMorphsToExport.append(QPair<QString, DzNumericProperty*>(modifier->getName(), numericProperty));

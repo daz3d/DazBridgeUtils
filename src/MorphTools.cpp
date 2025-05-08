@@ -1079,7 +1079,7 @@ void MorphTools::safeDeleteMorphInfoTable(QMap<QString, MorphInfo>* pMorphInfoTa
 }
 
 // 2025-04-24, DB: hassle-free version of getAavailableMorphs(), i.e. no gui depenedency, no required memory management
-QMap<QString, MorphInfo> MorphTools::GetAvailableMorphs(DzNode* Node)
+QMap<QString, MorphInfo> MorphTools::GetAvailableMorphs(DzNode* Node, bool bRecursive)
 {
 	// Build morphinfo table to return
 	QMap<QString, MorphInfo> oMorphInfoTable;
@@ -1145,6 +1145,25 @@ QMap<QString, MorphInfo> MorphTools::GetAvailableMorphs(DzNode* Node)
 
 			}
 
+		}
+	}
+
+	// 2025-05-08, DB: Add morphs from all child meshes and followers
+	if (bRecursive)
+	{
+		DzNodeList aChildNodeList;
+		Node->getNodeChildren(aChildNodeList, true); // get full child tree
+		foreach(DzNode * pChildNode, aChildNodeList)
+		{
+			QMap<QString, MorphInfo> oChildTable = GetAvailableMorphs(pChildNode, false); // don't recurse here since we are getting full child tree already
+			// add only MorphInfo that does not yet exist
+			foreach(QString key, oChildTable.keys())
+			{
+				if (oMorphInfoTable.contains(key) == false)
+				{
+					oMorphInfoTable.insert(key, oChildTable[key]);
+				}
+			}
 		}
 	}
 
