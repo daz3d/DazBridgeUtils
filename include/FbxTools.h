@@ -95,9 +95,13 @@ public:
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	static void FixClusterTranformLinks(FbxScene* Scene, FbxNode* RootNode, bool bCorrectFix = true);
+	static void FixClusterTranformLinks(FbxScene* Scene, FbxNode* RootNode, bool bCorrectFix = true, QString sRigName = "unreal");
 	static void RemovePrePostRotations(FbxNode* pNode);
 	static void ReparentTwistBone(FbxNode* pNode);
 	static void FindAndProcessTwistBones(FbxNode* pNode);
 	static void AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLeftFoot, const char* sRightFoot, const char* sLeftHand, const char* sRightHand);
+
+	static void FixClusterTranformLinks_SpecialUnrealFix(FbxAMatrix& Matrix, FbxCluster* Cluster, QString sBoneName, FbxDouble3 Rotation);
+	static void FixClusterTranformLinks_SpecialR2xFix(FbxAMatrix& Matrix, FbxCluster* Cluster, QString sBoneName, FbxDouble3 Rotation);
+
 };
