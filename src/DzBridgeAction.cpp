@@ -3181,7 +3181,8 @@ QStringList DzBridgeAction::checkMorphControlsChildren(DzNode* pNode, DzProperty
 			if (ownerProperty)
 			{
 				DzElement* ownerElement = ownerProperty->getOwner();
-				if (ownerElement->inherits("DzBone"))
+				// 2025-05-15, DB: bugfix for modified rig/skeleton causing invalid JCM data -> ownerProperty->getOwner() == NULL
+				if (ownerElement && ownerElement->inherits("DzBone"))
 				{
 					sBoneName = ownerElement->getName();
 					controlledMeshList = checkForBoneInChild( pNode, sBoneName, controlledMeshList );
