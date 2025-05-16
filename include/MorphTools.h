@@ -116,8 +116,8 @@ public:
 	static bool CheckForIrreversibleOperations_in_disconnectOverrideControllers(DzNode* Selection, QList<QString> aMorphNamesToExport);
 	static QString GetMorphLabelFromName(QString sMorphName, DzNode* pNode);
 	static QList<JointLinkInfo> GetActiveJointControlledMorphs( DzNode* pNode = nullptr );
-	static QList<DzProperty*> MorphTools::GetDownstreamErcList(DzProperty* pProperty, bool bPrimaryErcOnly, bool bSecondaryErcOnly, bool bAllNonPrimaryDescendants);
-	static QList<DzProperty*> MorphTools::GetUpstreamErcList(DzProperty* pProperty, bool bPrimaryErcOnly, bool bSecondaryErcOnly, bool bAllNonPrimaryAncestors);
+	static QList<DzProperty*> GetDownstreamErcList(DzProperty* pProperty, bool bPrimaryErcOnly, bool bSecondaryErcOnly, bool bAllNonPrimaryDescendants);
+	static QList<DzProperty*> GetUpstreamErcList(DzProperty* pProperty, bool bPrimaryErcOnly, bool bSecondaryErcOnly, bool bAllNonPrimaryAncestors);
 
 private:
 	static void AddActiveJointControlledMorphs(QList<QString> &m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node = nullptr);
