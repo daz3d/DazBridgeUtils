@@ -495,6 +495,11 @@ bool FbxTools::BakePoseToVertexBuffer_LinearPathway(FbxVector4* pVertexBuffer, F
 	// get cluster link mode
 	FbxSkin* pSkinDeformer = (FbxSkin*)pMesh->GetDeformer(0, FbxDeformer::eSkin);
 	FbxCluster* pCluster = pSkinDeformer->GetCluster(0);
+	// 2025-05-16, DB: Bugfix for converted rig
+	if (pCluster == NULL) {
+		dzApp->log("WARNING: FbxTools: BakePoseToVertexBuffer_LinearPathway(): NULL skindeformer cluster encountered, skipping...");
+		return false;
+	}
 	FbxCluster::ELinkMode clusterMode = pCluster->GetLinkMode();
 
 	int numVerts = pMesh->GetControlPointsCount();
