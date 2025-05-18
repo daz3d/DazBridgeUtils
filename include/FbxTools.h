@@ -70,7 +70,7 @@ public:
 
 	static bool LoadAndPoseBelowHeadOnly(QString poseFilePath, FbxScene* lCurrentScene, DzProgress* pProgress = nullptr, bool bConvertToZUp = false);
 
-	static bool LoadAndPose(QString poseFilePath, FbxScene* lCurrentScene, DzProgress* pProgress = nullptr, bool bConvertToZUp = false);
+	static bool LoadAndPose(QString poseFilePath, FbxScene* lCurrentScene, DzProgress* pProgress = nullptr, bool bConvertToZUp = false, bool bRotationOnly=false);
 
 	static int ConvertToZUp(FbxMesh* mesh, FbxNode* rootNode);
 

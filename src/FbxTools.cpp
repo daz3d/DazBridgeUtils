@@ -1261,7 +1261,7 @@ bool FbxTools::LoadAndPoseBelowHeadOnly(QString poseFilePath, FbxScene* lCurrent
 }
 
 
-bool FbxTools::LoadAndPose(QString poseFilePath, FbxScene* lCurrentScene, DzProgress* pProgress, bool bConvertToZUp)
+bool FbxTools::LoadAndPose(QString poseFilePath, FbxScene* lCurrentScene, DzProgress* pProgress, bool bConvertToZUp, bool bRotationOnly)
 {
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
 
@@ -1295,12 +1295,19 @@ bool FbxTools::LoadAndPose(QString poseFilePath, FbxScene* lCurrentScene, DzProg
 	}
 
 	int numMainNodes = lCurrentScene->GetNodeCount();
+    int nRootNodeIndex = -1;
+    int nRootBoneIndex = -1;
 	for (int i = 0; i < numMainNodes; i++)
 	{
 		FbxNode* pNode = lCurrentScene->GetNode(i);
 		FbxNodeAttribute* Attr = pNode->GetNodeAttribute();
 		if (Attr && Attr->GetAttributeType() == FbxNodeAttribute::eSkeleton)
 		{
+            if (nRootNodeIndex == -1) {
+                nRootNodeIndex = i;
+            } else if (nRootBoneIndex == -1) {
+                nRootBoneIndex = i;
+            }
 			const char* lpNodeName = pNode->GetName();
 			QString sNodeName(lpNodeName);
 			if (sNodeName == "RootNode")
@@ -1308,12 +1315,22 @@ bool FbxTools::LoadAndPose(QString poseFilePath, FbxScene* lCurrentScene, DzProg
 			if (lookupTable.find(sNodeName) != lookupTable.end())
 			{
 				FbxNode* pPoseNode = lookupTable[sNodeName];
-				pNode->Copy(*pPoseNode);
-				//pNode->LclRotation.Set(pPoseNode->LclRotation.Get());
-				//pNode->LclScaling.Set(pPoseNode->LclScaling.Get());
-				//pNode->LclTranslation.Set(pPoseNode->LclTranslation.Get());
-				//pNode->PreRotation.Set(pPoseNode->PreRotation.Get());
-				//pNode->PostRotation.Set(pPoseNode->PostRotation.Get());
+                if (bRotationOnly)
+                {
+                    if (nRootNodeIndex == i || nRootBoneIndex == i)
+                        continue;
+                    pNode->RotationOrder.Set(pPoseNode->RotationOrder.Get());
+                    pNode->PreRotation.Set(pPoseNode->PreRotation.Get());
+                    pNode->LclRotation.Set(pPoseNode->LclRotation.Get());
+                    pNode->PostRotation.Set(pPoseNode->PostRotation.Get());
+//                    pNode->LclScaling.Set(pPoseNode->LclScaling.Get());
+//                    pNode->LclTranslation.Set(pPoseNode->LclTranslation.Get());
+                    pNode->GeometricRotation.Set(pPoseNode->GeometricRotation.Get());
+                }
+                else
+                {
+                    pNode->Copy(*pPoseNode);
+                }
 			}
 		}
 	}
