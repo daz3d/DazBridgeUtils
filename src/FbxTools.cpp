@@ -1611,8 +1611,15 @@ bool FbxTools::HasNodeAncestor(FbxNode* pNode, const QString sAncestorName, Qt::
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DEV TESTING
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void FbxTools::FixClusterTranformLinks(FbxScene* Scene, FbxNode* RootNode, bool bCorrectFix, QString sRigName)
+void FbxTools::FixClusterTranformLinks(FbxScene* Scene, FbxNode* RootNode, FixClusterTransformLinks_CustomBoneFix *pCustomBoneFix)
 {
+    if (Scene == nullptr || RootNode == nullptr)
+    {
+        // log error and return
+        dzApp->log(dzApp->tr("ERROR: FbxTools::FixClusterTranformLinks() invalid nullptr argument."));
+        return;
+    }
+    
 	FbxGeometry* NodeGeometry = static_cast<FbxGeometry*>(RootNode->GetMesh());
 
 	// Create missing weights
@@ -1635,15 +1642,8 @@ void FbxTools::FixClusterTranformLinks(FbxScene* Scene, FbxNode* RootNode, bool 
 
 					// Update the rotation
 					FbxDouble3 Rotation = Cluster->GetLink()->PostRotation.Get();
-					if (bCorrectFix) {
-						if (sRigName == "unreal" || sRigName == "metahuman")
-						{
-							FixClusterTranformLinks_SpecialUnrealFix(Matrix, Cluster, sBoneName, Rotation);
-						}
-						else if (sRigName == "r2x")
-						{
-							FixClusterTranformLinks_SpecialR2xFix(Matrix, Cluster, sBoneName, Rotation);
-						}
+					if (pCustomBoneFix) {
+                        pCustomBoneFix->performTask(Matrix, Cluster, sBoneName, Rotation);
 					}
 					else {
 						Matrix.SetR(Rotation);
@@ -1657,89 +1657,7 @@ void FbxTools::FixClusterTranformLinks(FbxScene* Scene, FbxNode* RootNode, bool 
 	for (int ChildIndex = 0; ChildIndex < RootNode->GetChildCount(); ++ChildIndex)
 	{
 		FbxNode* ChildNode = RootNode->GetChild(ChildIndex);
-		FixClusterTranformLinks(Scene, ChildNode, bCorrectFix, sRigName);
-	}
-}
-
-void FbxTools::FixClusterTranformLinks_SpecialUnrealFix(FbxAMatrix &Matrix, FbxCluster* Cluster, QString sBoneName, FbxDouble3 Rotation)
-{
-	// Hard code for Unreal Engine Mannequin bone-names
-	Matrix.MultRM(Rotation);
-	if (sBoneName.contains("_r")) {
-		Matrix.MultRM(FbxVector4(90, 0, 0));
-	}
-	else {
-		Matrix.MultRM(FbxVector4(-90, 0, 0));
-	}
-
-	if (sBoneName.contains("ball_")) {
-		Matrix.MultRM(FbxVector4(90, 0, 0));
-	}
-	else if (sBoneName.contains("thumb_")) {
-		Matrix.MultRM(FbxVector4(0, 0, 0));
-	}
-	else if (sBoneName.contains("hand_") ||
-		HasNodeAncestor(Cluster->GetLink(), "hand_r", Qt::CaseInsensitive) ||
-		HasNodeAncestor(Cluster->GetLink(), "hand_l", Qt::CaseInsensitive))
-	{
-		Matrix.MultRM(FbxVector4(-90, 0, 0));
-	}
-
-	if (sBoneName.contains("_l") || sBoneName.contains("_r")) {
-		if (HasNodeAncestor(Cluster->GetLink(), "spine_01", Qt::CaseInsensitive)) {
-			Matrix.MultRM(FbxVector4(0, 0, 0));
-		}
-		else {
-			Matrix.MultRM(FbxVector4(0, -90, 0));
-		}
-	}
-	else {
-		Matrix.MultRM(FbxVector4(0, -90, 0));
-	}
-
-}
-
-void FbxTools::FixClusterTranformLinks_SpecialR2xFix(FbxAMatrix& Matrix, FbxCluster* Cluster, QString sBoneName, FbxDouble3 Rotation)
-{
-	// Hard code for R2X bone names
-	Matrix.MultRM(Rotation);
-	if (sBoneName.contains("Eye")) {
-		Matrix.MultRM(FbxVector4(90, 0, -90));
-	}
-	else if (sBoneName.startsWith("Left")) {
-		Matrix.MultRM(FbxVector4(90, 0, 0));
-	}
-	else {
-		Matrix.MultRM(FbxVector4(-90, 0, 0));
-	}
-
-	if (sBoneName.contains("Thumb")) {
-		Matrix.MultRM(FbxVector4(90, 0, 0));
-	}
-	//else if (sBoneName.contains("Hand") ||
-	//	HasNodeAncestor(Cluster->GetLink(), "RightHand", Qt::CaseInsensitive) ||
-	//	HasNodeAncestor(Cluster->GetLink(), "LeftHand", Qt::CaseInsensitive))
-	//{
-	//	Matrix.MultRM(FbxVector4(-90, 0, 0));
-	//}
-
-	if (sBoneName.contains("Left") || sBoneName.contains("Right")) {
-		if (HasNodeAncestor(Cluster->GetLink(), "Spine1", Qt::CaseInsensitive)) {
-			Matrix.MultRM(FbxVector4(0, 0, 0));
-		}
-		else {
-			Matrix.MultRM(FbxVector4(180, -90, 0));
-		}
-	}
-	else {
-		Matrix.MultRM(FbxVector4(180, -90, 0));
-	}
-
-	if (sBoneName.contains("Foot") || 
-		HasNodeAncestor(Cluster->GetLink(), "RightFoot", Qt::CaseInsensitive) ||
-		HasNodeAncestor(Cluster->GetLink(), "LeftFoot", Qt::CaseInsensitive))
-	{
-		Matrix.MultRM(FbxVector4(0, 0, -90));
+		FixClusterTranformLinks(Scene, ChildNode, pCustomBoneFix);
 	}
 }
 
@@ -1933,5 +1851,44 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			IKHandGunNode->AddChild(IKHandLNode);
 		}
 	}
+
+}
+
+// Built-in implementation of CustomBoneFix callback for use with Metahuman and Unreal Engine 5.x Mannequin rig conversion process
+void FbxTools::UnrealBoneFix::performTask(FbxAMatrix &Matrix, FbxCluster *Cluster, QString sBoneName, FbxDouble3 Rotation)
+{
+    // Hard code for Unreal Engine Mannequin bone-names
+    Matrix.MultRM(Rotation);
+    if (sBoneName.contains("_r")) {
+        Matrix.MultRM(FbxVector4(90, 0, 0));
+    }
+    else {
+        Matrix.MultRM(FbxVector4(-90, 0, 0));
+    }
+    
+    if (sBoneName.contains("ball_")) {
+        Matrix.MultRM(FbxVector4(90, 0, 0));
+    }
+    else if (sBoneName.contains("thumb_")) {
+        Matrix.MultRM(FbxVector4(0, 0, 0));
+    }
+    else if (sBoneName.contains("hand_") ||
+             HasNodeAncestor(Cluster->GetLink(), "hand_r", Qt::CaseInsensitive) ||
+             HasNodeAncestor(Cluster->GetLink(), "hand_l", Qt::CaseInsensitive))
+    {
+        Matrix.MultRM(FbxVector4(-90, 0, 0));
+    }
+    
+    if (sBoneName.contains("_l") || sBoneName.contains("_r")) {
+        if (HasNodeAncestor(Cluster->GetLink(), "spine_01", Qt::CaseInsensitive)) {
+            Matrix.MultRM(FbxVector4(0, 0, 0));
+        }
+        else {
+            Matrix.MultRM(FbxVector4(0, -90, 0));
+        }
+    }
+    else {
+        Matrix.MultRM(FbxVector4(0, -90, 0));
+    }
 
 }

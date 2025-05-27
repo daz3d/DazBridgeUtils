@@ -1,3 +1,5 @@
+#pragma once
+
 #include <qlist.h>
 #include <fbxsdk.h>
 
@@ -11,6 +13,21 @@ class DzProgress;
 class FbxTools
 {
 public:
+    // Base class defining callback to perform custom bone re-orientation operations during rig conversion
+    class FixClusterTransformLinks_CustomBoneFix
+    {
+    public:
+        // callback to be called by FbxTools::FixClusterTranformLinks() for performing individual bone orientation operations during rig conversion
+        virtual void performTask(FbxAMatrix &Matrix, FbxCluster* Cluster, QString sBoneName, FbxDouble3 Rotation)=0;
+    };
+
+    // Built-in implementation of CustomBoneFix class for use with Metahuman and Unreal Engine 5.x Mannequin rig conversion process
+    class UnrealBoneFix : public FixClusterTransformLinks_CustomBoneFix
+    {
+    public:
+        virtual void performTask(FbxAMatrix &Matrix, FbxCluster* Cluster, QString sBoneName, FbxDouble3 Rotation);
+    };
+    
 	static double getLength(double a, double b);
 
 	static double getLength(double a, double b, double c);
@@ -95,13 +112,10 @@ public:
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	static void FixClusterTranformLinks(FbxScene* Scene, FbxNode* RootNode, bool bCorrectFix = true, QString sRigName = "unreal");
+	static void FixClusterTranformLinks(FbxScene* Scene, FbxNode* RootNode, FixClusterTransformLinks_CustomBoneFix* pCustomBoneFix);
 	static void RemovePrePostRotations(FbxNode* pNode);
 	static void ReparentTwistBone(FbxNode* pNode);
 	static void FindAndProcessTwistBones(FbxNode* pNode);
 	static void AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLeftFoot, const char* sRightFoot, const char* sLeftHand, const char* sRightHand);
-
-	static void FixClusterTranformLinks_SpecialUnrealFix(FbxAMatrix& Matrix, FbxCluster* Cluster, QString sBoneName, FbxDouble3 Rotation);
-	static void FixClusterTranformLinks_SpecialR2xFix(FbxAMatrix& Matrix, FbxCluster* Cluster, QString sBoneName, FbxDouble3 Rotation);
 
 };
