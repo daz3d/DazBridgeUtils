@@ -1,5 +1,5 @@
 // UNCOMMENT FOLLOWING LINE TO STEP THROUGH MVC CALCULATIONS IN SINGLE THREAD
-//#define __SINGLE_THREAD_DEBUG
+#define __SINGLE_THREAD_DEBUG
 
 #include "MvcTools.h"
 #include <dzobject.h>
@@ -918,7 +918,7 @@ FbxVector2 MvcTools::interpolate_using_mean_value_coordinates(const QVector<doub
 
 bool MvcFbxBoneRetargeter::createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootNode, DzProgress* pProgress)
 {
-	pProgress->step();
+	if (pProgress) pProgress->step();
 	// for each bone, calculte mvc weights, add to mvc weights table
 
 	if (pMesh == nullptr || pRootNode == nullptr)
@@ -954,6 +954,7 @@ bool MvcFbxBoneRetargeter::createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootN
 		FbxVector4 bonePosition = FbxTools::GetAffineMatrix(nullptr, pNode).GetT();
 		QVector<double>* pMvcWeights = new QVector<double>(numVerts, (double)0.0);
 		DzProgress::setCurrentInfo(QString("Computing MVC weights for %1").arg(sBoneName));
+        dzApp->debug( QString("MvcTools: MvcFbxBoneRetargeter::createMvcWeightsTable(): Computing MVC weights for %1").arg(sBoneName) );
 
 		auto job = new JobCalculateMvcWeights(sBoneName, pMesh, bonePosition, pVertexBuffer, pMvcWeights);
 		m_JobQueue.insert(sBoneName, job);
@@ -995,6 +996,7 @@ bool MvcFbxBoneRetargeter::createMvcWeightsTable(FbxMesh* pMesh, FbxNode* pRootN
         jobs.push_back(job);
     }
     QtConcurrent::blockingMap(jobs, JobCalculateMvcWeights::StaticPerformJob);
+    jobs.clear();
 #else
     QtConcurrent::blockingMap(m_JobQueue.values(), JobCalculateMvcWeights::StaticPerformJob);
 #endif
@@ -1037,7 +1039,7 @@ bool MvcFbxBoneRetargeter::validateMvcWeights(const FbxMesh* pMesh, FbxNode* pRo
 		auto results = m_mBoneToMvcWeightsTable.find(sBoneName);
 		if (results == m_mBoneToMvcWeightsTable.end())
 		{
-			//printf("ERROR: unable to find bonename in MvcWeights lookup table: %s", lpBoneName);
+			printf("ERROR: unable to find bonename in MvcWeights lookup table: %s\n", lpBoneName);
 			continue;
 		}
 		QVector<double>* pMvcWeights = results.value();
@@ -1049,13 +1051,16 @@ bool MvcFbxBoneRetargeter::validateMvcWeights(const FbxMesh* pMesh, FbxNode* pRo
 			fabs(delta[1]) > epsilon ||
 			fabs(delta[2]) > epsilon)
 		{
-			//printf("ERROR: MVC validation failed, unable to reproduce same position using original values.");
+            printf("ERROR: MVC validation failed, unable to reproduce same position using original values: bone: %s, [%f, %f, %f]\n", lpBoneName, delta[0], delta[1], delta[2]);
+            dzApp->warning( QString("ERROR: MVC validation failed, unable to reproduce same position using original values: bone:" + sBoneName + ", [%1, %2, %3] ").arg(delta[0]).arg(delta[1]).arg(delta[2]) +
+                           QString("-- Please verify that the Mvc Proxy Mesh is fully continuous / water-tight."));
 			delete [] pVertexBuffer;
 			bResult = false;
 			return bResult;
 		}
 		else
 		{
+            printf("DEBUG: MVC validation successful for bone: %s, [%f, %f, %f]\n", lpBoneName, delta[0], delta[1], delta[2]);
 			bResult = true;
 		}
 
@@ -1096,11 +1101,19 @@ FbxVector4 MvcFbxBoneRetargeter::calibrate_bone(const FbxMesh* pMorphedMesh, QSt
 	}
 	QVector<double>* pMvcWeights = results.value();
 
-	FbxVector4* pVertexBuffer = pMorphedMesh->GetControlPoints();
+    FbxVector4* pVertexBuffer = pMorphedMesh->GetControlPoints();
     FbxAMatrix matrix = FbxTools::GetAffineMatrix(nullptr, pMorphedMesh->GetNode());
+#if 0
     FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &matrix, nullptr, (FbxMesh*)pMorphedMesh);
-
-	FbxVector4 newBonePosition = MvcTools::deform_using_mean_value_coordinates(pMorphedMesh, pVertexBuffer, pMvcWeights);
+    FbxVector4 newBonePosition = MvcTools::deform_using_mean_value_coordinates(pMorphedMesh, pVertexBuffer, pMvcWeights);
+#else
+    int numVerts = pMorphedMesh->GetControlPointsCount();
+    FbxVector4* pTempBuffer = new FbxVector4[numVerts];
+    memcpy(pTempBuffer, pVertexBuffer, sizeof(FbxVector4) * numVerts);
+    FbxTools::BakePoseToVertexBuffer(pTempBuffer, &matrix, nullptr, (FbxMesh*) pMorphedMesh);
+    FbxVector4 newBonePosition = MvcTools::deform_using_mean_value_coordinates(pMorphedMesh, pTempBuffer, pMvcWeights);
+    delete[] pTempBuffer;
+#endif
 	return newBonePosition;
 };
 
@@ -1229,7 +1242,7 @@ void MvcFbxBoneRetargeter::clearWeights()
 
 bool MvcCageRetargeter::createMvcWeights(const FbxMesh* pMesh, const FbxMesh* pCage, DzProgress* pProgress)
 {
-	pProgress->step();
+	if (pProgress) pProgress->step();
 	// for each bone, calculte mvc weights, add to mvc weights table
 
 	if (pMesh == nullptr || pCage == nullptr)
@@ -1693,7 +1706,7 @@ bool MvcTools::testMvc(DzNode *selected)
 
 bool MvcDzBoneRetargeter::createMvcWeightsTable(DzGeometry* pMesh, DzBone* pRootNode, DzProgress* pProgress)
 {
-	pProgress->step();
+	if (pProgress) pProgress->step();
 	// for each bone, calculte mvc weights, add to mvc weights table
 
 	if (pMesh == nullptr || pRootNode == nullptr)

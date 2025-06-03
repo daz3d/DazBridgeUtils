@@ -1033,7 +1033,7 @@ bool FbxTools::BakePoseToBindMatrix(FbxMesh* pMesh, FbxPose* pPose)
 				}
 				else
 				{
-					dzApp->log(QString("ERROR: BakePoseToBindMatrix() could not find cluster bone: %1 in pose").arg(sSearchName));
+					dzApp->log(QString("ERROR: BakePoseToBindMatrix() could not find cluster bone: %1 in pose[%2]").arg(sSearchName).arg(pPose->GetName()));
 					bNoPoseBone = true;
 				}
 			}

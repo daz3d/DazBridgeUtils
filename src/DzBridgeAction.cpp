@@ -1544,12 +1544,17 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 
 				// DB 2022-09-26: Post-Process FBX file
 				DzProgress::setCurrentInfo("Daz Bridge: PostProcessing FBX: " + m_sDestinationFBX);
-				postProcessFbx(m_sDestinationFBX);
+				bReturnResult = postProcessFbx(m_sDestinationFBX);
+                if (bReturnResult == false) {
+                    dzApp->warning("ERROR: Error occured during PostProcessing FBX file: " + m_sDestinationFBX + " , aborting.");
+                }
 
-				// composing dtu filename string here just to use with set current info
-				QString DTUfilename = m_sDestinationPath + m_sAssetName + ".dtu";
-				DzProgress::setCurrentInfo("Daz Bridge: Writing DTU Configuration File: " + DTUfilename);
-				writeConfiguration();
+                if (bReturnResult) {
+                    // composing dtu filename string here just to use with set current info
+                    QString DTUfilename = m_sDestinationPath + m_sAssetName + ".dtu";
+                    DzProgress::setCurrentInfo("Daz Bridge: Writing DTU Configuration File: " + DTUfilename);
+                    writeConfiguration();
+                }
 			}
 		}
 		if (m_bMorphLockBoneTranslation)
