@@ -943,6 +943,7 @@ bool DzBridgeAction::undoRenameDuplicateClothing()
 /// <param name="exportProgress">if null, exportHD will handle UI progress updates</param>
 bool DzBridgeAction::exportHD(DzProgress* exportProgress)
 {
+	bool bExportResult = false;
     DzProgress::setCurrentInfo("Preparing asset for export via Daz Bridge Library...");
 
 	// DB 2024-08-25: Ensure Primary Selection Integrity
@@ -981,9 +982,12 @@ bool DzBridgeAction::exportHD(DzProgress* exportProgress)
 		}
 		m_subdivisionDialog->LockSubdivisionProperties(false);
 		m_bExportingBaseMesh = true;
-		exportAsset(); // basemesh
+		bExportResult = exportAsset(); // basemesh
+		if (bExportResult == false) {
+			dzApp->warning("ERROR: DzBridgeAction::exportHD() Error occured while exporting basemesh, output file may be corrupted...");            
+		}
 		m_subdivisionDialog->UnlockSubdivisionProperties();
-		if (exportProgress)
+		if (exportProgress && bExportResult)
 		{
 			exportProgress->setInfo(tr("Base mesh exported."));
 			exportProgress->step();
@@ -1005,8 +1009,16 @@ bool DzBridgeAction::exportHD(DzProgress* exportProgress)
 	dzScene->setPrimarySelection(pPrimarySelection);
 	m_subdivisionDialog->LockSubdivisionProperties(m_EnableSubdivisions);
 	m_bExportingBaseMesh = false;
-	bool bExportResult = exportAsset();
-	if (exportProgress)
+	// LOGIC NOTE: if m_EnableSubdivisions == false, then the above block did not run, so bExportResult will be false so we should ignore it
+	// otherwise, if m_enableSubdivisions == true, then the above block did run and we need to check bExportResult before performing next action
+	if (m_EnableSubdivisions == false || bExportResult == true) 
+	{
+		bExportResult = exportAsset();
+		if (bExportResult == false) {
+			dzApp->warning("ERROR: DzBridgeAction::exportHD() Error occured while exporting HD mesh, attempting to abort gracefully..."); 
+		}        
+	}
+	if (exportProgress && bExportResult)
 	{
 		exportProgress->step();
 		exportProgress->setInfo(tr("Exporting Asset: Completed."));
@@ -1064,7 +1076,7 @@ bool DzBridgeAction::exportHD(DzProgress* exportProgress)
 	dzScene->setPrimarySelection(pPrimarySelection);
 	// DB 2021-09-02: Unlock and Undo subdivision changes
 	m_subdivisionDialog->UnlockSubdivisionProperties();
-	if (exportProgress)
+	if (exportProgress && bExportResult)
 	{
 		exportProgress->step();
 		exportProgress->setInfo(tr("Mesh export complete."));
@@ -1427,7 +1439,11 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 
 		// DB, 2023-11-08: Morph Selection Overhaul, defer generation of Morph Selection Rule string
 		//  until after preprocessing stage.
-		preProcessScene(Parent);
+		bReturnResult = preProcessScene(Parent);
+		if (bReturnResult == false) {
+			dzApp->warning("ERROR: DzBridgeAction::exportNode() Error occured during preProcessScene() for: " + Parent->getName() );
+			return false;
+		}
 		if (m_bMorphLockBoneTranslation)
 		{
 			lockBoneControls(Parent);
