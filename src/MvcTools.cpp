@@ -1060,7 +1060,7 @@ bool MvcFbxBoneRetargeter::validateMvcWeights(const FbxMesh* pMesh, FbxNode* pRo
 		}
 		else
 		{
-            printf("DEBUG: MVC validation successful for bone: %s, [%f, %f, %f]\n", lpBoneName, delta[0], delta[1], delta[2]);
+//            printf("DEBUG: MVC validation successful for bone: %s, [%f, %f, %f]\n", lpBoneName, delta[0], delta[1], delta[2]);
 			bResult = true;
 		}
 

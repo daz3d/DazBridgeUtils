@@ -1358,40 +1358,40 @@ void DzBridgeAction::reconnectNodes(QList<AttachmentInfo>& AttachmentList)
 	}
 }
 
-void overrideExportOptions(DzFileIOSettings &ExportOptions)
-{
-
-	//// TODO: REMOVE OVERRIDE WHEN WORKING
-	//// DEBUG: Override
-	ExportOptions.setBoolValue("doSelected", false);
-	ExportOptions.setBoolValue("doVisible", true);
-	ExportOptions.setBoolValue("doFigures", true);
-	ExportOptions.setBoolValue("doProps", false);
-	ExportOptions.setBoolValue("doLights", false);
-	ExportOptions.setBoolValue("doCameras", false);
-	ExportOptions.setBoolValue("doAnims", false);
-	ExportOptions.setBoolValue("doMorphs", true);
-	ExportOptions.setBoolValue("doFps", true);
-//	ExportOptions.setStringValue("rules", m_sMorphSelectionRule);
-	ExportOptions.setStringValue("format", "FBX 2014 -- Binary");
-	ExportOptions.setIntValue("RunSilent", true);
-	ExportOptions.setBoolValue("doEmbed", false);
-	ExportOptions.setBoolValue("doCopyTextures", false);
-	ExportOptions.setBoolValue("doDiffuseOpacity", false);
-	ExportOptions.setBoolValue("doMergeClothing", true);
-	ExportOptions.setBoolValue("doStaticClothing", false);
-	ExportOptions.setBoolValue("degradedSkinning", false);
-	ExportOptions.setBoolValue("degradedScaling", false);
-	ExportOptions.setBoolValue("doSubD", false);
-	//ExportOptions.setBoolValue("doCollapseUVTiles", false);
-	ExportOptions.setBoolValue("doLocks", false);
-	ExportOptions.setBoolValue("doLimits", false);
-	ExportOptions.setBoolValue("doBaseFigurePoseOnly", false);
-	ExportOptions.setBoolValue("doHelperScriptScripts", false);
-	ExportOptions.setBoolValue("doMentalRayMaterials", false);
-	//// DEBUG: Override
-
-}
+//void overrideExportOptions(DzFileIOSettings &ExportOptions)
+//{
+//
+//	//// TODO: REMOVE OVERRIDE WHEN WORKING
+//	//// DEBUG: Override
+//	ExportOptions.setBoolValue("doSelected", false);
+//	ExportOptions.setBoolValue("doVisible", true);
+//	ExportOptions.setBoolValue("doFigures", true);
+//	ExportOptions.setBoolValue("doProps", false);
+//	ExportOptions.setBoolValue("doLights", false);
+//	ExportOptions.setBoolValue("doCameras", false);
+//	ExportOptions.setBoolValue("doAnims", false);
+//	ExportOptions.setBoolValue("doMorphs", true);
+//	ExportOptions.setBoolValue("doFps", true);
+////	ExportOptions.setStringValue("rules", m_sMorphSelectionRule);
+//	ExportOptions.setStringValue("format", "FBX 2014 -- Binary");
+//	ExportOptions.setIntValue("RunSilent", true);
+//	ExportOptions.setBoolValue("doEmbed", false);
+//	ExportOptions.setBoolValue("doCopyTextures", false);
+//	ExportOptions.setBoolValue("doDiffuseOpacity", false);
+//	ExportOptions.setBoolValue("doMergeClothing", true);
+//	ExportOptions.setBoolValue("doStaticClothing", false);
+//	ExportOptions.setBoolValue("degradedSkinning", false);
+//	ExportOptions.setBoolValue("degradedScaling", false);
+//	ExportOptions.setBoolValue("doSubD", false);
+//	//ExportOptions.setBoolValue("doCollapseUVTiles", false);
+//	ExportOptions.setBoolValue("doLocks", false);
+//	ExportOptions.setBoolValue("doLimits", false);
+//	ExportOptions.setBoolValue("doBaseFigurePoseOnly", false);
+//	ExportOptions.setBoolValue("doHelperScriptScripts", false);
+//	ExportOptions.setBoolValue("doMentalRayMaterials", false);
+//	//// DEBUG: Override
+//
+//}
 
 bool DzBridgeAction::exportNode(DzNode* Node)
 {
@@ -1494,7 +1494,7 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 		ExportOptions.setStringValue("format", m_sFbxVersion);
 		ExportOptions.setIntValue("RunSilent", !m_bShowFbxOptions);
 
-		ExportOptions.setBoolValue("doEmbed", false);
+		ExportOptions.setBoolValue("doEmbed", true);
 		ExportOptions.setBoolValue("doCopyTextures", false);
 		ExportOptions.setBoolValue("doDiffuseOpacity", false);
 		ExportOptions.setBoolValue("doMergeClothing", true);
