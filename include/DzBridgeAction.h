@@ -348,6 +348,8 @@ namespace DzBridgeNameSpace
 		// If True, defers processing of ImageTools Jobs until actively called via m_ImageToolsJobsManager->processJobs()
 		bool m_bDeferProcessingImageToolsJobs = false;
 
+		bool m_bEmbedTexturesInOutputFile = false;
+
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }
 

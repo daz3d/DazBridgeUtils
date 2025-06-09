@@ -1494,7 +1494,7 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 		ExportOptions.setStringValue("format", m_sFbxVersion);
 		ExportOptions.setIntValue("RunSilent", !m_bShowFbxOptions);
 
-		ExportOptions.setBoolValue("doEmbed", true);
+		ExportOptions.setBoolValue("doEmbed", m_bEmbedTexturesInOutputFile);
 		ExportOptions.setBoolValue("doCopyTextures", false);
 		ExportOptions.setBoolValue("doDiffuseOpacity", false);
 		ExportOptions.setBoolValue("doMergeClothing", true);
@@ -4890,7 +4890,7 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 		}
 	}
 
-	if (openFBX->SaveScene(pScene, fbxFilePath) == false)
+	if (openFBX->SaveScene(pScene, fbxFilePath, -1, m_bEmbedTexturesInOutputFile) == false)
 	{
 		QString sFbxErrorMessage = tr("ERROR: DzBridge: openFBX->SaveScene(): ")
 			+ QString("(File: \"%1\") ").arg(fbxFilePath)
