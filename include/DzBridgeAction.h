@@ -349,6 +349,7 @@ namespace DzBridgeNameSpace
 		bool m_bDeferProcessingImageToolsJobs = false;
 
 		bool m_bEmbedTexturesInOutputFile = false;
+		bool m_bOverrideMorphSelectionDialog = false;
 
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }

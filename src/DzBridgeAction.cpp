@@ -1477,8 +1477,10 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 		{
 			ExportOptions.setBoolValue("doAnims", false);
 		}
+		
 		// DB 2023-11-15: Morph Selection Overhaul
 		m_sMorphSelectionRule = MorphTools::getMorphString(m_MorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm);
+
 		// DB 2023-11-15: Custom Asset Type Support
 		if (isAssetMorphCompatible(m_sAssetType) && m_bEnableMorphs && m_sMorphSelectionRule != "")
 		{
@@ -3855,16 +3857,20 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 	m_MorphNamesToExport.clear();
 	m_AvailableMorphsTable.clear();
 	m_AvailableMorphsTable = MorphTools::GetAvailableMorphs(m_pSelectedNode, true);
-	QList<QString> aUnfinalizedMorphNamesToExport = m_morphSelectionDialog->GetMorphNamesToExport();
-	QList<QString> aFinalizedMorphList = MorphTools::getFinalizedMorphList(aUnfinalizedMorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm);
-	m_MorphNamesToExport = aFinalizedMorphList;
+	if (m_bOverrideMorphSelectionDialog == false) {
+		QList<QString> aUnfinalizedMorphNamesToExport = m_morphSelectionDialog->GetMorphNamesToExport();
+		m_MorphNamesToExport = MorphTools::getFinalizedMorphList(aUnfinalizedMorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm);
+	}
+	else {
+		m_MorphNamesToExport = m_aMorphListOverride;
+	}
 
 	//////////////////////////////////////////////////
 	//// POPULATE m_ControllersToDisconnect ////
 	//////////////////////////////////////////////////
 	resetArray_ControllersToDisconnect();
 	if (m_bAllowMorphDoubleDipping == false) {
-		m_ControllersToDisconnect.append(MorphTools::GetMorphNamesToDisconnectList(aFinalizedMorphList, m_pSelectedNode));
+		m_ControllersToDisconnect.append(MorphTools::GetMorphNamesToDisconnectList(m_MorphNamesToExport, m_pSelectedNode));
 	}
 
 	// LOD settings
