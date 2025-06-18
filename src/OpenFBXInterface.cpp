@@ -90,6 +90,7 @@ OpenFBXInterface::~OpenFBXInterface()
     if (m_fbxManager) m_fbxManager->Destroy();
 }
 
+// ASCII nFileFormat=1
 bool OpenFBXInterface::SaveScene(FbxScene* pScene, QString sFilename, int nFileFormat, bool bEmbedMedia)
 {
 	bool bStatus = true;
@@ -111,6 +112,7 @@ bool OpenFBXInterface::SaveScene(FbxScene* pScene, QString sFilename, int nFileF
 				FbxString lDesc = m_fbxManager->GetIOPluginRegistry()->GetWriterFormatDescription(lFormatIndex);
 				if (lDesc.Find("ascii") >= 0)
 				{
+					printf("\n\n\n**** ASCII FileFormat=%i ******\n\n\n", lFormatIndex);
 					nFileFormat = lFormatIndex;
 					break;
 				}
