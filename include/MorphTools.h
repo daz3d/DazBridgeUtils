@@ -119,6 +119,8 @@ public:
 	static QList<DzProperty*> GetDownstreamErcList(DzProperty* pProperty, bool bPrimaryErcOnly, bool bSecondaryErcOnly, bool bAllNonPrimaryDescendants);
 	static QList<DzProperty*> GetUpstreamErcList(DzProperty* pProperty, bool bPrimaryErcOnly, bool bSecondaryErcOnly, bool bAllNonPrimaryAncestors);
 
+	static DzProperty* BruteForceFindMorph(DzNode* pNode, QString sMorphName);
+
 private:
 	static void AddActiveJointControlledMorphs(QList<QString> &m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node = nullptr);
 	static QList<JointLinkInfo> GetActiveJointControlledMorphs(QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* Node = nullptr);

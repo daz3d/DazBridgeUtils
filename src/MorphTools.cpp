@@ -1424,3 +1424,53 @@ QList<DzProperty*> MorphTools::GetUpstreamErcList(DzProperty* pProperty, bool bP
 	return ercList;
 }
 
+
+DzProperty* MorphTools::BruteForceFindMorph(DzNode* pNode, QString sMorphName)
+{
+
+	DzObject* Object = pNode->getObject();
+
+	for (int index = 0; index < pNode->getNumProperties(); index++)
+	{
+		DzProperty* property = pNode->getProperty(index);
+		QString propName = property->getName();
+		QString propLabel = property->getLabel();
+		DzPresentation* presentation = property->getPresentation();
+		if (presentation)
+		{
+			if (propName == sMorphName) {
+				return property;
+			}
+		}
+	}
+
+	if (Object)
+	{
+		for (int index = 0; index < Object->getNumModifiers(); index++)
+		{
+			DzModifier* modifier = Object->getModifier(index);
+			QString modName = modifier->getName();
+			QString modLabel = modifier->getLabel();
+			DzMorph* mod = qobject_cast<DzMorph*>(modifier);
+			if (mod)
+			{
+				for (int propindex = 0; propindex < modifier->getNumProperties(); propindex++)
+				{
+					DzProperty* property = modifier->getProperty(propindex);
+					QString propName = property->getName();
+					QString propLabel = property->getLabel();
+					DzPresentation* presentation = property->getPresentation();
+					if (presentation)
+					{
+						if (modName == sMorphName) {
+							return property;
+						}						
+					}
+				}
+			}
+		}
+	}
+
+	return nullptr;
+}
+
