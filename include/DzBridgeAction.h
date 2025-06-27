@@ -477,7 +477,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool upgradeToHD(QString baseFilePath, QString hdFilePath, QString outFilePath, std::map<std::string, int>* pLookupTable);
 		Q_INVOKABLE virtual void writeWeightMaps(DzNode* Node, DzJsonWriter& Stream);
 
-		Q_INVOKABLE virtual bool metaInvokeMethod(QObject* object, const char* methodSig, void** returnPtr);
+		Q_INVOKABLE virtual bool metaInvokeMethod(QObject* object, const char* methodSig, void* returnPtr);
 		Q_INVOKABLE virtual void writeSkeletonData(DzNode* Node, DzJsonWriter& writer);
 		Q_INVOKABLE virtual void writeHeadTailData(DzNode* Node, DzJsonWriter& writer);
 		Q_INVOKABLE virtual DzBoneList getAllBones(DzNode* Node);

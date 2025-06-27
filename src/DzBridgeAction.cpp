@@ -4575,7 +4575,7 @@ DzWeightMapPtr DzBridgeAction::getWeightMapPtr(DzNode* Node)
 
 }
 
-bool DzBridgeAction::metaInvokeMethod(QObject* object, const char* methodSig, void** returnPtr)
+bool DzBridgeAction::metaInvokeMethod(QObject* object, const char* methodSig, void* returnPtr)
 {
 	if (object == nullptr)
 	{
@@ -4628,17 +4628,13 @@ bool DzBridgeAction::metaInvokeMethod(QObject* object, const char* methodSig, vo
 
 	// invoke metamethod
 	QMetaMethod metaMethod = metaObject->method(methodIndex);
-	void* returnVal;
 	QGenericReturnArgument returnArgument(
 		metaMethod.typeName(),
-		&returnVal
+		returnPtr
 	);
-	int result = metaMethod.invoke((QObject*)object, returnArgument);
+	bool result = metaMethod.invoke((QObject*)object, returnArgument);
 	if (result)
 	{
-		// set returnvalue
-		*returnPtr = returnVal;
-
 		return true;
 	}
 
