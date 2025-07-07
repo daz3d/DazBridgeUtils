@@ -120,10 +120,10 @@ DzBridgeAction::DzBridgeAction(const QString& text, const QString& desc) :
 			 m_aKnownIntermediateFileExtensionsList += QString(acharExtensionList[i]);
 		 }
 		 catch (...) {
-			 dzApp->log("DEBUG: StringListMaker: end of char array");
+//			 dzApp->log("DEBUG: StringListMaker: end of char array");
 			 break;
 		 }
-		 dzApp->log("DEBUG: StringListMaker: added string: " + m_aKnownIntermediateFileExtensionsList[i]);
+//		 dzApp->log("DEBUG: StringListMaker: added string: " + m_aKnownIntermediateFileExtensionsList[i]);
 	 }
 
 }
