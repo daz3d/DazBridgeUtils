@@ -568,7 +568,7 @@ functionality for some Morph and JCM products.\
 	m_wBakeCustomPivotsRowLabel = new QLabel(tr("Pivot Points"));
 	m_aRowLabels.append(m_wBakeCustomPivotsRowLabel);
 	objectBakingOptionsLayout->addRow(m_wBakeCustomPivotsRowLabel, m_wBakeCustomPivotsComboBox);
-	m_wBakeCustomPivotsComboBox->setCurrentIndex(m_wBakeInstancesComboBox->findData("ask"));
+	m_wBakeCustomPivotsComboBox->setCurrentIndex(m_wBakeCustomPivotsComboBox->findData("ask"));
 
 	m_wBakeRigidFollowNodesComboBox = new QComboBox(0);
 	m_wBakeRigidFollowNodesComboBox->addItem(tr("Ask for my decision"), "ask");
@@ -577,7 +577,7 @@ functionality for some Morph and JCM products.\
 	m_wBakeRigidFollowNodesRowLabel = new QLabel(tr("Rigid Follow Nodes"));
 	m_aRowLabels.append(m_wBakeRigidFollowNodesRowLabel);
 	objectBakingOptionsLayout->addRow(m_wBakeRigidFollowNodesRowLabel, m_wBakeRigidFollowNodesComboBox);
-	m_wBakeRigidFollowNodesComboBox->setCurrentIndex(m_wBakeInstancesComboBox->findData("ask"));
+	m_wBakeRigidFollowNodesComboBox->setCurrentIndex(m_wBakeRigidFollowNodesComboBox->findData("ask"));
 
 	///////////////////////////////////////
 	// Add Widgets to Advanced Layout
