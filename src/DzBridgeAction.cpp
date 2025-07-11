@@ -3833,23 +3833,23 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 //		m_ControllersToDisconnect.append(m_morphSelectionDialog->getMorphNamesToDisconnectList());
 //		m_mMorphNameToLabel = BridgeDialog->GetMorphMappingFromMorphSelectionDialog();
 		m_aPoseExportList = BridgeDialog->GetPoseList();
+
+		m_EnableSubdivisions = BridgeDialog->getSubdivisionEnabledCheckBox()->isChecked();
+		m_bShowFbxOptions = BridgeDialog->getShowFbxDialogCheckBox()->isChecked();
+		m_sFbxVersion = BridgeDialog->getFbxVersionCombo()->currentText();
+		m_bGenerateNormalMaps = BridgeDialog->getEnableNormalMapGenerationCheckBox()->isChecked();
+
+		m_bAnimationUseExperimentalTransfer = BridgeDialog->getExperimentalAnimationExportCheckBox()->isChecked();
+		m_bAnimationBake = BridgeDialog->getBakeAnimationExportCheckBox()->isChecked();
+		m_bAnimationTransferFace = BridgeDialog->getFaceAnimationExportCheckBox()->isChecked();
+		m_bAnimationExportActiveCurves = BridgeDialog->getAnimationExportActiveCurvesCheckBox()->isChecked();
+		m_bAnimationApplyBoneScale = BridgeDialog->getAnimationApplyBoneScaleCheckBox()->isChecked();
+
+		m_bMorphLockBoneTranslation = BridgeDialog->getMorphLockBoneTranslationCheckBox()->isChecked();
+		m_bEnableAutoJcm = BridgeDialog->getAutoJCM();
+		m_bEnableFakeDualQuat = BridgeDialog->getFakeDualQuat();
+		m_bAllowMorphDoubleDipping = BridgeDialog->getAllowMorphDoubleDipping();
 	}
-
-	m_EnableSubdivisions = BridgeDialog->getSubdivisionEnabledCheckBox()->isChecked();
-	m_bShowFbxOptions = BridgeDialog->getShowFbxDialogCheckBox()->isChecked();
-	m_sFbxVersion = BridgeDialog->getFbxVersionCombo()->currentText();
-	m_bGenerateNormalMaps = BridgeDialog->getEnableNormalMapGenerationCheckBox()->isChecked();
-
-	m_bAnimationUseExperimentalTransfer = BridgeDialog->getExperimentalAnimationExportCheckBox()->isChecked();
-	m_bAnimationBake = BridgeDialog->getBakeAnimationExportCheckBox()->isChecked();
-	m_bAnimationTransferFace = BridgeDialog->getFaceAnimationExportCheckBox()->isChecked();
-	m_bAnimationExportActiveCurves = BridgeDialog->getAnimationExportActiveCurvesCheckBox()->isChecked();
-	m_bAnimationApplyBoneScale = BridgeDialog->getAnimationApplyBoneScaleCheckBox()->isChecked();
-
-	m_bMorphLockBoneTranslation = BridgeDialog->getMorphLockBoneTranslationCheckBox()->isChecked();
-	m_bEnableAutoJcm = BridgeDialog->getAutoJCM();
-	m_bEnableFakeDualQuat = BridgeDialog->getFakeDualQuat();
-	m_bAllowMorphDoubleDipping = BridgeDialog->getAllowMorphDoubleDipping();
 
 	/////////////////////////////////////////////
 	//// POPULATE m_MorphNamesToExport ////

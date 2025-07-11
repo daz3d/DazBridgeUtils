@@ -232,6 +232,9 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool getEmbedTexturesInOutputFile() { return m_bEmbedTexturesInOutputFile; }
 		Q_INVOKABLE virtual void setEmbedTexturesInOutputFile(bool arg) { m_bEmbedTexturesInOutputFile = arg; }
 
+		Q_INVOKABLE virtual bool getAllowMorphDoubleDipping() { return m_bAllowMorphDoubleDipping; }
+		Q_INVOKABLE virtual void setAllowMorphDoubleDipping(bool arg) { m_bAllowMorphDoubleDipping = arg; }
+		
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo
@@ -277,32 +280,32 @@ namespace DzBridgeNameSpace
 		bool m_bUndoNormalMaps;  // remove generated normal maps after export
 		QString m_sExportFbx; // override filename of exported fbx
 
-		bool m_bEnableMorphs; // enable morph export
-		bool m_EnableSubdivisions; // enable subdivision baking
-		bool m_bExportingBaseMesh;
-		bool m_bShowFbxOptions;
-		bool m_bExportMaterialPropertiesCSV;
-		DzNode* m_pSelectedNode;
+		bool m_bEnableMorphs = false; // enable morph export
+		bool m_EnableSubdivisions = false; // enable subdivision baking
+		bool m_bExportingBaseMesh = false;
+		bool m_bShowFbxOptions = false;
+		bool m_bExportMaterialPropertiesCSV = false;
+		DzNode* m_pSelectedNode = nullptr;
 		EAssetType m_eSelectedNodeAssetType = EAssetType::None;
 
 		// Animation Settings
-		bool m_bAnimationUseExperimentalTransfer;
-		bool m_bAnimationBake;
-		bool m_bAnimationTransferFace;
-		bool m_bAnimationExportActiveCurves;
-		bool m_bAnimationApplyBoneScale;
+		bool m_bAnimationUseExperimentalTransfer = false;
+		bool m_bAnimationBake = false;
+		bool m_bAnimationTransferFace = false;
+		bool m_bAnimationExportActiveCurves = false;
+		bool m_bAnimationApplyBoneScale = false;
 
 		// post-process FBX
-		bool m_bPostProcessFbx;
-		bool m_bRemoveDuplicateGeografts;
-		bool m_bExperimental_FbxPostProcessing;
+		bool m_bPostProcessFbx = true;
+		bool m_bRemoveDuplicateGeografts = true;
+		bool m_bExperimental_FbxPostProcessing = false;
 		QStringList m_aGeografts;
 
 		// Morph Settings;
-		bool m_bMorphLockBoneTranslation;
-		bool m_bEnableAutoJcm;
-		bool m_bEnableFakeDualQuat;
-		bool m_bAllowMorphDoubleDipping;
+		bool m_bMorphLockBoneTranslation = false;
+		bool m_bEnableAutoJcm = false;
+		bool m_bEnableFakeDualQuat = false;
+		bool m_bAllowMorphDoubleDipping = true; // default double-dipping to TRUE, only set to false per plugin if plugin explicitly has functions to recreate morphlinks and thus take the place of double-dipping
 
 		// LOD generation settings
 		bool m_bEnableLodGeneration = false; // enable level-of-detail generation
