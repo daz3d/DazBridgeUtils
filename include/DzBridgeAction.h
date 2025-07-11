@@ -217,10 +217,11 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE static bool DetectInstancesInScene();
 		Q_INVOKABLE static bool DetectCustomPivotsInScene();
 		Q_INVOKABLE static bool DetectRigidFollowNodes();
-		Q_INVOKABLE static bool BakePivots(QScopedPointer<DzScript>& Script, QString sScriptPath="");
-		Q_INVOKABLE static bool BakeInstances(QScopedPointer<DzScript>& Scrip, QString sScriptPath = "");
-		Q_INVOKABLE static bool BakeRigidFollowNodes(QScopedPointer<DzScript>& Script, QString sScriptPath = "");
 		Q_INVOKABLE static bool InstallEmbeddedArchive(QString sArchiveFilename, QString sDestinationPath);
+		Q_INVOKABLE static bool ExecuteEmbeddedScript(QScopedPointer<DzScript>& Script, QString sScriptPath);
+		Q_INVOKABLE virtual bool bakePivots(); // script friendly convenience function
+		Q_INVOKABLE virtual bool bakeInstances(); // script friendly convenience function
+		Q_INVOKABLE virtual bool bakeRigidFollowNodes(); // script friendly convenience function
 
 		Q_INVOKABLE virtual int getBakeInstancesMode() { return (int) m_eBakeInstancesMode; }
 		Q_INVOKABLE virtual void setBakeInstancesMode(int arg) { m_eBakeInstancesMode = (EBakeMode) arg; }

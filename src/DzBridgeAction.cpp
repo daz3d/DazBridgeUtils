@@ -7090,83 +7090,63 @@ bool DzBridgeAction::DetectCustomPivotsInScene()
 	return false;
 }
 
-bool DzBridgeAction::BakePivots(QScopedPointer<DzScript>& Script, QString sScriptPath)
+bool DzBridgeAction::ExecuteEmbeddedScript(QScopedPointer<DzScript>& Script, QString sScriptPath)
 {
 	bool bResult;
-	bool bReplace = false;
-	QString sScriptFilename = "bake_all_pivots_nogui.dsa";
-	QString sEmbeddedFolderPath = ":/DazBridge";
-	QString sEmbeddedFilepath = sEmbeddedFolderPath + "/" + sScriptFilename;
-	if (sScriptPath != "") {
-		sEmbeddedFilepath = sScriptPath;
-	}
-	QFile srcFile(sEmbeddedFilepath);
+	sScriptPath = sScriptPath.replace("\\", "/");
+	QFile srcFile(sScriptPath);
 	if (srcFile.exists() == false) {
-		dzApp->log(tr("DzBridge: ERROR: BakePivots() Invalid Script Path: ") + sScriptFilename);
+		dzApp->log(tr("DzBridge: ERROR: ExecuteEmbeddedScript() Invalid Script Path: ") + sScriptPath);
 		return false;
 	}
+	QString sScriptFilename = sScriptPath.split("/").last();
 	QString sTempFilepath = dzApp->getTempPath() + "/" + sScriptFilename;
+	bool bReplace = true;
 	bResult = DZ_BRIDGE_NAMESPACE::DzBridgeAction::copyFile(&srcFile, &sTempFilepath, bReplace);
 	srcFile.close();
 	if (!bResult)
 	{
-		dzApp->log(tr("DzBridge: ERROR: BakePivots() Error occured while trying to copy script to temp folder: ") + sTempFilepath);
+		dzApp->log(tr("DzBridge: ERROR: ExecuteEmbeddedScript() Error occurred while trying to copy script to temp folder: ") + sTempFilepath);
+		return false;
 	}
 
-//	DzScript* Script = new DzScript();
 	Script.reset(new DzScript());
 
 	bResult = Script->loadFromFile(sTempFilepath);
 	if (!bResult) {
-		dzApp->log(tr("DzBridge: CRITICAL ERROR: BakePivots() Error occured while trying to load script file: ") + sTempFilepath + ", aborting script.");
+		dzApp->log(tr("DzBridge: CRITICAL ERROR: ExecuteEmbeddedScript() Error occurred while trying to load script file: ") + sTempFilepath + ", aborting script.");
 		return false;
 	}
 
 	bResult = Script->execute();
-
-	// this may cause instability or crashes
-//	Script->deleteLater();
 
 	return bResult;
 }
 
-bool DzBridgeAction::BakeInstances(QScopedPointer<DzScript>& Script, QString sScriptPath)
+bool DzBridgeAction::bakePivots()
 {
-	bool bResult;
-	bool bReplace = false;
+	QScopedPointer<DzScript> Script(new DzScript());
+	QString sScriptFilename = "bake_all_pivots_nogui.dsa";
+	QString sEmbeddedFilepath = m_sEmbeddedFolderPath + "/" + sScriptFilename;	
+	bool bResult = ExecuteEmbeddedScript(Script, sEmbeddedFilepath);
+	return bResult;
+}
+
+bool DzBridgeAction::bakeInstances()
+{
+	QScopedPointer<DzScript> Script(new DzScript());
 	QString sScriptFilename = "bake_all_instances_nogui.dsa";
-	QString sEmbeddedFolderPath = ":/DazBridge";
-	QString sEmbeddedFilepath = sEmbeddedFolderPath + "/" + sScriptFilename;
-	if (sScriptPath != "") {
-		sEmbeddedFilepath = sScriptPath;
-	}
-	QFile srcFile(sEmbeddedFilepath);
-	if (srcFile.exists() == false) {
-		dzApp->log(tr("DzBridge: ERROR: BakeInstances() Invalid Script Path: ") + sScriptFilename);
-		return false;
-	}
-	QString sTempFilepath = dzApp->getTempPath() + "/" + sScriptFilename;
-	bResult = DZ_BRIDGE_NAMESPACE::DzBridgeAction::copyFile(&srcFile, &sTempFilepath, bReplace);
-	srcFile.close();
-	if (!bResult)
-	{
-		dzApp->log(tr("DzBridge: ERROR: BakeInstances() Error occured while trying to copy script to temp folder: ") + sTempFilepath);
-	}
+	QString sEmbeddedFilepath = m_sEmbeddedFolderPath + "/" + sScriptFilename;	
+	bool bResult = ExecuteEmbeddedScript(Script, sEmbeddedFilepath);
+	return bResult;
+}
 
-	//	DzScript* Script = new DzScript();
-	Script.reset(new DzScript());
-
-	bResult = Script->loadFromFile(sTempFilepath);
-	if (!bResult) {
-		dzApp->log(tr("DzBridge: CRITICAL ERROR: BakeInstances() Error occured while trying to load script file: ") + sTempFilepath + ", aborting script.");
-		return false;
-	}
-
-	bResult = Script->execute();
-
-	// this may cause instability or crashes
-//	Script->deleteLater();
-
+bool DzBridgeAction::bakeRigidFollowNodes()
+{
+	QScopedPointer<DzScript> Script(new DzScript());
+	QString sScriptFilename = "bake_rfn_nogui.dsa";
+	QString sEmbeddedFilepath = m_sEmbeddedFolderPath + "/" + sScriptFilename;
+	bool bResult = ExecuteEmbeddedScript(Script, sEmbeddedFilepath);
 	return bResult;
 }
 
@@ -7184,47 +7164,6 @@ bool DzBridgeAction::DetectRigidFollowNodes()
 	}
 
 	return false;
-
-}
-
-bool DzBridgeAction::BakeRigidFollowNodes(QScopedPointer<DzScript> &Script, QString sScriptPath)
-{
-	bool bResult;
-	bool bReplace = false;
-	QString sScriptFilename = "bake_rfn_nogui.dsa";
-	QString sEmbeddedFolderPath = ":/DazBridge";
-	QString sEmbeddedFilepath = sEmbeddedFolderPath + "/" + sScriptFilename;
-	if (sScriptPath != "") {
-		sEmbeddedFilepath = sScriptPath;
-	}
-	QFile srcFile(sEmbeddedFilepath);
-	if (srcFile.exists() == false) {
-		dzApp->log(tr("DzBridge: ERROR: BakeRigidFollowNodes() Invalid Script Path: ") + sScriptFilename);
-		return false;
-	}
-	QString sTempFilepath = dzApp->getTempPath() + "/" + sScriptFilename;
-	bResult = DZ_BRIDGE_NAMESPACE::DzBridgeAction::copyFile(&srcFile, &sTempFilepath, bReplace);
-	srcFile.close();
-	if (!bResult)
-	{
-		dzApp->log(tr("DzBridge: ERROR: BakeRigidFollowNodes() Error occured while trying to copy script to temp folder: ") + sTempFilepath);
-	}
-
-//	DzScript* Script = new DzScript();
-	Script.reset(new DzScript());
-
-	bResult = Script->loadFromFile(sTempFilepath);
-	if (!bResult) {
-		dzApp->log(tr("DzBridge: CRITICAL ERROR: BakeRigidFollowNodes() Error occured while trying to load script file: ") + sTempFilepath + ", aborting script.");
-		return false;
-	}
-
-	bResult = Script->execute();
-
-	// this may cause instability or crashes
-//	Script->deleteLater();
-
-	return bResult;
 
 }
 
@@ -7303,7 +7242,7 @@ You may also Abort the transfer operation.").arg(sDetected);
 		{
 			QString sScriptFilename = "bake_all_instances_nogui.dsa";
 			QString sEmbeddedFilepath = m_sEmbeddedFolderPath + "/" + sScriptFilename;
-			BakeInstances(Script, sEmbeddedFilepath);
+			ExecuteEmbeddedScript(Script, sEmbeddedFilepath);
 		}
 	}
 	if (bCustomPivotsDetected && m_eBakePivotPointsMode != DZ_BRIDGE_NAMESPACE::EBakeMode::NeverBake)
@@ -7313,7 +7252,7 @@ You may also Abort the transfer operation.").arg(sDetected);
 		{
 			QString sScriptFilename = "bake_all_pivots_nogui.dsa";
 			QString sEmbeddedFilepath = m_sEmbeddedFolderPath + "/" + sScriptFilename;
-			BakePivots(Script, sEmbeddedFilepath);
+			ExecuteEmbeddedScript(Script, sEmbeddedFilepath);
 		}
 	}
 	if (bRigidFollowNodesDetected && m_eBakeRigidFollowNodesMode != DZ_BRIDGE_NAMESPACE::EBakeMode::NeverBake)
@@ -7323,7 +7262,7 @@ You may also Abort the transfer operation.").arg(sDetected);
 		{
 			QString sScriptFilename = "bake_rfn_nogui.dsa";
 			QString sEmbeddedFilepath = m_sEmbeddedFolderPath + "/" + sScriptFilename;
-			BakeRigidFollowNodes(Script, sEmbeddedFilepath);
+			ExecuteEmbeddedScript(Script, sEmbeddedFilepath);
 		}
 	}
 
