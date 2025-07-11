@@ -4851,6 +4851,28 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 		}
 	}
 
+	if (m_bBakeMeshesToSingleBindPose)
+	{
+		QList<FbxNode*> nodeList;
+		FbxNode* RootNode = pScene->GetRootNode();
+		FbxTools::GetAllMeshes(RootNode, nodeList);
+
+		// Bake all meshes to use the same bind pose (blender work-around -- does not support separate bind matrix in follower meshes)
+		FbxTools::RemoveBindPoses(pScene);
+		foreach(FbxNode * pNode, nodeList) {
+			QString debugName(pNode->GetName());
+			FbxMesh* pMesh = pNode->GetMesh();
+			FbxAMatrix matrix = pNode->EvaluateGlobalTransform();
+			FbxVector4* pVertexBuffer = pMesh->GetControlPoints();
+			if (pVertexBuffer == NULL) continue;
+			FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &matrix, nullptr, pMesh);
+		}
+		foreach(FbxNode* pNode, nodeList) {
+			FbxMesh* pMesh = pNode->GetMesh();
+			FbxTools::BakePoseToBindMatrix(pMesh, nullptr);
+		}
+	}
+	
 	if (m_bExperimental_FbxPostProcessing)
 	{
 		// Find the root bone.  There should only be one bone off the scene root

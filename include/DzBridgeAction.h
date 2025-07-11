@@ -235,6 +235,9 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool getAllowMorphDoubleDipping() { return m_bAllowMorphDoubleDipping; }
 		Q_INVOKABLE virtual void setAllowMorphDoubleDipping(bool arg) { m_bAllowMorphDoubleDipping = arg; }
 		
+		Q_INVOKABLE virtual bool getBakeMeshesToSingleBindPose() { return m_bBakeMeshesToSingleBindPose; }
+		Q_INVOKABLE virtual void setBakeMeshesToSingleBindPose(bool arg) { m_bBakeMeshesToSingleBindPose = arg; }
+		
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo
@@ -357,6 +360,10 @@ namespace DzBridgeNameSpace
 		bool m_bEmbedTexturesInOutputFile = false;
 		bool m_bOverrideMorphSelectionDialog = false; // NOTE: m_bOverrideMorphSelectionDialog is intended for Bridge Plugins that need to override the morph selection dialog in interactive mode, this is not needed for scripting modes
 
+		bool m_bBakeMeshesToSingleBindPose = true;
+		
+		////////////////////////////////////
+		
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }
 
