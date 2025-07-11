@@ -4967,12 +4967,13 @@ bool DzBridgeAction::copyFile(QFile* file, QString* dst, bool replace, bool comp
 	{
 		if (compareFiles && dstExists)
 		{
-			auto srcFileMD5 = getMD5(file->fileName());
-			auto dstFileMD5 = getMD5(*dst);
+			QString srcFileMD5 = getMD5(file->fileName());
+			QString dstFileMD5 = getMD5(*dst);
 
 			if (srcFileMD5.length() > 0 && dstFileMD5.length() > 0 && srcFileMD5.compare(dstFileMD5) == 0)
 			{
-				return false;
+				// files are the same, skip copy operation and return true
+				return true;
 			}
 		}
 
