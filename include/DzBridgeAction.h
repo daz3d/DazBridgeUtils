@@ -229,6 +229,9 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual int getBakeRigidFollowNodesMode() { return (int) m_eBakeRigidFollowNodesMode; }
 		Q_INVOKABLE virtual void setBakeRigidFollowNodesMode(int arg) { m_eBakeRigidFollowNodesMode = (EBakeMode) arg; }
 
+		Q_INVOKABLE virtual bool getEmbedTexturesInOutputFile() { return m_bEmbedTexturesInOutputFile; }
+		Q_INVOKABLE virtual void setEmbedTexturesInOutputFile(bool arg) { m_bEmbedTexturesInOutputFile = arg; }
+
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo
@@ -349,7 +352,7 @@ namespace DzBridgeNameSpace
 		bool m_bDeferProcessingImageToolsJobs = false;
 
 		bool m_bEmbedTexturesInOutputFile = false;
-		bool m_bOverrideMorphSelectionDialog = false;
+		bool m_bOverrideMorphSelectionDialog = false; // NOTE: m_bOverrideMorphSelectionDialog is intended for Bridge Plugins that need to override the morph selection dialog in interactive mode, this is not needed for scripting modes
 
 		virtual QString getActionGroup() const { return tr("Bridges"); }
 		virtual QString getDefaultMenuPath() const { return tr("&File/Send To"); }
