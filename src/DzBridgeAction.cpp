@@ -7880,6 +7880,369 @@ bool DzBridgeAction::writeSceneDefinitionNode(DzNode* Node, DzJsonWriter& Writer
 	return true;
 }
 
+// PROXY GENERATION
+bool DzBridgeAction::generateProxyMesh(DzNode* pNode, QString sFbxFilePath, bool bExportFacsBlendshapes)
+{
+	
+	if (pNode == nullptr) return false;
+	if (sFbxFilePath.isEmpty()) return false;
+
+	// Safe List
+	QStringList aSafeList;
+	aSafeList.append("Genesis9Eyes");
+	aSafeList.append("Genesis9Mouth");
+
+	QMap<DzNode*, DzNode*> oUndoTable;
+	if (bExportFacsBlendshapes)
+	{
+		aSafeList += findEyelashEyebrowsHair(pNode);
+	}
+	if (hideFollowerMeshes(pNode, aSafeList, oUndoTable) == false) {
+		return false;
+	}
+
+	// Export FBX with "Selected Only" option
+	DzExportMgr* ExportManager = dzApp->getExportMgr();
+	DzExporter* Exporter = ExportManager->findExporterByClassName("DzFbxExporter");
+	DzFileIOSettings ExportOptions;
+	DzNode* pGeograftNode = nullptr;
+
+	ExportOptions.setBoolValue("doSelected", true);
+	ExportOptions.setBoolValue("doVisible", false);
+	ExportOptions.setBoolValue("doFigures", true);
+	ExportOptions.setBoolValue("doProps", false);
+	ExportOptions.setBoolValue("doEmbed", false);
+	ExportOptions.setStringValue("format", m_sFbxVersion);
+	ExportOptions.setIntValue("RunSilent", !m_bShowFbxOptions);
+
+	bool bUndoUnfitting = false;
+	if (bExportFacsBlendshapes) {
+		ExportOptions.setBoolValue("doMorphs", true);
+		m_sMorphSelectionRule = MorphTools::getMorphString(m_MorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm);
+		ExportOptions.setStringValue("rules", m_sMorphSelectionRule);
+//		dzApp->log("DEBUG: DzBridgeAction::generateProxyMesh() rules=" + m_sMorphSelectionRule);
+	} else {
+		// Make sure base figure has correct number of faces
+		int numVisibleFaces = getNumVisibleFacesFromNode(pNode);
+#define G9_BASE_FACES 25156
+		if (pNode->getName() == "Genesis9" && numVisibleFaces != G9_BASE_FACES) {
+			// Unfollow all meshes
+			unfitAllFollowerMeshes(oUndoTable);
+			bUndoUnfitting = true;
+		}
+
+		// Add Geograft
+		QString sGeograftFilePath = dzApp->getTempPath() + "/g9_mvc_geograft.duf";
+		pGeograftNode = applyGeograft(pNode, sGeograftFilePath, "blendshaper geograft");
+	}
+
+	dzScene->selectAllNodes(false);
+	dzScene->setPrimarySelection(pNode);
+
+	Exporter->writeFile(sFbxFilePath, &ExportOptions);
+
+	if (bExportFacsBlendshapes) {
+		bool bUndoEmbedTextureOverride = m_bEmbedTexturesInOutputFile;
+		m_bEmbedTexturesInOutputFile = false;
+		DzBridgeAction::postProcessFbx(sFbxFilePath);
+		m_bEmbedTexturesInOutputFile = bUndoEmbedTextureOverride;
+	}
+	
+	// Remove Geograft
+	if (pGeograftNode)
+		dzScene->removeNode(pGeograftNode);
+
+	undoHideFollowerMeshes(oUndoTable, bUndoUnfitting);
+	
+	return true;
+}
+
+QStringList DzBridgeAction::findEyelashEyebrowsHair(DzNode* pParentNode)
+{
+	QStringList aEyelashEyebrowsHairNamesList;
+	
+	// add eyebrows and hair to safelist
+	DzNodeList aNodeChildren;
+	DzNodeList aDeepCleanList;
+	pParentNode->getNodeChildren(aNodeChildren);
+	foreach(DzNode* pNodeChild, aNodeChildren)
+	{
+		QString sNodeName = pNodeChild->getName();
+		QString sNodeLabel = pNodeChild->getLabel();
+		QString sContentType = dzApp->getAssetMgr()->getTypeForNode(pNodeChild);
+		if (
+			sContentType.contains("Follower/Attachment/Head") ||
+			
+			sContentType.contains("Hair") || sContentType.contains("hair") ||
+			sContentType.contains("Lash") || sContentType.contains("lash") ||
+			sContentType.contains("Brow") || sContentType.contains("brow") ||
+			
+			sNodeName.contains("Hair") || sNodeName.contains("hair") ||
+			sNodeName.contains("Lash") || sNodeName.contains("lash") ||
+			sNodeName.contains("Brow") || sNodeName.contains("brow") ||
+			
+			sNodeLabel.contains("Hair") || sNodeLabel.contains("hair") ||
+			sNodeLabel.contains("Lash") || sNodeLabel.contains("lash") ||
+			sNodeLabel.contains("Brow") || sNodeLabel.contains("brow") 
+			
+			)
+		{
+//			dzApp->log("DEBUG: Find eyelash/eyebrows/hair(): adding node to safe list: " + QString("%1 (%2) [%3]").arg(sNodeName).arg(sNodeLabel).arg(sContentType) );
+			aEyelashEyebrowsHairNamesList.append(sNodeName);
+		}
+	}
+	
+	return aEyelashEyebrowsHairNamesList;
+	
+}
+
+bool DzBridgeAction::hideFollowerMeshes(DzNode* pNode, QStringList aSafeNamesList, QMap<DzNode*, DzNode*> &oUndoTable)
+{
+	if (pNode == nullptr) return false;
+	
+	// Unparent Children with Undo (single level)
+	DzNodeList aNodeChildren;
+	DzNodeList aDeepCleanList;
+	pNode->getNodeChildren(aNodeChildren);
+	foreach(DzNode* pNodeChild, aNodeChildren)
+	{
+		if (pNodeChild->getObject() == NULL) {
+			aDeepCleanList.append(pNodeChild);
+			continue;
+		}
+		// Safe List
+		bool bSkip = false;
+		foreach(QString sSafeName, aSafeNamesList) {
+			if (pNodeChild->getName() == sSafeName) {
+				// Crash Fix -- only allow "SafeNames" if they are actually "safe", check for valid mesh....
+				DzObject* pObject = pNodeChild->getObject();
+				if (pObject && pObject->getCurrentShape()) 
+				{
+					DzShape* pShape = pObject->getCurrentShape();
+					DzGeometry* pGeo = pShape->getGeometry();
+					if (pGeo && pGeo->inherits("DzFacetMesh")) 
+					{
+						DzFacetMesh* pFacetMesh = qobject_cast<DzFacetMesh*>(pGeo);
+						if (pFacetMesh->getNumFacets() > 0) {
+							bSkip = true;
+						} else {
+							dzApp->log("WARNING: DzBridgeAction::hideFollowerMeshes(): Facet Mesh has zero faces: " + pNodeChild->getLabel());
+						}
+					}
+				}
+				break;
+			}
+		}
+		if (bSkip) continue;
+//		dzApp->log("DzBridgeAction::hideFollowerMeshes() Unparenting: " + pNodeChild->getName());
+		DzNode* pNodeParent = pNodeChild->getNodeParent();
+		oUndoTable.insert(pNodeChild, pNodeParent);
+		pNodeParent->removeNodeChild(pNodeChild);
+	}
+	while (aDeepCleanList.isEmpty() == false)
+	{
+		DzNode* pNodeChild = aDeepCleanList.front();
+		aDeepCleanList.pop_front();
+		if (pNodeChild->getObject()) {
+//			dzApp->log("DzBridgeAction::hideFollowerMeshes() Unparenting deep node: " + pNodeChild->getName());
+			DzNode* pNodeParent = pNodeChild->getNodeParent();
+			oUndoTable.insert(pNodeChild, pNodeParent);
+			pNodeParent->removeNodeChild(pNodeChild);
+			continue;
+		}
+		for (int nChildIndex=0; nChildIndex < pNodeChild->getNumNodeChildren(); nChildIndex++) {
+			DzNode* pDeeperNode = pNodeChild->getNodeChild(nChildIndex);
+			if (pDeeperNode)
+				aDeepCleanList.append(pDeeperNode);
+		}
+	}		
+
+	return true;
+}
+
+int DzBridgeAction::getNumVisibleFacesFromNode(DzNode* pNode)
+{
+	if (pNode == nullptr ||
+		pNode->getObject() == nullptr ||
+		pNode->getObject()->getCurrentShape() == nullptr ||
+		pNode->getObject()->getCurrentShape()->getGeometry() == nullptr) 
+	{
+		return -1;
+	}
+	
+	int numVerts = -1;
+	int numFaces = -1;
+	int nVisibleFaces = 0;
+	int nHiddenFaces = 0;
+	
+	pNode->finalize();
+	DzGeometry *pGeo = pNode->getObject()->getCachedGeom();
+
+	DzFacetMesh *pMesh = qobject_cast<DzFacetMesh*>(pGeo);
+	if (pMesh == nullptr) {
+		return -1;
+	}
+
+	numVerts = pMesh->getNumVertices();
+//	dzApp->log(QString("DEBUG: numVerts=%1").arg(numVerts));
+	
+	numFaces = pMesh->getNumFacets();
+	unsigned char* pFacetFlags = pMesh->getFacetFlagsPtr();
+//	printf("\n\n");
+	for (int nFacetIndex=0; nFacetIndex < numFaces; nFacetIndex++)
+	{
+		unsigned char flags = pFacetFlags[nFacetIndex];
+//		printf("DEBUG: facet flags[%i] = %i\n", nFacetIndex, flags);
+		if ( (flags & DZ_HIDDEN_FACE_BIT) == 0) {
+			nVisibleFaces += 1;
+		} else {
+			nHiddenFaces += 1;
+		}
+	}
+//	printf("\n\n");
+	
+	QString sDebugMessage = QString("DEBUG: getNumVisibleFacesFromNode() node=%1 [%2] faces=%3, visible faces=%4, hidden faces=%5").arg(pNode->getLabel()).arg(pNode->getName()).arg(numFaces).arg(nVisibleFaces).arg(nHiddenFaces);
+//	dzApp->log(sDebugMessage);
+	
+	return nVisibleFaces;
+	
+}
+
+bool DzBridgeAction::unfitAllFollowerMeshes(QMap<DzNode*, DzNode*> &oUndoTable)
+{
+	// Undo Unparent Children
+	foreach(DzNode* keyChild, oUndoTable.keys())
+	{
+		if (keyChild == nullptr) {
+			dzApp->log("DzBridgeAction::unfitAllFollowerMeshes() ERROR: keyChild is NULL, skipping...");
+			continue;
+		}
+		DzNode* valueParent = oUndoTable[keyChild];
+		if (valueParent == nullptr) {
+			dzApp->log( QString("DzBridgeAction::unfitAllFollowerMeshes() ERROR: value for keyChild [%1] is NULL").arg(keyChild->getName()) );
+			continue;
+		}
+		DzNode *pFollowTarget = keyChild->getSkeleton()->getFollowTarget();
+		if (pFollowTarget == valueParent) {
+//			dzApp->log("DEBUG: REMOVING FOLLOW TARGET: node=" + keyChild->getLabel() + ", target=" + pFollowTarget->getLabel());
+			keyChild->getSkeleton()->setFollowTarget(NULL);
+		} else {
+			dzApp->log("DzBridgeAction::unfitAllFollowerMeshes() CRITICAL ERRROR: Unsupported Geograft detected: follower is not parent: " + keyChild->getLabel());
+			return false;
+		}
+	}
+
+	return true;
+}
+
+DzNode* DzBridgeAction::applyGeograft(DzNode* pBaseNode, QString geograftFilename, QString geograftNodeName)
+{
+	DzFigure* geograft_node = nullptr;
+	
+	DzContentMgr* contentMgr = dzApp->getContentMgr();
+	QFile srcFile(geograftFilename);
+	if (geograftNodeName == "")
+	{
+		geograftNodeName = QFileInfo(geograftFilename).baseName();
+	}
+	QString node_name;
+
+	if (srcFile.exists())
+	{
+		// deselect all ndoes
+		dzScene->selectAllNodes(false);
+		dzScene->setPrimarySelection(NULL);
+		bool bResult = contentMgr->openFile(geograftFilename);
+		if (bResult)
+		{
+			// parent geograft
+			DzNode* generic_geograft_node = dzScene->findNode(geograftNodeName);
+			if (!generic_geograft_node)
+				generic_geograft_node = dzScene->findNodeByLabel(QString(geograftNodeName).replace("_0", ""));
+			//QString debug_geograftNodeName = generic_geograft_node->getName();
+			geograft_node = qobject_cast<DzFigure*>(generic_geograft_node);
+			if (geograft_node && pBaseNode)
+			{
+				bool bResult = copyMaterialsToGeograft(geograft_node, pBaseNode);
+
+				geograft_node->setFollowTarget(pBaseNode->getSkeleton());
+				// DB: must parent with in-place=false, then unparent with in-place=true in order to position geograft correctly
+				// while also working-around FBX exporter geograft mesh duplication
+				pBaseNode->addNodeChild(geograft_node, false);
+				pBaseNode->removeNodeChild(geograft_node, true);
+				node_name = geograft_node->getName();
+			}
+		}
+	}
+//	dzApp->debug("Geografting done: geograft node = " + node_name);
+	return geograft_node;
+}
+
+bool DzBridgeAction::undoHideFollowerMeshes(QMap<DzNode*, DzNode*> &oUndoTable, bool bUndoUnfitting)
+{
+	// Undo Unparent Children
+	foreach(DzNode* keyChild, oUndoTable.keys())
+	{
+		if (keyChild == nullptr) {
+			dzApp->log("DzBridgeAction::undoHideFollowerMeshes() ERROR: keyChild is NULL, skipping...");
+			continue;
+		}
+		DzNode* valueParent = oUndoTable[keyChild];
+		if (valueParent == nullptr) {
+			dzApp->log( QString("DzBridgeAction::undoHideFollowerMeshes() ERROR: value for keyChild [%1] is NULL").arg(keyChild->getName()) );
+			continue;
+		}
+//		dzApp->log("DzBridgeAction::undoHideFollowerMeshes() Parenting: " + keyChild->getName() + " to " + valueParent->getName());
+		valueParent->addNodeChild(keyChild);
+		if (bUndoUnfitting) {
+//			dzApp->log("DEBUG: Setting Follow Target: node=" + keyChild->getLabel() + ", target=" + valueParent->getLabel());
+			keyChild->getSkeleton()->setFollowTarget(valueParent->getSkeleton());
+		}
+	}
+
+	return true;
+}
+
+bool DzBridgeAction::copyMaterialsToGeograft(DzNode* pGeograftNode, DzNode* pBaseNode)
+{
+	DzFigure* pGeograftAsFigureNode = qobject_cast<DzFigure*>(pGeograftNode);
+	if (pGeograftNode == NULL || pGeograftAsFigureNode == NULL)
+	{
+		dzApp->log("DzBridgeAction::copyMaterialsToGeograft(): ERROR: Geograft node is invalid. Returning false.");
+		return false;
+	}
+
+	if (pBaseNode == NULL) {
+		pBaseNode = pGeograftAsFigureNode->getFollowTarget();
+		if (pBaseNode == NULL) {
+			dzApp->log("DzBridgeAction::copyMaterialsToGeograft(): ERROR: Unable to find base node for Geograft. Returning false.");
+			return false;
+		}
+	}
+
+	// copy base materials to geograft
+	DzShape* geograftShape = pGeograftNode->getObject()->getCurrentShape();
+	auto dstMatList = geograftShape->getAllMaterials();
+	DzShape* baseShape = pBaseNode->getObject()->getCurrentShape();
+	auto srcMatList = baseShape->getAllMaterials();
+	foreach(QObject * dobj, dstMatList) {
+		DzMaterial* dstMat = qobject_cast<DzMaterial*>(dobj);
+		foreach(QObject * sobj, srcMatList) {
+			DzMaterial* srcMat = qobject_cast<DzMaterial*>(sobj);
+			if (dstMat && srcMat) {
+				QString cleanedDestMatName = QString(dstMat->getName()).replace(" ", "").replace("_", "").toLower();
+				QString cleanedSrcMatName = QString(srcMat->getName()).replace(" ", "").replace("_", "").toLower();
+				if (cleanedDestMatName == cleanedSrcMatName) {
+					dstMat->copyFrom(srcMat);
+					break;
+				}
+			}
+		}
+	}
+
+	return true;
+}
+
 
 
 #include "moc_DzBridgeAction.cpp"

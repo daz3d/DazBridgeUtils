@@ -239,6 +239,17 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool getBakeMeshesToSingleBindPose() { return m_bBakeMeshesToSingleBindPose; }
 		Q_INVOKABLE virtual void setBakeMeshesToSingleBindPose(bool arg) { m_bBakeMeshesToSingleBindPose = arg; }
 		
+		// PROXY GENERATION
+		QString m_sTempBaseFilename = "";		
+		Q_INVOKABLE virtual bool generateProxyMesh(DzNode* pNode, QString sFbxFilePath, bool bExportFacsBlendshapes);
+		Q_INVOKABLE virtual QStringList findEyelashEyebrowsHair(DzNode* pParentNode);
+		Q_INVOKABLE virtual bool hideFollowerMeshes(DzNode* pNode, QStringList aSafeNamesList, QMap<DzNode*, DzNode*> &oUndoTable);
+		Q_INVOKABLE virtual int getNumVisibleFacesFromNode(DzNode* pNode);
+		Q_INVOKABLE virtual bool unfitAllFollowerMeshes(QMap<DzNode*, DzNode*> &oUndoTable);
+		Q_INVOKABLE virtual DzNode* applyGeograft(DzNode* pBaseNode, QString geograftFilename, QString geograftNodeName);
+		Q_INVOKABLE virtual bool undoHideFollowerMeshes(QMap<DzNode*, DzNode*> &oUndoTable, bool bUndoUnfitting=false);
+		Q_INVOKABLE virtual bool copyMaterialsToGeograft(DzNode* pGeograftNode, DzNode* pBaseNode);
+
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo
