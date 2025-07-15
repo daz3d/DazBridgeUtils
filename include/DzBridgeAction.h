@@ -1,4 +1,7 @@
 #pragma once
+
+#define ARKIT_FACS_ENABLE_PROPERTY_NAME	"ARKit_facs_ctrl_ARKitEnable"
+
 #include <dzaction.h>
 #include <dznode.h>
 #include <DzFileIOSettings.h>
@@ -249,6 +252,17 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual DzNode* applyGeograft(DzNode* pBaseNode, QString geograftFilename, QString geograftNodeName);
 		Q_INVOKABLE virtual bool undoHideFollowerMeshes(QMap<DzNode*, DzNode*> &oUndoTable, bool bUndoUnfitting=false);
 		Q_INVOKABLE virtual bool copyMaterialsToGeograft(DzNode* pGeograftNode, DzNode* pBaseNode);
+
+		// MORPH PROXY TOOLS
+		QString m_sFacsProxyFilePath = "";
+		QString m_sFacsJawOpen = "";
+		QString m_sFacsJawOpenMouthClose = "";		
+		Q_INVOKABLE virtual bool loadBlendshapeMappingTable(QString sMappingFilename, QMap<QString, QString> &oMappingTable, QList<QString> &aMappingOrder);
+		Q_INVOKABLE virtual bool loadMorphSelectionOverride(QString sMorphPresetFilename);
+		bool generateBakedJawOpenMouthClose(DzNode* pParentNode);
+		bool generateBakedJawOpen(DzNode* pParentNode);
+		bool calculateMouthCloseVertexDeltas(FbxVector4* pVertexDeltaBuffer, int numVertexDeltaBufferIndexes);
+		
 
 	protected:
 		// Struct to remember attachment info

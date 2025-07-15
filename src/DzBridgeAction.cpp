@@ -8243,6 +8243,247 @@ bool DzBridgeAction::copyMaterialsToGeograft(DzNode* pGeograftNode, DzNode* pBas
 	return true;
 }
 
+// MORPH PROXY TOOLS
+bool DzBridgeAction::loadBlendshapeMappingTable(QString sMappingFilename, QMap<QString, QString> &oMappingTable, QList<QString> &aMappingOrder)
+{
+	QFile oMappingFile(sMappingFilename);
+	
+	if (!oMappingFile.exists()) return false;
+	
+	if (!oMappingFile.open(QIODevice::ReadOnly)) {
+		return false;
+	}
+
+	// load the selected csv from disk into the export list on the right
+	QTextStream oInputStream(&oMappingFile);
+
+	while (!oInputStream.atEnd()) {
+		QString sInputLine = oInputStream.readLine();
+		QStringList aKeyValuePair = sInputLine.split(",");
+		aMappingOrder.append(aKeyValuePair[0]);
+		oMappingTable.insert(aKeyValuePair[0], aKeyValuePair[1]);
+	}
+
+	oMappingFile.close();
+	
+	return true;
+}
+
+bool DzBridgeAction::loadMorphSelectionOverride(QString sMorphPresetFilename)
+{
+	QStringList aMorphSelectionOverride;
+	
+	QFile oMappingFile(sMorphPresetFilename);
+	
+	if (!oMappingFile.exists()) return false;
+	
+	if (!oMappingFile.open(QIODevice::ReadOnly)) {
+		return false;
+	}
+	
+	// load the selected csv from disk into the export list on the right
+	QTextStream oInputStream(&oMappingFile);
+
+	while (!oInputStream.atEnd()) {
+		QString sInputLine = oInputStream.readLine();
+		QStringList aKeyValuePair = sInputLine.split(",");
+		aMorphSelectionOverride.append(aKeyValuePair[1]);
+	}
+	
+	m_aMorphListOverride = aMorphSelectionOverride;
+
+//	QString sRawMorphNamesToExport;
+//	foreach(QString el, m_aMorphListOverride)
+//	{
+//		sRawMorphNamesToExport += el;
+//		sRawMorphNamesToExport += ";";
+//	}
+//	printf("\n\nMORPHNAMESTOEXPORT: [%s]\n\n", sRawMorphNamesToExport.toLocal8Bit().data());	
+
+	oMappingFile.close();
+	
+	return true;
+}
+
+bool DzBridgeAction::generateBakedJawOpenMouthClose(DzNode* pParentNode)
+{
+	if (pParentNode == nullptr) return false;
+	
+	pParentNode = pParentNode->getSkeleton();
+
+	auto MorphTable = MorphTools::GetAvailableMorphs(pParentNode);
+
+//	assert(MorphTable.find(ARKIT_FACS_ENABLE_PROPERTY_NAME) != MorphTable.end());
+//	assert(MorphTable.find("facs_bs_JawOpen") != MorphTable.end());
+//	assert(MorphTable.find("facs_ctrl_MouthClose") != MorphTable.end());
+	
+	if (MorphTable.find(ARKIT_FACS_ENABLE_PROPERTY_NAME) == MorphTable.end()) return false;
+	if (MorphTable.find("facs_bs_JawOpen") == MorphTable.end()) return false;
+	if (MorphTable.find("facs_ctrl_MouthClose") == MorphTable.end()) return false;
+
+	DzFloatProperty* pARKitMorph = qobject_cast<DzFloatProperty*>(MorphTable[ARKIT_FACS_ENABLE_PROPERTY_NAME].Property);
+	DzFloatProperty* pJawOpenMorph = qobject_cast<DzFloatProperty*>(MorphTable["facs_bs_JawOpen"].Property);
+	DzFloatProperty* pMouthClosedMorph = qobject_cast<DzFloatProperty*>(MorphTable["facs_ctrl_MouthClose"].Property);
+
+//	assert(pARKitMorph);
+//	assert(pJawOpenMorph);
+//	assert(pMouthClosedMorph);
+
+	if (!pARKitMorph) return false;
+	if (!pJawOpenMorph) return false;
+	if (!pMouthClosedMorph) return false;
+	
+	double fUndoARKitOverride;
+	double fUndoJawOpenOverride;
+	double fUndoMouthClosedOverride;
+
+	fUndoARKitOverride = pARKitMorph->getValue();
+	fUndoJawOpenOverride = pJawOpenMorph->getValue();
+	fUndoMouthClosedOverride = pMouthClosedMorph->getValue();
+
+	pARKitMorph->setValue(1.0);
+	pJawOpenMorph->setValue(1.0);
+	pMouthClosedMorph->setValue(1.0);
+	
+	m_sFacsJawOpenMouthClose = m_sTempBaseFilename + "_JawOpenMouthClosed.fbx";
+	DzExportMgr* ExportManager = dzApp->getExportMgr();
+	DzExporter* Exporter = ExportManager->findExporterByClassName("DzFbxExporter");
+	DzFileIOSettings ExportOptions;
+	Exporter->getDefaultOptions(&ExportOptions);
+	
+	ExportOptions.setBoolValue("doSelected", true);
+	ExportOptions.setBoolValue("doVisible", false);
+	ExportOptions.setBoolValue("doFigures", true);
+	ExportOptions.setBoolValue("doProps", false);
+	ExportOptions.setBoolValue("doEmbed", false);
+	ExportOptions.setStringValue("format", m_sFbxVersion);
+	ExportOptions.setIntValue("RunSilent", true);
+
+	dzScene->selectAllNodes(false);
+	dzScene->setPrimarySelection(pParentNode);
+
+	QStringList aDummyList;
+	QMap<DzNode*, DzNode*> oUndoTable;
+	hideFollowerMeshes(pParentNode, aDummyList, oUndoTable);
+
+	Exporter->writeFile(m_sFacsJawOpenMouthClose, &ExportOptions);
+
+	undoHideFollowerMeshes(oUndoTable);
+	
+	pARKitMorph->setValue(fUndoARKitOverride);
+	pJawOpenMorph->setValue(fUndoJawOpenOverride);
+	pMouthClosedMorph->setValue(fUndoMouthClosedOverride);
+
+	return true;	
+}
+
+bool DzBridgeAction::generateBakedJawOpen(DzNode* pParentNode)
+{
+	if (pParentNode == nullptr) return false;
+	
+	pParentNode = pParentNode->getSkeleton();
+
+	auto MorphTable = MorphTools::GetAvailableMorphs(pParentNode);
+
+//	assert(MorphTable.find(ARKIT_FACS_ENABLE_PROPERTY_NAME) != MorphTable.end());
+//	assert(MorphTable.find("facs_bs_JawOpen") != MorphTable.end());
+	
+	if (MorphTable.find(ARKIT_FACS_ENABLE_PROPERTY_NAME) == MorphTable.end()) return false;
+	if (MorphTable.find("facs_bs_JawOpen") == MorphTable.end()) return false;
+
+	DzFloatProperty* pARKitMorph = qobject_cast<DzFloatProperty*>(MorphTable[ARKIT_FACS_ENABLE_PROPERTY_NAME].Property);
+	DzFloatProperty* pJawOpenMorph = qobject_cast<DzFloatProperty*>(MorphTable["facs_bs_JawOpen"].Property);
+
+//	assert(pARKitMorph);
+//	assert(pJawOpenMorph);
+
+	if (!pARKitMorph) return false;
+	if (!pJawOpenMorph) return false;
+	
+	double fUndoARKitOverride;
+	double fUndoJawOpenOverride;
+
+	fUndoARKitOverride = pARKitMorph->getValue();
+	fUndoJawOpenOverride = pJawOpenMorph->getValue();
+
+	pARKitMorph->setValue(1.0);
+	pJawOpenMorph->setValue(1.0);
+	
+	m_sFacsJawOpen = m_sTempBaseFilename + "_JawOpen.fbx";
+	DzExportMgr* ExportManager = dzApp->getExportMgr();
+	DzExporter* Exporter = ExportManager->findExporterByClassName("DzFbxExporter");
+	DzFileIOSettings ExportOptions;
+	Exporter->getDefaultOptions(&ExportOptions);
+	
+	ExportOptions.setBoolValue("doSelected", true);
+	ExportOptions.setBoolValue("doVisible", false);
+	ExportOptions.setBoolValue("doFigures", true);
+	ExportOptions.setBoolValue("doProps", false);
+	ExportOptions.setBoolValue("doEmbed", false);
+	ExportOptions.setStringValue("format", m_sFbxVersion);
+	ExportOptions.setIntValue("RunSilent", true);
+
+	dzScene->selectAllNodes(false);
+	dzScene->setPrimarySelection(pParentNode);
+
+	QStringList aDummyList;
+	QMap<DzNode*, DzNode*> oUndoTable;
+	hideFollowerMeshes(pParentNode, aDummyList, oUndoTable);
+
+	Exporter->writeFile(m_sFacsJawOpen, &ExportOptions);
+
+	undoHideFollowerMeshes(oUndoTable);
+	
+	pARKitMorph->setValue(fUndoARKitOverride);
+	pJawOpenMorph->setValue(fUndoJawOpenOverride);
+
+	return true;	
+}
+
+bool DzBridgeAction::calculateMouthCloseVertexDeltas(FbxVector4* pVertexDeltaBuffer, int numVertexDeltaBufferIndexes)
+{
+	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
+
+	FbxScene* pSceneFacsJawOpenMouthClose = openFBX->CreateScene("FACS Scene JawOpenMouthClose");
+	if (openFBX->LoadScene(pSceneFacsJawOpenMouthClose, m_sFacsJawOpenMouthClose.toUtf8().data()) == false)
+	{
+		dzApp->log("ERROR: DzBridgeAction::calculateMouthCloseVertexDeltas() Unable to open fbx: " + m_sFacsJawOpenMouthClose);
+		return false;
+	}
+	FbxScene* pSceneFacsJawOpen = openFBX->CreateScene("FACS Scene JawOpen");
+	if (openFBX->LoadScene(pSceneFacsJawOpen, m_sFacsJawOpen.toUtf8().data()) == false)
+	{
+		dzApp->log("ERROR: DzBridgeAction::calculateMouthCloseVertexDeltas() Unable to open fbx: " + m_sFacsJawOpen);
+		return false;
+	}
+	
+	QList<FbxNode*> aJawOpenMeshNodeList;
+	QList<FbxNode*> aJawOpenMouthCloseMeshNodeList;
+	FbxTools::GetAllMeshes(pSceneFacsJawOpen->GetRootNode(), aJawOpenMeshNodeList);
+	FbxTools::GetAllMeshes(pSceneFacsJawOpenMouthClose->GetRootNode(), aJawOpenMouthCloseMeshNodeList);
+
+	int numControlPoints = aJawOpenMeshNodeList[0]->GetMesh()->GetControlPointsCount();	
+	FbxVector4* pSourceBasisBuffer = aJawOpenMeshNodeList[0]->GetMesh()->GetControlPoints();
+	FbxVector4* pSourceBuffer = aJawOpenMouthCloseMeshNodeList[0]->GetMesh()->GetControlPoints();
+	
+	if (numControlPoints != numVertexDeltaBufferIndexes) {
+//		dzApp->log("ERROR: DzBridgeAction::calculateMouthCloseVertexDeltas() nBufferSize mismatch: " + QString("%1 versus %2").arg(numControlPoints).arg(numVertexDeltaBufferIndexes) );
+		return false;
+	}
+	
+	for (int i=0; i < numControlPoints; i++) {
+		pVertexDeltaBuffer[i] = pSourceBuffer[i] - pSourceBasisBuffer[i];		
+	}
+	
+	pSceneFacsJawOpen->Destroy();
+	pSceneFacsJawOpenMouthClose->Destroy();
+	
+	return true;
+}
+
+
+
+
 
 
 #include "moc_DzBridgeAction.cpp"
