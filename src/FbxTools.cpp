@@ -1649,6 +1649,12 @@ void FbxTools::FixClusterTranformLinks(FbxScene* Scene, FbxNode* RootNode, FixCl
 						Matrix.SetR(Rotation);
 					}
 					Cluster->SetTransformLinkMatrix(Matrix);
+
+					// DEBUGGING
+//					FbxRotationOrder oRotationOrder(Cluster->GetLink()->RotationOrder.Get());
+//					FbxVector4 vRotation = Matrix.GetR();
+//					printf("%s, order=%i, [%f, %f, %f]\n", sBoneName.toLocal8Bit().data(), oRotationOrder.GetOrder(), vRotation[0], vRotation[1], vRotation[2]);
+
 				}
 			}
 		}
