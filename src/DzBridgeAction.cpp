@@ -8345,7 +8345,7 @@ bool DzBridgeAction::generateBakedJawOpenMouthClose(DzNode* pParentNode)
 	pJawOpenMorph->setValue(1.0);
 	pMouthClosedMorph->setValue(1.0);
 	
-	m_sFacsJawOpenMouthClose = m_sTempBaseFilename + "_JawOpenMouthClosed.fbx";
+	m_sFacsJawOpenMouthClose = getTempBasefilename() + "_JawOpenMouthClosed.fbx";
 	DzExportMgr* ExportManager = dzApp->getExportMgr();
 	DzExporter* Exporter = ExportManager->findExporterByClassName("DzFbxExporter");
 	DzFileIOSettings ExportOptions;
@@ -8409,7 +8409,7 @@ bool DzBridgeAction::generateBakedJawOpen(DzNode* pParentNode)
 	pARKitMorph->setValue(1.0);
 	pJawOpenMorph->setValue(1.0);
 	
-	m_sFacsJawOpen = m_sTempBaseFilename + "_JawOpen.fbx";
+	m_sFacsJawOpen = getTempBasefilename() + "_JawOpen.fbx";
 	DzExportMgr* ExportManager = dzApp->getExportMgr();
 	DzExporter* Exporter = ExportManager->findExporterByClassName("DzFbxExporter");
 	DzFileIOSettings ExportOptions;
@@ -8481,7 +8481,80 @@ bool DzBridgeAction::calculateMouthCloseVertexDeltas(FbxVector4* pVertexDeltaBuf
 	return true;
 }
 
+bool DzBridgeAction::makeDebugFbx()
+{
+	// NOTE: do not use getTempBasefilename(), since must be able to generate multiple debug fbx files per single export
+	QString sFbxFilePath = dzApp->getTempFilename() + "_DEBUG_FBX.fbx";
+	DzExportMgr* ExportManager = dzApp->getExportMgr();
+	DzExporter* Exporter = ExportManager->findExporterByClassName("DzFbxExporter");
+	DzFileIOSettings ExportOptions;
 
+	Exporter->getDefaultOptions(&ExportOptions);
+	
+	ExportOptions.setBoolValue("doSelected", true);
+	ExportOptions.setBoolValue("doVisible", false);
+	ExportOptions.setBoolValue("doFigures", true);
+	ExportOptions.setBoolValue("doProps", false);
+	ExportOptions.setBoolValue("doEmbed", false);
+	ExportOptions.setStringValue("format", m_sFbxVersion);
+	ExportOptions.setIntValue("RunSilent", true);
+
+	ExportOptions.setBoolValue("doMorphs", true);
+//	QString sMorphRules = m_aMorphListOverride.join("\n1\n");
+//	QString sMorphRules = "facs_bs_JawOpen\n1\nfacs_ctrl_MouthClose";
+	QString sMorphRules = "facs_ctrl_MouthClose";
+	sMorphRules += "\n1\n.CTRLVS\n2\nAnything\n0";
+	ExportOptions.setStringValue("rules", sMorphRules);
+
+	dzScene->selectAllNodes(false);
+	dzScene->setPrimarySelection(m_pSelectedNode);
+
+	Exporter->writeFile(sFbxFilePath, &ExportOptions);
+
+	return true;	
+}
+
+int DzBridgeAction::validateProxyMeshVerts(QString sFilename)
+{
+	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();	
+	FbxScene* pMvcProxyMeshScene = openFBX->CreateScene("Mvc Proxy Mesh Scene");
+	if (openFBX->LoadScene(pMvcProxyMeshScene, sFilename) == false) {
+		return false;
+	}
+	FbxNode* pTargetCharacterNode = pMvcProxyMeshScene->FindNodeByName("Genesis9.Shape");
+	FbxMesh* pTargetMesh = pTargetCharacterNode->GetMesh();
+	int numVerts = pTargetMesh->GetControlPointsCount();
+	QString sMvcVertCheckMessage = QString("DEBUG: DzBridgeAction::validateProxyMeshVerts() Genesis9.Shape has numVerts=%1").arg(numVerts);
+//	dzApp->log(sMvcVertCheckMessage);
+#define G9_MVC_VERTS 25182
+	if (numVerts != G9_MVC_VERTS) {
+		if (true) QMessageBox::warning(0, QString("Error"),
+			QString("DzBridge: An error occurred while generating the Proxy Mesh:\n\n") + sMvcVertCheckMessage, QMessageBox::Ok);
+		return false;
+	}
+
+	return true;
+}
+
+bool DzBridgeAction::refreshTempBasefilename()
+{
+	m_sTempBaseFilename = dzApp->getTempFilename();
+	
+	if (m_sTempBaseFilename.isEmpty() || m_sTempBaseFilename == "")
+		return false;
+	
+	return true;
+}
+
+QString DzBridgeAction::getTempBasefilename()
+{
+	if (m_sTempBaseFilename.isEmpty() || m_sTempBaseFilename == "")
+	{
+		refreshTempBasefilename();
+	}
+	
+	return m_sTempBaseFilename;
+}
 
 
 

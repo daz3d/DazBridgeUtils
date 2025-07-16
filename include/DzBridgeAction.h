@@ -241,9 +241,12 @@ namespace DzBridgeNameSpace
 		
 		Q_INVOKABLE virtual bool getBakeMeshesToSingleBindPose() { return m_bBakeMeshesToSingleBindPose; }
 		Q_INVOKABLE virtual void setBakeMeshesToSingleBindPose(bool arg) { m_bBakeMeshesToSingleBindPose = arg; }
+
+		// BASE TEMP FILE SYSTEM -- temp basefilename that is shared across multiple files within a single export/conversion operation.  see m_sTempBaseFilename in private section
+		Q_INVOKABLE virtual bool refreshTempBasefilename();
+		Q_INVOKABLE virtual QString getTempBasefilename();
 		
 		// PROXY GENERATION
-		QString m_sTempBaseFilename = "";		
 		Q_INVOKABLE virtual bool generateProxyMesh(DzNode* pNode, QString sFbxFilePath, bool bExportFacsBlendshapes);
 		Q_INVOKABLE virtual QStringList findEyelashEyebrowsHair(DzNode* pParentNode);
 		Q_INVOKABLE virtual bool hideFollowerMeshes(DzNode* pNode, QStringList aSafeNamesList, QMap<DzNode*, DzNode*> &oUndoTable);
@@ -567,7 +570,14 @@ namespace DzBridgeNameSpace
 
 		QString m_sEmbeddedFolderPath = ":/DazBridge";
 
+		// DEBUG, ERROR CHECKING
+		bool makeDebugFbx();
+		int validateProxyMeshVerts(QString sFilename);
+
 	private:
+		// store and reuse a common tempfile base filename that can be shared across multiple files within a single export/conversion operation and can be updated between exports
+		QString m_sTempBaseFilename = "";
+
 		class MaterialGroupExportOrderMetaData
 		{
 		public:
