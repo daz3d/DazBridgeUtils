@@ -273,7 +273,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual int getNumPolylines(DzFacetMesh *pFacetMesh);
 		Q_INVOKABLE virtual int getNumPolylineSegments(DzFacetMesh *pFacetMesh);
 		Q_INVOKABLE virtual int getNumPolylineVertexDataIndices(DzFacetMesh *pFacetMesh);
-		Q_INVOKABLE virtual QVariantList getPolylineVertexIndices(DzFacetMesh *pFacetMesh, int nIndex);
+		Q_INVOKABLE virtual bool getPolylineVertexIndices(DzFacetMesh *pFacetMesh, int nIndex, QVariantList& aReturnValues);
 		
 	protected:
 		// Struct to remember attachment info

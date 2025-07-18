@@ -8799,15 +8799,14 @@ int DzBridgeAction::getNumPolylineVertexDataIndices(DzFacetMesh *pFacetMesh)
 	return -1;
 }
 
-QVariantList DzBridgeAction::getPolylineVertexIndices(DzFacetMesh *pFacetMesh, int nIndex)
+bool DzBridgeAction::getPolylineVertexIndices(DzFacetMesh *pFacetMesh, int nIndex, QVariantList &aReturnValues)
 {
-	QVariantList aReturnValues;
 	if (metaInvokeMethod(pFacetMesh, "getPolylineVertexIndices()", &aReturnValues, QGenericArgument("int", &nIndex) )) {
-		return aReturnValues;
+		return true;
 	}
 
 	dzApp->warning("ERROR: DzBridgeAction::getNumPolylines(): Error while invoking method: DzFacetMesh::getNumPolylineVertexDataIndices()");
-	return aReturnValues;
+	return false;
 }
 
 
