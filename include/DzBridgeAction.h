@@ -266,6 +266,10 @@ namespace DzBridgeNameSpace
 		bool generateBakedJawOpen(DzNode* pParentNode);
 		bool calculateMouthCloseVertexDeltas(FbxVector4* pVertexDeltaBuffer, int numVertexDeltaBufferIndexes);
 		
+		// STRAND-BASED-HAIR TOOLS
+		bool isStrandBasedHair(DzNode* pNode);
+		bool hideAllStrandBasedHair(DzNode* pNode, QMap<DzNode*, DzNode*> &oUndoTable);
+
 
 	protected:
 		// Struct to remember attachment info

@@ -8690,6 +8690,79 @@ QString DzBridgeAction::getTempBasefilename()
 	return m_sTempBaseFilename;
 }
 
+bool DzBridgeAction::isStrandBasedHair(DzNode* pNode)
+{
+	if (pNode == nullptr) return false;
+	
+	if (pNode->getObject() == nullptr) return false;
+
+	DzShape* pShape = pNode->getObject()->getCurrentShape();
+	if (pShape && pShape->getGeometry())
+	{
+		DzGeometry* pGeo = pShape->getGeometry();
+		DzFacetMesh* pFacetMesh = qobject_cast<DzFacetMesh*>(pGeo);
+		if (pFacetMesh) {
+			if (pFacetMesh->getNumFacets() == 0) {
+				// check for polylines....
+				int nIntValue = -1;
+				if (metaInvokeMethod(pFacetMesh, "getNumPolylines()", &nIntValue)) {
+					dzApp->log("DEBUG: DzBridgeAction::isStrandBasedHair() " + pNode->getLabel() + " [" + pNode->getName() + "], polylines= " + QString("%1").arg(nIntValue) );
+				}
+				if (nIntValue > 0) {
+					return true;
+				}
+			}
+		}
+	}
+
+	return false;
+}
+
+bool DzBridgeAction::hideAllStrandBasedHair(DzNode* pNode, QMap<DzNode*, DzNode*> &oUndoTable)
+{
+	if (pNode == nullptr) return false;
+	
+	// Unparent Children with Undo (single level)
+	DzNodeList aNodeChildren;
+	DzNodeList aDeepCleanList;
+	pNode->getNodeChildren(aNodeChildren);
+	foreach(DzNode* pNodeChild, aNodeChildren)
+	{
+		// Hide if strand-based hair (getNumPolySegments)
+		if (isStrandBasedHair(pNodeChild)) {
+//			dzApp->log("DzBridgeAction::hideAllStrandBasedHair() Unparenting/Hiding: " + pNodeChild->getName());
+			DzNode* pNodeParent = pNodeChild->getNodeParent();
+			oUndoTable.insert(pNodeChild, pNodeParent);
+			pNodeParent->removeNodeChild(pNodeChild);
+			pNodeChild->setVisible(false);
+			continue;
+		}
+		aDeepCleanList.append(pNodeChild);
+		continue;
+	}
+	while (aDeepCleanList.isEmpty() == false)
+	{
+		DzNode* pNodeChild = aDeepCleanList.front();
+		aDeepCleanList.pop_front();
+		if (isStrandBasedHair(pNodeChild)) {
+//			dzApp->log("DzBridgeAction::hideAllStrandBasedHair() Unparenting/Hiding deep node: " + pNodeChild->getName());
+			DzNode* pNodeParent = pNodeChild->getNodeParent();
+			oUndoTable.insert(pNodeChild, pNodeParent);
+			pNodeParent->removeNodeChild(pNodeChild);
+			pNodeChild->setVisible(false);
+			continue;
+		}
+		for (int nChildIndex=0; nChildIndex < pNodeChild->getNumNodeChildren(); nChildIndex++) {
+			DzNode* pDeeperNode = pNodeChild->getNodeChild(nChildIndex);
+			if (pDeeperNode)
+				aDeepCleanList.append(pDeeperNode);
+		}
+	}
+		
+	return true;
+}
+
+
 
 
 
