@@ -22,6 +22,7 @@ class DzFigure;
 class DzSkinBinding;
 class DzColorProperty;
 class DzNumericProperty;
+class DzFacetMesh;
 
 // from ImageTools library (imagetools.h)
 class ImageToolsJobsManager;
@@ -262,14 +263,16 @@ namespace DzBridgeNameSpace
 		QString m_sFacsJawOpenMouthClose = "";		
 		Q_INVOKABLE virtual bool loadBlendshapeMappingTable(QString sMappingFilename, QMap<QString, QString> &oMappingTable, QList<QString> &aMappingOrder);
 		Q_INVOKABLE virtual bool loadMorphSelectionOverride(QString sMorphPresetFilename);
-		bool generateBakedJawOpenMouthClose(DzNode* pParentNode);
-		bool generateBakedJawOpen(DzNode* pParentNode);
-		bool calculateMouthCloseVertexDeltas(FbxVector4* pVertexDeltaBuffer, int numVertexDeltaBufferIndexes);
+		Q_INVOKABLE virtual bool generateBakedJawOpenMouthClose(DzNode* pParentNode);
+		Q_INVOKABLE virtual bool generateBakedJawOpen(DzNode* pParentNode);
+		Q_INVOKABLE virtual bool calculateMouthCloseVertexDeltas(FbxVector4* pVertexDeltaBuffer, int numVertexDeltaBufferIndexes);
 		
 		// STRAND-BASED-HAIR TOOLS
-		bool isStrandBasedHair(DzNode* pNode);
-		bool hideAllStrandBasedHair(DzNode* pNode, QMap<DzNode*, DzNode*> &oUndoTable);
-
+		Q_INVOKABLE virtual bool isStrandBasedHair(DzNode* pNode);
+		Q_INVOKABLE virtual bool hideAllStrandBasedHair(DzNode* pNode, QMap<DzNode*, DzNode*> &oUndoTable);
+		Q_INVOKABLE virtual int getNumPolylines(DzFacetMesh *pFacetMesh);
+		Q_INVOKABLE virtual int getNumPolylineSegments(DzFacetMesh *pFacetMesh);
+		Q_INVOKABLE virtual int getNumPolylineVertexDataIndices(DzFacetMesh *pFacetMesh);
 
 	protected:
 		// Struct to remember attachment info

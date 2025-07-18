@@ -8762,7 +8762,38 @@ bool DzBridgeAction::hideAllStrandBasedHair(DzNode* pNode, QMap<DzNode*, DzNode*
 	return true;
 }
 
+int DzBridgeAction::getNumPolylines(DzFacetMesh *pFacetMesh)
+{
+	int nNumPolyLines = -1;
+	if (metaInvokeMethod(pFacetMesh, "getNumPolylines()", &nNumPolyLines)) {
+		return nNumPolyLines;
+	}
 
+	dzApp->warning("ERROR: DzBridgeAction::getNumPolylines(): Error while invoking method: DzFacetMesh::getNumPolylines()");
+	return -1;
+}
+
+int DzBridgeAction::getNumPolylineSegments(DzFacetMesh *pFacetMesh)
+{
+	int nNumPolyLines = -1;
+	if (metaInvokeMethod(pFacetMesh, "getNumPolylineSegments()", &nNumPolyLines)) {
+		return nNumPolyLines;
+	}
+
+	dzApp->warning("ERROR: DzBridgeAction::getNumPolylines(): Error while invoking method: DzFacetMesh::getNumPolylineSegments()");
+	return -1;
+}
+
+int DzBridgeAction::getNumPolylineVertexDataIndices(DzFacetMesh *pFacetMesh)
+{
+	int nNumPolyLines = -1;
+	if (metaInvokeMethod(pFacetMesh, "getNumPolylineVertexDataIndices()", &nNumPolyLines)) {
+		return nNumPolyLines;
+	}
+
+	dzApp->warning("ERROR: DzBridgeAction::getNumPolylines(): Error while invoking method: DzFacetMesh::getNumPolylineVertexDataIndices()");
+	return -1;
+}
 
 
 
