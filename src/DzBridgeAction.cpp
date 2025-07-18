@@ -4731,7 +4731,7 @@ bool DzBridgeAction::metaInvokeMethod(QObject* object, const char* methodSig, vo
 	QMetaMethod metaMethod = metaObject->method(methodIndex);
 
 	// DEBUGGING
-	printf("metaInvokeMethod: %s : %s\n", metaMethod.signature(), metaMethod.typeName());
+//	printf("metaInvokeMethod: %s : %s\n", metaMethod.signature(), metaMethod.typeName());
 	
 	QGenericReturnArgument returnArgument(
 		metaMethod.typeName(),
