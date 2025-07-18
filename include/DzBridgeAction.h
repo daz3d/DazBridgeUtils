@@ -273,7 +273,8 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual int getNumPolylines(DzFacetMesh *pFacetMesh);
 		Q_INVOKABLE virtual int getNumPolylineSegments(DzFacetMesh *pFacetMesh);
 		Q_INVOKABLE virtual int getNumPolylineVertexDataIndices(DzFacetMesh *pFacetMesh);
-
+		Q_INVOKABLE virtual QVariantList getPolylineVertexIndices(DzFacetMesh *pFacetMesh, int nIndex);
+		
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo
@@ -529,7 +530,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool upgradeToHD(QString baseFilePath, QString hdFilePath, QString outFilePath, std::map<std::string, int>* pLookupTable);
 		Q_INVOKABLE virtual void writeWeightMaps(DzNode* Node, DzJsonWriter& Stream);
 
-		Q_INVOKABLE virtual bool metaInvokeMethod(QObject* object, const char* methodSig, void* returnPtr);
+		Q_INVOKABLE virtual bool metaInvokeMethod(QObject* object, const char* methodSig, void* returnPtr, QGenericArgument oArg0=QGenericArgument(0));
 		Q_INVOKABLE virtual void writeSkeletonData(DzNode* Node, DzJsonWriter& writer);
 		Q_INVOKABLE virtual void writeHeadTailData(DzNode* Node, DzJsonWriter& writer);
 		Q_INVOKABLE virtual DzBoneList getAllBones(DzNode* Node);

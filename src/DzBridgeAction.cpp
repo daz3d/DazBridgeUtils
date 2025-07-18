@@ -4676,7 +4676,7 @@ DzWeightMapPtr DzBridgeAction::getWeightMapPtr(DzNode* Node)
 
 }
 
-bool DzBridgeAction::metaInvokeMethod(QObject* object, const char* methodSig, void* returnPtr)
+bool DzBridgeAction::metaInvokeMethod(QObject* object, const char* methodSig, void* returnPtr, QGenericArgument oArg0)
 {
 	if (object == nullptr)
 	{
@@ -4729,11 +4729,15 @@ bool DzBridgeAction::metaInvokeMethod(QObject* object, const char* methodSig, vo
 
 	// invoke metamethod
 	QMetaMethod metaMethod = metaObject->method(methodIndex);
+
+	// DEBUGGING
+	printf("metaInvokeMethod: %s : %s\n", metaMethod.signature(), metaMethod.typeName());
+	
 	QGenericReturnArgument returnArgument(
 		metaMethod.typeName(),
 		returnPtr
 	);
-	bool result = metaMethod.invoke((QObject*)object, returnArgument);
+	bool result = metaMethod.invoke((QObject*)object, returnArgument, oArg0);
 	if (result)
 	{
 		return true;
@@ -8794,6 +8798,18 @@ int DzBridgeAction::getNumPolylineVertexDataIndices(DzFacetMesh *pFacetMesh)
 	dzApp->warning("ERROR: DzBridgeAction::getNumPolylines(): Error while invoking method: DzFacetMesh::getNumPolylineVertexDataIndices()");
 	return -1;
 }
+
+QVariantList DzBridgeAction::getPolylineVertexIndices(DzFacetMesh *pFacetMesh, int nIndex)
+{
+	QVariantList aReturnValues;
+	if (metaInvokeMethod(pFacetMesh, "getPolylineVertexIndices()", &aReturnValues, QGenericArgument("int", &nIndex) )) {
+		return aReturnValues;
+	}
+
+	dzApp->warning("ERROR: DzBridgeAction::getNumPolylines(): Error while invoking method: DzFacetMesh::getNumPolylineVertexDataIndices()");
+	return aReturnValues;
+}
+
 
 
 
