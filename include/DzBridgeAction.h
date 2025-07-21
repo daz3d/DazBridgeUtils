@@ -274,7 +274,16 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual int getNumPolylineSegments(DzFacetMesh *pFacetMesh);
 		Q_INVOKABLE virtual int getNumPolylineVertexDataIndices(DzFacetMesh *pFacetMesh);
 		Q_INVOKABLE virtual bool getPolylineVertexIndices(DzFacetMesh *pFacetMesh, int nIndex, QVariantList& aReturnValues);
-		
+
+		// RIG and JOINT CONVERSION API
+		Q_INVOKABLE virtual bool getConvertRigEnabled() { return m_bConvertRigEnabled; };
+		Q_INVOKABLE virtual void setConvertRigEnabled(bool arg) { m_bConvertRigEnabled = arg; };
+		Q_INVOKABLE virtual bool getConvertJointsEnabled() { return m_bConvertFbxJointsEnabled; };
+		Q_INVOKABLE virtual void setConvertJointsEnabled(bool arg) { m_bConvertFbxJointsEnabled = arg; };
+		Q_INVOKABLE virtual QString getExportRigMode() { return m_sExportRigMode; };
+		Q_INVOKABLE virtual void setExportRigMode(QString arg) { m_sExportRigMode = arg; };
+
+
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo
@@ -398,8 +407,8 @@ namespace DzBridgeNameSpace
 		bool m_bOverrideMorphSelectionDialog = false; // NOTE: m_bOverrideMorphSelectionDialog is intended for Bridge Plugins that need to override the morph selection dialog in interactive mode, this is not needed for scripting modes
 
 		bool m_bBakeMeshesToSingleBindPose = true;
-		bool m_bConvertRig = true; // set to false to override base class Rig Conversion, see DzBridgeAction::preProcessScene()
-		bool m_bConvertFbxJoints = true; // set to false to override base class Joint Conversion operations, see DzBridgeAction::postProcessFbx()
+		bool m_bConvertRigEnabled = true; // set to false to override base class Rig Conversion, see DzBridgeAction::preProcessScene()
+		bool m_bConvertFbxJointsEnabled = true; // set to false to override base class Joint Conversion operations, see DzBridgeAction::postProcessFbx()
 		QString m_sExportRigMode = "";
 		
 		////////////////////////////////////

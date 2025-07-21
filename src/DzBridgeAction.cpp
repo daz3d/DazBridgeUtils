@@ -406,7 +406,7 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 		//}
 	}
 
-	if (m_bConvertRig && parentNode && m_sExportRigMode != "" && m_sExportRigMode != "--")
+	if (m_bConvertRigEnabled && parentNode && m_sExportRigMode != "" && m_sExportRigMode != "--")
 	{
 		QString sGeneration = parentNode->getName();
 		bool bIsG9 = (sGeneration == "Genesis9");
@@ -4991,8 +4991,8 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 		}
 	}
 
-	// set m_bConvertFbxJoints to false in derived classes to override these operations
-	if (m_bConvertFbxJoints) 
+	// set m_bConvertFbxJointsEnabled to false in derived classes to override these operations
+	if (m_bConvertFbxJointsEnabled) 
 	{
 		if (pFbxRootBone && (m_sExportRigMode == "unreal" || m_sExportRigMode == "metahuman"))
 		{
