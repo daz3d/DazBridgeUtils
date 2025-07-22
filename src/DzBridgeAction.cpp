@@ -8382,31 +8382,6 @@ bool DzBridgeAction::copyMaterialsToGeograft(DzNode* pGeograftNode, DzNode* pBas
 }
 
 // MORPH PROXY TOOLS
-bool DzBridgeAction::loadBlendshapeMappingTable(QString sMappingFilename, QMap<QString, QString> &oMappingTable, QList<QString> &aMappingOrder)
-{
-	QFile oMappingFile(sMappingFilename);
-	
-	if (!oMappingFile.exists()) return false;
-	
-	if (!oMappingFile.open(QIODevice::ReadOnly)) {
-		return false;
-	}
-
-	// load the selected csv from disk into the export list on the right
-	QTextStream oInputStream(&oMappingFile);
-
-	while (!oInputStream.atEnd()) {
-		QString sInputLine = oInputStream.readLine();
-		QStringList aKeyValuePair = sInputLine.split(",");
-		aMappingOrder.append(aKeyValuePair[0]);
-		oMappingTable.insert(aKeyValuePair[0], aKeyValuePair[1]);
-	}
-
-	oMappingFile.close();
-	
-	return true;
-}
-
 bool DzBridgeAction::loadMorphSelectionOverride(QString sMorphPresetFilename)
 {
 	QStringList aMorphSelectionOverride;
@@ -8838,6 +8813,8 @@ bool DzBridgeAction::exLoadFbxScene(FbxScene* pScene, QString sFilename, int bSh
 	
 	return true;
 }
+
+
 
 
 

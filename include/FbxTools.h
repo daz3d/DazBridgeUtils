@@ -111,6 +111,9 @@ public:
 
 	static bool ExLoadScene(FbxScene* pScene, QString sFilename, void (*pfLogFunction)(QString)=nullptr, bool bShowGuiError=false, QString sErrorMessageTemplate="");
 
+	static bool LoadBlendshapeMappingTable(QString sMappingFilename, QMap<QString, QString> &oMappingTable, QList<QString> &aMappingOrder);
+	static bool TransferBlendshapes(QString sBlendshapesSourceFile, FbxScene* pDestinationScene, QString sMappingFilename="");
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

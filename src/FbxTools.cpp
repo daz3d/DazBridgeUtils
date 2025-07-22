@@ -7,6 +7,8 @@
 #include <qlist.h>
 #include <qmap.h>
 #include <dzapp.h>
+#include <qfile.h>
+#include <qtextstream.h>
 
 /////////////////////////////////////////////////////////////////////////////////
 /// GEOMETRY FUNCTIONS
@@ -1951,5 +1953,174 @@ Error Message: \"%3\"\n\n"
 		pfLogFunction(sLogSuccess);
 	}
 	
+	return true;
+}
+
+bool FbxTools::LoadBlendshapeMappingTable(QString sMappingFilename, QMap<QString, QString> &oMappingTable, QList<QString> &aMappingOrder)
+{
+	QFile oMappingFile(sMappingFilename);
+	
+	if (!oMappingFile.exists()) return false;
+	
+	if (!oMappingFile.open(QIODevice::ReadOnly)) {
+		return false;
+	}
+
+	// load the selected csv from disk into the export list on the right
+	QTextStream oInputStream(&oMappingFile);
+
+	while (!oInputStream.atEnd()) {
+		QString sInputLine = oInputStream.readLine();
+		QStringList aKeyValuePair = sInputLine.split(",");
+		aMappingOrder.append(aKeyValuePair[0]);
+		oMappingTable.insert(aKeyValuePair[0], aKeyValuePair[1]);
+	}
+
+	oMappingFile.close();
+	
+	return true;
+}
+
+// Transfer blendshapes from source fbx to destination scene
+bool FbxTools::TransferBlendshapes(QString sBlendshapesSourceFile, FbxScene* pDestinationScene, QString sMappingFilename)
+{
+	if (sBlendshapesSourceFile.isEmpty() || sBlendshapesSourceFile == "" || pDestinationScene == nullptr) return false;
+	
+	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
+	QList<FbxNode*> aFbxMeshNodeList;
+	FbxTools::GetAllMeshes(pDestinationScene->GetRootNode(), aFbxMeshNodeList);
+
+	// Load Ordered Blendshape Mapping Table
+	QMap<QString, QString> oBlendshapeChannelMappingTable;				
+	QList<QString> aBlendshapeChannelOrderedList;
+
+	bool bNoRemapping = false;
+	if (sMappingFilename.isEmpty() || sMappingFilename == "") {
+		bNoRemapping = true;
+	} else {
+		LoadBlendshapeMappingTable(sMappingFilename, oBlendshapeChannelMappingTable, aBlendshapeChannelOrderedList);
+	}
+	
+	FbxScene* pFacsBlendshapeScene = openFBX->CreateScene("FACS Scene");
+	if (FbxTools::ExLoadScene(pFacsBlendshapeScene, sBlendshapesSourceFile) == false) {
+		return false;
+	}
+	else
+	{
+		// get mesh nodes list
+		FbxNode* pBlendshapeSceneRootNode = pFacsBlendshapeScene->GetRootNode();
+		QList<FbxNode*> aBlendshapeMeshNodeList;
+		FbxTools::GetAllMeshes(pBlendshapeSceneRootNode, aBlendshapeMeshNodeList);
+//		dzApp->log( QString("DzR2xAction: FACS proxy loaded with %1 meshes.").arg(aBlendshapeMeshNodeList.count()) );
+		
+		for (int nBlendshapeMeshIndex=0; nBlendshapeMeshIndex < aBlendshapeMeshNodeList.count(); nBlendshapeMeshIndex++)
+		{
+			FbxNode* pBlendshapeNode = aBlendshapeMeshNodeList[nBlendshapeMeshIndex];
+			FbxMesh* pBlendshapeMesh = pBlendshapeNode->GetMesh();
+			FbxMesh* pDestinationMesh = nullptr;
+			int nBlendShapeMeshVertexCount = pBlendshapeMesh->GetControlPointsCount();
+			// Find Mesh in pScene with same vertexcount and same mesh name
+			foreach(FbxNode* pMainSceneNode, aFbxMeshNodeList) {
+				FbxMesh* pMainSceneMesh = pMainSceneNode->GetMesh();
+				if (pMainSceneMesh->GetControlPointsCount() == nBlendShapeMeshVertexCount) {
+					// double-check name
+					QString sMainSceneMesh = QString(pMainSceneMesh->GetName()).replace(".Shape", "");
+					QString sBlendshapeMesh = QString(pBlendshapeMesh->GetName()).replace(".Shape", "");
+					if (sMainSceneMesh != sBlendshapeMesh) {
+						continue;
+					}
+					pDestinationMesh = pMainSceneMesh;
+					break;
+				}
+			}
+			if (pDestinationMesh == nullptr) {
+				dzApp->log( QString("DzR2xAction: Skipping mesh %1, no match found with %2 verts.").arg(pBlendshapeNode->GetName()).arg(nBlendShapeMeshVertexCount) );
+				continue;
+			}
+//			dzApp->log( QString("DzR2xAction: Attempting blendshape transfer for mesh %1, with %2 verts.").arg(pBlendshapeNode->GetName()).arg(nBlendShapeMeshVertexCount) );
+			
+			// First Pass to build Blendshape Proxy Lookup Table
+			QMap<QString, int> oChannelIndexLookup;
+			int numBlendshapes = pBlendshapeMesh->GetDeformerCount(FbxDeformer::eBlendShape);
+			for (int nBlendshapeIndex = 0; nBlendshapeIndex < numBlendshapes; nBlendshapeIndex++)
+			{
+				// Blendshape Level
+				FbxBlendShape* pSourceBlendshape = static_cast<FbxBlendShape*>(pBlendshapeMesh->GetDeformer(nBlendshapeIndex, FbxDeformer::eBlendShape));
+				const char* pBlendshapeName = pSourceBlendshape->GetName();
+				int numBlendshapeChannels = pSourceBlendshape->GetBlendShapeChannelCount();
+				for (int nBlendshapeChannelIndex = 0; nBlendshapeChannelIndex < numBlendshapeChannels; nBlendshapeChannelIndex++)
+				{
+					// Channel Level
+					FbxBlendShapeChannel* pSourceChannel = pSourceBlendshape->GetBlendShapeChannel(nBlendshapeChannelIndex);
+					const char* pChannelName = pSourceChannel->GetName();
+					int numTargetShapes = pSourceChannel->GetTargetShapeCount();
+
+					QString sCleanedMeshName = QString(pBlendshapeMesh->GetName()).replace(".Shape", "");
+					QString sCleanedChannelName = QString(pChannelName).replace(sCleanedMeshName+"__", "");
+					oChannelIndexLookup.insert(sCleanedChannelName, nBlendshapeChannelIndex);
+					
+					if (bNoRemapping) {
+						oBlendshapeChannelMappingTable.insert(pChannelName, sCleanedChannelName);
+						aBlendshapeChannelOrderedList.append(pChannelName);
+					}
+
+				} // for (int nBlendshapeChannelIndex = 0; nBlendshapeChannelIndex < numBlendshapeChannels; nBlendshapeChannelIndex++)
+			} // for (int nBlendshapeIndex = 0; nBlendshapeIndex < numBlendshapes; nBlendshapeIndex++)
+
+			// Second Pass to transfer shapes in correct order
+
+			// **** CREATE BLENDSHAPE IN pDestinationScene ****
+			QString sDestinationBlendshapeName = QString(pDestinationMesh->GetName()).replace(".Shape", "") + "BlendShapes";
+			FbxBlendShape* pDestinationShape = FbxBlendShape::Create(pDestinationScene->GetFbxManager(), sDestinationBlendshapeName.toLocal8Bit().data());
+			pDestinationMesh->AddDeformer((FbxDeformer*) pDestinationShape);
+//			dzApp->log( QString("DzR2xAction: Adding blendshape[%1]: %2").arg(0).arg(sDestinationBlendshapeName) );
+
+			FbxBlendShape* pSourceBlendshape = static_cast<FbxBlendShape*>(pBlendshapeMesh->GetDeformer(0, FbxDeformer::eBlendShape));
+
+			for (int nDestinationBlendshapeChannelIndex=0; nDestinationBlendshapeChannelIndex < aBlendshapeChannelOrderedList.count(); nDestinationBlendshapeChannelIndex++)
+			{					
+				// ***** CREATE CHANNEL IN pScene *****
+				QString sDestinationChannelName = aBlendshapeChannelOrderedList[nDestinationBlendshapeChannelIndex];
+				FbxBlendShapeChannel* pDestinationChannel = FbxBlendShapeChannel::Create(pDestinationScene->GetFbxManager(), sDestinationChannelName.toLocal8Bit().data());
+				pDestinationShape->AddBlendShapeChannel(pDestinationChannel);
+//				dzApp->log( QString("DzR2xAction: Adding channel [%1]: %2").arg(nDestinationBlendshapeChannelIndex).arg(sDestinationChannelName) );
+
+				// Lookup Correct Source Channel
+				QString sMappedChannelName = oBlendshapeChannelMappingTable[sDestinationChannelName];
+				if (oChannelIndexLookup.find(sMappedChannelName) == oChannelIndexLookup.end()) {
+					dzApp->log("DzR2xAction: ERROR: unable to lookup channel index for: " + sMappedChannelName + ", skipping...");
+					continue;
+				}
+				int nSourceChannel = oChannelIndexLookup[sMappedChannelName];
+
+				FbxBlendShapeChannel* pSourceChannel = pSourceBlendshape->GetBlendShapeChannel(nSourceChannel);
+				FbxShape* pSourceShape = pSourceChannel->GetTargetShape(0);
+				int numVertsShapeBuffer = pSourceShape->GetControlPointsCount();
+
+				// ***** CREATE SHAPE IN pScene ******
+				FbxShape* pDestinationShape = FbxShape::Create(pDestinationScene->GetFbxManager(), sDestinationChannelName.toLocal8Bit().data());
+				pDestinationChannel->AddTargetShape(pDestinationShape);
+//				dzApp->log( QString("DzR2xAction: Adding target shape [%1]: %2").arg(0).arg(sDestinationChannelName) );
+
+				// prepare source
+				FbxVector4* pSourceBasisBuffer = pBlendshapeMesh->GetControlPoints();
+				FbxVector4* pSourceBuffer = pSourceShape->GetControlPoints();
+				// prepare destionation
+				pDestinationShape->SetControlPointCount(numVertsShapeBuffer);
+				FbxVector4* pDestinationBasisBuffer = pDestinationMesh->GetControlPoints();
+				FbxVector4* pDestinationBuffer = pDestinationShape->GetControlPoints();
+
+				// iterate and transfer each vertex delta
+				for (int nBufferIndex=0; nBufferIndex < numVertsShapeBuffer; nBufferIndex++) {
+					// compute vertex deltas
+					FbxVector4 oVertexDelta = pSourceBuffer[nBufferIndex] - pSourceBasisBuffer[nBufferIndex];
+					// add vertex deltas to destination buffer
+					pDestinationBuffer[nBufferIndex] = pDestinationBasisBuffer[nBufferIndex] + oVertexDelta;
+				}
+
+			} // for (int nDestinationBlendshapeIndex=0; nDestinationBlendshapeIndex < aBlendshapeNameOrderedList.count(); nDestinationBlendshapeIndex++)
+			
+		} // foreach(aBlendshapeMeshNodeList)
+	}
 	return true;
 }
