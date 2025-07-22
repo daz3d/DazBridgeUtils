@@ -263,8 +263,8 @@ namespace DzBridgeNameSpace
 		QString m_sFacsJawOpenMouthClose = "";		
 		Q_INVOKABLE virtual bool loadBlendshapeMappingTable(QString sMappingFilename, QMap<QString, QString> &oMappingTable, QList<QString> &aMappingOrder);
 		Q_INVOKABLE virtual bool loadMorphSelectionOverride(QString sMorphPresetFilename);
-		Q_INVOKABLE virtual bool generateBakedJawOpenMouthClose(DzNode* pParentNode);
-		Q_INVOKABLE virtual bool generateBakedJawOpen(DzNode* pParentNode);
+		Q_INVOKABLE virtual bool generateBakedJawOpenMouthClose(DzNode* pParentNode, bool bUseArKitFacs=true);
+		Q_INVOKABLE virtual bool generateBakedJawOpen(DzNode* pParentNode, bool bUseArKitFacs=true);
 		Q_INVOKABLE virtual bool calculateMouthCloseVertexDeltas(FbxVector4* pVertexDeltaBuffer, int numVertexDeltaBufferIndexes);
 		
 		// STRAND-BASED-HAIR TOOLS
@@ -283,6 +283,8 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual QString getExportRigMode() { return m_sExportRigMode; };
 		Q_INVOKABLE virtual void setExportRigMode(QString arg) { m_sExportRigMode = arg; };
 
+		Q_INVOKABLE virtual bool exSetArkitCorrectives(double fNewValue, DzNode* pParentNode);
+		Q_INVOKABLE virtual bool exGetArkitCorrectives(double &fReturnVariable, DzNode* pParentNode);
 
 		static void logFunc(QString sMesg) { dzApp->log(sMesg); };
 		Q_INVOKABLE virtual bool exLoadFbxScene(FbxScene* pScene, QString sFilename, int bShowGuiError=-1, QString sErrorMessageTemplate="");

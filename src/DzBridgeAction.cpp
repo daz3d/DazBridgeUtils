@@ -8443,7 +8443,7 @@ bool DzBridgeAction::loadMorphSelectionOverride(QString sMorphPresetFilename)
 	return true;
 }
 
-bool DzBridgeAction::generateBakedJawOpenMouthClose(DzNode* pParentNode)
+bool DzBridgeAction::generateBakedJawOpenMouthClose(DzNode* pParentNode, bool bUseArKitFacs)
 {
 	if (pParentNode == nullptr) return false;
 	
@@ -8451,35 +8451,30 @@ bool DzBridgeAction::generateBakedJawOpenMouthClose(DzNode* pParentNode)
 
 	auto MorphTable = MorphTools::GetAvailableMorphs(pParentNode);
 
-//	assert(MorphTable.find(ARKIT_FACS_ENABLE_PROPERTY_NAME) != MorphTable.end());
-//	assert(MorphTable.find("facs_bs_JawOpen") != MorphTable.end());
-//	assert(MorphTable.find("facs_ctrl_MouthClose") != MorphTable.end());
-	
-	if (MorphTable.find(ARKIT_FACS_ENABLE_PROPERTY_NAME) == MorphTable.end()) return false;
+	// ARKIT_FACS_ENABLE is optional, by default is enabled
+	double fUndoARKitOverride;
+	if (bUseArKitFacs) {
+		exGetArkitCorrectives(fUndoARKitOverride, pParentNode);
+		if (exSetArkitCorrectives(1.0, pParentNode) == false) {
+			bUseArKitFacs = false;
+		}
+	}
+
 	if (MorphTable.find("facs_bs_JawOpen") == MorphTable.end()) return false;
 	if (MorphTable.find("facs_ctrl_MouthClose") == MorphTable.end()) return false;
 
-	DzFloatProperty* pARKitMorph = qobject_cast<DzFloatProperty*>(MorphTable[ARKIT_FACS_ENABLE_PROPERTY_NAME].Property);
 	DzFloatProperty* pJawOpenMorph = qobject_cast<DzFloatProperty*>(MorphTable["facs_bs_JawOpen"].Property);
 	DzFloatProperty* pMouthClosedMorph = qobject_cast<DzFloatProperty*>(MorphTable["facs_ctrl_MouthClose"].Property);
 
-//	assert(pARKitMorph);
-//	assert(pJawOpenMorph);
-//	assert(pMouthClosedMorph);
-
-	if (!pARKitMorph) return false;
 	if (!pJawOpenMorph) return false;
 	if (!pMouthClosedMorph) return false;
 	
-	double fUndoARKitOverride;
 	double fUndoJawOpenOverride;
 	double fUndoMouthClosedOverride;
 
-	fUndoARKitOverride = pARKitMorph->getValue();
 	fUndoJawOpenOverride = pJawOpenMorph->getValue();
 	fUndoMouthClosedOverride = pMouthClosedMorph->getValue();
 
-	pARKitMorph->setValue(1.0);
 	pJawOpenMorph->setValue(1.0);
 	pMouthClosedMorph->setValue(1.0);
 	
@@ -8508,14 +8503,17 @@ bool DzBridgeAction::generateBakedJawOpenMouthClose(DzNode* pParentNode)
 
 	undoHideFollowerMeshes(oUndoTable);
 	
-	pARKitMorph->setValue(fUndoARKitOverride);
-	pJawOpenMorph->setValue(fUndoJawOpenOverride);
 	pMouthClosedMorph->setValue(fUndoMouthClosedOverride);
+	pJawOpenMorph->setValue(fUndoJawOpenOverride);
+
+	if (bUseArKitFacs) {
+		exSetArkitCorrectives(fUndoARKitOverride, pParentNode);
+	}
 
 	return true;	
 }
 
-bool DzBridgeAction::generateBakedJawOpen(DzNode* pParentNode)
+bool DzBridgeAction::generateBakedJawOpen(DzNode* pParentNode, bool bUseArKitFacs)
 {
 	if (pParentNode == nullptr) return false;
 	
@@ -8523,28 +8521,21 @@ bool DzBridgeAction::generateBakedJawOpen(DzNode* pParentNode)
 
 	auto MorphTable = MorphTools::GetAvailableMorphs(pParentNode);
 
-//	assert(MorphTable.find(ARKIT_FACS_ENABLE_PROPERTY_NAME) != MorphTable.end());
-//	assert(MorphTable.find("facs_bs_JawOpen") != MorphTable.end());
+	// ARKIT_FACS_ENABLE is optional, by default is enabled
+	double fUndoARKitOverride;
+	if (bUseArKitFacs) {
+		exGetArkitCorrectives(fUndoARKitOverride, pParentNode);
+		if (exSetArkitCorrectives(1.0, pParentNode) == false) {
+			bUseArKitFacs = false;
+		}
+	}
 	
-	if (MorphTable.find(ARKIT_FACS_ENABLE_PROPERTY_NAME) == MorphTable.end()) return false;
 	if (MorphTable.find("facs_bs_JawOpen") == MorphTable.end()) return false;
-
-	DzFloatProperty* pARKitMorph = qobject_cast<DzFloatProperty*>(MorphTable[ARKIT_FACS_ENABLE_PROPERTY_NAME].Property);
 	DzFloatProperty* pJawOpenMorph = qobject_cast<DzFloatProperty*>(MorphTable["facs_bs_JawOpen"].Property);
-
-//	assert(pARKitMorph);
-//	assert(pJawOpenMorph);
-
-	if (!pARKitMorph) return false;
 	if (!pJawOpenMorph) return false;
 	
-	double fUndoARKitOverride;
 	double fUndoJawOpenOverride;
-
-	fUndoARKitOverride = pARKitMorph->getValue();
 	fUndoJawOpenOverride = pJawOpenMorph->getValue();
-
-	pARKitMorph->setValue(1.0);
 	pJawOpenMorph->setValue(1.0);
 	
 	m_sFacsJawOpen = getTempBasefilename() + "_JawOpen.fbx";
@@ -8572,8 +8563,11 @@ bool DzBridgeAction::generateBakedJawOpen(DzNode* pParentNode)
 
 	undoHideFollowerMeshes(oUndoTable);
 	
-	pARKitMorph->setValue(fUndoARKitOverride);
 	pJawOpenMorph->setValue(fUndoJawOpenOverride);
+
+	if (bUseArKitFacs) {
+		exSetArkitCorrectives(fUndoARKitOverride, pParentNode);
+	}
 
 	return true;	
 }
@@ -8809,6 +8803,27 @@ bool DzBridgeAction::getPolylineVertexIndices(DzFacetMesh *pFacetMesh, int nInde
 	return false;
 }
 
+bool DzBridgeAction::exSetArkitCorrectives(double fNewValue, DzNode* pParentNode)
+{
+	if (pParentNode == nullptr) return false;
+
+	DzFloatProperty* pARKitMorph = qobject_cast<DzFloatProperty*>(pParentNode->findProperty(ARKIT_FACS_ENABLE_PROPERTY_NAME));
+	if (pARKitMorph == nullptr) return false;
+
+	pARKitMorph->setValue(fNewValue);
+	return true;
+}
+
+bool DzBridgeAction::exGetArkitCorrectives(double &fReturnVariable, DzNode* pParentNode)
+{
+	if (pParentNode == nullptr) return false;
+
+	DzFloatProperty* pARKitMorph = qobject_cast<DzFloatProperty*>(pParentNode->findProperty(ARKIT_FACS_ENABLE_PROPERTY_NAME));
+	if (pARKitMorph == nullptr) return false;
+
+	fReturnVariable = pARKitMorph->getValue();
+	return true;
+}
 
 bool DzBridgeAction::exLoadFbxScene(FbxScene* pScene, QString sFilename, int bShowGuiError, QString sErrorMessageTemplate)
 {
