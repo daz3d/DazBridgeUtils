@@ -109,6 +109,8 @@ public:
 	static bool GetAllMeshes(FbxNode* pNode, QList<FbxNode*>& aFbxNodeList);
 	static bool HasNodeAncestor(FbxNode* pNode, const QString sAncestorName, Qt::CaseSensitivity cs = Qt::CaseSensitive);
 
+	static bool ExLoadScene(FbxScene* pScene, QString sFilename, void (*pfLogFunction)(QString)=nullptr, bool bShowGuiError=false, QString sErrorMessageTemplate="");
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

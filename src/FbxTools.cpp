@@ -1898,3 +1898,58 @@ void FbxTools::UnrealBoneFix::performTask(FbxAMatrix &Matrix, FbxCluster *Cluste
     }
 
 }
+
+#include <QMessageBox>
+bool FbxTools::ExLoadScene(FbxScene* pScene, QString sFilename, void (*pfLogFunction)(QString), bool bShowGuiError, QString sErrorMessageTemplate)
+{
+	if (pScene == nullptr) return false;
+
+	if (sErrorMessageTemplate.isEmpty() || sErrorMessageTemplate == "") 
+	{
+		sErrorMessageTemplate = QObject::tr("\
+ERROR: FbxTools::ExLoadScene():\n\n\
+File: \"%1\"\n\n\
+FbxStatusCode: %2\n\n\
+Error Message: \"%3\"\n\n"
+		   );
+	}
+	
+	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
+
+#if 0
+	openFBX->LoadScene(pScene, sFilename);
+#else
+	if (openFBX->LoadScene(pScene, sFilename) == false)
+#endif
+	{
+		QString sCombinedErrorMessage = QString(sErrorMessageTemplate).arg(sFilename).arg(openFBX->GetErrorCode()).arg(openFBX->GetErrorString());
+
+		if (pfLogFunction)
+		{
+			QString sLogMessage = QString(sCombinedErrorMessage).replace("\n\n", "\n");
+			if (sLogMessage.endsWith("\n")) {
+				sLogMessage.chop(1);
+			}
+			sLogMessage = sLogMessage.replace("\n", ", ").replace(":,", ":");
+			pfLogFunction(sLogMessage);
+		}
+
+		if (bShowGuiError)
+		{
+			QMessageBox::warning(0,
+				QObject::tr("Error"),
+				QObject::tr("An error occurred while processing the Fbx file:\n\n") + sCombinedErrorMessage,
+				QMessageBox::Ok);
+		}
+		return false;
+	}
+
+	if (pfLogFunction)
+	{
+		QString sLogSuccess = QObject::tr("FbxTools::ExLoadScene(): File Loaded: \"%1\"");
+		sLogSuccess = QString(sLogSuccess).arg(sFilename);
+		pfLogFunction(sLogSuccess);
+	}
+	
+	return true;
+}

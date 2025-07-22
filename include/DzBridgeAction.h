@@ -284,6 +284,9 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual void setExportRigMode(QString arg) { m_sExportRigMode = arg; };
 
 
+		static void logFunc(QString sMesg) { dzApp->log(sMesg); };
+		Q_INVOKABLE virtual bool exLoadFbxScene(FbxScene* pScene, QString sFilename, int bShowGuiError=-1, QString sErrorMessageTemplate="");
+
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo

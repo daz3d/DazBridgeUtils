@@ -8810,6 +8810,22 @@ bool DzBridgeAction::getPolylineVertexIndices(DzFacetMesh *pFacetMesh, int nInde
 }
 
 
+bool DzBridgeAction::exLoadFbxScene(FbxScene* pScene, QString sFilename, int bShowGuiError, QString sErrorMessageTemplate)
+{
+	if (bShowGuiError == -1) {
+		if (isInteractiveMode() == false) {
+			bShowGuiError = false;
+		}
+	}
+	
+	bool bRetValue = FbxTools::ExLoadScene(pScene, sFilename, &logFunc, bShowGuiError, sErrorMessageTemplate);
+	return bRetValue;
+	
+	return true;
+}
+
+
+
 
 
 #include "moc_DzBridgeAction.cpp"
