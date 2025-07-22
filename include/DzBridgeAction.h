@@ -2,6 +2,7 @@
 
 #define ARKIT_FACS_ENABLE_PROPERTY_NAME	"ARKit_facs_ctrl_ARKitEnable"
 
+#include <dzapp.h>
 #include <dzaction.h>
 #include <dznode.h>
 #include <DzFileIOSettings.h>
