@@ -3958,7 +3958,7 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 	m_MorphNamesToExport.clear();
 	m_AvailableMorphsTable.clear();
 	m_AvailableMorphsTable = MorphTools::GetAvailableMorphs(m_pSelectedNode, true);
-	if (m_bOverrideMorphSelectionDialog == false) {
+	if (isInteractiveMode() && m_bOverrideMorphSelectionDialog == false) {
 		QList<QString> aUnfinalizedMorphNamesToExport = m_morphSelectionDialog->GetMorphNamesToExport();
 		m_MorphNamesToExport = MorphTools::getFinalizedMorphList(aUnfinalizedMorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm);
 	}
