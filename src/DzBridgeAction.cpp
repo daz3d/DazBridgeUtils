@@ -4930,6 +4930,11 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 		return false;
 	}
 
+	// Unparent mesh from rig node tree
+	if (m_bDetachGeometry) {
+		FbxTools::DetachGeometry(pScene);
+	}	
+
     // Remove Morph Export Prefix from FBX
     FbxTools::removeMorphExportPrefixFromNode(pScene->GetRootNode(), MORPH_EXPORT_PREFIX);
 

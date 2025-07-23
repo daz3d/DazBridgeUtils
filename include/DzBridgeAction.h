@@ -294,6 +294,9 @@ namespace DzBridgeNameSpace
 		bool retargetRigWithMvc(FbxScene* pScene, FbxMesh* pTargetMesh, FbxVector4* pTempBuffer, FbxNode* RootBone, MvcFbxBoneRetargeter* pMvcBoneRetargeter);
 		bool prepareMvcBoneRetargeter(QString sMvcTemplateFilename, MvcFbxBoneRetargeter* pMvcBoneRetargeter);
 
+		Q_INVOKABLE virtual bool getDetachGeometryEnabled() { return m_bDetachGeometry; };
+		Q_INVOKABLE virtual void setDetachGeometryEnabled(bool arg) { m_bDetachGeometry = arg; };
+
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo
@@ -420,6 +423,8 @@ namespace DzBridgeNameSpace
 		bool m_bConvertRigEnabled = false; // set to false to override base class Rig Conversion, see DzBridgeAction::preProcessScene()
 		bool m_bConvertFbxJointsEnabled = false; // set to false to override base class Joint Conversion operations, see DzBridgeAction::postProcessFbx()
 		QString m_sExportRigMode = "";
+
+		bool m_bDetachGeometry = false;
 		
 		////////////////////////////////////
 		
