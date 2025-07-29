@@ -8013,13 +8013,11 @@ bool DzBridgeAction::generateProxyMesh(DzNode* pNode, QString sFbxFilePath, bool
 	if (sFbxFilePath.isEmpty()) return false;
 
 	// Safe List
+	QMap<DzNode*, DzNode*> oUndoTable;
 	QStringList aSafeList;
 	aSafeList.append("Genesis9Eyes");
 	aSafeList.append("Genesis9Mouth");
-
-	QMap<DzNode*, DzNode*> oUndoTable;
-	if (bExportFacsBlendshapes)
-	{
+	if (bExportFacsBlendshapes) {
 		aSafeList += findEyelashEyebrowsHair(pNode);
 	}
 	if (hideFollowerMeshes(pNode, aSafeList, oUndoTable) == false) {
@@ -8038,7 +8036,7 @@ bool DzBridgeAction::generateProxyMesh(DzNode* pNode, QString sFbxFilePath, bool
 	ExportOptions.setBoolValue("doProps", false);
 	ExportOptions.setBoolValue("doEmbed", false);
 	ExportOptions.setStringValue("format", m_sFbxVersion);
-	ExportOptions.setIntValue("RunSilent", !m_bShowFbxOptions);
+	ExportOptions.setIntValue("RunSilent", true); // generateProxyMesh is always silent (no direct fbx export options to user)
 
 	bool bUndoUnfitting = false;
 	if (bExportFacsBlendshapes) {
