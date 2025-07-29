@@ -5,6 +5,7 @@
 
 #include <fbxsdk.h>
 #include <qlist.h>
+#include <qstringlist.h>
 #include <qmap.h>
 #include <dzapp.h>
 #include <qfile.h>
@@ -1262,8 +1263,7 @@ bool FbxTools::LoadAndPoseBelowHeadOnly(QString poseFilePath, FbxScene* lCurrent
 	return true;
 }
 
-
-bool FbxTools::LoadAndPose(QString poseFilePath, FbxScene* lCurrentScene, DzProgress* pProgress, bool bConvertToZUp, bool bRotationOnly)
+bool FbxTools::LoadAndPose(QString poseFilePath, FbxScene* lCurrentScene, DzProgress* pProgress, bool bConvertToZUp, bool bRotationOnly, QList<QString> aSkipBoneNames)
 {
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
 
@@ -1297,38 +1297,41 @@ bool FbxTools::LoadAndPose(QString poseFilePath, FbxScene* lCurrentScene, DzProg
 	}
 
 	int numMainNodes = lCurrentScene->GetNodeCount();
-    int nRootNodeIndex = -1;
-    int nRootBoneIndex = -1;
 	for (int i = 0; i < numMainNodes; i++)
 	{
 		FbxNode* pNode = lCurrentScene->GetNode(i);
 		FbxNodeAttribute* Attr = pNode->GetNodeAttribute();
 		if (Attr && Attr->GetAttributeType() == FbxNodeAttribute::eSkeleton)
 		{
-            if (nRootNodeIndex == -1) {
-                nRootNodeIndex = i;
-            } else if (nRootBoneIndex == -1) {
-                nRootBoneIndex = i;
-            }
 			const char* lpNodeName = pNode->GetName();
 			QString sNodeName(lpNodeName);
-			if (sNodeName == "RootNode")
-				continue;
+//			if (sNodeName == "RootNode")
+//				continue;
+			if (aSkipBoneNames.count() > 0)
+			{
+				bool bSkipBoneFound = false;
+				foreach(QString sSkipBoneName, aSkipBoneNames) {
+					if (sNodeName.compare(sSkipBoneName, Qt::CaseInsensitive) == 0) {
+						bSkipBoneFound = true;
+						break;
+					}
+				}
+				if (bSkipBoneFound) {
+					dzApp->log("DEBUG: LoadAndPose(): Skipping Bone=" + sNodeName);
+					continue;
+				}
+			}
 			if (lookupTable.find(sNodeName) != lookupTable.end())
 			{
 				FbxNode* pPoseNode = lookupTable[sNodeName];
                 if (bRotationOnly)
                 {
-                    if (nRootNodeIndex == i || nRootBoneIndex == i)
-                        continue;
-                    pNode->RotationOrder.Set(pPoseNode->RotationOrder.Get());
-                    pNode->PreRotation.Set(pPoseNode->PreRotation.Get());
-                    pNode->LclRotation.Set(pPoseNode->LclRotation.Get());
-                    pNode->PostRotation.Set(pPoseNode->PostRotation.Get());
-//                    pNode->LclScaling.Set(pPoseNode->LclScaling.Get());
-//                    pNode->LclTranslation.Set(pPoseNode->LclTranslation.Get());
-                    pNode->GeometricRotation.Set(pPoseNode->GeometricRotation.Get());
-                }
+					FbxEuler::EOrder oPoseRotationOrder = pPoseNode->RotationOrder.Get();
+					pNode->SetRotationOrder(FbxNode::eSourcePivot, oPoseRotationOrder);
+					pNode->PreRotation.Set(pPoseNode->PreRotation.Get());
+					pNode->LclRotation.Set(pPoseNode->LclRotation.Get());
+					pNode->PostRotation.Set(pPoseNode->PostRotation.Get());
+				}
                 else
                 {
                     pNode->Copy(*pPoseNode);
