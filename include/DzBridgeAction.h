@@ -411,9 +411,9 @@ namespace DzBridgeNameSpace
 		bool m_bEmbedTexturesInOutputFile = false;
 		bool m_bOverrideMorphSelectionDialog = false; // NOTE: m_bOverrideMorphSelectionDialog is intended for Bridge Plugins that need to override the morph selection dialog in interactive mode, this is not needed for scripting modes
 
-		bool m_bBakeMeshesToSingleBindPose = true;
-		bool m_bConvertRigEnabled = true; // set to false to override base class Rig Conversion, see DzBridgeAction::preProcessScene()
-		bool m_bConvertFbxJointsEnabled = true; // set to false to override base class Joint Conversion operations, see DzBridgeAction::postProcessFbx()
+		bool m_bBakeMeshesToSingleBindPose = false;
+		bool m_bConvertRigEnabled = false; // set to false to override base class Rig Conversion, see DzBridgeAction::preProcessScene()
+		bool m_bConvertFbxJointsEnabled = false; // set to false to override base class Joint Conversion operations, see DzBridgeAction::postProcessFbx()
 		QString m_sExportRigMode = "";
 		
 		////////////////////////////////////
