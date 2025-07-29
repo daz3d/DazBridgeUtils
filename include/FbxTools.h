@@ -113,6 +113,7 @@ public:
 
 	static bool LoadBlendshapeMappingTable(QString sMappingFilename, QMap<QString, QString> &oMappingTable, QList<QString> &aMappingOrder);
 	static bool TransferBlendshapes(QString sSourceFilename, FbxScene* pDestinationScene, QString sMappingFilename="");
+	static bool BakeMeshesToSingleBindPose(FbxScene* pScene);
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING

@@ -4975,20 +4975,7 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 
 	if (m_bBakeMeshesToSingleBindPose)
 	{
-		// Bake all meshes to use the same bind pose (blender work-around -- does not support separate bind matrix in follower meshes)
-		FbxTools::RemoveBindPoses(pScene);
-		foreach(FbxNode * pNode, nodeList) {
-			QString debugName(pNode->GetName());
-			FbxMesh* pMesh = pNode->GetMesh();
-			FbxAMatrix matrix = pNode->EvaluateGlobalTransform();
-			FbxVector4* pVertexBuffer = pMesh->GetControlPoints();
-			if (pVertexBuffer == NULL) continue;
-			FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &matrix, nullptr, pMesh);
-		}
-		foreach(FbxNode* pNode, nodeList) {
-			FbxMesh* pMesh = pNode->GetMesh();
-			FbxTools::BakePoseToBindMatrix(pMesh, nullptr);
-		}
+		FbxTools::BakeMeshesToSingleBindPose(pScene);
 	}
 
 	// set m_bConvertFbxJointsEnabled to false in derived classes to override these operations

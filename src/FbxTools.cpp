@@ -2127,3 +2127,52 @@ bool FbxTools::TransferBlendshapes(QString sSourceFilename, FbxScene* pDestinati
 	}
 	return true;
 }
+
+bool FbxTools::BakeMeshesToSingleBindPose(FbxScene* pScene)
+{
+	if (pScene == nullptr) return false;
+
+	QList<FbxNode*> nodeList;
+	FbxNode* pFbxRootNode = pScene->GetRootNode();
+	FbxTools::GetAllMeshes(pFbxRootNode, nodeList);
+	
+	// Bake all meshes to use the same bind pose (blender work-around -- does not support separate bind matrix in follower meshes)
+	FbxTools::RemoveBindPoses(pScene);
+	foreach(FbxNode * pNode, nodeList) {
+		QString debugName(pNode->GetName());
+		FbxMesh* pMesh = pNode->GetMesh();
+		FbxAMatrix matrix = pNode->EvaluateGlobalTransform();
+		FbxVector4* pVertexBuffer = pMesh->GetControlPoints();
+		if (pVertexBuffer == NULL) continue;
+		FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &matrix, nullptr, pMesh);
+		
+		// bake for each blendshape
+		int numBlendshapes = pMesh->GetDeformerCount(FbxDeformer::eBlendShape);
+		for (int nBlendshapeIndex = 0; nBlendshapeIndex < numBlendshapes; nBlendshapeIndex++)
+		{
+			// Blendshape Level
+			FbxBlendShape* pBlendshape = static_cast<FbxBlendShape*>(pMesh->GetDeformer(nBlendshapeIndex, FbxDeformer::eBlendShape));
+			int numBlendshapeChannels = pBlendshape->GetBlendShapeChannelCount();
+			for (int nBlendshapeChannelIndex = 0; nBlendshapeChannelIndex < numBlendshapeChannels; nBlendshapeChannelIndex++)
+			{
+				// Channel Level
+				FbxBlendShapeChannel* pChannel = pBlendshape->GetBlendShapeChannel(nBlendshapeChannelIndex);
+				int numTargetShapes = pChannel->GetTargetShapeCount();
+				for (int nTargetShapeIndex = 0; nTargetShapeIndex < numTargetShapes; nTargetShapeIndex++)
+				{
+					FbxShape* pTargetShape = pChannel->GetTargetShape(nTargetShapeIndex);
+					pVertexBuffer = pTargetShape->GetControlPoints();
+					if (pVertexBuffer == NULL) continue;
+					FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &matrix, nullptr, pMesh);
+				}
+			}
+		}
+	}
+	foreach(FbxNode* pNode, nodeList) {
+		FbxMesh* pMesh = pNode->GetMesh();
+		FbxTools::BakePoseToBindMatrix(pMesh, nullptr);
+	}
+
+	return true;
+}
+
