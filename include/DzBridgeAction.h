@@ -262,7 +262,7 @@ namespace DzBridgeNameSpace
 		QString m_sFacsProxyFilePath = "";
 		QString m_sFacsJawOpen = "";
 		QString m_sFacsJawOpenMouthClose = "";
-		Q_INVOKABLE virtual bool loadMorphSelectionOverride(QString sMorphPresetFilename);
+		Q_INVOKABLE virtual bool loadMorphSelectionOverride(QString sMorphExportFilename);
 		Q_INVOKABLE virtual bool generateBakedJawOpenMouthClose(DzNode* pParentNode, bool bUseArKitFacs=true);
 		Q_INVOKABLE virtual bool generateBakedJawOpen(DzNode* pParentNode, bool bUseArKitFacs=true);
 		Q_INVOKABLE virtual bool calculateMouthCloseVertexDeltas(FbxVector4* pVertexDeltaBuffer, int numVertexDeltaBufferIndexes);

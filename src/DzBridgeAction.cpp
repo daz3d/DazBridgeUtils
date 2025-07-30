@@ -8367,11 +8367,13 @@ bool DzBridgeAction::copyMaterialsToGeograft(DzNode* pGeograftNode, DzNode* pBas
 }
 
 // MORPH PROXY TOOLS
-bool DzBridgeAction::loadMorphSelectionOverride(QString sMorphPresetFilename)
+bool DzBridgeAction::loadMorphSelectionOverride(QString sMorphExportFilename)
 {
 	QStringList aMorphSelectionOverride;
 	
-	QFile oMappingFile(sMorphPresetFilename);
+	if (sMorphExportFilename.isEmpty() || sMorphExportFilename == "") return false;
+	
+	QFile oMappingFile(sMorphExportFilename);
 	
 	if (!oMappingFile.exists()) return false;
 	
@@ -8384,8 +8386,8 @@ bool DzBridgeAction::loadMorphSelectionOverride(QString sMorphPresetFilename)
 
 	while (!oInputStream.atEnd()) {
 		QString sInputLine = oInputStream.readLine();
-		QStringList aKeyValuePair = sInputLine.split(",");
-		aMorphSelectionOverride.append(aKeyValuePair[1]);
+		sInputLine = sInputLine.replace("\"", "");
+		aMorphSelectionOverride.append(sInputLine);
 	}
 	
 	m_aMorphListOverride = aMorphSelectionOverride;
