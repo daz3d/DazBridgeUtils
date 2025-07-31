@@ -8620,8 +8620,8 @@ int DzBridgeAction::validateProxyMeshVerts(QString sFilename)
 	int numVerts = pTargetMesh->GetControlPointsCount();
 	QString sMvcVertCheckMessage = QString("DEBUG: DzBridgeAction::validateProxyMeshVerts() Genesis9.Shape has numVerts=%1").arg(numVerts);
 //	dzApp->log(sMvcVertCheckMessage);
-#define G9_MVC_VERTS 25182
-	if (numVerts != G9_MVC_VERTS) {
+#define G9_MVC_PROXY_VERTS 25182
+	if (numVerts != G9_MVC_PROXY_VERTS) {
 		if (true) QMessageBox::warning(0, QString("Error"),
 			QString("DzBridge: An error occurred while generating the Proxy Mesh:\n\n") + sMvcVertCheckMessage, QMessageBox::Ok);
 		return false;
