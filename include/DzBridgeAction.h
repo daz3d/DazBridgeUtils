@@ -24,6 +24,7 @@ class DzSkinBinding;
 class DzColorProperty;
 class DzNumericProperty;
 class DzFacetMesh;
+class MvcFbxBoneRetargeter;
 
 // from ImageTools library (imagetools.h)
 class ImageToolsJobsManager;
@@ -288,6 +289,10 @@ namespace DzBridgeNameSpace
 
 		static void logFunc(QString sMesg) { dzApp->log(sMesg); };
 		Q_INVOKABLE virtual bool exLoadFbxScene(FbxScene* pScene, QString sFilename, int bShowGuiError=-1, QString sErrorMessageTemplate="");
+
+		bool retargetFigureToNewRig(DzNode* pDazFigureNode, FbxScene* pScene, FbxNode* RootBone, QString sMvcTemplateFilename, QString sMvcProxyMeshFilePath, QString sOverrideRigFilename);
+		bool retargetRigWithMvc(FbxScene* pScene, FbxMesh* pTargetMesh, FbxVector4* pTempBuffer, FbxNode* RootBone, MvcFbxBoneRetargeter* pMvcBoneRetargeter);
+		bool prepareMvcBoneRetargeter(QString sMvcTemplateFilename, MvcFbxBoneRetargeter* pMvcBoneRetargeter);
 
 	protected:
 		// Struct to remember attachment info

@@ -66,6 +66,7 @@
 #include "MorphTools.h"
 #include "FbxTools.h"
 #include "dzlayeredtexture.h"
+#include "MvcTools.h"
 
 #include "zip.h"
 
@@ -8798,6 +8799,203 @@ bool DzBridgeAction::exLoadFbxScene(FbxScene* pScene, QString sFilename, int bSh
 	bool bRetValue = FbxTools::ExLoadScene(pScene, sFilename, &logFunc, bShowGuiError, sErrorMessageTemplate);
 	return bRetValue;
 	
+	return true;
+}
+
+bool DzBridgeAction::retargetFigureToNewRig(DzNode* pDazFigureNode, FbxScene* pScene, FbxNode* RootBone, QString sMvcTemplateFilename, QString sMvcProxyMeshFilePath, QString sOverrideRigFilename)
+{
+	if (pDazFigureNode == nullptr || pScene == nullptr || RootBone == nullptr) return false;
+
+	QString sFigureGeneration = pDazFigureNode->getName();
+	
+	// Retarget override rig from basefigure shape to custom character shape using MVC
+	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
+	
+	QList<FbxNode*> aMeshNodeList;
+	FbxTools::GetAllMeshes(pScene->GetRootNode(), aMeshNodeList);
+
+	// Prepare Mvc Retargeter, Calcualte Mvc Weights
+	MvcFbxBoneRetargeter oMvcBoneRetargeter;
+	if (prepareMvcBoneRetargeter(sMvcTemplateFilename, &oMvcBoneRetargeter) == false) {
+		QString sPrepareMvcBoneRetargeterMessage = QString("ERROR: retargetFigureToNewRig(): Error preparing Mvc Bone Retargeter with template file: %1").arg(sMvcTemplateFilename);
+		dzApp->log(sPrepareMvcBoneRetargeterMessage);
+		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, QObject::tr("Error"),
+			QObject::tr("An error occurred while processing the Fbx file:\n\n") + sPrepareMvcBoneRetargeterMessage, QMessageBox::Ok);
+		return false;
+	}
+
+	// Load Mvc Proxy Mesh (generated in preProcessScene())
+	FbxScene* pMvcProxyMeshScene = openFBX->CreateScene("Mvc Proxy Mesh Scene");
+	if (exLoadFbxScene(pMvcProxyMeshScene, sMvcProxyMeshFilePath) == false) {
+		QString sLoadMvcProxyScene = QString("ERROR: retargetFigureToNewRig(): Error Loading Mvc Proxy Scene file: %1").arg(sMvcProxyMeshFilePath);
+		dzApp->log(sLoadMvcProxyScene);
+		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, QObject::tr("Error"),
+			QObject::tr("An error occurred while processing the Fbx file:\n\n") + sLoadMvcProxyScene, QMessageBox::Ok);
+		pMvcProxyMeshScene->Destroy();
+		return false;
+	}
+
+	// Bakeout global vertex coordinates for target mesh in a tempbuffer for use by Mvc retargeting algorithm
+	FbxNode* pTargetCharacterNode = pMvcProxyMeshScene->FindNodeByName( QString(sFigureGeneration + ".Shape").toLocal8Bit().data() );
+	FbxMesh* pTargetMesh = pTargetCharacterNode->GetMesh();
+	int numVerts = pTargetMesh->GetControlPointsCount();
+#define G9_MVC_PROXY_VERTS 25182
+	int nExpectedVerts = -1;
+	if (sFigureGeneration == "Genesis9") nExpectedVerts = G9_MVC_PROXY_VERTS;
+	if (numVerts != nExpectedVerts) {
+		QString sMvcVertCheckMessage = QString("ERROR: retargetFigureToNewRig() [%1] mesh has numVerts=%2, expected=%3").arg(sFigureGeneration).arg(numVerts).arg(nExpectedVerts);
+		//dzApp->log(sMvcVertCheckMessage);
+		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, tr("Error"),
+			tr("An error occurred while processing the Fbx file:\n\n") + sMvcVertCheckMessage, QMessageBox::Ok);
+		pMvcProxyMeshScene->Destroy();
+		return false;
+	}
+	FbxVector4* pVertexBuffer = pTargetMesh->GetControlPoints();
+	FbxVector4* pTempBuffer = new FbxVector4[numVerts];
+	memcpy(pTempBuffer, pVertexBuffer, sizeof(FbxVector4) * numVerts);
+	FbxAMatrix matrix = FbxTools::GetAffineMatrix(nullptr, pTargetCharacterNode);
+	FbxTools::BakePoseToVertexBuffer(pTempBuffer, &matrix, nullptr, (FbxMesh*) pTargetMesh);
+
+	// REPLACE EXISTING RIG WITH OVERRIDE
+	bool bResult = FbxTools::LoadAndPose(sOverrideRigFilename, pScene, NULL, false, false); // Override both position and orientation
+	foreach(FbxNode* pNode, aMeshNodeList) {
+		FbxTools::BakePoseToBindMatrix(pNode->GetMesh(), nullptr);
+	}
+
+	// Retarget each bone / adjust bindmatrix
+	if (retargetRigWithMvc(pScene, pTargetMesh, pTempBuffer, RootBone, &oMvcBoneRetargeter) == false) {
+		QString sRetargetRigMessage = QString("ERROR: retargetFigureToNewRig(): Error performing Mvc Bone Retargeting to mesh: %1").arg(pTargetMesh->GetName());
+		dzApp->log(sRetargetRigMessage);
+		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, QObject::tr("Error"),
+			QObject::tr("An error occurred while processing the Fbx file:\n\n") + sRetargetRigMessage, QMessageBox::Ok);
+		delete[] pTempBuffer;
+		pMvcProxyMeshScene->Destroy();
+		return false;
+	}
+	
+	delete[] pTempBuffer;
+	pMvcProxyMeshScene->Destroy();
+
+	return true;
+}
+
+bool DzBridgeAction::retargetRigWithMvc(FbxScene* pScene, FbxMesh* pTargetMesh, FbxVector4* pTempBuffer, FbxNode* RootBone, MvcFbxBoneRetargeter* pMvcBoneRetargeter)
+{
+	if (pMvcBoneRetargeter == nullptr) return false;
+
+	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
+
+	QList<FbxNode*> aBoneList;
+	QList<FbxNode*> aPosedBoneList;
+	FbxPose* pNewBindPose = FbxPose::Create(openFBX->GetManager(), "NewBindPose");
+	aBoneList.append(RootBone);
+	while (aBoneList.isEmpty() == false)
+	{
+		FbxNode* pBone = aBoneList.front();
+		aBoneList.pop_front();
+		QString sBoneName = QString(pBone->GetName());
+		//dzApp->log("DzR2xAction: DEBUG: calibrating bone: " + sBoneName);
+		DzProgress::setCurrentInfo("DzR2xAction: DEBUG: calibrating bone: " + sBoneName);
+		FbxVector4 oNewBonePosition = pMvcBoneRetargeter->calibrate_bone(pTargetMesh, pTempBuffer, sBoneName);
+		if (pBone == RootBone) {
+			// skip rootbone
+			//dzApp->log("DEBUG: DzR2xAction Mvc bone retarget: skip retargeting rootbone: " + sBoneName + ", but add to BindPose");
+			FbxAMatrix oBindMatrix;
+			oBindMatrix = FbxTools::GetAffineMatrix(nullptr, pBone);
+			pNewBindPose->Add(pBone, oBindMatrix, false);
+		} else if (std::isnan(oNewBonePosition[0])) {
+			dzApp->log("ERROR: DzR2xAction: unable to calibrate_bone: " + sBoneName + ", skipping...");
+		}
+		else
+		{
+			FbxVector4 oBonePosition = FbxTools::GetAffineMatrix(nullptr, pBone).GetT();
+			FbxVector4 oDeltaPosition = oNewBonePosition - oBonePosition;
+
+			FbxAMatrix oBindMatrix;
+			FbxCluster* pCluster = FbxTools::FindClusterFromNode(pBone);
+			if (pCluster)
+			{
+				//dzApp->log("DzR2xAction: Mvc-morphing pCluster for " + sBoneName + QString(", DEBUG: oDelta: [%1, %2, %3]").arg(oDeltaPosition[0]).arg(oDeltaPosition[1]).arg(oDeltaPosition[2]) );
+				pCluster->GetTransformLinkMatrix(oBindMatrix);
+				oBindMatrix.SetT(oNewBonePosition);
+				pCluster->SetTransformLinkMatrix(oBindMatrix);
+				aPosedBoneList.append(pBone);
+			}
+			else
+			{
+				//dzApp->log("DzR2xAction: pCluster not found, modifying bone directly for: " + sBoneName + QString(", DEBUG: oDelta: [%1, %2, %3]").arg(oDeltaPosition[0]).arg(oDeltaPosition[1]).arg(oDeltaPosition[2]) );
+				oBindMatrix = FbxTools::GetAffineMatrix(nullptr, pBone);
+				oBindMatrix.SetT(oNewBonePosition);
+			}
+
+			pNewBindPose->Add(pBone, oBindMatrix, false);
+		}
+		// add children to aBoneList
+		for (int nChildIndex = 0; nChildIndex < pBone->GetChildCount(); ++nChildIndex)
+		{
+			FbxNode* pChildNode = pBone->GetChild(nChildIndex);
+			FbxNodeAttribute* pAttr = pChildNode->GetNodeAttribute();
+			if (pAttr && pAttr->GetAttributeType() == FbxNodeAttribute::eSkeleton)
+			{
+				aBoneList.append(pChildNode);
+			}
+		}
+	}
+	pScene->AddPose(pNewBindPose);
+
+	QList<FbxNode*> aMeshNodeList;
+	FbxTools::GetAllMeshes(pScene->GetRootNode(), aMeshNodeList);
+	foreach(FbxNode* pNode, aMeshNodeList) {
+		FbxTools::BakePoseToBindMatrix(pNode->GetMesh(), pNewBindPose);
+	}
+	FbxTools::ApplyBindPose(pScene, pNewBindPose);
+
+	return true;
+}
+
+bool DzBridgeAction::prepareMvcBoneRetargeter(QString sMvcTemplateFilename, MvcFbxBoneRetargeter* pMvcBoneRetargeter)
+{
+	if (pMvcBoneRetargeter == nullptr) return false;
+
+	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
+	
+	FbxScene* pMvcTemplateScene = openFBX->CreateScene("Rig Template Scene");
+	if (exLoadFbxScene(pMvcTemplateScene, sMvcTemplateFilename) == false) {
+		return false;
+	}
+	FbxNode* pMvcTemplateFigureNode = pMvcTemplateScene->FindNodeByName("Genesis9.Shape");
+	if (pMvcTemplateFigureNode == nullptr) {
+		dzApp->log("ERROR: DzR2xAction: Unable to find Genesis9 node in rig template scene.");
+		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, tr("Error"),
+			tr("Unable to find Genesis9 node in rig template scene."), QMessageBox::Ok);
+		return false;
+	}
+	FbxNode* pMvcTemplateRootBone = FbxTools::GetRootBone(pMvcTemplateScene);
+
+	dzApp->log("DEBUG: DzR2xAction: calculating MvcWeights for rootbone = " + QString(pMvcTemplateRootBone->GetName()) );
+	bool bMvcResult = pMvcBoneRetargeter->createMvcWeightsTable(pMvcTemplateFigureNode->GetMesh(), pMvcTemplateRootBone, nullptr);
+	if (bMvcResult == false) {
+		dzApp->log("ERROR: DzR2xAction: Error while calculating Mvc Weights Table, aborting.");
+		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, tr("Error"),
+			tr("Error while calculating Mvc Weights Table, aborting."), QMessageBox::Ok);
+		return false;
+	}
+
+	bMvcResult = pMvcBoneRetargeter->validateMvcWeights(pMvcTemplateFigureNode->GetMesh(), pMvcTemplateRootBone);
+	if (bMvcResult == false) {
+		dzApp->log("ERROR: DzR2xAction: Error while validating Mvc Weights Table, aborting.");
+		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, tr("Error"),
+			tr("Error while validating Mvc Weights Table, aborting."), QMessageBox::Ok);
+		return false;
+	}
+	pMvcTemplateScene->Destroy();
+#if 0
+	QString sMvcWeightsCacheFilename = QString(fbxFilePath).replace(".fbx", "mvc_template.cache");
+	dzApp->log("DzR2xAction: SAVING MVC WEIGHTS: " + sMvcWeightsCacheFilename);
+	DzProgress::setCurrentInfo("DzR2xAction: SAVING MVC WEIGHTS: " + sMvcWeightsCacheFilename);
+	pMvcBoneRetargeter->saveMvcWeightsCache(sMvcWeightsCacheFilename);
+#endif
+
 	return true;
 }
 
