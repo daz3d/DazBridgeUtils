@@ -3951,7 +3951,10 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 		m_bEnableAutoJcm = BridgeDialog->getAutoJCM();
 		m_bEnableFakeDualQuat = BridgeDialog->getFakeDualQuat();
 		m_bAllowMorphDoubleDipping = BridgeDialog->getAllowMorphDoubleDipping();
-	}
+		
+		m_bCombineStrandHairParts = BridgeDialog->getCombineStrandHairPartsEnabled();
+		
+	} // if (isInteractiveMode() )
 
 	/////////////////////////////////////////////
 	//// POPULATE m_MorphNamesToExport ////

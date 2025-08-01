@@ -122,6 +122,8 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE bool getFakeDualQuat() { return m_wFakeDualQuatCheckBox->isChecked(); }
 		Q_INVOKABLE bool getMorphsEnabled() { return morphsEnabledCheckBox->isChecked(); }
 
+		Q_INVOKABLE bool getCombineStrandHairPartsEnabled() { return m_wCombineStrandHairPartsCheckBox->isChecked(); }
+		
 		/** Constructor **/
 		DzBridgeDialog(QWidget* parent = nullptr, const QString& windowTitle = "");
 
@@ -286,6 +288,10 @@ namespace DzBridgeNameSpace
 
 		int m_eAssetType; // enum EAssetType
 
+		// Strand Based Hair Options
+		QCheckBox* m_wCombineStrandHairPartsCheckBox = nullptr;
+		QLabel* m_wCombineStrandHairPartsRowLabel = nullptr;
+		
 #ifdef UNITTEST_DZBRIDGE
 		friend class ::UnitTest_DzBridgeDialog;
 #endif

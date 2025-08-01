@@ -297,6 +297,9 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool getDetachGeometryEnabled() { return m_bDetachGeometry; };
 		Q_INVOKABLE virtual void setDetachGeometryEnabled(bool arg) { m_bDetachGeometry = arg; };
 
+		Q_INVOKABLE virtual bool getCombineStrandHairPartsEnabled() { return m_bCombineStrandHairParts; };
+		Q_INVOKABLE virtual void setCombineStrandHairPartsEnabled(bool arg) { m_bCombineStrandHairParts = arg; };
+
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo
@@ -425,6 +428,7 @@ namespace DzBridgeNameSpace
 		QString m_sExportRigMode = "";
 
 		bool m_bDetachGeometry = false;
+		bool m_bCombineStrandHairParts = false;
 		
 		////////////////////////////////////
 		

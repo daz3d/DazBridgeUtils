@@ -579,6 +579,16 @@ functionality for some Morph and JCM products.\
 	objectBakingOptionsLayout->addRow(m_wBakeRigidFollowNodesRowLabel, m_wBakeRigidFollowNodesComboBox);
 	m_wBakeRigidFollowNodesComboBox->setCurrentIndex(m_wBakeRigidFollowNodesComboBox->findData("ask"));
 
+	// Strand-Based Hair Options
+	QString sStrandHairRowLabel = tr("Strand Hair");
+	QString sCombineHairParts = tr("Combine separate hair parts into one file");
+	m_wCombineStrandHairPartsRowLabel = new QLabel(sStrandHairRowLabel);
+	m_wCombineStrandHairPartsCheckBox = new QCheckBox(sCombineHairParts);
+	m_wCombineStrandHairPartsCheckBox->setChecked(false);
+	m_wCombineStrandHairPartsCheckBox->setVisible(true);
+	mainLayout->addRow(m_wCombineStrandHairPartsRowLabel, m_wCombineStrandHairPartsCheckBox);
+	m_aRowLabels.append(m_wCombineStrandHairPartsRowLabel);
+
 	///////////////////////////////////////
 	// Add Widgets to Advanced Layout
 	///////////////////////////////////////
