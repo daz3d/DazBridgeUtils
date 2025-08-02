@@ -300,6 +300,128 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool getCombineStrandHairPartsEnabled() { return m_bCombineStrandHairParts; };
 		Q_INVOKABLE virtual void setCombineStrandHairPartsEnabled(bool arg) { m_bCombineStrandHairParts = arg; };
 
+		Q_INVOKABLE virtual int getELodMethodMin() { return 0; }
+		Q_INVOKABLE virtual int getELodMethodMax() { return 1; }
+
+		Q_INVOKABLE virtual void writeDTUHeader(DzJsonWriter& writer);
+
+		Q_INVOKABLE virtual void writeAllMaterials(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCSVstream = nullptr, bool bRecursive = false);
+		Q_INVOKABLE virtual void startMaterialBlock(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCSVstream, DzMaterial* Material);
+		Q_INVOKABLE virtual void finishMaterialBlock(DzJsonWriter& Writer);
+		Q_INVOKABLE virtual void writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCSVstream, DzMaterial* Material, DzProperty* Property);
+		Q_INVOKABLE virtual QString scaleAndReEncodeMaterialProperties(DzNode* Node, DzMaterial* Material, DzProperty* Property);
+
+		Q_INVOKABLE virtual void writeAllMorphs(DzJsonWriter& Writer);
+		Q_INVOKABLE virtual void writeMorphProperties(DzJsonWriter& writer, const QString& key, const QString& value);
+		Q_INVOKABLE virtual void writeMorphJointLinkInfo(DzJsonWriter& writer, const JointLinkInfo& linkInfo);
+
+		Q_INVOKABLE virtual void writeAllSubdivisions(DzJsonWriter& Writer);
+		Q_INVOKABLE virtual void writeSubdivisionProperties(DzJsonWriter& writer, const QString& Name, int targetValue);
+
+		Q_INVOKABLE virtual void writeAllDforceInfo(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCSVstream = nullptr, bool bRecursive = false);
+		Q_INVOKABLE virtual void writeDforceMaterialProperties(DzJsonWriter& Writer, DzMaterial* Material, DzShape* Shape);
+		Q_INVOKABLE virtual void writeDforceModifiers(const QList<DzModifier*>& dforceModifierList, DzJsonWriter& Writer, DzShape* Shape);
+
+		Q_INVOKABLE virtual void writeEnvironment(DzJsonWriter& writer);
+		Q_INVOKABLE virtual void writeInstances(DzNode* Node, DzJsonWriter& Writer, QMap<QString, DzMatrix3>& WritenInstances, QList<DzGeometry*>& ExportedGeometry, QUuid ParentID = QUuid());
+		Q_INVOKABLE virtual QUuid writeInstance(DzNode* Node, DzJsonWriter& Writer, QUuid ParentID);
+		Q_INVOKABLE virtual bool writeSceneDefinition(DzJsonWriter& Writer, DzNode* RootNode = NULL);
+		Q_INVOKABLE virtual bool writeSceneDefinitionNode(DzNode* Node, DzJsonWriter& Writer);
+
+		Q_INVOKABLE virtual void writeAllPoses(DzJsonWriter& writer);
+
+		// Getter/Setter methods
+		Q_INVOKABLE virtual bool setBridgeDialog(DzBasicDialog* arg_dlg);
+		Q_INVOKABLE virtual bool setSubdivisionDialog(DzBasicDialog* arg_dlg);
+		Q_INVOKABLE virtual bool setMorphSelectionDialog(DzBasicDialog* arg_dlg);
+
+		Q_INVOKABLE QString getAssetType() { return this->m_sAssetType; };
+		Q_INVOKABLE void setAssetType(QString arg_AssetType) { this->m_sAssetType = arg_AssetType; };
+		Q_INVOKABLE void setAssetType(EAssetType arg_eAssetType);
+		Q_INVOKABLE QString getExportFilename() { return this->m_sExportFilename; };
+		Q_INVOKABLE void setExportFilename(QString arg_Filename) { this->m_sExportFilename = arg_Filename; };
+
+		Q_INVOKABLE QString getExportFolder() { return this->m_sExportSubfolder; };
+		Q_INVOKABLE void setExportFolder(QString arg_Folder) { this->m_sExportSubfolder = arg_Folder; };
+		Q_INVOKABLE QString getRootFolder() { return this->m_sRootFolder; };
+		Q_INVOKABLE void setRootFolder(QString arg_Root) { this->m_sRootFolder = arg_Root; };
+
+		Q_INVOKABLE QString getProductName() { return this->m_sProductName; };
+		Q_INVOKABLE void setProductName(QString arg_ProductName) { this->m_sProductName = arg_ProductName; };
+		Q_INVOKABLE QString getProductComponentName() { return this->m_sProductComponentName; };
+		Q_INVOKABLE void setProductComponentName(QString arg_ProductComponentName) { this->m_sProductComponentName = arg_ProductComponentName; };
+
+		Q_INVOKABLE QStringList getMorphList() { return m_aMorphListOverride; };
+		Q_INVOKABLE void setMorphList(QStringList arg_MorphList) { this->m_aMorphListOverride = arg_MorphList; };
+
+		Q_INVOKABLE bool getUseRelativePaths() { return this->m_bUseRelativePaths; };
+		Q_INVOKABLE void setUseRelativePaths(bool arg_UseRelativePaths) { this->m_bUseRelativePaths = arg_UseRelativePaths; };
+
+		Q_INVOKABLE bool getGenerateNormalMaps() { return this->m_bGenerateNormalMaps; };
+		Q_INVOKABLE void setGenerateNormalMaps(bool arg_GenerateNormalMaps) { this->m_bGenerateNormalMaps = arg_GenerateNormalMaps; };
+
+		Q_INVOKABLE bool getUndoNormalMaps() { return this->m_bUndoNormalMaps; };
+		Q_INVOKABLE void setUndoNormalMaps(bool arg_UndoNormalMaps) { this->m_bUndoNormalMaps = arg_UndoNormalMaps; };
+
+		Q_INVOKABLE int getNonInteractiveMode() { return this->m_nNonInteractiveMode; };
+		Q_INVOKABLE void setNonInteractiveMode(int arg_Mode) { this->m_nNonInteractiveMode = arg_Mode; };
+
+		Q_INVOKABLE QString getExportFbx() { return this->m_sExportFbx; };
+		Q_INVOKABLE void setExportFbx(QString arg_FbxName) { this->m_sExportFbx = arg_FbxName; };
+
+		Q_INVOKABLE QString getDestinationPath() { return this->m_sDestinationPath; };
+
+		Q_INVOKABLE virtual bool readGui(DzBridgeDialog*);
+		Q_INVOKABLE virtual bool exportHD(DzProgress* exportProgress = nullptr);
+		Q_INVOKABLE virtual bool upgradeToHD(QString baseFilePath, QString hdFilePath, QString outFilePath, std::map<std::string, int>* pLookupTable);
+		Q_INVOKABLE virtual void writeWeightMaps(DzNode* Node, DzJsonWriter& Stream);
+
+		Q_INVOKABLE virtual bool metaInvokeMethod(QObject* object, const char* methodSig, void* returnPtr, QGenericArgument oArg0 = QGenericArgument(0));
+		Q_INVOKABLE virtual void writeSkeletonData(DzNode* Node, DzJsonWriter& writer);
+		Q_INVOKABLE virtual void writeHeadTailData(DzNode* Node, DzJsonWriter& writer);
+		Q_INVOKABLE virtual DzBoneList getAllBones(DzNode* Node);
+		Q_INVOKABLE virtual void writeJointOrientation(DzBoneList& aBoneList, DzJsonWriter& writer);
+		Q_INVOKABLE virtual void writeLimitData(DzBoneList& aBoneList, DzJsonWriter& writer);
+		Q_INVOKABLE virtual void writePoseData(DzNode* Node, DzJsonWriter& writer, bool bIsFigure);
+
+		Q_INVOKABLE virtual void writeMorphLinks(DzJsonWriter& writer);
+		Q_INVOKABLE virtual void writeMorphNames(DzJsonWriter& writer);
+		Q_INVOKABLE virtual QStringList checkMorphControlsChildren(DzNode* pNode, DzProperty* pProperty);
+		Q_INVOKABLE virtual QStringList checkForBoneInChild(DzNode* pNode, QString sBoneName, QStringList& controlledMeshList);
+		Q_INVOKABLE virtual QStringList checkForBoneInAlias(DzNode* pNode, DzProperty* pMorphProperty, QStringList& controlledMeshList);
+		Q_INVOKABLE virtual QStringList checkForMorphOnChild(DzNode* pNode, QString sBoneName, QStringList& controlledMeshList);
+
+		Q_INVOKABLE virtual bool exportObj(QString filepath);
+		Q_INVOKABLE virtual bool exportGeograftMorphs(DzNode* Node, QString destinationFolder);
+		Q_INVOKABLE virtual bool prepareGeograftMorphsToExport(DzNode* Node, bool bZeroMorphForExport = false);
+
+		Q_INVOKABLE virtual void writeAllLodSettings(DzJsonWriter& Writer);
+
+		Q_INVOKABLE virtual bool combineDiffuseAndAlphaMaps(DzMaterial* Material);
+		Q_INVOKABLE virtual bool undoCombineDiffuseAndAlphaMaps();
+
+		Q_INVOKABLE virtual bool multiplyTextureValues(DzMaterial* Material);
+		Q_INVOKABLE virtual bool undoMultiplyTextureValues();
+
+		// DB 2023-11-15: Custom Asset Type Support, override these methods to support custom asset types
+		Q_INVOKABLE virtual bool isAssetMorphCompatible(QString sAssetType);
+		Q_INVOKABLE virtual bool isAssetMeshCompatible(QString sAsseType);
+		Q_INVOKABLE virtual bool isAssetAnimationCompatible(QString sAssetType);
+		Q_INVOKABLE virtual bool isAssetEnvironmentCompatible(QString sAssetType);
+		Q_INVOKABLE virtual bool isAssetPoseCompatible(QString sAssetType);
+
+		Q_INVOKABLE virtual void writeSceneMaterials(DzJsonWriter& Writer, QTextStream* pCSVstream);
+
+		Q_INVOKABLE virtual bool bakeOverlayProperty(DzMaterial* pMaterial, QString sColorPropertyA, QString sColorPropertyB, QString sNumericPropertyAlphaMask);
+		Q_INVOKABLE virtual bool bakeMakeup(DzMaterial* pMaterial);
+		Q_INVOKABLE virtual bool bakeTranslucency(DzMaterial* pMaterial);
+
+		Q_INVOKABLE virtual bool forceLieUpdate(DzMaterial* pMaterial);
+
+		Q_INVOKABLE virtual DzError doPromptableObjectBaking();
+
+		Q_INVOKABLE virtual bool cleanIntermediateSubFolder(QString sSubFolder);
+
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo
@@ -379,8 +501,6 @@ namespace DzBridgeNameSpace
 			PreGenerated = 0,
 			Decimator = 1,
 		};
-		Q_INVOKABLE virtual int getELodMethodMin() { return 0; }
-		Q_INVOKABLE virtual int getELodMethodMax() { return 1; }
 		ELodMethod m_eLodMethod = ELodMethod::Undefined; // WARNING: May need to change this to type int to support additional values in subclasses, depending on compiler handling of enum
 		virtual ELodMethod getLodMethod() const { return m_eLodMethod; }
 		int m_nNumberOfLods = 3; // total number of LOD levels (including Base LOD)
@@ -458,33 +578,6 @@ namespace DzBridgeNameSpace
 		virtual void setExportOptions(DzFileIOSettings& ExportOptions) = 0;
 		virtual QString readGuiRootFolder() = 0;
 
-		Q_INVOKABLE virtual void writeDTUHeader(DzJsonWriter& writer);
-
-		Q_INVOKABLE virtual void writeAllMaterials(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCSVstream = nullptr, bool bRecursive = false);
-		Q_INVOKABLE virtual void startMaterialBlock(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCSVstream, DzMaterial* Material);
-		Q_INVOKABLE virtual void finishMaterialBlock(DzJsonWriter& Writer);
-		Q_INVOKABLE virtual void writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCSVstream, DzMaterial* Material, DzProperty* Property);
-		Q_INVOKABLE virtual QString scaleAndReEncodeMaterialProperties(DzNode* Node, DzMaterial* Material, DzProperty* Property);
-
-		Q_INVOKABLE virtual void writeAllMorphs(DzJsonWriter& Writer);
-		Q_INVOKABLE virtual void writeMorphProperties(DzJsonWriter& writer, const QString& key, const QString& value);
-		Q_INVOKABLE virtual void writeMorphJointLinkInfo(DzJsonWriter& writer, const JointLinkInfo& linkInfo);
-
-		Q_INVOKABLE virtual void writeAllSubdivisions(DzJsonWriter& Writer);
-		Q_INVOKABLE virtual void writeSubdivisionProperties(DzJsonWriter& writer, const QString& Name, int targetValue);
-
-		Q_INVOKABLE virtual void writeAllDforceInfo(DzNode* Node, DzJsonWriter& Writer, QTextStream* pCSVstream = nullptr, bool bRecursive = false);
-		Q_INVOKABLE virtual void writeDforceMaterialProperties(DzJsonWriter& Writer, DzMaterial* Material, DzShape* Shape);
-		Q_INVOKABLE virtual void writeDforceModifiers(const QList<DzModifier*>& dforceModifierList, DzJsonWriter& Writer, DzShape* Shape);
-
-		Q_INVOKABLE virtual void writeEnvironment(DzJsonWriter& writer);
-		Q_INVOKABLE virtual void writeInstances(DzNode* Node, DzJsonWriter& Writer, QMap<QString, DzMatrix3>& WritenInstances, QList<DzGeometry*>& ExportedGeometry, QUuid ParentID = QUuid());
-		Q_INVOKABLE virtual QUuid writeInstance(DzNode* Node, DzJsonWriter& Writer, QUuid ParentID);
-		Q_INVOKABLE virtual bool writeSceneDefinition(DzJsonWriter& Writer, DzNode* RootNode=NULL);
-		Q_INVOKABLE virtual bool writeSceneDefinitionNode(DzNode* Node, DzJsonWriter& Writer);
-
-		Q_INVOKABLE virtual void writeAllPoses(DzJsonWriter& writer);
-
 		// Should be moved from the common library to specific plugin projects that use it (ex: DazToUnreal)
 //		Q_INVOKABLE virtual void writeMLDeformerData(DzJsonWriter& writer);
 
@@ -507,33 +600,6 @@ namespace DzBridgeNameSpace
 		// Need to be able to move asset instances to origin during environment export
 		void unlockTranform(DzNode* NodeToUnlock);
 
-		// Getter/Setter methods
-		Q_INVOKABLE virtual bool setBridgeDialog(DzBasicDialog* arg_dlg);
-		Q_INVOKABLE virtual bool setSubdivisionDialog(DzBasicDialog* arg_dlg);
-		Q_INVOKABLE virtual bool setMorphSelectionDialog(DzBasicDialog* arg_dlg);
-
-		Q_INVOKABLE QString getAssetType() { return this->m_sAssetType; };
-		Q_INVOKABLE void setAssetType(QString arg_AssetType) { this->m_sAssetType = arg_AssetType; };
-		Q_INVOKABLE void setAssetType(EAssetType arg_eAssetType);
-		Q_INVOKABLE QString getExportFilename() { return this->m_sExportFilename; };
-		Q_INVOKABLE void setExportFilename(QString arg_Filename) { this->m_sExportFilename = arg_Filename; };
-
-		Q_INVOKABLE QString getExportFolder() { return this->m_sExportSubfolder; };
-		Q_INVOKABLE void setExportFolder(QString arg_Folder) { this->m_sExportSubfolder = arg_Folder; };
-		Q_INVOKABLE QString getRootFolder() { return this->m_sRootFolder; };
-		Q_INVOKABLE void setRootFolder(QString arg_Root) { this->m_sRootFolder = arg_Root; };
-
-		Q_INVOKABLE QString getProductName() { return this->m_sProductName; };
-		Q_INVOKABLE void setProductName(QString arg_ProductName) { this->m_sProductName = arg_ProductName; };
-		Q_INVOKABLE QString getProductComponentName() { return this->m_sProductComponentName; };
-		Q_INVOKABLE void setProductComponentName(QString arg_ProductComponentName) { this->m_sProductComponentName = arg_ProductComponentName; };
-
-		Q_INVOKABLE QStringList getMorphList() { return m_aMorphListOverride; };
-		Q_INVOKABLE void setMorphList(QStringList arg_MorphList) { this->m_aMorphListOverride = arg_MorphList; };
-
-		Q_INVOKABLE bool getUseRelativePaths() { return this->m_bUseRelativePaths; };
-		Q_INVOKABLE void setUseRelativePaths(bool arg_UseRelativePaths) { this->m_bUseRelativePaths = arg_UseRelativePaths; };
-
 		virtual bool isTemporaryFile(QString sFilename);
 		virtual QString exportAssetWithDtu(QString sFilename, QString sAssetMaterialName = "");
 		virtual void writePropertyTexture(DzJsonWriter& Writer, QString sName, QString sLabel, QString sValue, QString sType, QString sTexture);
@@ -541,69 +607,7 @@ namespace DzBridgeNameSpace
 		virtual QString makeUniqueFilename(QString sTargetFilename, QString sOriginalFilename="");
 		virtual QString generateExportAssetFilename(QString sFilename, QString sAssetMaterialName);
 
-		Q_INVOKABLE bool getGenerateNormalMaps() { return this->m_bGenerateNormalMaps; };
-		Q_INVOKABLE void setGenerateNormalMaps(bool arg_GenerateNormalMaps) { this->m_bGenerateNormalMaps = arg_GenerateNormalMaps; };
-
-		Q_INVOKABLE bool getUndoNormalMaps() { return this->m_bUndoNormalMaps; };
-		Q_INVOKABLE void setUndoNormalMaps(bool arg_UndoNormalMaps) { this->m_bUndoNormalMaps = arg_UndoNormalMaps; };
-
-		Q_INVOKABLE int getNonInteractiveMode() { return this->m_nNonInteractiveMode; };
-		Q_INVOKABLE void setNonInteractiveMode(int arg_Mode) { this->m_nNonInteractiveMode = arg_Mode; };
-
-		Q_INVOKABLE QString getExportFbx() { return this->m_sExportFbx; };
-		Q_INVOKABLE void setExportFbx(QString arg_FbxName) { this->m_sExportFbx = arg_FbxName; };
-
-		Q_INVOKABLE virtual bool readGui(DzBridgeDialog*);
-		Q_INVOKABLE virtual bool exportHD(DzProgress* exportProgress = nullptr);
-		Q_INVOKABLE virtual bool upgradeToHD(QString baseFilePath, QString hdFilePath, QString outFilePath, std::map<std::string, int>* pLookupTable);
-		Q_INVOKABLE virtual void writeWeightMaps(DzNode* Node, DzJsonWriter& Stream);
-
-		Q_INVOKABLE virtual bool metaInvokeMethod(QObject* object, const char* methodSig, void* returnPtr, QGenericArgument oArg0=QGenericArgument(0));
-		Q_INVOKABLE virtual void writeSkeletonData(DzNode* Node, DzJsonWriter& writer);
-		Q_INVOKABLE virtual void writeHeadTailData(DzNode* Node, DzJsonWriter& writer);
-		Q_INVOKABLE virtual DzBoneList getAllBones(DzNode* Node);
-		Q_INVOKABLE virtual void writeJointOrientation(DzBoneList& aBoneList, DzJsonWriter& writer);
-		Q_INVOKABLE virtual void writeLimitData(DzBoneList& aBoneList, DzJsonWriter& writer);
-		Q_INVOKABLE virtual void writePoseData(DzNode* Node, DzJsonWriter& writer, bool bIsFigure);
-
-		Q_INVOKABLE virtual void writeMorphLinks(DzJsonWriter& writer);
-		Q_INVOKABLE virtual void writeMorphNames(DzJsonWriter& writer);
-		Q_INVOKABLE virtual QStringList checkMorphControlsChildren(DzNode* pNode, DzProperty* pProperty);
-		Q_INVOKABLE virtual QStringList checkForBoneInChild(DzNode* pNode, QString sBoneName, QStringList& controlledMeshList);
-		Q_INVOKABLE virtual QStringList checkForBoneInAlias(DzNode* pNode, DzProperty* pMorphProperty, QStringList& controlledMeshList);
-		Q_INVOKABLE virtual QStringList checkForMorphOnChild(DzNode* pNode, QString sBoneName, QStringList& controlledMeshList);
-
 		virtual void resetArray_ControllersToDisconnect();
-		Q_INVOKABLE virtual bool exportObj(QString filepath);
-		Q_INVOKABLE virtual bool exportGeograftMorphs(DzNode *Node, QString destinationFolder);
-		Q_INVOKABLE virtual bool prepareGeograftMorphsToExport(DzNode* Node, bool bZeroMorphForExport=false);
-
-		Q_INVOKABLE virtual void writeAllLodSettings(DzJsonWriter& Writer);
-
-		Q_INVOKABLE virtual bool combineDiffuseAndAlphaMaps(DzMaterial* Material);
-		Q_INVOKABLE virtual bool undoCombineDiffuseAndAlphaMaps();
-
-		Q_INVOKABLE virtual bool multiplyTextureValues(DzMaterial* Material);
-		Q_INVOKABLE virtual bool undoMultiplyTextureValues();
-
-		// DB 2023-11-15: Custom Asset Type Support, override these methods to support custom asset types
-		Q_INVOKABLE virtual bool isAssetMorphCompatible(QString sAssetType);
-		Q_INVOKABLE virtual bool isAssetMeshCompatible(QString sAsseType);
-		Q_INVOKABLE virtual bool isAssetAnimationCompatible(QString sAssetType);
-		Q_INVOKABLE virtual bool isAssetEnvironmentCompatible(QString sAssetType);
-		Q_INVOKABLE virtual bool isAssetPoseCompatible(QString sAssetType);
-
-		Q_INVOKABLE virtual void writeSceneMaterials(DzJsonWriter& Writer, QTextStream* pCSVstream);
-
-		Q_INVOKABLE virtual bool bakeOverlayProperty(DzMaterial* pMaterial, QString sColorPropertyA, QString sColorPropertyB, QString sNumericPropertyAlphaMask);
-		Q_INVOKABLE virtual bool bakeMakeup(DzMaterial* pMaterial);
-		Q_INVOKABLE virtual bool bakeTranslucency(DzMaterial* pMaterial);
-
-		Q_INVOKABLE virtual bool forceLieUpdate(DzMaterial* pMaterial);
-
-		Q_INVOKABLE virtual DzError doPromptableObjectBaking();
-
-		Q_INVOKABLE virtual bool cleanIntermediateSubFolder(QString sSubFolder);
 
 		QStringList m_aKnownIntermediateFileExtensionsList;
 
