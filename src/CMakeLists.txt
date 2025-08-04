@@ -56,6 +56,8 @@ target_include_directories(dzbridge-static
 	PUBLIC
 	${FBX_SDK_INCLUDE}
 	${OPENSUBDIV_INCLUDE}
+	${ALEMBIC_INCLUDE}
+	${IMATH_INCLUDE}
 )
 
 target_link_libraries(dzbridge-static
@@ -89,6 +91,8 @@ target_include_directories(dzbridge-shared
 	PUBLIC
 	${FBX_SDK_INCLUDE}
 	${OPENSUBDIV_INCLUDE}
+	${ALEMBIC_INCLUDE}
+	${IMATH_INCLUDE}
 )
 
 target_link_libraries(dzbridge-shared
@@ -100,6 +104,8 @@ target_link_libraries(dzbridge-shared
 	${DZSDK_QT_NETWORK_TARGET}
 	${FBX_IMPORT_LIBS}
 	${OPENSUBDIV_LIB}
+	${ALEMBIC_LIB}
+	${IMATH_LIB}
 )
 
 set_target_properties (dzbridge-shared

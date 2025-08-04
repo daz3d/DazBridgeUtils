@@ -12,6 +12,8 @@
 #include "QtCore/qfile.h"
 #include "QtCore/qtextstream.h"
 
+#include <Alembic/Abc/All.h>
+
 #include "DzBridgeMorphSelectionDialog.h"
 
 #include <fbxsdk.h>
@@ -293,6 +295,10 @@ namespace DzBridgeNameSpace
 		bool retargetFigureToNewRig(DzNode* pDazFigureNode, FbxScene* pScene, FbxNode* RootBone, QString sMvcTemplateFilename, QString sMvcProxyMeshFilePath, QString sOverrideRigFilename);
 		bool retargetRigWithMvc(FbxScene* pScene, FbxMesh* pTargetMesh, FbxVector4* pTempBuffer, FbxNode* RootBone, MvcFbxBoneRetargeter* pMvcBoneRetargeter);
 		bool prepareMvcBoneRetargeter(QString sMvcTemplateFilename, MvcFbxBoneRetargeter* pMvcBoneRetargeter);
+
+		bool writeHair(QString sFilePath, QList<DzNode*> aHairNodesList);
+		bool writeAbcMesh(DzNode* pNode, Alembic::Abc::OArchive& AbcArchive, Alembic::Abc::TimeSamplingPtr& TimeSampling);
+		bool writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArchive& AbcArchive, Alembic::Abc::TimeSamplingPtr& TimeSampling, int *pGroupId);
 
 		Q_INVOKABLE virtual bool getDetachGeometryEnabled() { return m_bDetachGeometry; };
 		Q_INVOKABLE virtual void setDetachGeometryEnabled(bool arg) { m_bDetachGeometry = arg; };

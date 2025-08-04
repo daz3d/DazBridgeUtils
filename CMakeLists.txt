@@ -43,6 +43,8 @@ endif(APPLE)
 project("DzBridgeProject")
 set(FBX_SDK_DIR "" CACHE PATH "Path to FBX SDK" )
 set(OPENSUBDIV_DIR "" CACHE PATH "Path to Opensubdiv folder" )
+set(ALEMBIC_DIR "" CACHE PATH "Path to Alembic folder" )
+set(IMATH_DIR "" CACHE PATH "Path to Imath folder" )
 set(DAZ_STUDIO_EXE_DIR "" CACHE PATH "Path to DAZ Studio, needs to be installed to a writeable location" )
 
 set_property(GLOBAL PROPERTY USE_FOLDERS ON)
@@ -262,6 +264,44 @@ if(INSTALL_SCRIPTABLE_PLUGIN)
 		set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${DAZ_STUDIO_EXE_DIR}/plugins)
 		set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${DAZ_STUDIO_EXE_DIR}/plugins)
 	endif()
+endif()
+
+############################
+# Alembic SETTINGS
+############################
+#set(ALEMBIC_DIR "" CACHE PATH "Path to Alembic folder" )
+if(NOT ALEMBIC_DIR)
+	message(FATAL_ERROR "Missing path to Alembic folder")
+	return()
+endif()
+if (EXISTS "${ALEMBIC_DIR}/include/Alembic/Abc/All.h")
+	set(ALEMBIC_INCLUDE "${ALEMBIC_DIR}/include" CACHE PATH "Path to Alembic include folder" )
+elseif (EXISTS "${ALEMBIC_DIR}/lib/Alembic/Abc/All.h")
+	set(ALEMBIC_INCLUDE "${ALEMBIC_DIR}/lib" CACHE PATH "Path to Alembic include folder" )
+endif()
+if(WIN32)
+	set(ALEMBIC_LIB "${ALEMBIC_DIR}/lib/Alembic.lib" CACHE FILEPATH "Path to Alembic CPU static library (Alembic.lib)" )
+elseif(APPLE)
+	set(ALEMBIC_LIB "${ALEMBIC_DIR}/lib/Alembic/libAlembic.a" CACHE FILEPATH "Path to Alembic CPU static library (Alembic.a)" )
+endif()
+
+############################
+# Imath SETTINGS
+############################
+set(IMATH_DIR "" CACHE PATH "Path to Imath folder" )
+if(NOT IMATH_DIR)
+	message(FATAL_ERROR "Missing path to Imath folder")
+	return()
+endif()
+if (EXISTS "${IMATH_DIR}/include/Imath/half.h")
+	set(IMATH_INCLUDE "${IMATH_DIR}/include/Imath" CACHE PATH "Path to Imath include folder" )
+elseif (EXISTS "${IMATH_DIR}/src/Imath/half.h")
+	set(IMATH_INCLUDE "${IMATH_DIR}/src/Imath" CACHE PATH "Path to Imath include folder" )
+endif()
+if(WIN32)
+	set(IMATH_LIB "${IMATH_DIR}/lib/Imath-3_1.lib" CACHE FILEPATH "Path to Imath CPU static library (Imath-3_1.lib)" )
+elseif(APPLE)
+	set(IMATH_LIB "${IMATH_DIR}/src/Imath/libImath-3_2.a" CACHE FILEPATH "Path to Imath CPU static library (Imath-3_1.a)" )
 endif()
 
 endif(NOT USE_DZBRIDGE_SUBMODULE)
