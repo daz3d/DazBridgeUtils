@@ -4987,7 +4987,7 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 		FbxTools::BakeMeshesToSingleBindPose(pScene);
 	}
 
-	// set m_bConvertFbxJointsEnabled to false in derived classes to override these operations
+	// set m_bConvertFbxJointsEnabled to false in derived classes prior to calling base class method in order to override these operations
 	if (m_bConvertFbxJointsEnabled) 
 	{
 		if (pFbxRootBone && (m_sExportRigMode == "unreal" || m_sExportRigMode == "metahuman"))
