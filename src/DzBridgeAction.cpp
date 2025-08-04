@@ -9041,6 +9041,71 @@ int GetClosestVertexIndex(DzVec3 oSourcePoint, DzGeometry *pGeometry)
 	return nClosestVertexIndex;
 }
 
+QMap<int, float> GetClosestVertexIndexes(DzVec3 oSourcePoint, DzGeometry *pGeometry, int RESULT_SIZE = 3)
+{
+	struct KVP
+	{
+		int key;
+		float val;
+		KVP() {};
+		KVP(const KVP &arg) : key(arg.key), val(arg.val) {};
+		KVP(int arg1, float arg2) : key(arg1), val(arg2) {};
+		bool operator>(const KVP &b) { return (this->val > b.val); };
+		bool operator<(const KVP &b) { return (this->val < b.val); };
+	};
+	class COrderedList : public QList<KVP>
+	{
+	public:
+		void insertionSort(KVP oKvp)
+		{
+			int i;
+			for (i=count(); i > 0; i--) {
+				KVP oCurrentKvp = this->value(i-1);
+				if ( oKvp > oCurrentKvp ) { 
+					break;
+				}
+			}
+			this->insert(i, oKvp);
+			return;
+		}
+		QList<int> keys() 
+		{
+			QList<int> aReturnList;
+			for (int i=0; i < this->count(); i++) {
+				aReturnList.append(this->at(i).key);
+			}
+			return QList<int>(aReturnList);
+		}
+		QMap<int, float> map()
+		{
+			QMap<int, float> oReturnMap;
+			for (int i=0; i < this->count(); i++) {
+				oReturnMap.insert(this->at(i).key, this->at(i).val);
+			}
+			return QMap<int, float>(oReturnMap);
+		}
+	};
+
+	if (RESULT_SIZE < 1) RESULT_SIZE = 3;
+	
+	// get vertex buffer
+	DzPnt3 *pVertexBuffer = pGeometry->getVerticesPtr();
+
+	COrderedList oClosestIndexes;	
+
+	for (int i = 0; i < pGeometry->getNumVertices(); i++)
+	{
+		DzVec3 oCurrentPoint(pVertexBuffer[i]);
+		float fCurrentDistance = DzVec3(oCurrentPoint - oSourcePoint).lengthSquared();
+		oClosestIndexes.insertionSort(KVP(i, fCurrentDistance));
+		while (oClosestIndexes.count() > RESULT_SIZE) {
+			oClosestIndexes.removeLast();
+		}
+	}
+
+	return oClosestIndexes.map();
+}
+
 bool DzBridgeAction::writeAbcMesh(DzNode* pNode, Alembic::Abc::OArchive &AbcArchive, Alembic::Abc::TimeSamplingPtr &TimeSampling)
 {
 	// mesh pathway
@@ -9246,11 +9311,46 @@ bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArch
 
 				// CALCULATE ROOT UV
 				if (i == 0) {
-					DzGeometry* pGeo = pFigureNode->getObject()->getCurrentShape()->getGeometry();
+					DzGeometry* pFigureMesh = pFigureNode->getObject()->getCurrentShape()->getGeometry();
+					DzMap* pFigureUVmap = pFigureMesh->getUVs();
 					DzVec3 oRootVertex = pFacetMesh->getVertex(nVertexIndex);
-					int nClosestVertexIndex = GetClosestVertexIndex(oRootVertex, pGeo);
-					DzMap* pFigureUVmap = pGeo->getUVs();
-					oFigureUVvalue = pFigureUVmap->getPnt2Vec(nClosestVertexIndex);
+					QMap<int,float> oClosestVertexIndexes = GetClosestVertexIndexes(oRootVertex, pFigureMesh, 3);
+
+					DzVec3 vShortestUv;
+					float shortest_distance = -1;
+					foreach(int nVertexIndex, oClosestVertexIndexes.keys()) {
+						float distance = oClosestVertexIndexes.value(nVertexIndex);
+						DzVec3 UVvalue = pFigureUVmap->getPnt2Vec(nVertexIndex);
+						if ( shortest_distance == -1 || distance < shortest_distance )
+						{
+							shortest_distance = distance;
+							vShortestUv = UVvalue;
+						}
+					}
+//					oFigureUVvalue = vShortestUv;
+
+					DzVec3 vAverageUv(0.0f, 0.0f, 0.0f);
+					// weight is uniform
+					float weight = 1 / oClosestVertexIndexes.count();
+					foreach(int nVertexIndex, oClosestVertexIndexes.keys()) {
+						DzVec3 UVvalue = pFigureUVmap->getPnt2Vec(nVertexIndex);
+						vAverageUv += (UVvalue * weight);
+					}
+//					oFigureUVvalue = vAverageUv;
+
+					DzVec3 vWeightedAverageUv(0.0f, 0.0f, 0.0f);
+					float total_distance = 0.0f;
+					foreach(float distance, oClosestVertexIndexes.values()) {
+						total_distance += distance;
+					}
+					foreach(int nVertexIndex, oClosestVertexIndexes.keys()) {
+						float distance = oClosestVertexIndexes.value(nVertexIndex);
+						// shorter distances have higher normalized
+						float weight = (total_distance - distance) / total_distance;
+						DzVec3 UVvalue = pFigureUVmap->getPnt2Vec(nVertexIndex);
+						vWeightedAverageUv += (UVvalue * weight);
+					}
+					oFigureUVvalue = vWeightedAverageUv;
 				}
 
 				//// UVs
