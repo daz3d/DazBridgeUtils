@@ -33,8 +33,14 @@
 #include "DzBridgeLodSettingsDialog.h"
 #include "common_version.h"
 
-#include "zip.h"
 #include "MorphTools.h"
+
+#ifdef WIN32
+#include <Windows.h>
+#include <shellapi.h>
+#endif
+
+#include "zip.h"
 
 /*****************************
 Local definitions

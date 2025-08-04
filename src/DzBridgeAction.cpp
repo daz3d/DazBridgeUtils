@@ -9041,6 +9041,47 @@ int GetClosestVertexIndex(DzVec3 oSourcePoint, DzGeometry *pGeometry)
 	return nClosestVertexIndex;
 }
 
+QList<float> CalculateBarycentricCoordinates(DzVec3 oSourcePoint, QList<DzVec3> aVertexCorners)
+{
+	DzVec3 vectorAB(aVertexCorners[1] - aVertexCorners[0]);
+	DzVec3 vectorBC(aVertexCorners[2] - aVertexCorners[1]);
+	DzVec3 vectorCA(aVertexCorners[0] - aVertexCorners[2]);
+
+	DzVec3 oNormal = vectorAB.cross(vectorBC);
+	float fArea = oNormal.length();
+	float fPlaneDist = oNormal.dot(oSourcePoint - aVertexCorners[0]);
+
+	if (fabs(fArea) < DZ_FLT_EPSILON) {
+		return QList<float>() << -1.0f << -1.0f << -1.0f;
+	}
+
+	if (fabs(fPlaneDist) > DZ_FLT_EPSILON) {
+		DzVec3 oNormalUnit = oNormal / fArea;
+		DzVec3 oProjectedPoint = oSourcePoint - (oNormalUnit * fPlaneDist);
+		oSourcePoint = oProjectedPoint;
+	}
+
+	DzVec3 crossA = vectorBC.cross(aVertexCorners[0]);
+	DzVec3 crossB = vectorCA.cross(aVertexCorners[1]);
+	DzVec3 crossC = vectorAB.cross(aVertexCorners[2]);
+
+	float dotA = crossA.dot(oSourcePoint);
+	float dotB = crossB.dot(oSourcePoint);
+	float dotC = crossC.dot(oSourcePoint);
+
+	float fTotal = dotA + dotB + dotC;
+	if (fabs(fTotal) < DZ_FLT_EPSILON) {
+		return QList<float>() << -1.0f << -1.0f << -1.0f;
+	}
+
+	float fU = dotA / fTotal;
+	float fV = dotB / fTotal;
+	float fW = dotC / fTotal;
+
+	return QList<float>() << fU << fV << fW;
+
+}
+
 QMap<int, float> GetClosestVertexIndexes(DzVec3 oSourcePoint, DzGeometry *pGeometry, int RESULT_SIZE = 3)
 {
 	struct KVP
@@ -9056,7 +9097,7 @@ QMap<int, float> GetClosestVertexIndexes(DzVec3 oSourcePoint, DzGeometry *pGeome
 	class COrderedList : public QList<KVP>
 	{
 	public:
-		void insertionSort(KVP oKvp)
+		void insertionSort(KVP oKvp, int RESULT_SIZE = 3)
 		{
 			int i;
 			for (i=count(); i > 0; i--) {
@@ -9065,6 +9106,7 @@ QMap<int, float> GetClosestVertexIndexes(DzVec3 oSourcePoint, DzGeometry *pGeome
 					break;
 				}
 			}
+			if (i >= RESULT_SIZE) return;
 			this->insert(i, oKvp);
 			return;
 		}
@@ -9097,7 +9139,7 @@ QMap<int, float> GetClosestVertexIndexes(DzVec3 oSourcePoint, DzGeometry *pGeome
 	{
 		DzVec3 oCurrentPoint(pVertexBuffer[i]);
 		float fCurrentDistance = DzVec3(oCurrentPoint - oSourcePoint).lengthSquared();
-		oClosestIndexes.insertionSort(KVP(i, fCurrentDistance));
+		oClosestIndexes.insertionSort(KVP(i, fCurrentDistance), RESULT_SIZE);
 		while (oClosestIndexes.count() > RESULT_SIZE) {
 			oClosestIndexes.removeLast();
 		}
@@ -9318,37 +9360,47 @@ bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArch
 
 					DzVec3 vShortestUv;
 					float shortest_distance = -1;
-					foreach(int nVertexIndex, oClosestVertexIndexes.keys()) {
-						float distance = oClosestVertexIndexes.value(nVertexIndex);
-						DzVec3 UVvalue = pFigureUVmap->getPnt2Vec(nVertexIndex);
+					foreach(int nFigureVertexIndex, oClosestVertexIndexes.keys()) {
+						float distance = oClosestVertexIndexes.value(nFigureVertexIndex);
+						DzVec3 UVvalue = pFigureUVmap->getPnt2Vec(nFigureVertexIndex);
 						if ( shortest_distance == -1 || distance < shortest_distance )
 						{
 							shortest_distance = distance;
 							vShortestUv = UVvalue;
 						}
 					}
-//					oFigureUVvalue = vShortestUv;
+					//oFigureUVvalue = vShortestUv;
 
-					DzVec3 vAverageUv(0.0f, 0.0f, 0.0f);
-					// weight is uniform
-					float weight = 1 / oClosestVertexIndexes.count();
-					foreach(int nVertexIndex, oClosestVertexIndexes.keys()) {
-						DzVec3 UVvalue = pFigureUVmap->getPnt2Vec(nVertexIndex);
-						vAverageUv += (UVvalue * weight);
-					}
-//					oFigureUVvalue = vAverageUv;
+					//DzVec3 vAverageUv(0.0f, 0.0f, 0.0f);
+					//// weight is uniform
+					//float weight = 1.0f / (float) oClosestVertexIndexes.count();
+					//foreach(int nFigureVertexIndex, oClosestVertexIndexes.keys()) {
+					//	DzVec3 UVvalue = pFigureUVmap->getPnt2Vec(nFigureVertexIndex);
+					//	vAverageUv += (UVvalue * weight);
+					//}
+					//oFigureUVvalue = vAverageUv;
 
 					DzVec3 vWeightedAverageUv(0.0f, 0.0f, 0.0f);
-					float total_distance = 0.0f;
-					foreach(float distance, oClosestVertexIndexes.values()) {
-						total_distance += distance;
+					QList<DzVec3> aClosestVertexes;
+					QMap<int, int> oVertexIndexOrder;
+					DzPnt3* pVertexBuffer = pFigureMesh->getVerticesPtr();
+					int j = 0;
+					foreach(int nFigureVertexIndex, oClosestVertexIndexes.keys()) {
+						DzVec3 oVertexCoordinates( pVertexBuffer[nFigureVertexIndex] );
+						aClosestVertexes.append(oVertexCoordinates);
+						oVertexIndexOrder.insert(j, nFigureVertexIndex);
+						j++;
 					}
-					foreach(int nVertexIndex, oClosestVertexIndexes.keys()) {
-						float distance = oClosestVertexIndexes.value(nVertexIndex);
-						// shorter distances have higher normalized
-						float weight = (total_distance - distance) / total_distance;
-						DzVec3 UVvalue = pFigureUVmap->getPnt2Vec(nVertexIndex);
-						vWeightedAverageUv += (UVvalue * weight);
+					QList<float> aBaryCentricCoordinates = CalculateBarycentricCoordinates(oRootVertex, aClosestVertexes);
+					for (int j=0; j < 3; j++) {
+						float fCurrentWeight = aBaryCentricCoordinates[j];
+						int fCurrentVertexIndex = oVertexIndexOrder[j];
+						DzVec3 oCurrentUVvalue = pFigureUVmap->getPnt2Vec(fCurrentVertexIndex);
+						if ( fabs(fCurrentWeight+1.0f) <= DZ_FLT_EPSILON) {
+							vWeightedAverageUv = vShortestUv;
+							break;
+						}
+						vWeightedAverageUv += oCurrentUVvalue * fCurrentWeight;
 					}
 					oFigureUVvalue = vWeightedAverageUv;
 				}
