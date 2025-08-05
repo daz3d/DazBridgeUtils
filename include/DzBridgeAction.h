@@ -555,7 +555,10 @@ namespace DzBridgeNameSpace
 		QString m_sExportRigMode = "";
 
 		bool m_bDetachGeometry = false;
-		bool m_bCombineStrandHairParts = false;
+		bool m_bCombineStrandHairParts = true;
+
+		QMap<QString, QList<DzNode*>> m_oStrandHairExportData;
+		virtual void writeStrandHairInfo(DzJsonWriter& Writer, QMap<QString, QList<DzNode*>> oStrandHairExportData);
 		
 		////////////////////////////////////
 		
@@ -624,6 +627,9 @@ namespace DzBridgeNameSpace
 		bool makeDebugFbx();
 		int validateProxyMeshVerts(QString sFilename);
 
+		// DB, 2025-08-05: Undo Hide Strand Hair
+		QMap<DzNode*, DzNode*> m_undoTable_HideStrandHair;
+
 	private:
 		// store and reuse a common tempfile base filename that can be shared across multiple files within a single export/conversion operation and can be updated between exports
 		QString m_sTempBaseFilename = "";
@@ -687,7 +693,7 @@ namespace DzBridgeNameSpace
 		QMap<DzBase*, MorphInfo> m_undoTable_MorphRename;
 		// DB, 2024-09-01: Duplicate Node Rename Undo
 		QMap<QString, QString> m_undoTable_DuplicateNodeRename;
-
+		
 		// Override data structures
 		class MaterialOverride
 		{

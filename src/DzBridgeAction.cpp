@@ -9279,8 +9279,8 @@ bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArch
 	if (aNodeList.isEmpty()) return false;
 
 	DzNode* pNode = aNodeList[0];
-	printf("DEBUG: writeAbcCurve() groom count=%i, pNode[%i]=%s\n", aNodeList.count(), *pGroupId, pNode->getLabel().toLocal8Bit().data());
-	Alembic::AbcGeom::OCurves oCurve(AbcArchive.getTop(), pNode->getLabel().toLocal8Bit().constData(), TimeSampling);
+	printf("DEBUG: writeAbcCurve() groom count=%i, pNode[%i]=%s\n", aNodeList.count(), *pGroupId, pNode->getName().toLocal8Bit().data());
+	Alembic::AbcGeom::OCurves oCurve(AbcArchive.getTop(), pNode->getName().toLocal8Bit().constData(), TimeSampling);
 	Alembic::AbcGeom::OCurvesSchema& oCurveSchema = oCurve.getSchema();
 
 	// Assuming oCurve is your Alembic::AbcGeom::OCurves
@@ -9562,9 +9562,52 @@ bool DzBridgeAction::writeHair(QString sFilePath, QList<DzNode*> aHairNodesList,
 		}
 	}
 
+	m_oStrandHairExportData.insert(sFilePath, aHairNodesList);
+	
 	return true;
 }
 
+void DzBridgeAction::writeStrandHairInfo(DzJsonWriter& Writer, QMap<QString, QList<DzNode*>> oStrandHairExportData)
+{
+
+	Writer.startMemberArray("Strand Hair Info", true);
+
+	foreach(QString sFilename, oStrandHairExportData.keys())
+	{
+		Writer.startObject();
+
+		Writer.addMember("File", sFilename);
+		
+		Writer.startMemberArray("Node Info", true);
+		foreach(DzNode* pHairNode, oStrandHairExportData[sFilename])
+		{
+			QString sNodeName = pHairNode->getName();
+			QString sNodeLabel = pHairNode->getLabel();
+			QString sParentName = "";
+
+			DzNode* pParentNode = pHairNode->getNodeParent();
+			if (pParentNode) {
+				sParentName = pParentNode->getName();				
+			} else if (m_undoTable_HideStrandHair.contains(pHairNode)) {
+				pParentNode = m_undoTable_HideStrandHair.value(pHairNode);
+				if (pParentNode) {
+					sParentName = pParentNode->getName();
+				}
+			}
+			Writer.startObject();
+			Writer.addMember("Name", sNodeName);
+			Writer.addMember("Label", sNodeLabel);
+			Writer.addMember("Parent", sParentName);
+			Writer.finishObject();
+		}
+		Writer.finishArray();
+		
+		Writer.finishObject();
+	}
+
+	Writer.finishArray();
+
+}
 
 
 

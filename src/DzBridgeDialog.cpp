@@ -590,10 +590,11 @@ functionality for some Morph and JCM products.\
 	QString sCombineHairParts = tr("Combine separate hair parts into one file");
 	m_wCombineStrandHairPartsRowLabel = new QLabel(sStrandHairRowLabel);
 	m_wCombineStrandHairPartsCheckBox = new QCheckBox(sCombineHairParts);
-	m_wCombineStrandHairPartsCheckBox->setChecked(false);
-	m_wCombineStrandHairPartsCheckBox->setVisible(true);
+	m_wCombineStrandHairPartsCheckBox->setChecked(true);
 	mainLayout->addRow(m_wCombineStrandHairPartsRowLabel, m_wCombineStrandHairPartsCheckBox);
 	m_aRowLabels.append(m_wCombineStrandHairPartsRowLabel);
+	m_wCombineStrandHairPartsCheckBox->setVisible(false);
+	m_wCombineStrandHairPartsRowLabel->setVisible(false);
 
 	///////////////////////////////////////
 	// Add Widgets to Advanced Layout
