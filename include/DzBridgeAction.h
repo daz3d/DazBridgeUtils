@@ -296,9 +296,10 @@ namespace DzBridgeNameSpace
 		bool retargetRigWithMvc(FbxScene* pScene, FbxMesh* pTargetMesh, FbxVector4* pTempBuffer, FbxNode* RootBone, MvcFbxBoneRetargeter* pMvcBoneRetargeter);
 		bool prepareMvcBoneRetargeter(QString sMvcTemplateFilename, MvcFbxBoneRetargeter* pMvcBoneRetargeter);
 
-		bool writeHair(QString sFilePath, QList<DzNode*> aHairNodesList);
-		bool writeAbcMesh(DzNode* pNode, Alembic::Abc::OArchive& AbcArchive, Alembic::Abc::TimeSamplingPtr& TimeSampling);
-		bool writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArchive& AbcArchive, Alembic::Abc::TimeSamplingPtr& TimeSampling, int *pGroupId);
+		Q_INVOKABLE virtual QList<DzNode*> findAllStrandBasedHair(DzNode* pParentNode=nullptr);
+		Q_INVOKABLE virtual bool writeHair(QString sFilePath, QList<DzNode*> aHairNodesList, QString sCompatibilityMode="");
+		virtual bool writeAbcMesh(DzNode* pNode, Alembic::Abc::OArchive& AbcArchive, Alembic::Abc::TimeSamplingPtr& TimeSampling);
+		virtual bool writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArchive& AbcArchive, Alembic::Abc::TimeSamplingPtr& TimeSampling, int *pGroupId, QString sCompatibilityMode="");
 
 		Q_INVOKABLE virtual bool getDetachGeometryEnabled() { return m_bDetachGeometry; };
 		Q_INVOKABLE virtual void setDetachGeometryEnabled(bool arg) { m_bDetachGeometry = arg; };

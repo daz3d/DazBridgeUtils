@@ -111,7 +111,7 @@ DzBridgeAction::DzBridgeAction(const QString& text, const QString& desc) :
 
 	 // Create List of Known Intermediate Folder File Extensions
 	 char* acharExtensionList[] = {
-		 "fbx", "dtu", "obj",
+		 "fbx", "dtu", "obj", "abc",
 		 "py", "pyc", "bat", "sh",
 		 "jpg", "jpeg", "png", "bmp", "tif", "gif"
 	 };
@@ -8687,6 +8687,38 @@ bool DzBridgeAction::isStrandBasedHair(DzNode* pNode)
 	return false;
 }
 
+QList<DzNode*> DzBridgeAction::findAllStrandBasedHair(DzNode* pParentNode)
+{
+	QList<DzNode*> aReturnList;
+	if (pParentNode == nullptr) {
+		// recursively look at each root node
+		foreach(DzNode* pRootNode, BuildRootNodeList())
+		{
+			aReturnList += findAllStrandBasedHair(pRootNode);
+		}
+	}
+
+	DzNodeList aDeepSearch;
+	aDeepSearch.append(pParentNode);
+
+	while (aDeepSearch.isEmpty() == false)
+	{
+		DzNode* pNode = aDeepSearch.front();
+		aDeepSearch.pop_front();
+		if (pNode == nullptr) continue;
+		if (isStrandBasedHair(pNode)) aReturnList.append(pNode);
+
+		for (int nChildIndex=0; nChildIndex < pNode->getNumNodeChildren(); nChildIndex++)
+		{
+			DzNode* pDeeperNode = pNode->getNodeChild(nChildIndex);
+			if (pDeeperNode == nullptr) continue;
+			aDeepSearch.append(pDeeperNode);
+		}
+	}
+
+	return aReturnList;
+}
+
 bool DzBridgeAction::hideAllStrandBasedHair(DzNode* pNode, QMap<DzNode*, DzNode*> &oUndoTable)
 {
 	if (pNode == nullptr) return false;
@@ -8703,7 +8735,7 @@ bool DzBridgeAction::hideAllStrandBasedHair(DzNode* pNode, QMap<DzNode*, DzNode*
 			DzNode* pNodeParent = pNodeChild->getNodeParent();
 			oUndoTable.insert(pNodeChild, pNodeParent);
 			pNodeParent->removeNodeChild(pNodeChild);
-			pNodeChild->setVisible(false);
+//			pNodeChild->setVisible(false);
 			continue;
 		}
 		aDeepCleanList.append(pNodeChild);
@@ -8718,7 +8750,7 @@ bool DzBridgeAction::hideAllStrandBasedHair(DzNode* pNode, QMap<DzNode*, DzNode*
 			DzNode* pNodeParent = pNodeChild->getNodeParent();
 			oUndoTable.insert(pNodeChild, pNodeParent);
 			pNodeParent->removeNodeChild(pNodeChild);
-			pNodeChild->setVisible(false);
+//			pNodeChild->setVisible(false);
 			continue;
 		}
 		for (int nChildIndex=0; nChildIndex < pNodeChild->getNumNodeChildren(); nChildIndex++) {
@@ -9242,9 +9274,8 @@ bool DzBridgeAction::writeAbcMesh(DzNode* pNode, Alembic::Abc::OArchive &AbcArch
 	return true;
 }
 
-bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArchive &AbcArchive, Alembic::Abc::TimeSamplingPtr &TimeSampling, int *pGroupId)
+bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArchive &AbcArchive, Alembic::Abc::TimeSamplingPtr &TimeSampling, int *pGroupId, QString sCompatibilityMode)
 {
-	bool bUnrealMode = true;
 	if (aNodeList.isEmpty()) return false;
 
 	DzNode* pNode = aNodeList[0];
@@ -9253,14 +9284,14 @@ bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArch
 	Alembic::AbcGeom::OCurvesSchema& oCurveSchema = oCurve.getSchema();
 
 	// Assuming oCurve is your Alembic::AbcGeom::OCurves
-	Alembic::Abc::OCompoundProperty userProps = oCurve.getProperties();
+	Alembic::Abc::OCompoundProperty oCompoundProperty = oCurve.getProperties();
 
 	// Required Unreal metadata:
-	Alembic::Abc::OInt16Property groomVersionMajorProp(userProps, "groom_version_major");
-	groomVersionMajorProp.set(1);
+	Alembic::Abc::OInt16Property oGroomVersionMajorProp(oCompoundProperty, "groom_version_major");
+	oGroomVersionMajorProp.set(1);
 
-	Alembic::Abc::OInt16Property groomVersionMinorProp(userProps, "groom_version_minor");
-	groomVersionMinorProp.set(5);
+	Alembic::Abc::OInt16Property oGroomVersionMinorProp(oCompoundProperty, "groom_version_minor");
+	oGroomVersionMinorProp.set(5);
 
 	std::vector<int32_t> aGroomGroupIds;
 	std::vector<Imath::V3f> aAlembicVertices;
@@ -9288,9 +9319,9 @@ bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArch
 		DzFacetMesh* pFacetMesh = qobject_cast<DzFacetMesh*>(pNode->getObject()->getCachedGeom());
 		if (pFacetMesh == nullptr)
 		{
-			QString mesg = QString("ERROR: writeAbcCurve(): failed trying access strand hair geometry for %1, aborting.").arg(pNode->getLabel());
-			dzApp->warning(mesg);
-			printf("%s\n", mesg.toLocal8Bit().data());
+			QString sMesg = QString("ERROR: writeAbcCurve(): failed trying access strand hair geometry for %1, aborting.").arg(pNode->getLabel());
+			dzApp->warning(sMesg);
+			printf("%s\n", sMesg.toLocal8Bit().data());
 			return false;
 		}
 
@@ -9306,36 +9337,31 @@ bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArch
 		printf("DEBUG2: %s: numUVs: %i, numNormals: %i, group_id: %i\n", pNode->getLabel().toLocal8Bit().constData(), nNumUVs, nNumNormals, groom_group_id);
 
 		DzMap* pDazUVmap = nullptr;
-		DzPnt2* pRawUvmap = nullptr;
-
-		float scaleFactor = 1.0f;
 
 		pDazUVmap = pFacetMesh->getUVs();
-		if (pDazUVmap != nullptr) {
-			pRawUvmap = pDazUVmap->getPnt2ArrayPtr();
-		}
 
 		for (int nPolylineIndex = 0; nPolylineIndex < nNumLines; nPolylineIndex++)
 		{
 			DzVec3 oFigureUVvalue;
-			QVariantList* pVertexIndices = new QVariantList();
-			if (getPolylineVertexIndices(pFacetMesh, nPolylineIndex, *pVertexIndices) == false) {
-				QString mesg = QString("ERROR: writeAbcCurve(): failed trying to call getPolylineVertexIndices on nPolyLineIndex #%1").arg(nPolylineIndex);
-				dzApp->warning(mesg);
-				printf("%s\n", mesg.toLocal8Bit().data());
+			QVariantList* pSourceVertexIndexBuffer = new QVariantList();
+			if (getPolylineVertexIndices(pFacetMesh, nPolylineIndex, *pSourceVertexIndexBuffer) == false) {
+				QString sMesg = QString("ERROR: writeAbcCurve(): failed trying to call getPolylineVertexIndices on nPolyLineIndex #%1").arg(nPolylineIndex);
+				dzApp->warning(sMesg);
+				printf("%s\n", sMesg.toLocal8Bit().data());
 				return false;
 			}
-			for (int i = 0; i < pVertexIndices->count(); i++)
+			for (int nRawIndex = 0; nRawIndex < pSourceVertexIndexBuffer->count(); nRawIndex++)
 			{
-				int nVertexIndex = pVertexIndices->at(i).toInt();
-				if (nVertexIndex > nNumVerts) {
-					QString mesg = QString("ERROR: writeAbcCurve(): nVertexIndex larger than num verts: %i").arg(nVertexIndex);
+				int nMappedVertexIndex = pSourceVertexIndexBuffer->at(nRawIndex).toInt();
+				if (nMappedVertexIndex > nNumVerts) {
+					QString mesg = QString("ERROR: writeAbcCurve(): nVertexIndex larger than num verts: %i").arg(nMappedVertexIndex);
 					dzApp->warning(mesg);
 					printf("%s\n", mesg.toLocal8Bit().data());
 					return false;
 				}
-				DzVec3 vDazPosition = pFacetMesh->getVertex(nVertexIndex);
-				if (bUnrealMode) 
+				DzVec3 vDazPosition = pFacetMesh->getVertex(nMappedVertexIndex);
+
+				if (sCompatibilityMode == "unreal")
 				{
 					DzVec3 vUnrealPosition(
 						vDazPosition[0],
@@ -9344,29 +9370,40 @@ bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArch
 					);
 					vDazPosition = vUnrealPosition;
 				}
+				else if (sCompatibilityMode == "blender")
+				{
+					float scale = 0.01f;
+					DzVec3 vUnrealPosition(
+						vDazPosition[0] * scale,
+						vDazPosition[1] * scale,
+						vDazPosition[2] * scale
+					);
+					vDazPosition = vUnrealPosition;					
+				}
+
 				Imath::V3f vDataPoint(
-					vDazPosition[0] * scaleFactor,
-					vDazPosition[1] * scaleFactor,
-					vDazPosition[2] * scaleFactor
+					vDazPosition[0],
+					vDazPosition[1],
+					vDazPosition[2]
 					);
 				aAlembicVertices.push_back(vDataPoint);
 
 				// CALCULATE ROOT UV
-				if (i == 0) {
+				if (nRawIndex == 0) {
 					DzGeometry* pFigureMesh = pFigureNode->getObject()->getCurrentShape()->getGeometry();
 					DzMap* pFigureUVmap = pFigureMesh->getUVs();
-					DzVec3 oRootVertex = pFacetMesh->getVertex(nVertexIndex);
-					QMap<int,float> oClosestVertexIndexes = GetClosestVertexIndexes(oRootVertex, pFigureMesh, 3);
+					DzVec3 oRootVertex = pFacetMesh->getVertex(nMappedVertexIndex);
+					QMap<int,float> oClosestFigureVertexIndexes = GetClosestVertexIndexes(oRootVertex, pFigureMesh, 3);
 
-					DzVec3 vShortestUv;
-					float shortest_distance = -1;
-					foreach(int nFigureVertexIndex, oClosestVertexIndexes.keys()) {
-						float distance = oClosestVertexIndexes.value(nFigureVertexIndex);
-						DzVec3 UVvalue = pFigureUVmap->getPnt2Vec(nFigureVertexIndex);
-						if ( shortest_distance == -1 || distance < shortest_distance )
+					DzVec3 vShortestUV;
+					float fShortestDistance = -1;
+					foreach(int nFigureVertexIndex, oClosestFigureVertexIndexes.keys()) {
+						float distance = oClosestFigureVertexIndexes.value(nFigureVertexIndex);
+						DzVec3 vFigureUV = pFigureUVmap->getPnt2Vec(nFigureVertexIndex);
+						if ( fShortestDistance == -1 || distance < fShortestDistance )
 						{
-							shortest_distance = distance;
-							vShortestUv = UVvalue;
+							fShortestDistance = distance;
+							vShortestUV = vFigureUV;
 						}
 					}
 					//oFigureUVvalue = vShortestUv;
@@ -9380,29 +9417,29 @@ bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArch
 					//}
 					//oFigureUVvalue = vAverageUv;
 
-					DzVec3 vWeightedAverageUv(0.0f, 0.0f, 0.0f);
-					QList<DzVec3> aClosestVertexes;
-					QMap<int, int> oVertexIndexOrder;
+					DzVec3 vWeightedAverageUV(0.0f, 0.0f, 0.0f);
+					QList<DzVec3> aClosestFigureVertexCoordinates;
+					QList<int> aClosestFigureVertexIndexes;
 					DzPnt3* pVertexBuffer = pFigureMesh->getVerticesPtr();
-					int j = 0;
-					foreach(int nFigureVertexIndex, oClosestVertexIndexes.keys()) {
-						DzVec3 oVertexCoordinates( pVertexBuffer[nFigureVertexIndex] );
-						aClosestVertexes.append(oVertexCoordinates);
-						oVertexIndexOrder.insert(j, nFigureVertexIndex);
-						j++;
+					foreach(int nFigureVertexIndex, oClosestFigureVertexIndexes.keys()) {
+						DzVec3 vCoordinates( pVertexBuffer[nFigureVertexIndex] );
+						aClosestFigureVertexCoordinates.append(vCoordinates);
+						aClosestFigureVertexIndexes.append(nFigureVertexIndex);
 					}
-					QList<float> aBaryCentricCoordinates = CalculateBarycentricCoordinates(oRootVertex, aClosestVertexes);
-					for (int j=0; j < 3; j++) {
-						float fCurrentWeight = aBaryCentricCoordinates[j];
-						int fCurrentVertexIndex = oVertexIndexOrder[j];
+					QList<float> aBaryCentricCoordinates = CalculateBarycentricCoordinates(oRootVertex, aClosestFigureVertexCoordinates);
+					for (int i=0; i < 3; i++) {
+						float fCurrentWeight = aBaryCentricCoordinates[i];
+						DzVec3 vCurrentCoordinate = aClosestFigureVertexCoordinates[i];
+						int fCurrentVertexIndex = aClosestFigureVertexIndexes[i];
 						DzVec3 oCurrentUVvalue = pFigureUVmap->getPnt2Vec(fCurrentVertexIndex);
-						if ( fabs(fCurrentWeight+1.0f) <= DZ_FLT_EPSILON) {
-							vWeightedAverageUv = vShortestUv;
+						float ERROR_RESULT = -1.0f;
+						if ( fabs(fCurrentWeight - ERROR_RESULT) <= DZ_FLT_EPSILON) {
+							vWeightedAverageUV = vShortestUV;
 							break;
 						}
-						vWeightedAverageUv += oCurrentUVvalue * fCurrentWeight;
+						vWeightedAverageUV += oCurrentUVvalue * fCurrentWeight;
 					}
-					oFigureUVvalue = vWeightedAverageUv;
+					oFigureUVvalue = vWeightedAverageUV;
 				}
 
 				//// UVs
@@ -9425,16 +9462,16 @@ bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArch
 				//}
 
 			}
-			aPolylineVertexIndices.push_back(pVertexIndices->count());
+			aPolylineVertexIndices.push_back(pSourceVertexIndexBuffer->count());
 
 			// add groom_ID to array
 			aGroomGroupIds.push_back(groom_group_id);
 
 			// add groom root UV to curve
-			Imath::V2f array;
-			array[0] = oFigureUVvalue[0];
-			array[1] = oFigureUVvalue[1];
-			aRootUvBuffer.push_back(array);
+			Imath::V2f groom_root_uv;
+			groom_root_uv[0] = oFigureUVvalue[0];
+			groom_root_uv[1] = oFigureUVvalue[1];
+			aRootUvBuffer.push_back(groom_root_uv);
 
 #if __APPLE__
 			//delete(pVertexIndices);
@@ -9494,7 +9531,7 @@ bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArch
 	return true;
 }
 
-bool DzBridgeAction::writeHair(QString sFilePath, QList<DzNode*> aHairNodesList)
+bool DzBridgeAction::writeHair(QString sFilePath, QList<DzNode*> aHairNodesList, QString sCompatibilityMode)
 {
 	if (aHairNodesList.count() < 1) {
 		return false;
@@ -9502,16 +9539,16 @@ bool DzBridgeAction::writeHair(QString sFilePath, QList<DzNode*> aHairNodesList)
 
 	printf("DEBUG: writeHair(%s)\n", sFilePath.toLocal8Bit().data());
 	// Create the Abc file and set the time to match Daz output
-	Alembic::Abc::OArchive AbcArchive(Alembic::AbcCoreOgawa::WriteArchive(), sFilePath.toLocal8Bit().data());
-	Alembic::Abc::TimeSamplingPtr TimeSampling(new Alembic::Abc::TimeSampling());
-	AbcArchive.addTimeSampling(*TimeSampling);
+	Alembic::Abc::OArchive oAbcArchive(Alembic::AbcCoreOgawa::WriteArchive(), sFilePath.toLocal8Bit().data());
+	Alembic::Abc::TimeSamplingPtr pTimeSampling(new Alembic::Abc::TimeSampling());
+	oAbcArchive.addTimeSampling(*pTimeSampling);
 
 	bool bSingleOCurveMode = false;
 
 	int nGroupId = 0;
 	if (bSingleOCurveMode)
 	{
-		writeAbcCurve(aHairNodesList, AbcArchive, TimeSampling, &nGroupId);
+		writeAbcCurve(aHairNodesList, oAbcArchive, pTimeSampling, &nGroupId, sCompatibilityMode);
 	}
 	else
 	{
@@ -9520,7 +9557,7 @@ bool DzBridgeAction::writeHair(QString sFilePath, QList<DzNode*> aHairNodesList)
 			if (isStrandBasedHair(pHairNode) == false) {
 				continue;
 			}
-			writeAbcCurve(DzNodeList() << pHairNode, AbcArchive, TimeSampling, &nGroupId);
+			writeAbcCurve(DzNodeList() << pHairNode, oAbcArchive, pTimeSampling, &nGroupId, sCompatibilityMode);
 			++nGroupId;
 		}
 	}
