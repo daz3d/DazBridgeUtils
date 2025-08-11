@@ -25,7 +25,7 @@ public:
     class UnrealBoneFix : public FixClusterTransformLinks_CustomBoneFix
     {
     public:
-        virtual void performTask(FbxAMatrix &Matrix, FbxCluster* Cluster, QString sBoneName, FbxDouble3 Rotation);
+        virtual void performTask(FbxAMatrix &Matrix, FbxCluster* Cluster, QString sBoneName, FbxDouble3 Rotation) override;
     };
     
 	static double getLength(double a, double b);

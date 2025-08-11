@@ -817,7 +817,12 @@ FbxAMatrix FbxTools::FindPoseMatrixOrGlobal(FbxPose* pPose, FbxNode* pNode)
 {
 	FbxAMatrix returnMatrix;
 
-	int nodeIndex = pPose->Find(pNode);
+	int nodeIndex = -1;
+
+	if (pPose) 
+	{
+		nodeIndex = pPose->Find(pNode);
+	}
 	if (nodeIndex > -1)
 	{
 		returnMatrix = FbxTools::GetAffineMatrix(pPose, nodeIndex);
