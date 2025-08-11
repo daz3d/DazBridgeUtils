@@ -357,8 +357,7 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 	}
 	QStringList morphNamesToExport = MorphTools::getCombinedMorphList(m_MorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm);
 
-	// PreProcess MorphsToExport
-//	foreach (MorphInfo &morphInfo, m_MorphsToExport)
+	// PreProcess MorphsToExport; RENAME MORPHS FOR EXPORT
 	foreach (QString key, morphNamesToExport)
 	{
 		if (key.isEmpty())
@@ -407,6 +406,7 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 		//}
 	}
 
+/*
 	if (m_bConvertRigEnabled && parentNode && m_sExportRigMode != "" && m_sExportRigMode != "--")
 	{
 		QString sGeneration = parentNode->getName();
@@ -507,11 +507,121 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 
 		}
 	}
-
+*/
+	
+	convertRig(parentNode);
+	
     preProcessProgress.setInfo("DazBridge: Pre-Processing Completed.");
 	preProcessProgress.finish();
 
 	return true;
+}
+
+bool DzBridgeAction::convertRig(DzNode *parentNode)
+{
+	DzProgress preProcessProgress(0);
+	
+	if (m_bConvertRigEnabled && parentNode && m_sExportRigMode != "" && m_sExportRigMode != "--")
+	{
+		QString sGeneration = parentNode->getName();
+		bool bIsG9 = (sGeneration == "Genesis9");
+
+		QString sBoneConverter = "bone_converter_aArgs.dsa";
+		QString sUnrealMannyRigFile = "g9_to_unreal_manny.json";
+		QString sG8UnrealRigFile = "g8_to_unreal.json";
+		QString sMetahumanRigFile = "g9_to_metahuman.json";
+		QString sG8MetahumanRigFile = "g8_to_metahuman.json";
+		QString sUnityRigFile = "g9_to_unity.json";
+		QString sG8UnityRigFile = "g8_to_unity.json";
+		QString sMixamoRigFile = "g9_to_mixamo.json";
+		QString sG8MixamoRigFile = "g8_to_mixamo.json";
+
+		preProcessProgress.setInfo(tr("Preparing Rig Converter files..."));
+		QStringList aScriptFilelist = (QStringList() <<
+			sBoneConverter <<
+			sUnrealMannyRigFile << sG8UnrealRigFile <<
+			sMetahumanRigFile << sG8MetahumanRigFile <<
+			sUnityRigFile <<
+			sMixamoRigFile << sG8MixamoRigFile
+			);
+		// copy 
+		foreach(auto sScriptFilename, aScriptFilelist)
+		{
+			bool replace = true;
+			QString sEmbeddedFilepath = m_sEmbeddedFolderPath + "/" + sScriptFilename;
+			QFile srcFile(sEmbeddedFilepath);
+			QString tempFilepath = dzApp->getTempPath() + "/" + sScriptFilename;
+			DZ_BRIDGE_NAMESPACE::DzBridgeAction::copyFile(&srcFile, &tempFilepath, replace);
+			srcFile.close();
+		}
+
+		/// BONE CONVERSION OPERATION
+		preProcessProgress.setInfo(tr("Converting Rig..."));
+		preProcessProgress.step();
+		QString sScriptFilepath = dzApp->getTempPath() + "/" + sBoneConverter;
+
+		// Compile arguments
+		QVariantList aArgs;
+		if (m_sExportRigMode == "metahuman") {
+			if (bIsG9) {
+				aArgs.append(QVariant(dzApp->getTempPath() + "/" + sMetahumanRigFile));
+			} else {
+				aArgs.append(QVariant(dzApp->getTempPath() + "/" + sG8MetahumanRigFile));
+			}
+		}
+		else if (m_sExportRigMode == "unreal") {
+			if (bIsG9) {
+				aArgs.append(QVariant(dzApp->getTempPath() + "/" + sUnrealMannyRigFile));
+			}
+			else {
+				aArgs.append(QVariant(dzApp->getTempPath() + "/" + sG8UnrealRigFile));
+			}
+		}
+		else if (m_sExportRigMode == "unity") {
+			if (bIsG9) {
+				aArgs.append(QVariant(dzApp->getTempPath() + "/" + sUnityRigFile));
+			}
+			else {
+				aArgs.append(QVariant(dzApp->getTempPath() + "/" + sG8UnityRigFile));
+			}
+		}
+		else if (m_sExportRigMode == "mixamo") {
+			if (bIsG9) {
+				aArgs.append(QVariant(dzApp->getTempPath() + "/" + sMixamoRigFile));
+			}
+			else {
+				aArgs.append(QVariant(dzApp->getTempPath() + "/" + sG8MixamoRigFile));
+			}
+		}
+		else {
+			// UNHANDLED ABORT
+			aArgs.clear();
+		}
+
+		if (aArgs.length() > 0) {
+			QScopedPointer<DzScript> Script(new DzScript());
+			// run bone conversion on main figure
+			dzScene->selectAllNodes(false);
+			dzScene->setPrimarySelection(parentNode);
+			Script.reset(new DzScript());
+			Script->loadFromFile(sScriptFilepath);
+			Script->execute(aArgs);
+			// iterate through node children list before making changes to it, otherwise it gets invalidated during processing
+			QList<DzFigure*> figureList;
+			foreach(QObject* listNode, parentNode->getNodeChildren())
+			{
+				if (listNode->inherits("DzFigure") == false) continue;
+				DzFigure* figChild = qobject_cast<DzFigure*>(listNode);
+				if (figChild) {
+					figureList.append(figChild);
+				}
+			}
+			dzScene->selectAllNodes(false);
+			//	dzScene->setPrimarySelection(parentNode);
+
+		}
+	}
+	
 }
 
 /// <summary>
@@ -8897,13 +9007,20 @@ bool DzBridgeAction::retargetFigureToNewRig(DzNode* pDazFigureNode, FbxScene* pS
 	FbxTools::BakePoseToVertexBuffer(pTempBuffer, &matrix, nullptr, (FbxMesh*) pTargetMesh);
 
 	// REPLACE EXISTING RIG WITH OVERRIDE
-	bool bResult = FbxTools::LoadAndPose(sOverrideRigFilename, pScene, NULL, false, false); // Override both position and orientation
+	if (FbxTools::LoadAndPose(sOverrideRigFilename, pScene, NULL, false, false) == false) {
+		QString sLoadOverrideRig = QString("ERROR: retargetFigureToNewRig(): Error Loading Override Rig file: %1").arg(sOverrideRigFilename);
+		dzApp->log(sLoadOverrideRig);
+		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, QObject::tr("Error"),
+			QObject::tr("An error occurred while processing the Fbx file:\n\n") + sLoadOverrideRig, QMessageBox::Ok);
+		pMvcProxyMeshScene->Destroy();
+		return false;		
+	}; // Override both position and orientation
 	foreach(FbxNode* pNode, aMeshNodeList) {
 		FbxTools::BakePoseToBindMatrix(pNode->GetMesh(), nullptr);
 	}
 
 	// Retarget each bone / adjust bindmatrix
-	if (retargetRigWithMvc(pScene, pTargetMesh, pTempBuffer, RootBone, &oMvcBoneRetargeter) == false) {
+	if (applyMvcAndRebindRig(pScene, pTargetMesh, pTempBuffer, RootBone, &oMvcBoneRetargeter) == false) {
 		QString sRetargetRigMessage = QString("ERROR: retargetFigureToNewRig(): Error performing Mvc Bone Retargeting to mesh: %1").arg(pTargetMesh->GetName());
 		dzApp->log(sRetargetRigMessage);
 		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, QObject::tr("Error"),
@@ -8919,7 +9036,7 @@ bool DzBridgeAction::retargetFigureToNewRig(DzNode* pDazFigureNode, FbxScene* pS
 	return true;
 }
 
-bool DzBridgeAction::retargetRigWithMvc(FbxScene* pScene, FbxMesh* pTargetMesh, FbxVector4* pTempBuffer, FbxNode* RootBone, MvcFbxBoneRetargeter* pMvcBoneRetargeter)
+bool DzBridgeAction::applyMvcAndRebindRig(FbxScene* pScene, FbxMesh* pTargetMesh, FbxVector4* pTempBuffer, FbxNode* RootBone, MvcFbxBoneRetargeter* pMvcBoneRetargeter)
 {
 	if (pMvcBoneRetargeter == nullptr) return false;
 

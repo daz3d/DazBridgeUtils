@@ -293,7 +293,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool exLoadFbxScene(FbxScene* pScene, QString sFilename, int bShowGuiError=-1, QString sErrorMessageTemplate="");
 
 		bool retargetFigureToNewRig(DzNode* pDazFigureNode, FbxScene* pScene, FbxNode* RootBone, QString sMvcTemplateFilename, QString sMvcProxyMeshFilePath, QString sOverrideRigFilename);
-		bool retargetRigWithMvc(FbxScene* pScene, FbxMesh* pTargetMesh, FbxVector4* pTempBuffer, FbxNode* RootBone, MvcFbxBoneRetargeter* pMvcBoneRetargeter);
+		bool applyMvcAndRebindRig(FbxScene* pScene, FbxMesh* pTargetMesh, FbxVector4* pTempBuffer, FbxNode* RootBone, MvcFbxBoneRetargeter* pMvcBoneRetargeter);
 		bool prepareMvcBoneRetargeter(QString sMvcTemplateFilename, MvcFbxBoneRetargeter* pMvcBoneRetargeter);
 
 		Q_INVOKABLE virtual QList<DzNode*> findAllStrandBasedHair(DzNode* pParentNode=nullptr);
@@ -429,6 +429,8 @@ namespace DzBridgeNameSpace
 
 		Q_INVOKABLE virtual bool cleanIntermediateSubFolder(QString sSubFolder);
 
+		virtual bool convertRig(DzNode *parentNode);
+		
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo
