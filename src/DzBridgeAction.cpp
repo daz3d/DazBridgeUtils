@@ -8829,7 +8829,66 @@ QList<DzNode*> DzBridgeAction::findAllStrandBasedHair(DzNode* pParentNode)
 	return aReturnList;
 }
 
-bool DzBridgeAction::hideAllStrandBasedHair(DzNode* pNode, QMap<DzNode*, DzNode*> &oUndoTable)
+bool DzBridgeAction::hideAllStrandBasedHair()
+{
+	QList<DzNode*> aHairNodeList = findAllStrandBasedHair();
+	if (aHairNodeList.count() == 0) return false;
+	
+	foreach(DzNode* pHairNode, aHairNodeList)
+	{
+		DzNode* pNodeParent = pHairNode->getNodeParent();
+		DzNode* pFollowTarget = pHairNode->getSkeleton()->getFollowTarget();
+		if (pHairNode->isVisible()) {
+			pHairNode->setVisible(false);
+			m_undoList_HideStrandHair.append(pHairNode);
+		}
+		if (pNodeParent) {
+			pNodeParent->removeNodeChild(pHairNode);
+			m_undoTable_UnparentStrandHair.insert(pHairNode, pNodeParent);
+		}
+		if (pFollowTarget) {
+			pHairNode->getSkeleton()->setFollowTarget(NULL);
+			m_undoTable_UnFitToFigureStrandHair.insert(pHairNode, pFollowTarget);
+		}
+	}
+	
+	return true;	
+}
+
+bool DzBridgeAction::undoHideAllStrandBasedHair()
+{
+	bool bErrorDetected = false;
+	
+	foreach(DzNode* pHairNode, m_undoList_HideStrandHair) {
+		if (pHairNode) {
+			pHairNode->setVisible(true);			
+		} else {
+			bErrorDetected = true;
+		}
+	}
+	foreach(DzNode* pHairNode, m_undoTable_UnparentStrandHair.keys())
+	{
+		DzNode* pParentNode = m_undoTable_UnparentStrandHair[pHairNode];
+		if (pParentNode) {
+			pParentNode->addNodeChild(pHairNode);			
+		} else {
+			bErrorDetected = true;
+		}
+	}
+	foreach(DzNode* pHairNode, m_undoTable_UnFitToFigureStrandHair.keys())
+	{
+		DzNode* pFollowTarget = m_undoTable_UnFitToFigureStrandHair[pHairNode];
+		if (pFollowTarget) {
+			pHairNode->getSkeleton()->setFollowTarget(pFollowTarget->getSkeleton());
+		} else {
+			bErrorDetected = true;
+		}
+	}
+	
+	return bErrorDetected;
+}
+
+bool DzBridgeAction::hideStrandBasedHair(DzNode* pNode, QMap<DzNode*, DzNode*> &oUndoTable)
 {
 	if (pNode == nullptr) return false;
 	
@@ -9480,22 +9539,22 @@ bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArch
 
 				if (sCompatibilityMode == "unreal")
 				{
-					DzVec3 vUnrealPosition(
+					DzVec3 vNewPosition(
 						vDazPosition[0],
 						vDazPosition[2],
 						vDazPosition[1]
 					);
-					vDazPosition = vUnrealPosition;
+					vDazPosition = vNewPosition;
 				}
 				else if (sCompatibilityMode == "blender")
 				{
 					float scale = 0.01f;
-					DzVec3 vUnrealPosition(
+					DzVec3 vNewPosition(
 						vDazPosition[0] * scale,
 						vDazPosition[1] * scale,
 						vDazPosition[2] * scale
 					);
-					vDazPosition = vUnrealPosition;					
+					vDazPosition = vNewPosition;					
 				}
 
 				Imath::V3f vDataPoint(
@@ -9654,9 +9713,9 @@ bool DzBridgeAction::writeHair(QString sFilePath, QList<DzNode*> aHairNodesList,
 		return false;
 	}
 
-	printf("DEBUG: writeHair(%s)\n", sFilePath.toLocal8Bit().data());
+	printf("DEBUG: writeHair(%s)\n", sFilePath.toLocal8Bit().constData());
 	// Create the Abc file and set the time to match Daz output
-	Alembic::Abc::OArchive oAbcArchive(Alembic::AbcCoreOgawa::WriteArchive(), sFilePath.toLocal8Bit().data());
+	Alembic::Abc::OArchive oAbcArchive(Alembic::AbcCoreOgawa::WriteArchive(), sFilePath.toLocal8Bit().constData());
 	Alembic::Abc::TimeSamplingPtr pTimeSampling(new Alembic::Abc::TimeSampling());
 	oAbcArchive.addTimeSampling(*pTimeSampling);
 
@@ -9705,8 +9764,8 @@ void DzBridgeAction::writeStrandHairInfo(DzJsonWriter& Writer, QMap<QString, QLi
 			DzNode* pParentNode = pHairNode->getNodeParent();
 			if (pParentNode) {
 				sParentName = pParentNode->getName();				
-			} else if (m_undoTable_HideStrandHair.contains(pHairNode)) {
-				pParentNode = m_undoTable_HideStrandHair.value(pHairNode);
+			} else if (m_undoTable_UnparentStrandHair.contains(pHairNode)) {
+				pParentNode = m_undoTable_UnparentStrandHair.value(pHairNode);
 				if (pParentNode) {
 					sParentName = pParentNode->getName();
 				}

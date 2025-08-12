@@ -272,7 +272,9 @@ namespace DzBridgeNameSpace
 		
 		// STRAND-BASED-HAIR TOOLS
 		Q_INVOKABLE virtual bool isStrandBasedHair(DzNode* pNode);
-		Q_INVOKABLE virtual bool hideAllStrandBasedHair(DzNode* pNode, QMap<DzNode*, DzNode*> &oUndoTable);
+		Q_INVOKABLE virtual bool hideAllStrandBasedHair();
+		Q_INVOKABLE virtual bool undoHideAllStrandBasedHair();
+		Q_INVOKABLE virtual bool hideStrandBasedHair(DzNode* pNode, QMap<DzNode*, DzNode*> &oUndoTable);
 		Q_INVOKABLE virtual int getNumPolylines(DzFacetMesh *pFacetMesh);
 		Q_INVOKABLE virtual int getNumPolylineSegments(DzFacetMesh *pFacetMesh);
 		Q_INVOKABLE virtual int getNumPolylineVertexDataIndices(DzFacetMesh *pFacetMesh);
@@ -630,7 +632,9 @@ namespace DzBridgeNameSpace
 		int validateProxyMeshVerts(QString sFilename);
 
 		// DB, 2025-08-05: Undo Hide Strand Hair
-		QMap<DzNode*, DzNode*> m_undoTable_HideStrandHair;
+		QList<DzNode*> m_undoList_HideStrandHair; // todo: deprecate strand-specific and use generic node
+		QMap<DzNode*, DzNode*> m_undoTable_UnparentStrandHair;
+		QMap<DzNode*, DzNode*> m_undoTable_UnFitToFigureStrandHair;
 
 	private:
 		// store and reuse a common tempfile base filename that can be shared across multiple files within a single export/conversion operation and can be updated between exports
