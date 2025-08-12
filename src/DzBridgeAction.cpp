@@ -622,6 +622,7 @@ bool DzBridgeAction::convertRig(DzNode *parentNode)
 		}
 	}
 	
+	return true;
 }
 
 /// <summary>
