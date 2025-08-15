@@ -1139,9 +1139,9 @@ FbxNode* FbxTools::GetRootBone(FbxScene* pScene, bool bRenameRootBone, FbxNode* 
 	return pRootBone;
 }
 
-void FbxTools::DetachGeometry(FbxScene* pScene)
+void FbxTools::DetachGeometry(FbxScene* pScene, FbxNode* pRootNode)
 {
-	FbxNode* RootNode = pScene->GetRootNode();
+	if (pRootNode == nullptr) pRootNode = pScene->GetRootNode();
 
 	// Detach geometry from the skeleton
 	for (int NodeIndex = 0; NodeIndex < pScene->GetNodeCount(); ++NodeIndex)
@@ -1159,7 +1159,7 @@ void FbxTools::DetachGeometry(FbxScene* pScene)
 				SceneNode->GetParent()->GetNodeAttribute()->GetAttributeType() == FbxNodeAttribute::eSkeleton)
 			{
 				SceneNode->GetParent()->RemoveChild(SceneNode);
-				RootNode->AddChild(SceneNode);
+				pRootNode->AddChild(SceneNode);
 			}
 		}
 	}

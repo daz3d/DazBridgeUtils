@@ -79,7 +79,7 @@ public:
 
 	static FbxNode* GetRootBone(FbxScene* pScene, bool bRenameRootBone = false, FbxNode* pPreviousBone = nullptr);
 
-	static void DetachGeometry(FbxScene* pScene);
+	static void DetachGeometry(FbxScene* pScene, FbxNode* pRootNode = nullptr);
 
 	static bool BakePoseToBindMatrix(FbxMesh* pMesh, FbxPose* pPose);
 
