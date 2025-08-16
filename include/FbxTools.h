@@ -9,6 +9,7 @@
 #define NEGZ(a) FbxVector4(a[0], a[1], -a[2])
 
 class DzProgress;
+class DzMaterial;
 
 class FbxTools
 {
@@ -114,6 +115,12 @@ public:
 	static bool LoadBlendshapeMappingTable(QString sMappingFilename, QMap<QString, QString> &oMappingTable, QList<QString> &aMappingOrder);
 	static bool TransferBlendshapes(QString sSourceFilename, FbxScene* pDestinationScene, QString sMappingFilename="");
 	static bool BakeMeshesToSingleBindPose(FbxScene* pScene);
+
+	static bool PreProcessFbxFile(
+		QString& FBXFile,
+		QString& AssetName,
+		QMap<DzMaterial*, DzMaterial*>& DuplicateMaterials,
+		QList<QString>& MaterialSlotNames);
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING
