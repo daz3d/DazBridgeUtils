@@ -99,11 +99,11 @@ public:
 	static void bakePoseMorphPerNode(DzFloatProperty* morphProperty, DzNode* node, QString);
 
 	static QMap<QString, MorphInfo> enumerateMorphInfoTable(DzNode* Node);
-	static QString getMorphString(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled);
+	static QString getMorphString(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* pNode);
 	static QString GetMorphString(QList<QString> aMorphsToExport, DzNode* pNode, bool bAutoJCMEnabled=false);
 	static QStringList getAvailableMorphNames(DzNode* Node);
-	static QStringList getFinalizedMorphList(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled);
-	static QStringList getCombinedMorphList(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled);
+	static QStringList getFinalizedMorphList(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* pNode);
+	static QStringList getCombinedMorphList(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* pNode);
 
 	// DB 2024-06-07: get available morphs independent of GUI
 	static QMap<QString, MorphInfo>* getAvailableMorphs(DzNode* Node);

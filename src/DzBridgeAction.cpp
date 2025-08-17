@@ -355,7 +355,7 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 		m_AvailableMorphsTable.clear();
 		m_AvailableMorphsTable = availables;
 	}
-	QStringList morphNamesToExport = MorphTools::getCombinedMorphList(m_MorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm);
+	QStringList morphNamesToExport = MorphTools::getCombinedMorphList(m_MorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm, m_pSelectedNode);
 
 	// PreProcess MorphsToExport; RENAME MORPHS FOR EXPORT
 	foreach (QString key, morphNamesToExport)
@@ -1692,7 +1692,7 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 		}
 		
 		// DB 2023-11-15: Morph Selection Overhaul
-		m_sMorphSelectionRule = MorphTools::getMorphString(m_MorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm);
+		m_sMorphSelectionRule = MorphTools::getMorphString(m_MorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm, Node);
 
 		// DB 2023-11-15: Custom Asset Type Support
 		if (isAssetMorphCompatible(m_sAssetType) && m_bEnableMorphs && m_sMorphSelectionRule != "")
@@ -4075,7 +4075,7 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 	m_AvailableMorphsTable = MorphTools::GetAvailableMorphs(m_pSelectedNode, true);
 	if (isInteractiveMode() && m_bOverrideMorphSelectionDialog == false) {
 		QList<QString> aUnfinalizedMorphNamesToExport = m_morphSelectionDialog->GetMorphNamesToExport();
-		m_MorphNamesToExport = MorphTools::getFinalizedMorphList(aUnfinalizedMorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm);
+		m_MorphNamesToExport = MorphTools::getFinalizedMorphList(aUnfinalizedMorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm, m_pSelectedNode);
 	}
 	else {
 		m_MorphNamesToExport = m_aMorphListOverride;
@@ -8161,7 +8161,7 @@ bool DzBridgeAction::generateProxyMesh(DzNode* pNode, QString sFbxFilePath, bool
 	bool bUndoUnfitting = false;
 	if (bExportFacsBlendshapes) {
 		ExportOptions.setBoolValue("doMorphs", true);
-		m_sMorphSelectionRule = MorphTools::getMorphString(m_MorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm);
+		m_sMorphSelectionRule = MorphTools::getMorphString(m_MorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm, pNode);
 		ExportOptions.setStringValue("rules", m_sMorphSelectionRule);
 //		dzApp->log("DEBUG: DzBridgeAction::generateProxyMesh() rules=" + m_sMorphSelectionRule);
 	} else {

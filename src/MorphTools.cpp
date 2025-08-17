@@ -644,13 +644,13 @@ int MorphTools::setMeshResolution(DzNode* node, int desiredResolutionIndex)
 	return ResolutionLevel;
 }
 
-QStringList MorphTools::getCombinedMorphList(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled)
+QStringList MorphTools::getCombinedMorphList(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* pNode)
 {
 	int debug_num_morphs = m_morphsToExport.count();
 
 	if (bAutoJCMEnabled)
 	{
-		AddActiveJointControlledMorphs(m_morphsToExport, availableMorphsTable, bAutoJCMEnabled);
+		AddActiveJointControlledMorphs(m_morphsToExport, availableMorphsTable, bAutoJCMEnabled, pNode);
 	}
 
 	int debug_num_morphs_added = m_morphsToExport.count() - debug_num_morphs;
@@ -658,11 +658,11 @@ QStringList MorphTools::getCombinedMorphList(QList<QString> m_morphsToExport, QM
 	return m_morphsToExport;
 }
 
-QStringList MorphTools::getFinalizedMorphList(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled)
+QStringList MorphTools::getFinalizedMorphList(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* pNode)
 {
 	int debug_num_morphs = m_morphsToExport.count();
 
-	QStringList combinedList = getCombinedMorphList(m_morphsToExport, availableMorphsTable, bAutoJCMEnabled);
+	QStringList combinedList = getCombinedMorphList(m_morphsToExport, availableMorphsTable, bAutoJCMEnabled, pNode);
 
 	int debug_num_morphs_added = combinedList.count() - debug_num_morphs;
 
@@ -703,9 +703,9 @@ QStringList MorphTools::getFinalizedMorphList(QList<QString> m_morphsToExport, Q
 }
 
 // Get the morph string (aka m_morphsToExport_finalized) in the format for the Daz FBX Export
-QString MorphTools::getMorphString(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled)
+QString MorphTools::getMorphString(QList<QString> m_morphsToExport, QMap<QString, MorphInfo> availableMorphsTable, bool bAutoJCMEnabled, DzNode* pNode)
 {
-	QStringList morphNamesToExport = getFinalizedMorphList(m_morphsToExport, availableMorphsTable, bAutoJCMEnabled);
+	QStringList morphNamesToExport = getFinalizedMorphList(m_morphsToExport, availableMorphsTable, bAutoJCMEnabled, pNode);
 	if (morphNamesToExport.count() == 0)
 		return "";
 	QString morphString = morphNamesToExport.join("\n1\n");
@@ -716,7 +716,7 @@ QString MorphTools::getMorphString(QList<QString> m_morphsToExport, QMap<QString
 QString MorphTools::GetMorphString(QList<QString> aMorphsToExport, DzNode* pNode, bool bAutoJCMEnabled)
 {
 	QMap<QString, MorphInfo> oAvailableMorphsTable = GetAvailableMorphs(pNode);
-	return getMorphString(aMorphsToExport, oAvailableMorphsTable, bAutoJCMEnabled);
+	return getMorphString(aMorphsToExport, oAvailableMorphsTable, bAutoJCMEnabled, pNode);
 }
 
 // Recursive function for finding all active JCM morphs for a node
