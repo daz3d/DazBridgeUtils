@@ -28,7 +28,13 @@ public:
     public:
         virtual void performTask(FbxAMatrix &Matrix, FbxCluster* Cluster, QString sBoneName, FbxDouble3 Rotation) override;
     };
-    
+
+	class UnrealBoneFix2 : public FbxTools::FixClusterTransformLinks_CustomBoneFix
+	{
+	public:
+		virtual void performTask(FbxAMatrix &Matrix, FbxCluster* Cluster, QString sBoneName, FbxDouble3 Rotation) override;
+	};
+	
 	static double getLength(double a, double b);
 
 	static double getLength(double a, double b, double c);
@@ -121,6 +127,8 @@ public:
 		QString& AssetName,
 		QMap<DzMaterial*, DzMaterial*>& DuplicateMaterials,
 		QList<QString>& MaterialSlotNames);
+
+	static bool MergeScenes(FbxScene* pDestinationScene, FbxScene* pSourceScene);
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING

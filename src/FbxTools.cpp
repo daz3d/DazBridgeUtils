@@ -2655,4 +2655,519 @@ bool FbxTools::PreProcessFbxFile(
 	return true;
 }
 
+////////////////////////////////////////////////////////////////////
+
+bool exLoadFbxScene(FbxScene* pScene, QString sFilename, int bShowGuiError, QString sErrorMessageTemplate)
+{
+	if (sErrorMessageTemplate.isEmpty() || sErrorMessageTemplate == "")
+	{
+		sErrorMessageTemplate = QObject::tr("\
+ERROR: DzR2xAction::exLoadFbxScene():\n\n\
+File: \"%1\"\n\n\
+FbxStatusCode: %2\n\n\
+Error Message: \"%3\"\n\n"
+		   );
+	}
+
+//	bool bRetValue = DzBridgeAction::exLoadFbxScene(pScene, sFilename, bShowGuiError, sErrorMessageTemplate);
+//	bool bRetValue = DzBridgeAction::exLoadFbxScene(pScene, sFilename);
+	
+//	return bRetValue;
+	return false;
+	
+}
+
+// Built-in implementation of CustomBoneFix callback for use with Metahuman and Unreal Engine 5.x Mannequin rig conversion process
+void FbxTools::UnrealBoneFix2::performTask(FbxAMatrix &Matrix, FbxCluster *Cluster, QString sBoneName, FbxDouble3 Rotation)
+{
+	printf("DEBUG: UnrealBoneFix2::performTask(): sBoneName=%s....\n", sBoneName.toLocal8Bit().constData());
+	
+	// Set Base Matrix Rotation
+	Matrix.SetR(Rotation);
+
+	// Apply Rotation Modifier based on Rotation Order, Name, etc
+	FbxRotationOrder oRotationOrder(Cluster->GetLink()->RotationOrder.Get());
+	FbxAMatrix RotationMatrix;
+	RotationMatrix.SetIdentity();
+
+	switch (oRotationOrder.GetOrder())
+	{
+		case FbxEuler::eOrderXYZ:
+		case FbxEuler::eOrderXZY:
+		{
+			// SPECIAL CASE: HANDS AND FINGERS
+			bool bIsHand = sBoneName.contains("hand_") ||
+			FbxTools::HasNodeAncestor(Cluster->GetLink(), "hand_r", Qt::CaseInsensitive) ||
+			FbxTools::HasNodeAncestor(Cluster->GetLink(), "hand_l", Qt::CaseInsensitive);
+			bool bIsThumb = sBoneName.contains("thumb_");
+			if ( bIsHand && !bIsThumb)
+			{
+				RotationMatrix.SetIdentity();
+				if (sBoneName.contains("_l")) {
+					RotationMatrix.SetRow(0, FbxVector4(1, 0, 0));				
+					RotationMatrix.SetRow(1, FbxVector4(0, -1, 0));
+					RotationMatrix.SetRow(2, FbxVector4(0, 0, -1));
+				}
+				break;
+			}
+			// UPPER EXTREMITIES
+			if (sBoneName.contains("_r")) {
+				RotationMatrix.SetRow(0, FbxVector4(1, 0, 0));				
+				RotationMatrix.SetRow(1, FbxVector4(0, 0, 1));
+				RotationMatrix.SetRow(2, FbxVector4(0, -1, 0));
+			}
+			else {
+				RotationMatrix.SetRow(0, FbxVector4(1, 0, 0));				
+				RotationMatrix.SetRow(1, FbxVector4(0, 0, -1));
+				RotationMatrix.SetRow(2, FbxVector4(0, 1, 0));
+			}
+			break;
+		}
+
+		case FbxEuler::eOrderYZX:
+			// TORSO AND LOWER EXTREMITIES
+			if (sBoneName.contains("_r")) {
+				// right lower extremity
+				RotationMatrix.SetRow(0, FbxVector4(0, -1, 0));
+				RotationMatrix.SetRow(1, FbxVector4(0, 0, 1));
+				RotationMatrix.SetRow(2, FbxVector4(-1, 0, 0));
+			}
+			else if (sBoneName.contains("_l")) {
+				// left lower extremity and spine
+				RotationMatrix.SetRow(0, FbxVector4(0, 1, 0));
+				RotationMatrix.SetRow(1, FbxVector4(0, 0, -1));
+				RotationMatrix.SetRow(2, FbxVector4(-1, 0, 0));
+			}
+			else {
+				RotationMatrix.SetIdentity();
+				Matrix.SetRow(0, FbxVector4(0, 1, 0));
+				Matrix.SetRow(1, FbxVector4(0, 0, -1));
+				Matrix.SetRow(2, FbxVector4(-1, 0, 0));
+			}
+//			if (sBoneName == "neck_01") {
+//				RotationMatrix.SetR(FbxVector4(0, 0, -35));
+//			}
+//			if (sBoneName == "neck_02") {
+//				RotationMatrix.SetR(FbxVector4(0, 0, -20));
+//			}
+//			if (sBoneName == "head") {
+//				RotationMatrix.SetR(FbxVector4(0, 0, -10));
+//			}
+			break;
+
+		case FbxEuler::eOrderYXZ:
+			// UNUSED
+			break;
+		case FbxEuler::eOrderZXY:
+			// EYES
+			break;
+
+		case FbxEuler::eOrderZYX:
+		{
+			// FEET
+			// Hardcode feet to be perpendicular to ground like legs (but facing towards toes)
+			Matrix.SetR(FbxVector4(0, Rotation[1], 0));
+			// SPECIAL CASE: TOES / BALL OF FEET (hardcode to point forward)
+			if (sBoneName.contains("ball_")) {
+				Matrix.SetR(FbxVector4(90, 0, 0));
+			}
+			if (sBoneName.contains("_r")) {
+				// right foot
+				RotationMatrix.SetRow(0, FbxVector4(0, -1, 0));
+				RotationMatrix.SetRow(1, FbxVector4(0, 0, 1));
+				RotationMatrix.SetRow(2, FbxVector4(-1, 0, 0));
+			}
+			else {
+				// left foot
+				RotationMatrix.SetRow(0, FbxVector4(0, 1, 0));
+				RotationMatrix.SetRow(1, FbxVector4(0, 0, -1));
+				RotationMatrix.SetRow(2, FbxVector4(-1, 0, 0));
+			}
+			break;
+		}
+
+		default:
+			break;
+	}
+
+	Matrix *= RotationMatrix;
+
+//	printf("Reordering joint: %s\n", sBoneName.toLocal8Bit().constData());
+//	Cluster->GetLink()->SetRotationOrder(FbxNode::eSourcePivot, oRotationOrder.GetOrder());
+//	Cluster->GetLink()->SetRotationOrder(FbxNode::eDestinationPivot, FbxEuler::eOrderXYZ);
+
+}
+
+
+// Built-in implementation of CustomBoneFix callback for use with Metahuman and Unreal Engine 5.x Mannequin rig conversion process
+void UnrealBoneFix2_performTask_0(FbxAMatrix &Matrix, FbxCluster *Cluster, QString sBoneName, FbxDouble3 Rotation)
+{
+	printf("DEBUG: UnrealBoneFix2::performTask(): sBoneName=%s....\n", sBoneName.toLocal8Bit().constData());
+	
+	// Set Base Matrix Rotation
+	Matrix.SetR(Rotation);
+
+	// Apply Rotation Modifier based on Rotation Order, Name, etc
+	FbxRotationOrder oRotationOrder(Cluster->GetLink()->RotationOrder.Get());
+	FbxAMatrix RotationMatrix;
+	RotationMatrix.SetIdentity();
+
+	switch (oRotationOrder.GetOrder())
+	{
+		case FbxEuler::eOrderXYZ:
+		case FbxEuler::eOrderXZY:
+			// UPPER EXTREMITIES
+			if (sBoneName.contains("_r")) {
+				RotationMatrix.SetR(FbxVector4(90, 0, 0));
+			}
+			else {
+				RotationMatrix.SetR(FbxVector4(-90, 0, 0));
+			}
+			// SPECIAL CASE: HANDS
+			if (sBoneName.contains("thumb_")) {
+				// no op
+			}
+			else if (sBoneName.contains("hand_") ||
+					 FbxTools::HasNodeAncestor(Cluster->GetLink(), "hand_r", Qt::CaseInsensitive) ||
+					 FbxTools::HasNodeAncestor(Cluster->GetLink(), "hand_l", Qt::CaseInsensitive))
+			{
+				RotationMatrix.MultRM(FbxVector4(-90, 0, 0));
+			}
+			break;
+
+		case FbxEuler::eOrderYZX:
+			// TORSO AND LOWER EXTREMITIES
+			if (sBoneName.contains("_r")) {
+				RotationMatrix.SetR(FbxVector4(90, 0, -90));
+			}
+			else {
+				RotationMatrix.SetR(FbxVector4(-90, 0, 90));
+			}
+			// Hardcodde pelvis
+			if (sBoneName.contains("pelvis")) {
+				Matrix.SetR(FbxVector4(-90, 0, 90));
+				RotationMatrix.SetIdentity();
+			}
+			break;
+
+		case FbxEuler::eOrderYXZ:
+			// UNUSED
+			break;
+		case FbxEuler::eOrderZXY:
+			// EYES
+			break;
+		case FbxEuler::eOrderZYX:
+			// FEET
+			// Hardcode feet to start pointing up like legs (but facing towards toes)
+			Matrix.SetR(FbxVector4(
+				0,
+				Rotation[1],
+				0)
+			);
+			// SPECIAL CASE: BALL OF FEET (hardcode to point forward)
+			if (sBoneName.contains("ball_")) {
+				Matrix.SetR(FbxVector4(90, 0, 0));
+			}
+			if (sBoneName.contains("_r")) {
+				RotationMatrix.SetR(FbxVector4(90, 0, -90));
+			}
+			else {
+				RotationMatrix.SetR(FbxVector4(-90, 0, 90));
+			}
+			break;
+		default:
+			break;
+	}
+
+	Matrix *= RotationMatrix;
+
+//	printf("Reordering joint: %s\n", sBoneName.toLocal8Bit().constData());
+//	Cluster->GetLink()->SetRotationOrder(FbxNode::eSourcePivot, oRotationOrder.GetOrder());
+//	Cluster->GetLink()->SetRotationOrder(FbxNode::eDestinationPivot, FbxEuler::eOrderXYZ);
+
+}
+
+// Built-in implementation of CustomBoneFix callback for use with Metahuman and Unreal Engine 5.x Mannequin rig conversion process
+void UnrealBoneFix2_performTask_1(FbxAMatrix &Matrix, FbxCluster *Cluster, QString sBoneName, FbxDouble3 Rotation)
+{
+	printf("DEBUG: UnrealBoneFix2::performTask(): sBoneName=%s....\n", sBoneName.toLocal8Bit().constData());
+	
+	// Set Base Matrix Rotation
+	Matrix.SetR(Rotation);
+
+	// Apply Rotation Modifier based on Rotation Order, Name, etc
+	FbxRotationOrder oRotationOrder(Cluster->GetLink()->RotationOrder.Get());
+	FbxAMatrix RotationMatrix;
+	RotationMatrix.SetIdentity();
+
+	switch (oRotationOrder.GetOrder())
+	{
+		case FbxEuler::eOrderXYZ:
+		case FbxEuler::eOrderXZY:
+		{
+			// SPECIAL CASE: HANDS AND FINGERS
+			bool bIsHand = sBoneName.contains("hand_") ||
+			FbxTools::HasNodeAncestor(Cluster->GetLink(), "hand_r", Qt::CaseInsensitive) ||
+			FbxTools::HasNodeAncestor(Cluster->GetLink(), "hand_l", Qt::CaseInsensitive);
+			bool bIsThumb = sBoneName.contains("thumb_");
+			if ( bIsHand && !bIsThumb)
+			{
+				RotationMatrix.SetIdentity();
+				if (sBoneName.contains("_l")) {
+					RotationMatrix.SetRow(0, FbxVector4(1, 0, 0));				
+					RotationMatrix.SetRow(1, FbxVector4(0, -1, 0));
+					RotationMatrix.SetRow(2, FbxVector4(0, 0, -1));
+				}
+				break;
+			}
+			// UPPER EXTREMITIES
+			if (sBoneName.contains("_r")) {
+				RotationMatrix.SetRow(0, FbxVector4(1, 0, 0));				
+				RotationMatrix.SetRow(1, FbxVector4(0, 0, 1));
+				RotationMatrix.SetRow(2, FbxVector4(0, -1, 0));
+			}
+			else {
+				RotationMatrix.SetRow(0, FbxVector4(1, 0, 0));				
+				RotationMatrix.SetRow(1, FbxVector4(0, 0, -1));
+				RotationMatrix.SetRow(2, FbxVector4(0, 1, 0));
+			}
+			break;
+		}
+
+		case FbxEuler::eOrderYZX:
+			// TORSO AND LOWER EXTREMITIES
+			if (sBoneName.contains("_r")) {
+				// right lower extremity
+				RotationMatrix.SetRow(0, FbxVector4(0, -1, 0));
+				RotationMatrix.SetRow(1, FbxVector4(0, 0, 1));
+				RotationMatrix.SetRow(2, FbxVector4(-1, 0, 0));
+			}
+			else {
+				// left lower extremity and spine
+				RotationMatrix.SetRow(0, FbxVector4(0, 1, 0));
+				RotationMatrix.SetRow(1, FbxVector4(0, 0, -1));
+				RotationMatrix.SetRow(2, FbxVector4(-1, 0, 0));
+			}
+			break;
+
+		case FbxEuler::eOrderYXZ:
+			// UNUSED
+			break;
+		case FbxEuler::eOrderZXY:
+			// EYES
+			break;
+
+		case FbxEuler::eOrderZYX:
+		{
+			// FEET
+			// Hardcode feet to be perpendicular to ground like legs (but facing towards toes)
+			Matrix.SetR(FbxVector4(0, Rotation[1], 0));
+			// SPECIAL CASE: TOES / BALL OF FEET (hardcode to point forward)
+			if (sBoneName.contains("ball_")) {
+				Matrix.SetR(FbxVector4(90, 0, 0));
+			}
+			if (sBoneName.contains("_r")) {
+				// right foot
+				RotationMatrix.SetRow(0, FbxVector4(0, -1, 0));
+				RotationMatrix.SetRow(1, FbxVector4(0, 0, 1));
+				RotationMatrix.SetRow(2, FbxVector4(-1, 0, 0));
+			}
+			else {
+				// left foot
+				RotationMatrix.SetRow(0, FbxVector4(0, 1, 0));
+				RotationMatrix.SetRow(1, FbxVector4(0, 0, -1));
+				RotationMatrix.SetRow(2, FbxVector4(-1, 0, 0));
+			}
+			break;
+		}
+
+		default:
+			break;
+	}
+
+	Matrix *= RotationMatrix;
+
+//	printf("Reordering joint: %s\n", sBoneName.toLocal8Bit().constData());
+//	Cluster->GetLink()->SetRotationOrder(FbxNode::eSourcePivot, oRotationOrder.GetOrder());
+//	Cluster->GetLink()->SetRotationOrder(FbxNode::eDestinationPivot, FbxEuler::eOrderXYZ);
+
+}
+
+// Built-in implementation of CustomBoneFix callback for use with Metahuman and Unreal Engine 5.x Mannequin rig conversion process
+void UnrealBoneFix2_performTask3_broken(FbxAMatrix &Matrix, FbxCluster *Cluster, QString sBoneName, FbxDouble3 Rotation)
+{
+	printf("DEBUG: UnrealBoneFix2::performTask(): sBoneName=%s....\n", sBoneName.toLocal8Bit().constData());
+	
+	// Set Base Matrix Rotation
+	Matrix.SetR(Rotation);
+
+	// Apply Rotation Modifier based on Rotation Order, Name, etc
+	FbxRotationOrder oRotationOrder(Cluster->GetLink()->RotationOrder.Get());
+	FbxAMatrix RotationMatrix;
+	RotationMatrix.SetIdentity();
+
+	switch (oRotationOrder.GetOrder())
+	{
+		case FbxEuler::eOrderXYZ:
+		case FbxEuler::eOrderXZY:
+		{
+			// SPECIAL CASE: HANDS AND FINGERS
+			bool bIsHand = sBoneName.contains("hand_") ||
+			FbxTools::HasNodeAncestor(Cluster->GetLink(), "hand_r", Qt::CaseInsensitive) ||
+			FbxTools::HasNodeAncestor(Cluster->GetLink(), "hand_l", Qt::CaseInsensitive);
+			bool bIsThumb = sBoneName.contains("thumb_");
+			if ( bIsHand && !bIsThumb)
+			{
+				RotationMatrix.SetIdentity();
+				if (sBoneName.contains("_l")) {
+					RotationMatrix.SetRow(0, FbxVector4(1, 0, 0));				
+					RotationMatrix.SetRow(1, FbxVector4(0, -1, 0));
+					RotationMatrix.SetRow(2, FbxVector4(0, 0, -1));
+				}
+				break;
+			}
+			// UPPER EXTREMITIES
+			if (sBoneName.contains("_r")) {
+				RotationMatrix.SetRow(0, FbxVector4(1, 0, 0));				
+				RotationMatrix.SetRow(1, FbxVector4(0, 0, 1));
+				RotationMatrix.SetRow(2, FbxVector4(0, -1, 0));
+			}
+			else {
+				RotationMatrix.SetRow(0, FbxVector4(1, 0, 0));				
+				RotationMatrix.SetRow(1, FbxVector4(0, 0, -1));
+				RotationMatrix.SetRow(2, FbxVector4(0, 1, 0));
+			}
+			break;
+		}
+
+		case FbxEuler::eOrderYZX:
+			// TORSO AND LOWER EXTREMITIES
+			Matrix.SetRow(0, FbxVector4(0, Rotation[1], 0));
+			Matrix.SetRow(1, FbxVector4(0, 0, -1));
+			Matrix.SetRow(2, FbxVector4(-1, 0, 0));
+			if (sBoneName.contains("_r")) {
+				RotationMatrix.SetRow(0, FbxVector4(-1, 0, 0));
+				RotationMatrix.SetRow(1, FbxVector4(0, -1, 0));
+				RotationMatrix.SetRow(2, FbxVector4(0, 0, 1));
+			}
+			break;
+
+		case FbxEuler::eOrderYXZ:
+			// UNUSED
+			break;
+		case FbxEuler::eOrderZXY:
+			// EYES
+			break;
+
+		case FbxEuler::eOrderZYX:
+		{
+			// FEET
+			// Hardcode feet to be perpendicular to ground like legs (but facing towards toes)
+			Matrix.SetR(FbxVector4(0, Rotation[1], 0));
+			// SPECIAL CASE: TOES / BALL OF FEET (hardcode to point forward)
+			if (sBoneName.contains("ball_")) {
+				Matrix.SetR(FbxVector4(90, 0, 0));
+			}
+			if (sBoneName.contains("_r")) {
+				// right foot
+				RotationMatrix.SetRow(0, FbxVector4(0, -1, 0));
+				RotationMatrix.SetRow(1, FbxVector4(0, 0, 1));
+				RotationMatrix.SetRow(2, FbxVector4(-1, 0, 0));
+			}
+			else {
+				// left foot
+				RotationMatrix.SetRow(0, FbxVector4(0, 1, 0));
+				RotationMatrix.SetRow(1, FbxVector4(0, 0, -1));
+				RotationMatrix.SetRow(2, FbxVector4(-1, 0, 0));
+			}
+			break;
+		}
+
+		default:
+			break;
+	}
+
+	Matrix *= RotationMatrix;
+
+//	printf("Reordering joint: %s\n", sBoneName.toLocal8Bit().constData());
+//	Cluster->GetLink()->SetRotationOrder(FbxNode::eSourcePivot, oRotationOrder.GetOrder());
+//	Cluster->GetLink()->SetRotationOrder(FbxNode::eDestinationPivot, FbxEuler::eOrderXYZ);
+
+}
+
+bool DeepCopyNode(FbxNode* pDestinationRoot, FbxNode* pSourceNode)
+{
+	// get children
+	if (!pSourceNode)
+	{
+		dzApp->log("DeepCopyNode: pSourceNode is null.");
+		return false;
+	}
+	if (!pDestinationRoot)
+	{
+		dzApp->log("DeepCopyNode: pDestinationRoot is null.");
+		return false;
+	}
+
+	std::vector<FbxNode*> lChildren;
+	int lNumChildren = pSourceNode->GetChildCount();
+	int debug_pdestinationroot_numchildren = pDestinationRoot->GetChildCount();
+	for (int i = 0; i < lNumChildren; i++) {
+		lChildren.push_back(pSourceNode->GetChild(i));
+	}
+	int debug_lchildren_size = (int) lChildren.size();
+	for (int c = 0; c < lChildren.size(); c++)
+		pDestinationRoot->AddChild(lChildren[c]);
+
+	int debug_pdestinationroot_numchildren_2 = pDestinationRoot->GetChildCount();
+
+	return true;
+}
+
+bool FbxTools::MergeScenes(FbxScene* pDestinationScene, FbxScene* pSourceScene)
+{
+
+	DeepCopyNode(pDestinationScene->GetRootNode(), pSourceScene->GetRootNode());
+
+	pSourceScene->GetRootNode()->DisconnectAllSrcObject();
+
+	int lNumSceneObjects = pSourceScene->GetSrcObjectCount();
+	for (int i = 0; i < lNumSceneObjects; i++) {
+		FbxObject* lObj = pSourceScene->GetSrcObject(i);
+		if (lObj == pSourceScene->GetRootNode() || *lObj == pSourceScene->GetGlobalSettings()) {
+			// Don't move the root node or the scene's global settings; these
+			// objects are created for every scene.
+			continue;
+		}
+		/*************************/
+		// DEBUG
+		FbxObject* pObjGlobalSettings = &pSourceScene->GetGlobalSettings();
+		QString globalSettingsName = QString(pObjGlobalSettings->GetName());
+		QString objName = QString(lObj->GetName());
+		if (objName == "GlobalSettings")
+			continue;
+		if (lObj->GetClassId() == FbxAnimCurveNode::ClassId ||
+			lObj->GetClassId() == FbxAnimCurve::ClassId ||
+			lObj->GetClassId() == FbxAnimLayer::ClassId ||
+			lObj->GetClassId() == FbxAnimStack::ClassId ||
+			lObj->GetClassId() == FbxAnimEvalClassic::ClassId ||
+			lObj->GetClassId() == FbxSkeleton::ClassId)
+		{
+//            printf("DEBUG: skipping FbxAnimCurve, FbxAnimCurveNode");
+			continue;
+		}
+		FbxClassId classID = lObj->GetClassId();
+		QString className = classID.GetName();
+//        dzApp->log("DzR2xAction.cpp MergeScenes() DEBUG: adding object=" + objName + " [" + className + "]  to destination scene.");
+		/*************************/
+
+		// Attach the object to the reference scene.
+		lObj->ConnectDstObject(pDestinationScene);
+
+	}
+
+	pSourceScene->DisconnectAllSrcObject();
+
+	return true;
+}
 
