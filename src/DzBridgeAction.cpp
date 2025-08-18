@@ -4064,6 +4064,8 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 		m_bAllowMorphDoubleDipping = BridgeDialog->getAllowMorphDoubleDipping();
 		
 		m_bCombineStrandHairParts = BridgeDialog->getCombineStrandHairPartsEnabled();
+
+		m_sExportRigMode = BridgeDialog->getExportRigMode();
 		
 	} // if (isInteractiveMode() )
 
