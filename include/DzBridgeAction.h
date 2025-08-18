@@ -433,6 +433,7 @@ namespace DzBridgeNameSpace
 
 		virtual bool convertRig(DzNode *parentNode);
 
+		bool R2x_PostProcessFbx(QString fbxFilePath);
 		bool fixMouthCloseBlendshape(DzNode* pNode, QString sFbxSourceFilename, QString sFbxDestinationFilename);
 		
 	protected:
