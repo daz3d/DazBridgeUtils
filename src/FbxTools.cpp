@@ -1634,13 +1634,13 @@ void FbxTools::ModifyBindPose(FbxScene* Scene, FbxNode* RootNode, ModifyBindPose
     if (Scene == nullptr || RootNode == nullptr)
     {
         // log error and return
-        dzApp->log(dzApp->tr("ERROR: FbxTools::FixClusterTranformLinks() invalid nullptr argument."));
+        dzApp->log(dzApp->tr("ERROR: FbxTools::ModifyBindPose() invalid nullptr argument."));
         return;
     }
     
 	FbxGeometry* NodeGeometry = static_cast<FbxGeometry*>(RootNode->GetMesh());
 
-	// Create missing weights
+	// find all skin clusters linked to geometry and modify the bind matrix linked to those clusters
 	if (NodeGeometry)
 	{
 
@@ -1668,7 +1668,7 @@ void FbxTools::ModifyBindPose(FbxScene* Scene, FbxNode* RootNode, ModifyBindPose
 					}
 					Cluster->SetTransformLinkMatrix(Matrix);
 
-					// DEBUGGING
+//					// DEBUGGING
 //					FbxRotationOrder oRotationOrder(Cluster->GetLink()->RotationOrder.Get());
 //					FbxVector4 vRotation = Matrix.GetR();
 //					printf("%s, order=%i, [%f, %f, %f]\n", sBoneName.toLocal8Bit().data(), oRotationOrder.GetOrder(), vRotation[0], vRotation[1], vRotation[2]);
@@ -1677,7 +1677,10 @@ void FbxTools::ModifyBindPose(FbxScene* Scene, FbxNode* RootNode, ModifyBindPose
 			}
 		}
 	}
-
+	else {
+//		printf("ERROR! No NodeGeometry for %s\n", RootNode->GetName());
+	}
+	
 	for (int ChildIndex = 0; ChildIndex < RootNode->GetChildCount(); ++ChildIndex)
 	{
 		FbxNode* ChildNode = RootNode->GetChild(ChildIndex);
@@ -1738,7 +1741,7 @@ void FbxTools::ReparentTwistBone(FbxNode* pNode)
 	}
 	else
 	{
-		printf("nop");
+//		printf("nop");
 	}
 
 }
@@ -2241,6 +2244,32 @@ void RenameDuplicateBones(FbxNode* pRootNode)
 	RenameDuplicateBones(pRootNode, oExistingBones);
 }
 
+// Some accesories attached in ways like using the DzRigidFollowNode become additional meshes.
+// This function attached them to the skeleton of the primary mesh so the don't break the skeleton.
+void FbxTools::MergeFollowerRigs(FbxScene* pScene)
+{
+	FbxNode* pRootNode = pScene->GetRootNode();
+	for (int RootNodeIndex = pScene->GetNodeCount() -1; RootNodeIndex >= 0; --RootNodeIndex)
+	{
+		FbxNode* pOtherRootNode = pScene->GetNode(RootNodeIndex);
+
+		if (pOtherRootNode != pRootNode)
+		{
+			if (FbxSkeleton* pOtherRootNodeSkeleton = pOtherRootNode->GetSkeleton())
+			{
+				pOtherRootNodeSkeleton->SetSkeletonType(FbxSkeleton::eLimbNode);
+			}
+			else if(pOtherRootNode->GetMesh() == nullptr)
+			{
+				FbxSkeleton* pSkeletonAttribute = FbxSkeleton::Create(pScene, pOtherRootNode->GetName());
+				pSkeletonAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
+				pOtherRootNode->SetNodeAttribute(pSkeletonAttribute);
+			}
+		}
+	}
+}
+
+
 FbxNode* FindRootBone(QString &sRootBoneName, FbxNode* pRootNode, FbxScene* pScene)
 {
 	FbxNode* pRootBone = nullptr;
@@ -2257,38 +2286,22 @@ FbxNode* FindRootBone(QString &sRootBoneName, FbxNode* pRootNode, FbxScene* pSce
 		}
 	}
 
-/*
-	// Daz characters sometimes have additional skeletons inside the character for accesories
-	if (AssetType == DazAssetType::SkeletalMesh)
-	{
-		FDazToUnrealFbx::ParentAdditionalSkeletalMeshes(Scene);
-	}
-
-	// Daz Studio puts the base bone rotations in a different place than Unreal expects them.
-	if (CachedSettings->FixBoneRotationsOnImport && AssetType == DazAssetType::SkeletalMesh && RootBone)
-	{
-		FDazToUnrealFbx::RemoveBindPoses(Scene);
-		FDazToUnrealFbx::FixClusterTranformLinks(Scene, RootBone);
-	}
-
 	// If this is a skeleton mesh, but a root bone wasn't found, it may be a scene under a group node or something similar
 	// So create a root node.
-	if (AssetType == DazAssetType::SkeletalMesh && RootBone == nullptr)
+	if (pRootBone == nullptr)
 	{
-		RootBoneName = AssetName;
-
-		FbxSkeleton* NewRootNodeAttribute = FbxSkeleton::Create(Scene, TCHAR_TO_UTF8(TEXT("root")));
+		FbxSkeleton* NewRootNodeAttribute = FbxSkeleton::Create(pScene, TCHAR_TO_UTF8(TEXT("root")));
 		NewRootNodeAttribute->SetSkeletonType(FbxSkeleton::eRoot);
 		NewRootNodeAttribute->Size.Set(1.0);
-		RootBone = FbxNode::Create(Scene, TCHAR_TO_UTF8(TEXT("root")));
-		RootBone->SetNodeAttribute(NewRootNodeAttribute);
-		RootBone->LclTranslation.Set(FbxVector4(0.0, 00.0, 0.0));
+		pRootBone = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("root")));
+		pRootBone->SetNodeAttribute(NewRootNodeAttribute);
+		pRootBone->LclTranslation.Set(FbxVector4(0.0, 00.0, 0.0));
 
 
-		for (int ChildIndex = RootNode->GetChildCount() - 1; ChildIndex >= 0; --ChildIndex)
+		for (int ChildIndex = pRootNode->GetChildCount() - 1; ChildIndex >= 0; --ChildIndex)
 		{
-			FbxNode* ChildNode = RootNode->GetChild(ChildIndex);
-			RootBone->AddChild(ChildNode);
+			FbxNode* ChildNode = pRootNode->GetChild(ChildIndex);
+			pRootBone->AddChild(ChildNode);
 			if (FbxSkeleton* ChildSkeleton = ChildNode->GetSkeleton())
 			{
 				if (ChildSkeleton->GetSkeletonType() == FbxSkeleton::eRoot)
@@ -2298,9 +2311,8 @@ FbxNode* FindRootBone(QString &sRootBoneName, FbxNode* pRootNode, FbxScene* pSce
 			}
 		}
 
-		RootNode->AddChild(RootBone);
+		pRootNode->AddChild(pRootBone);
 	}
-*/
 
 	return pRootBone;
 }
@@ -2511,7 +2523,61 @@ bool ProcessMorphs(FbxScene* Scene
 	return true;
 }
 
-bool FbxTools::PreProcessFbxFile(
+bool FbxTools::PostProcessRigForUnreal(QString FBXFile)
+{
+	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
+	FbxScene* pScene = openFBX->CreateScene("");
+	if (openFBX->LoadScene(pScene, FBXFile.toLocal8Bit().constData()) == false)
+	{
+		printf("ERROR! Can't load scene: %s\n", FBXFile.toLocal8Bit().constData());
+		return false;
+	}
+//	printf("DEBUG: Loaded file: %s\n", FBXFile.toLocal8Bit().constData());
+	
+	FbxNode* RootNode = pScene->GetRootNode();
+
+	// Find the root bone.  There should only be one bone off the scene root
+	FbxNode* RootBone = nullptr;
+
+	QString RootBoneName;
+	RootBone = FindRootBone(RootBoneName, RootNode, pScene);
+	
+	// Rename Root Bone
+	FbxNodeAttribute* pAttr = RootBone->GetNodeAttribute();
+	RootBone->SetName("root");
+	pAttr->SetName("root");
+
+	// Daz characters sometimes have additional skeletons inside the character for accesories
+	FbxTools::MergeFollowerRigs(pScene);
+	
+	RenameDuplicateBones(RootBone);
+	FbxTools::DetachGeometry(pScene, RootNode);
+
+	bool bFixTwistBones = false;
+	if (bFixTwistBones)
+	{
+		FixTwistBones(RootBone);
+	}
+
+	FbxTools::UnrealJointFixCallback2 oUnrealJointFixer;
+	FbxTools::ModifyBindPose(pScene, RootNode, &oUnrealJointFixer);
+
+	FbxTools::RemoveBindPoses(pScene);
+	FbxPose* pTempBindPose = FbxTools::SaveBindMatrixToPose(pScene, "TempBindPose", nullptr, true);
+	FbxTools::ApplyBindPose(pScene, pTempBindPose);
+
+	//ProcessMorphs(Scene, CachedSettings, JsonObject);
+	
+	if (openFBX->SaveScene(pScene, FBXFile.toLocal8Bit().constData()) == false) {
+		printf("ERROR! Can't **SAVE** scene: %s\n", FBXFile.toLocal8Bit().constData());
+		return false;
+	}
+//	printf("DEBUG: Saved to file: %s\n", FBXFile.toLocal8Bit().constData());
+	
+	return true;
+}
+
+bool FbxTools::PostProcessMaterialsForUnreal(
 	QString& FBXFile,
 	QString& AssetName,
 	QMap<DzMaterial*, DzMaterial*>& DuplicateMaterials,
@@ -2525,27 +2591,17 @@ bool FbxTools::PreProcessFbxFile(
 		return false;
 	}
 	
-	FbxNode* RootNode = pScene->GetRootNode();
-
-	// Find the root bone.  There should only be one bone off the scene root
-	FbxNode* RootBone = nullptr;
-
-	bool bProcessRig = true;
-	if (bProcessRig)
-	{
-		QString RootBoneName;
-		RootBone = FindRootBone(RootBoneName, RootNode, pScene);
-		RenameDuplicateBones(RootBone);
-		FbxTools::DetachGeometry(pScene, RootNode);
-
-		bool bFixTwistBones = false;
-		if (bFixTwistBones)
-		{
-			FixTwistBones(RootBone);
-		}
-
-		//ProcessMorphs(Scene, CachedSettings, JsonObject);
-	}
+//	FbxNode* RootNode = pScene->GetRootNode();
+//
+//	// Find the root bone.  There should only be one bone off the scene root
+//	FbxNode* RootBone = nullptr;
+//
+//	bool bProcessRig = true;
+//	if (bProcessRig)
+//	{
+//		QString RootBoneName;
+//		RootBone = FindRootBone(RootBoneName, RootNode, pScene);
+//	}
 
 	// Get FBX scene materials
 	FbxArray<FbxSurfaceMaterial*> FbxMaterialArray;
@@ -2660,7 +2716,7 @@ bool FbxTools::PreProcessFbxFile(
 // Built-in implementation of CustomBoneFix callback for use with Metahuman and Unreal Engine 5.x Mannequin rig conversion process
 void FbxTools::UnrealJointFixCallback2::performTask(FbxAMatrix &Matrix, FbxCluster *Cluster, QString sBoneName, FbxDouble3 Rotation)
 {
-	printf("DEBUG: UnrealBoneFix2::performTask(): sBoneName=%s....\n", sBoneName.toLocal8Bit().constData());
+//	printf("DEBUG: UnrealBoneFix2::performTask(): sBoneName=%s....\n", sBoneName.toLocal8Bit().constData());
 	
 	// Set Base Matrix Rotation
 	Matrix.SetR(Rotation);

@@ -122,7 +122,8 @@ public:
 	static bool TransferBlendshapes(QString sSourceFilename, FbxScene* pDestinationScene, QString sMappingFilename="");
 	static bool BakeMeshesToSingleBindPose(FbxScene* pScene);
 
-	static bool PreProcessFbxFile(
+	static bool PostProcessRigForUnreal(QString FBXFile);
+	static bool PostProcessMaterialsForUnreal(
 		QString& FBXFile,
 		QString& AssetName,
 		QMap<DzMaterial*, DzMaterial*>& DuplicateMaterials,
@@ -130,6 +131,8 @@ public:
 
 	static bool MergeScenes(FbxScene* pDestinationScene, FbxScene* pSourceScene);
 
+	static void MergeFollowerRigs(FbxScene* pScene);
+	
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

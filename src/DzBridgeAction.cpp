@@ -509,7 +509,7 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 	}
 */
 	
-	convertRig(parentNode);
+	preProcessRigConversion(parentNode);
 	
     preProcessProgress.setInfo("DazBridge: Pre-Processing Completed.");
 	preProcessProgress.finish();
@@ -517,7 +517,7 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 	return true;
 }
 
-bool DzBridgeAction::convertRig(DzNode *parentNode)
+bool DzBridgeAction::preProcessRigConversion(DzNode *parentNode)
 {
 	DzProgress preProcessProgress(0);
 	
@@ -9799,13 +9799,14 @@ bool DzBridgeAction::postProcessRigConversion(QString sExportRigMode, QString fb
 	QString sMeshRoot = "";
 	QString sGarmentRoot = "";
 
+	FbxTools::UnrealJointFixCallback2 oUnrealFixer2;
 	if (sExportRigMode == "unreal" || sExportRigMode == "metahuman") {
 		if (m_pSelectedNode->getName() == "Genesis9") {
 //			sMvcTemplateFilename = dzApp->getTempPath() + "/g9_to_unreal_mvc_template.fbx";
 //			sOverrideRigFilename = dzApp->getTempPath() + "/g9_to_unreal_daz_apose_override.fbx";
 		}
 //		RootBone->SetRotationOrder(FbxNode::eDestinationPivot, FbxEuler::eOrderXYZ);
-		pCustomJointFixer = new FbxTools::UnrealJointFixCallback2();
+		pCustomJointFixer = &oUnrealFixer2;
 //		sTargetPoseFilename = dzApp->getTempPath() + "/unreal_apose_noroot.fbx";
 		sTargetPoseFilename = dzApp->getTempPath() + "/g9_unreal_apose_fixed_4.fbx";
 //		sFinalRigTemplateFbxFilename = dzApp->getTempPath() + "/unreal_rig_template.fbx";
@@ -9818,12 +9819,17 @@ bool DzBridgeAction::postProcessRigConversion(QString sExportRigMode, QString fb
 		// use values passed as arguments
 	}
 
-	return postProcessRigConversion(fbxFilePath,
+	bool bResult = postProcessRigConversion(fbxFilePath,
 				sMvcTemplateFilename, m_sMvcProxyMeshFilePath,
 				sOverrideRigFilename, pCustomJointFixer,
 				sTargetPoseFilename, sFinalRigTemplateFbxFilename,
 				sRigRoot, sMeshRoot, sGarmentRoot);
 
+	if (sExportRigMode == "unreal" || sExportRigMode == "metahuman") {
+		
+	}
+	
+	return bResult;
 }
 
 bool DzBridgeAction::postProcessRigConversion
@@ -9863,6 +9869,8 @@ bool DzBridgeAction::postProcessRigConversion
 			break;
 		}
 	}
+
+	FbxTools::MergeFollowerRigs(pScene);
 	
 	if (RootBone)
 	{
@@ -10021,9 +10029,6 @@ bool DzBridgeAction::postProcessRigConversion
 
 			}
 
-			if (pCustomJointFixer != nullptr) {
-				delete(pCustomJointFixer);
-			}
 		}
 		//////////////////////////////////////////////////////
 

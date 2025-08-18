@@ -434,7 +434,7 @@ namespace DzBridgeNameSpace
 
 		Q_INVOKABLE virtual bool cleanIntermediateSubFolder(QString sSubFolder);
 
-		virtual bool convertRig(DzNode *parentNode);
+		virtual bool preProcessRigConversion(DzNode *parentNode);
 
 		bool postProcessRigConversion(QString sExportRigMode, QString fbxFilePath);
 		bool postProcessRigConversion(QString fbxFilePath,
