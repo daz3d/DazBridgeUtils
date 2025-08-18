@@ -9786,6 +9786,82 @@ void DzBridgeAction::writeStrandHairInfo(DzJsonWriter& Writer, QMap<QString, QLi
 
 }
 
+bool DzBridgeAction::fixMouthCloseBlendshape(DzNode* pNode, QString sFbxSourceFilename, QString sFbxDestinationFilename)
+{
+	if (pNode == nullptr) return false;
+	
+	QString sFigureShapeName = pNode->getName() + ".Shape";
+
+	generateBakedJawOpenMouthClose(pNode);
+	generateBakedJawOpen(pNode);
+	
+	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
+	FbxScene* pFacsBlendshapeScene = openFBX->CreateScene("FACS Blendshape Scene");
+	if (openFBX->LoadScene(pFacsBlendshapeScene, sFbxSourceFilename) == false) {
+		dzApp->log(QObject::tr("ERROR: fixMouthCloseBlendshape() Unable to load Fbx Blendshape file: ") + sFbxSourceFilename);
+		return false;
+	}
+
+	// find mouthclose blendshape
+	// get mesh nodes list
+	FbxNode* pBlendshapeSceneRootNode = pFacsBlendshapeScene->GetRootNode();
+	QList<FbxNode*> aBlendshapeMeshNodeList;
+	FbxTools::GetAllMeshes(pBlendshapeSceneRootNode, aBlendshapeMeshNodeList);
+	FbxNode* pFigureNode = pFacsBlendshapeScene->FindNodeByName(sFigureShapeName.toLocal8Bit().data());
+	FbxMesh* pFigureMesh = pFigureNode->GetMesh();
+
+	FbxBlendShapeChannel* pSourceChannel = nullptr;
+	bool bFoundMouthBlendshape = false;
+	
+	int numBlendshapes = pFigureMesh->GetDeformerCount(FbxDeformer::eBlendShape);
+	for (int nBlendshapeIndex = 0; nBlendshapeIndex < numBlendshapes; nBlendshapeIndex++)
+	{
+		FbxBlendShape* pSourceBlendshape = static_cast<FbxBlendShape*>(pFigureMesh->GetDeformer(nBlendshapeIndex, FbxDeformer::eBlendShape));
+		int numBlendshapeChannels = pSourceBlendshape->GetBlendShapeChannelCount();
+		for (int nBlendshapeChannelIndex = 0; nBlendshapeChannelIndex < numBlendshapeChannels; nBlendshapeChannelIndex++)
+		{
+			// Channel Level
+			FbxBlendShapeChannel* pTempSourceChannel = pSourceBlendshape->GetBlendShapeChannel(nBlendshapeChannelIndex);
+			QString sRawChannelName = QString( pTempSourceChannel->GetName() );
+			QString sCleanedMeshName = QString(pFigureMesh->GetName()).replace(".Shape", "");
+			QString sCleanedChannelName = QString(sRawChannelName).replace(sCleanedMeshName+"__", "");
+			
+			if (sCleanedChannelName == "facs_ctrl_MouthClose") {
+				pSourceChannel = pTempSourceChannel;
+				bFoundMouthBlendshape = true;
+				break;
+			}
+		}
+	}	
+	if (bFoundMouthBlendshape == false || pSourceChannel == nullptr) {
+		dzApp->log(QObject::tr("ERROR: fixMouthCloseBlendshape() MouthClose blendshape not found, aborting...") );
+		return false;
+	}
+
+	FbxShape* pSourceShape = pSourceChannel->GetTargetShape(0);
+	int numVertsShapeBuffer = pSourceShape->GetControlPointsCount();
+	
+	// prepare source
+	FbxVector4* pSourceBasisBuffer = pFigureMesh->GetControlPoints();
+	FbxVector4* pSourceBuffer = pSourceShape->GetControlPoints();
+
+	if (calculateMouthCloseVertexDeltas(pSourceBuffer, numVertsShapeBuffer) == false) {
+		return false;
+	}
+	// iterate and transfer each vertex delta
+	for (int nBufferIndex=0; nBufferIndex < numVertsShapeBuffer; nBufferIndex++) {
+		// get vertex deltas
+		FbxVector4 oVertexDelta = pSourceBuffer[nBufferIndex];
+		// add vertex deltas to basis mesh and set result to source mesh
+		pSourceBuffer[nBufferIndex] = pSourceBasisBuffer[nBufferIndex] + oVertexDelta;
+	}
+
+	openFBX->SaveScene(pFacsBlendshapeScene, sFbxDestinationFilename);
+
+	return true;
+}
+
+
 
 
 

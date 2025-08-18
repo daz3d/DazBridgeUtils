@@ -432,6 +432,8 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool cleanIntermediateSubFolder(QString sSubFolder);
 
 		virtual bool convertRig(DzNode *parentNode);
+
+		bool fixMouthCloseBlendshape(DzNode* pNode, QString sFbxSourceFilename, QString sFbxDestinationFilename);
 		
 	protected:
 		// Struct to remember attachment info
