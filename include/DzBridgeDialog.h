@@ -153,6 +153,8 @@ namespace DzBridgeNameSpace
 
 		virtual void toggleOptions() override { DzOptionsDialog::toggleOptions(); fixRowLabelWidths(); };
 
+		Q_INVOKABLE QString getExportRigMode() { return m_wExportRigCombobox->itemData(m_wExportRigCombobox->currentIndex()).toString(); }
+
 	protected:
 		virtual void showEvent(QShowEvent* event) override { handleSceneSelectionChanged(); fixRowLabelWidths(); QDialog::showEvent(event); }
 
@@ -291,6 +293,9 @@ namespace DzBridgeNameSpace
 		// Strand Based Hair Options
 		QCheckBox* m_wCombineStrandHairPartsCheckBox = nullptr;
 		QLabel* m_wCombineStrandHairPartsRowLabel = nullptr;
+
+		QComboBox* m_wExportRigCombobox = nullptr;
+		QLabel* m_wExportRigRowLabel = nullptr;
 		
 #ifdef UNITTEST_DZBRIDGE
 		friend class ::UnitTest_DzBridgeDialog;

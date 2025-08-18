@@ -342,6 +342,21 @@ functionality for some Morph and JCM products.\
 	lodSettingsLayout->addWidget(m_wLodSettingsButton);
 	connect(m_wEnableLodCheckBox, SIGNAL(stateChanged(int)), this, SLOT(HandleEnableLodCheckBoxChange(int)));
 
+	
+	/**********************************************************************/
+	 m_wExportRigCombobox = new QComboBox();
+	 m_wExportRigCombobox->addItem(tr("Rig Conversion Options..."), "--");
+	 m_wExportRigCombobox->addItem(tr("Unmodified Daz Rig"), "--");
+	 m_wExportRigCombobox->addItem(tr("Metahuman Rig"), "metahuman");
+	 m_wExportRigCombobox->addItem(tr("Unreal Mannequin Rig"), "unreal");
+	 m_wExportRigCombobox->addItem(tr("Unity Humanoid Rig"), "unity");
+//	 m_wExportRigCombobox->addItem(tr("Wonder Dynamics Rig"), "wonder_dynamics");
+	 m_wExportRigCombobox->addItem(tr("Mixamo Rig"), "mixamo");
+//	 m_wExportRigCombobox->addItem(tr("Nvidia R2X Rig"), "r2x");
+//	 m_wExportRigCombobox->setCurrentIndex(m_wExportRigCombobox->findData("r2x"));
+	 /**********************************************************************/
+	
+	
 	/////////////////// Advanced Settings Section /////////////////////
 
 	// FBX Version
@@ -416,6 +431,12 @@ functionality for some Morph and JCM products.\
 	m_wAssetTypeRowLabelWidget = new QLabel(tr("Asset Type"));
 	mainLayout->addRow(m_wAssetTypeRowLabelWidget, assetTypeCombo);
 	m_aRowLabels.append(m_wAssetTypeRowLabelWidget);
+
+	m_wExportRigRowLabel = new QLabel(tr("Convert Rig"));
+	mainLayout->addRow(m_wExportRigRowLabel, m_wExportRigCombobox);
+	m_wExportRigRowLabel->setVisible(false);
+	m_wExportRigCombobox->setVisible(false);
+
 
 	// Add Animation settings to the main layout as a new row without header
 	mainLayout->addRow("", animationSettingsGroupBox);
