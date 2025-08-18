@@ -1629,7 +1629,7 @@ bool FbxTools::HasNodeAncestor(FbxNode* pNode, const QString sAncestorName, Qt::
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DEV TESTING
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-void FbxTools::FixClusterTranformLinks(FbxScene* Scene, FbxNode* RootNode, FixClusterTransformLinks_CustomBoneFix *pCustomBoneFix)
+void FbxTools::ModifyBindPose(FbxScene* Scene, FbxNode* RootNode, ModifyBindPoseCallback *pCustomBoneFix)
 {
     if (Scene == nullptr || RootNode == nullptr)
     {
@@ -1681,7 +1681,7 @@ void FbxTools::FixClusterTranformLinks(FbxScene* Scene, FbxNode* RootNode, FixCl
 	for (int ChildIndex = 0; ChildIndex < RootNode->GetChildCount(); ++ChildIndex)
 	{
 		FbxNode* ChildNode = RootNode->GetChild(ChildIndex);
-		FixClusterTranformLinks(Scene, ChildNode, pCustomBoneFix);
+		FbxTools::ModifyBindPose(Scene, ChildNode, pCustomBoneFix);
 	}
 }
 
@@ -1879,7 +1879,7 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 }
 
 // Built-in implementation of CustomBoneFix callback for use with Metahuman and Unreal Engine 5.x Mannequin rig conversion process
-void FbxTools::UnrealBoneFix::performTask(FbxAMatrix &Matrix, FbxCluster *Cluster, QString sBoneName, FbxDouble3 Rotation)
+void FbxTools::UnrealJointFixCallback::performTask(FbxAMatrix &Matrix, FbxCluster *Cluster, QString sBoneName, FbxDouble3 Rotation)
 {
     // Hard code for Unreal Engine Mannequin bone-names
     Matrix.MultRM(Rotation);
@@ -1897,14 +1897,14 @@ void FbxTools::UnrealBoneFix::performTask(FbxAMatrix &Matrix, FbxCluster *Cluste
         Matrix.MultRM(FbxVector4(0, 0, 0));
     }
     else if (sBoneName.contains("hand_") ||
-             HasNodeAncestor(Cluster->GetLink(), "hand_r", Qt::CaseInsensitive) ||
-             HasNodeAncestor(Cluster->GetLink(), "hand_l", Qt::CaseInsensitive))
+             FbxTools::HasNodeAncestor(Cluster->GetLink(), "hand_r", Qt::CaseInsensitive) ||
+			 FbxTools::HasNodeAncestor(Cluster->GetLink(), "hand_l", Qt::CaseInsensitive))
     {
         Matrix.MultRM(FbxVector4(-90, 0, 0));
     }
     
     if (sBoneName.contains("_l") || sBoneName.contains("_r")) {
-        if (HasNodeAncestor(Cluster->GetLink(), "spine_01", Qt::CaseInsensitive)) {
+        if (FbxTools::HasNodeAncestor(Cluster->GetLink(), "spine_01", Qt::CaseInsensitive)) {
             Matrix.MultRM(FbxVector4(0, 0, 0));
         }
         else {
@@ -2657,28 +2657,8 @@ bool FbxTools::PreProcessFbxFile(
 
 ////////////////////////////////////////////////////////////////////
 
-bool exLoadFbxScene(FbxScene* pScene, QString sFilename, int bShowGuiError, QString sErrorMessageTemplate)
-{
-	if (sErrorMessageTemplate.isEmpty() || sErrorMessageTemplate == "")
-	{
-		sErrorMessageTemplate = QObject::tr("\
-ERROR: DzR2xAction::exLoadFbxScene():\n\n\
-File: \"%1\"\n\n\
-FbxStatusCode: %2\n\n\
-Error Message: \"%3\"\n\n"
-		   );
-	}
-
-//	bool bRetValue = DzBridgeAction::exLoadFbxScene(pScene, sFilename, bShowGuiError, sErrorMessageTemplate);
-//	bool bRetValue = DzBridgeAction::exLoadFbxScene(pScene, sFilename);
-	
-//	return bRetValue;
-	return false;
-	
-}
-
 // Built-in implementation of CustomBoneFix callback for use with Metahuman and Unreal Engine 5.x Mannequin rig conversion process
-void FbxTools::UnrealBoneFix2::performTask(FbxAMatrix &Matrix, FbxCluster *Cluster, QString sBoneName, FbxDouble3 Rotation)
+void FbxTools::UnrealJointFixCallback2::performTask(FbxAMatrix &Matrix, FbxCluster *Cluster, QString sBoneName, FbxDouble3 Rotation)
 {
 	printf("DEBUG: UnrealBoneFix2::performTask(): sBoneName=%s....\n", sBoneName.toLocal8Bit().constData());
 	

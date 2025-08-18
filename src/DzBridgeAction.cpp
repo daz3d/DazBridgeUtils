@@ -5110,8 +5110,8 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 			FbxNodeAttribute* pRootBoneAttributes = pFbxRootBone->GetNodeAttribute();
 			pRootBoneAttributes->SetName("root");
 			// Convert Joint Orientations
-			FbxTools::UnrealBoneFix oUnrealBoneFixer;
-			FbxTools::FixClusterTranformLinks(pScene, pFbxRootBone, &oUnrealBoneFixer);
+			FbxTools::UnrealJointFixCallback oUnrealBoneFixer;
+			FbxTools::ModifyBindPose(pScene, pFbxRootBone, &oUnrealBoneFixer);
 			FbxTools::AddIkNodes(pScene, pFbxRootBone, "foot_l", "foot_r", "hand_l", "hand_r");
 			// Bake New Bind Pose
 			FbxPose* pNewBindPose = FbxTools::SaveBindMatrixToPose(pScene, "NewBindPose", nullptr, true);
@@ -5134,7 +5134,7 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 		}
 		else if (pFbxRootBone && (m_sExportRigMode == "unity" || m_sExportRigMode == "mixamo"))
 		{
-			FbxTools::FixClusterTranformLinks(pScene, pFbxRootBone, nullptr);
+			FbxTools::ModifyBindPose(pScene, pFbxRootBone, nullptr);
 			// Bake New Bind Pose
 			FbxPose* pNewBindPose = FbxTools::SaveBindMatrixToPose(pScene, "NewBindPose", nullptr, true);
 			FbxTools::ApplyBindPose(pScene, pNewBindPose);
@@ -9788,49 +9788,61 @@ void DzBridgeAction::writeStrandHairInfo(DzJsonWriter& Writer, QMap<QString, QLi
 
 }
 
-bool DzBridgeAction::R2x_PostProcessFbx(QString fbxFilePath)
+bool DzBridgeAction::postProcessRigConversion(QString sExportRigMode, QString fbxFilePath)
 {
-	QString m_sMvcProxyMeshFilePath = "";
-	
-//	bool result = DzBridgeAction::postProcessFbx(fbxFilePath);
-//	if (!result) return false;
+	QString sMvcTemplateFilename = "";
+	QString sOverrideRigFilename = "";
+	FbxTools::ModifyBindPoseCallback *pCustomJointFixer = nullptr;
+	QString sTargetPoseFilename = "";
+	QString sFinalRigTemplateFbxFilename = "";
+	QString sRigRoot = "";
+	QString sMeshRoot = "";
+	QString sGarmentRoot = "";
 
-	if (m_bPostProcessFbx == false)
-		return false;
+	if (sExportRigMode == "unreal" || sExportRigMode == "metahuman") {
+		if (m_pSelectedNode->getName() == "Genesis9") {
+//			sMvcTemplateFilename = dzApp->getTempPath() + "/g9_to_unreal_mvc_template.fbx";
+//			sOverrideRigFilename = dzApp->getTempPath() + "/g9_to_unreal_daz_apose_override.fbx";
+		}
+//		RootBone->SetRotationOrder(FbxNode::eDestinationPivot, FbxEuler::eOrderXYZ);
+		pCustomJointFixer = new FbxTools::UnrealJointFixCallback2();
+//		sTargetPoseFilename = dzApp->getTempPath() + "/unreal_apose_noroot.fbx";
+		sTargetPoseFilename = dzApp->getTempPath() + "/g9_unreal_apose_fixed_4.fbx";
+//		sFinalRigTemplateFbxFilename = dzApp->getTempPath() + "/unreal_rig_template.fbx";
+//		sRigRoot = "SKM_Genesis";
+//		sMeshRoot = "SKM_Genesis";
+	}
+	else if (sExportRigMode == "" || sExportRigMode == "--") {
+		// pass
+	} else {
+		// use values passed as arguments
+	}
 
+	return postProcessRigConversion(fbxFilePath,
+				sMvcTemplateFilename, m_sMvcProxyMeshFilePath,
+				sOverrideRigFilename, pCustomJointFixer,
+				sTargetPoseFilename, sFinalRigTemplateFbxFilename,
+				sRigRoot, sMeshRoot, sGarmentRoot);
+
+}
+
+bool DzBridgeAction::postProcessRigConversion
+(
+	QString fbxFilePath, 
+	QString sMvcTemplateFilename,
+	QString sMvcProxyMeshFilename,
+	QString sOverrideRigFilename,
+	FbxTools::ModifyBindPoseCallback *pCustomJointFixer,
+	QString sTargetPoseFilename,
+	QString sFinalRigTemplateFbxFilename,
+	QString sRigRoot, QString sMeshRoot, QString sGarmentRoot
+)
+{	
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
 	FbxScene* pScene = openFBX->CreateScene("Base Mesh Scene");
 	if (exLoadFbxScene(pScene, fbxFilePath) == false) {
 		return false;
 	}
-
-	FbxTools::BakeMeshesToSingleBindPose(pScene);
-
-#if 0
-	QString sRawFbxFilename = QString(fbxFilePath).replace(".fbx", "_raw.fbx", Qt::CaseInsensitive);
-	if (openFBX->SaveScene(pScene, sRawFbxFilename, -1, false) == false)
-	{
-		QString sFbxErrorMessage = QObject::tr("ERROR: DzR2xBridge: openFBX->SaveScene():\n\n")
-			+ QString("File: \"%1\"\n\n").arg(fbxFilePath)
-			+ QString("FbxStatusCode: %1\n").arg(openFBX->GetErrorCode())
-			+ QString("Error Message: %1\n\n").arg(openFBX->GetErrorString());
-		dzApp->log(sFbxErrorMessage);
-		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, QObject::tr("Error"),
-			tr("An error occurred while processing the Fbx file:\n\n") + sFbxErrorMessage, QMessageBox::Ok);
-		return false;
-	}
-#endif
-
-//	// Extract PluginData
-//	QString sScriptFolderPath;
-//	bool replace = true;
-//	QString sArchiveFilename = "/plugindata.zip";
-//	QString sEmbeddedArchivePath = ":/DazBridgeR2x" + sArchiveFilename;
-//	QFile srcFile(sEmbeddedArchivePath);
-//	QString tempPathArchive = dzApp->getTempPath() + sArchiveFilename;
-//	DzBridgeAction::copyFile(&srcFile, &tempPathArchive, replace);
-//	srcFile.close();
-//	int zip_result = ::zip_extract(tempPathArchive.toAscii().data(), dzApp->getTempPath().toAscii().data(), nullptr, nullptr);
 
 	// Find the root bone.  There should only be one bone off the scene root
 	FbxNode* RootNode = pScene->GetRootNode();
@@ -9860,41 +9872,15 @@ bool DzBridgeAction::R2x_PostProcessFbx(QString fbxFilePath)
 		///////////////////////////////////////////////////////
 		if (m_sExportRigMode != "" && m_sExportRigMode != "--")
 		{
-			QString sMvcTemplateFilename = "";
-			QString sOverrideRigFilename = "";
-			FbxTools::FixClusterTransformLinks_CustomBoneFix *pCustomBoneFixer = nullptr;
-			QString sTargetPoseFilename = "";
-			QString sFinalRigTemplateFbxFilename = "";
-			QString sRigRoot = "";
-			QString sMeshRoot = "";
-			QString sGarmentRoot = "";
 
 //			FbxTools::DetachGeometry(pScene);
 
 			FbxTools::RemoveBindPoses(pScene);
 
-			if (m_sExportRigMode == "unreal" || m_sExportRigMode == "metahuman") {
-				if (m_pSelectedNode->getName() == "Genesis9") {
-//					sMvcTemplateFilename = dzApp->getTempPath() + "/g9_to_unreal_mvc_template.fbx";
-//					sOverrideRigFilename = dzApp->getTempPath() + "/g9_to_unreal_daz_apose_override.fbx";
-				}
-//				RootBone->SetRotationOrder(FbxNode::eDestinationPivot, FbxEuler::eOrderXYZ);
-				pCustomBoneFixer = new FbxTools::UnrealBoneFix2();
-//				sTargetPoseFilename = dzApp->getTempPath() + "/unreal_apose_noroot.fbx";
-				sTargetPoseFilename = dzApp->getTempPath() + "/g9_unreal_apose_fixed_4.fbx";
-//				sFinalRigTemplateFbxFilename = dzApp->getTempPath() + "/unreal_rig_template.fbx";
-//				sRigRoot = "SKM_Genesis";
-//				sMeshRoot = "SKM_Genesis";
-			}
-			else if (m_sExportRigMode == "" || m_sExportRigMode == "--") {
-				// pass
-			} else {
-			}
-
 			if (sMvcTemplateFilename != "" && sOverrideRigFilename != "")
 			{
 				// Retarget override rig from basefigure shape to custom character shape using MVC
-				if (retargetFigureToNewRig(m_pSelectedNode, pScene, RootBone, sMvcTemplateFilename, m_sMvcProxyMeshFilePath, sOverrideRigFilename) == false) {
+				if (retargetFigureToNewRig(m_pSelectedNode, pScene, RootBone, sMvcTemplateFilename, sMvcProxyMeshFilename, sOverrideRigFilename) == false) {
 					printf("ERROR: retargetFigureToNewRig(template=%s, override=%s)\n", sMvcTemplateFilename.toLocal8Bit().constData(), sOverrideRigFilename.toLocal8Bit().constData());
 					return false;
 				}
@@ -9915,8 +9901,8 @@ bool DzBridgeAction::R2x_PostProcessFbx(QString fbxFilePath)
 			else
 			{
 				// CONVERT EXISTING RIG
-				printf("Starting FixClusterTransformLinks(): ExportRigMode=%s, pCustomBoneFixer=0x%x\n", m_sExportRigMode.toLocal8Bit().constData(), (long) pCustomBoneFixer );
-				FbxTools::FixClusterTranformLinks(pScene, RootBone, pCustomBoneFixer);
+				printf("Starting FixClusterTransformLinks(): ExportRigMode=%s, pCustomBoneFixer=0x%x\n", m_sExportRigMode.toLocal8Bit().constData(), (long) pCustomJointFixer );
+				FbxTools::ModifyBindPose(pScene, RootBone, pCustomJointFixer);
 
 //				FbxPose* pNewBindPose = FbxTools::SaveBindMatrixToPose(pScene, "NewBindPose", nullptr, true);
 //				FbxTools::ApplyBindPose(pScene, pNewBindPose);
@@ -9935,14 +9921,14 @@ bool DzBridgeAction::R2x_PostProcessFbx(QString fbxFilePath)
 //				}
 //				pNewBindPose->Destroy();
 
-				printf("DEBUG: CONVERTJOINT PATHWAY COMPLETE USING: pCustomBoneFixer=0x%x\n", (long) pCustomBoneFixer );
+				printf("DEBUG: CONVERTJOINT PATHWAY COMPLETE USING: pCustomBoneFixer=0x%x\n", (long) pCustomJointFixer );
 			}
 
 			FbxTools::RemoveBindPoses(pScene);
 			FbxPose* pTempBindPose = FbxTools::SaveBindMatrixToPose(pScene, "TempBindPose", nullptr, true);
 			FbxTools::ApplyBindPose(pScene, pTempBindPose);
 			
-#if 1
+#if 0			
 			QString sUnposedFbxFilename = QString(fbxFilePath).replace(".fbx", "_unposed.fbx", Qt::CaseInsensitive);
 			if (openFBX->SaveScene(pScene, sUnposedFbxFilename, -1, false) == false)
 			{
@@ -10035,8 +10021,8 @@ bool DzBridgeAction::R2x_PostProcessFbx(QString fbxFilePath)
 
 			}
 
-			if (pCustomBoneFixer != nullptr) {
-				delete(pCustomBoneFixer);
+			if (pCustomJointFixer != nullptr) {
+				delete(pCustomJointFixer);
 			}
 		}
 		//////////////////////////////////////////////////////

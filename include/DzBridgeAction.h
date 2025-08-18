@@ -28,6 +28,8 @@ class DzNumericProperty;
 class DzFacetMesh;
 class MvcFbxBoneRetargeter;
 
+#include "FbxTools.h"
+
 // from ImageTools library (imagetools.h)
 class ImageToolsJobsManager;
 
@@ -269,6 +271,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool generateBakedJawOpenMouthClose(DzNode* pParentNode, bool bUseArKitFacs=true);
 		Q_INVOKABLE virtual bool generateBakedJawOpen(DzNode* pParentNode, bool bUseArKitFacs=true);
 		Q_INVOKABLE virtual bool calculateMouthCloseVertexDeltas(FbxVector4* pVertexDeltaBuffer, int numVertexDeltaBufferIndexes);
+		QString m_sMvcProxyMeshFilePath = "";
 		
 		// STRAND-BASED-HAIR TOOLS
 		Q_INVOKABLE virtual bool isStrandBasedHair(DzNode* pNode);
@@ -433,7 +436,13 @@ namespace DzBridgeNameSpace
 
 		virtual bool convertRig(DzNode *parentNode);
 
-		bool R2x_PostProcessFbx(QString fbxFilePath);
+		bool postProcessRigConversion(QString sExportRigMode, QString fbxFilePath);
+		bool postProcessRigConversion(QString fbxFilePath,
+			QString sMvcTemplateFilename, QString sMvcProxyMeshFilename,
+			QString sOverrideRigFilename, FbxTools::ModifyBindPoseCallback *pCustomJointFixer,
+			QString sTargetPoseFilename, QString sFinalRigTemplateFbxFilename,
+			QString sRigRoot, QString sMeshRoot, QString sGarmentRoot
+		);
 		bool fixMouthCloseBlendshape(DzNode* pNode, QString sFbxSourceFilename, QString sFbxDestinationFilename);
 		
 	protected:

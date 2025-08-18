@@ -14,22 +14,22 @@ class DzMaterial;
 class FbxTools
 {
 public:
-    // Base class defining callback to perform custom bone re-orientation operations during rig conversion
-    class FixClusterTransformLinks_CustomBoneFix
-    {
-    public:
-        // callback to be called by FbxTools::FixClusterTranformLinks() for performing individual bone orientation operations during rig conversion
-        virtual void performTask(FbxAMatrix &Matrix, FbxCluster* Cluster, QString sBoneName, FbxDouble3 Rotation)=0;
-    };
+	// Base class defining callback to perform custom bone re-orientation operations during rig conversion
+	class ModifyBindPoseCallback
+	{
+	public:
+		// callback to be called by FbxTools::FixClusterTranformLinks() for performing individual bone orientation operations during rig conversion
+		virtual void performTask(FbxAMatrix &Matrix, FbxCluster* Cluster, QString sBoneName, FbxDouble3 Rotation)=0;
+	};
 
-    // Built-in implementation of CustomBoneFix class for use with Metahuman and Unreal Engine 5.x Mannequin rig conversion process
-    class UnrealBoneFix : public FixClusterTransformLinks_CustomBoneFix
-    {
-    public:
-        virtual void performTask(FbxAMatrix &Matrix, FbxCluster* Cluster, QString sBoneName, FbxDouble3 Rotation) override;
-    };
+	// Built-in implementation of CustomBoneFix class for use with Metahuman and Unreal Engine 5.x Mannequin rig conversion process
+	class UnrealJointFixCallback : public ModifyBindPoseCallback
+	{
+	public:
+		virtual void performTask(FbxAMatrix &Matrix, FbxCluster* Cluster, QString sBoneName, FbxDouble3 Rotation) override;
+	};
 
-	class UnrealBoneFix2 : public FbxTools::FixClusterTransformLinks_CustomBoneFix
+	class UnrealJointFixCallback2 : public ModifyBindPoseCallback
 	{
 	public:
 		virtual void performTask(FbxAMatrix &Matrix, FbxCluster* Cluster, QString sBoneName, FbxDouble3 Rotation) override;
@@ -133,7 +133,7 @@ public:
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	static void FixClusterTranformLinks(FbxScene* Scene, FbxNode* RootNode, FixClusterTransformLinks_CustomBoneFix* pCustomBoneFix);
+	static void ModifyBindPose(FbxScene* Scene, FbxNode* RootNode, ModifyBindPoseCallback* pCustomBoneFix);
 	static void RemovePrePostRotations(FbxNode* pNode);
 	static void ReparentTwistBone(FbxNode* pNode);
 	static void FindAndProcessTwistBones(FbxNode* pNode);
