@@ -8865,8 +8865,8 @@ bool DzBridgeAction::undoHideAllStrandBasedHair()
 	bool bErrorDetected = false;
 	
 	foreach(DzNode* pHairNode, m_undoList_HideStrandHair) {
-		if (pHairNode) {
-			pHairNode->setVisible(true);			
+		if (pHairNode && pHairNode->isVisible() == false) {
+			pHairNode->setVisible(true);
 		} else {
 			bErrorDetected = true;
 		}
