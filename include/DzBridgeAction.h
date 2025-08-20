@@ -444,7 +444,20 @@ namespace DzBridgeNameSpace
 			QString sRigRoot, QString sMeshRoot, QString sGarmentRoot
 		);
 		bool fixMouthCloseBlendshape(DzNode* pNode, QString sFbxSourceFilename, QString sFbxDestinationFilename);
-		
+		bool dumpMaterialToPolylineIndexList(DzNode* pNode, QList<QList<int>>& oMaterialToPolylineIndexList);
+		bool dumpPolylineVertexIndices(DzNode* pNode, QList<QList<int>>& oPolylineVertexIndexLookupTable);
+		bool writePolylineToBuffer(
+			QList<int>* pSourceVertexIndexBuffer,
+			DzFacetMesh* pFacetMesh,
+			QString sCompatibilityMode,
+			DzNode* pFigureNode,
+			std::vector<int32_t>& aGroomGroupIds,
+			std::vector<Imath::V3f>& aAlembicVertices,
+			std::vector<int32_t>& aPolylineVertexIndices,
+			std::vector<Imath::V2f>& aRootUvBuffer,
+			int groom_group_id
+		);
+
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo
