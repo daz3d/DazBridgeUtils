@@ -3725,8 +3725,9 @@ void DzBridgeAction::writeAllDforceInfo(DzNode* Node, DzJsonWriter& Writer, QTex
 		if (bDForceSettingsAvailable)
 		{
 			Writer.startObject(true);
-			Writer.addMember("Version", 4);
-			Writer.addMember("Asset Name", Node->getLabel());
+			Writer.addMember("Version", 5);
+			Writer.addMember("Asset Name", Node->getName());
+			Writer.addMember("Asset Label", Node->getLabel());
 			Writer.addMember("Modifier Count", modifierCount);
 			Writer.addMember("Material Count", Shape->getNumMaterials());
 			writeDforceModifiers(dforceModifierList, Writer, Shape);
@@ -3738,8 +3739,9 @@ void DzBridgeAction::writeAllDforceInfo(DzNode* Node, DzJsonWriter& Writer, QTex
 				if (Material)
 				{
 					Writer.startObject(true);
-					Writer.addMember("Version", 3);
-					Writer.addMember("Asset Name", Node->getLabel());
+					Writer.addMember("Version", 5);
+					Writer.addMember("Asset Name", Node->getName());
+					Writer.addMember("Asset Label", Node->getLabel());
 					Writer.addMember("Material Name", Material->getName());
 					Writer.addMember("Material Type", Material->getMaterialName());
 					DzPresentation* presentation = Node->getPresentation();
@@ -9453,6 +9455,220 @@ bool DzBridgeAction::writeAbcMesh(DzNode* pNode, Alembic::Abc::OArchive &AbcArch
 	return true;
 }
 
+bool dumpMaterialToPolylineIndexList(DzNode* pNode, QList<QList<int>> &oMaterialToPolylineIndexList)
+{
+	QString sFilename = "/Users/dbui/Developer/Github/DazToUnreal/DazStudioPlugin/Resources/Scripts/writePolylineIndexes.dsa";
+	DzScript oScript;
+	if (oScript.loadFromFile(sFilename) == false) {
+		return false;
+	}
+	QString sDataDumpfile = dzApp->getTempFilename() + "_dumpPolylineIndexes.txt";
+	if (oScript.call("writePolylineIndexesByMaterial", QVariantList() << pNode->getName() << sDataDumpfile) == false) {
+		return false;
+	}
+	QFile oDatafile(sDataDumpfile);
+	if (oDatafile.open(QFile::ReadOnly) == false) {
+		return false;
+	}
+	QTextStream oInputStream(&oDatafile);
+	while (!oInputStream.atEnd()) {
+		QString sInputLine = oInputStream.readLine();
+		QStringList aTokens = sInputLine.split(",");
+		QList<int> aPolylineVertexIndices;
+		foreach (QString sToken, aTokens) {
+			aPolylineVertexIndices.append(sToken.toInt());
+		}
+		oMaterialToPolylineIndexList.append(aPolylineVertexIndices);
+	}
+
+	oDatafile.close();
+	
+	return true;
+}
+
+bool dumpPolylineVertexIndices(DzNode* pNode, QList<QList<int>> &oPolylineVertexIndexLookupTable)
+{
+	QString sFilename = "/Users/dbui/Developer/Github/DazToUnreal/DazStudioPlugin/Resources/Scripts/writePolylineIndexes.dsa";
+	DzScript oScript;
+	if (oScript.loadFromFile(sFilename) == false) {
+//		QString sMesg = QString("ERROR: writeAbcCurve(): failed trying to load script file: %1, aborting.").arg(sFilename);
+//		dzApp->warning(sMesg);
+//		printf("%s\n", sMesg.toLocal8Bit().data());
+		return false;
+	}
+	QString sDataDumpfile = dzApp->getTempFilename() + "_dumpPolylineVertexIndices.txt";
+	if (oScript.call("writePolylineVertexIndexes", QVariantList() << pNode->getName() << sDataDumpfile) == false) {
+//		QString sMesg = QString("ERROR: writeAbcCurve(): failed trying to write temporary file: %1, aborting.").arg(sDataDumpfile);
+//		dzApp->warning(sMesg);
+//		printf("%s\n", sMesg.toLocal8Bit().data());
+		return false;
+	}
+	QFile oDatafile(sDataDumpfile);
+	if (oDatafile.open(QFile::ReadOnly) == false) {
+//		QString sMesg = QString("ERROR: writeAbcCurve(): failed trying to load temporary data file: %1, aborting.").arg(sDataDumpfile);
+//		dzApp->warning(sMesg);
+//		printf("%s\n", sMesg.toLocal8Bit().data());
+		return false;
+	}
+	QTextStream oInputStream(&oDatafile);
+	while (!oInputStream.atEnd()) {
+		QString sInputLine = oInputStream.readLine();
+		QStringList aTokens = sInputLine.split(",");
+		QList<int> aPolylineVertexIndices;
+		foreach (QString sToken, aTokens) {
+			aPolylineVertexIndices.append(sToken.toInt());
+		}
+		oPolylineVertexIndexLookupTable.append(aPolylineVertexIndices);
+	}
+
+	oDatafile.close();
+	
+	return true;
+}
+
+bool writePolylineToBuffer(
+	QList<int> *pSourceVertexIndexBuffer,
+	DzFacetMesh* pFacetMesh,
+	QString sCompatibilityMode,
+	DzNode* pFigureNode,
+	std::vector<int32_t> &aGroomGroupIds,
+	std::vector<Imath::V3f> &aAlembicVertices,
+	std::vector<int32_t> &aPolylineVertexIndices,
+	std::vector<Imath::V2f> &aRootUvBuffer,
+	int groom_group_id
+)
+{
+	
+	int nNumVerts = pFacetMesh->getNumVertices();
+	
+	DzVec3 oFigureUVvalue;
+	for (int nRawIndex = 0; nRawIndex < pSourceVertexIndexBuffer->count(); nRawIndex++)
+	{
+		int nMappedVertexIndex = pSourceVertexIndexBuffer->at(nRawIndex);
+		if (nMappedVertexIndex > nNumVerts) {
+			QString mesg = QString("ERROR: writeAbcCurve(): nVertexIndex larger than num verts: %i").arg(nMappedVertexIndex);
+			dzApp->warning(mesg);
+			printf("%s\n", mesg.toLocal8Bit().data());
+			return false;
+		}
+		DzVec3 vDazPosition = pFacetMesh->getVertex(nMappedVertexIndex);
+
+		if (sCompatibilityMode == "unreal")
+		{
+			DzVec3 vNewPosition(
+				vDazPosition[0],
+				vDazPosition[2],
+				vDazPosition[1]
+			);
+			vDazPosition = vNewPosition;
+		}
+		else if (sCompatibilityMode == "blender")
+		{
+			float scale = 0.01f;
+			DzVec3 vNewPosition(
+				vDazPosition[0] * scale,
+				vDazPosition[1] * scale,
+				vDazPosition[2] * scale
+			);
+			vDazPosition = vNewPosition;					
+		}
+
+		Imath::V3f vDataPoint(
+			vDazPosition[0],
+			vDazPosition[1],
+			vDazPosition[2]
+			);
+		aAlembicVertices.push_back(vDataPoint);
+
+		// CALCULATE ROOT UV
+		if (nRawIndex == 0) {
+			DzGeometry* pFigureMesh = pFigureNode->getObject()->getCurrentShape()->getGeometry();
+			DzMap* pFigureUVmap = pFigureMesh->getUVs();
+			DzVec3 oRootVertex = pFacetMesh->getVertex(nMappedVertexIndex);
+			QMap<int,float> oClosestFigureVertexIndexes = GetClosestVertexIndexes(oRootVertex, pFigureMesh, 3);
+
+			DzVec3 vShortestUV;
+			float fShortestDistance = -1;
+			foreach(int nFigureVertexIndex, oClosestFigureVertexIndexes.keys()) {
+				float distance = oClosestFigureVertexIndexes.value(nFigureVertexIndex);
+				DzVec3 vFigureUV = pFigureUVmap->getPnt2Vec(nFigureVertexIndex);
+				if ( fShortestDistance == -1 || distance < fShortestDistance )
+				{
+					fShortestDistance = distance;
+					vShortestUV = vFigureUV;
+				}
+			}
+			//oFigureUVvalue = vShortestUv;
+
+			//DzVec3 vAverageUv(0.0f, 0.0f, 0.0f);
+			//// weight is uniform
+			//float weight = 1.0f / (float) oClosestVertexIndexes.count();
+			//foreach(int nFigureVertexIndex, oClosestVertexIndexes.keys()) {
+			//	DzVec3 UVvalue = pFigureUVmap->getPnt2Vec(nFigureVertexIndex);
+			//	vAverageUv += (UVvalue * weight);
+			//}
+			//oFigureUVvalue = vAverageUv;
+
+			DzVec3 vWeightedAverageUV(0.0f, 0.0f, 0.0f);
+			QList<DzVec3> aClosestFigureVertexCoordinates;
+			QList<int> aClosestFigureVertexIndexes;
+			DzPnt3* pVertexBuffer = pFigureMesh->getVerticesPtr();
+			foreach(int nFigureVertexIndex, oClosestFigureVertexIndexes.keys()) {
+				DzVec3 vCoordinates( pVertexBuffer[nFigureVertexIndex] );
+				aClosestFigureVertexCoordinates.append(vCoordinates);
+				aClosestFigureVertexIndexes.append(nFigureVertexIndex);
+			}
+			QList<float> aBaryCentricCoordinates = CalculateBarycentricCoordinates(oRootVertex, aClosestFigureVertexCoordinates);
+			for (int i=0; i < 3; i++) {
+				float fCurrentWeight = aBaryCentricCoordinates[i];
+				DzVec3 vCurrentCoordinate = aClosestFigureVertexCoordinates[i];
+				int fCurrentVertexIndex = aClosestFigureVertexIndexes[i];
+				DzVec3 oCurrentUVvalue = pFigureUVmap->getPnt2Vec(fCurrentVertexIndex);
+				float ERROR_RESULT = -1.0f;
+				if ( fabs(fCurrentWeight - ERROR_RESULT) <= DZ_FLT_EPSILON) {
+					vWeightedAverageUV = vShortestUV;
+					break;
+				}
+				vWeightedAverageUV += oCurrentUVvalue * fCurrentWeight;
+			}
+			oFigureUVvalue = vWeightedAverageUV;
+		}
+
+		//// UVs
+		//if (pRawUvmap != nullptr) {
+		//	Imath::V2f oUVvalue;
+		//	DzPnt2 *pRawUvValue = &(pRawUvmap[nVertexIndex]);
+		//	oUVvalue[0] = (*pRawUvValue)[0];
+		//	oUVvalue[1] = (*pRawUvValue)[1];
+
+		//	//// OVERRIDE WITH ROOT UV
+		//	//if (i == 0) {
+		//	//	oUVvalue[0] = oFigureUVvalue[0];
+		//	//	oUVvalue[1] = oFigureUVvalue[1];
+		//	//}
+
+		//	aUvBuffer.push_back(oUVvalue);
+		//	if (nVertexIndex % 100 == 0 || i == 0) {
+		//		printf("DEBUG: [%i] UV= [%f, %f]\n", nVertexIndex, oUVvalue[0], oUVvalue[1]);
+		//	}
+		//}
+
+	}
+	aPolylineVertexIndices.push_back(pSourceVertexIndexBuffer->count());
+
+	// add groom_ID to array
+	aGroomGroupIds.push_back(groom_group_id);
+
+	// add groom root UV to curve
+	Imath::V2f groom_root_uv;
+	groom_root_uv[0] = oFigureUVvalue[0];
+	groom_root_uv[1] = oFigureUVvalue[1];
+	aRootUvBuffer.push_back(groom_root_uv);
+	
+	return true;
+}
+
+// 2025-08-20, DB: work-around for external memory alloc calls: dumpPolylineVertexIndices
 bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArchive &AbcArchive, Alembic::Abc::TimeSamplingPtr &TimeSampling, int *pGroupId, QString sCompatibilityMode)
 {
 	if (aNodeList.isEmpty()) return false;
@@ -9487,6 +9703,8 @@ bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArch
 		if (pFigureNode == nullptr) pFigureNode = pNode->getSkeleton();
 		if (pFigureNode == nullptr) continue;
 
+		int nNumMaterialGroups = -1;
+		
 		int nNumLines = -1;
 		int nNumLineSegments = -1;
 		int nNumLineVertIndexes = -1;
@@ -9504,6 +9722,8 @@ bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArch
 			return false;
 		}
 
+		nNumMaterialGroups = pFacetMesh->getNumMaterialGroups();
+		
 		nNumLines = getNumPolylines(pFacetMesh);
 		nNumLineSegments = getNumPolylineSegments(pFacetMesh);
 		nNumLineVertIndexes = getNumPolylineVertexDataIndices(pFacetMesh);
@@ -9516,147 +9736,159 @@ bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArch
 		printf("DEBUG2: %s: numUVs: %i, numNormals: %i, group_id: %i\n", pNode->getLabel().toLocal8Bit().constData(), nNumUVs, nNumNormals, groom_group_id);
 
 		DzMap* pDazUVmap = nullptr;
-
 		pDazUVmap = pFacetMesh->getUVs();
+
+		QList<QList<int>> oPolylineVertexIndexLookupTable;
+		QList<QList<int>> oMaterialToPolylineIndexList;
+		if (dumpPolylineVertexIndices(pNode, oPolylineVertexIndexLookupTable) == false ||
+			dumpMaterialToPolylineIndexList(pNode, oMaterialToPolylineIndexList) == false) {
+			QString sMesg = QString("ERROR: writeAbcCurve(): failed trying to dumpPolylineVertexIndices for %1, aborting.").arg(pNode->getLabel());
+			dzApp->warning(sMesg);
+			printf("%s\n", sMesg.toLocal8Bit().data());
+			return false;			
+		}
+
+/*		
+		for (int nMaterialIndex = 0; nMaterialIndex < nNumMaterialGroups; nMaterialIndex++)
+		{
+			QList<int> *pPolylineIndexList = &(oMaterialToPolylineIndexList[nMaterialIndex]);
+			foreach(int nPolylineIndex, *pPolylineIndexList)
+			{
+				QList<int> *pSourceVertexIndexBuffer = &(oPolylineVertexIndexLookupTable[nPolylineIndex]);
+				writePolylineToBuffer(pSourceVertexIndexBuffer, pFacetMesh, sCompatibilityMode, pFigureNode, aGroomGroupIds, aAlembicVertices, aPolylineVertexIndices, aRootUvBuffer, groom_group_id);
+				groom_group_id++;
+			}
+		}
+*/
 
 		for (int nPolylineIndex = 0; nPolylineIndex < nNumLines; nPolylineIndex++)
 		{
-			DzVec3 oFigureUVvalue;
-			QVariantList* pSourceVertexIndexBuffer = new QVariantList();
-			if (getPolylineVertexIndices(pFacetMesh, nPolylineIndex, *pSourceVertexIndexBuffer) == false) {
-				QString sMesg = QString("ERROR: writeAbcCurve(): failed trying to call getPolylineVertexIndices on nPolyLineIndex #%1").arg(nPolylineIndex);
-				dzApp->warning(sMesg);
-				printf("%s\n", sMesg.toLocal8Bit().data());
-				return false;
-			}
-			for (int nRawIndex = 0; nRawIndex < pSourceVertexIndexBuffer->count(); nRawIndex++)
-			{
-				int nMappedVertexIndex = pSourceVertexIndexBuffer->at(nRawIndex).toInt();
-				if (nMappedVertexIndex > nNumVerts) {
-					QString mesg = QString("ERROR: writeAbcCurve(): nVertexIndex larger than num verts: %i").arg(nMappedVertexIndex);
-					dzApp->warning(mesg);
-					printf("%s\n", mesg.toLocal8Bit().data());
-					return false;
-				}
-				DzVec3 vDazPosition = pFacetMesh->getVertex(nMappedVertexIndex);
+		   DzVec3 oFigureUVvalue;
+		   QList<int> *pSourceVertexIndexBuffer = &(oPolylineVertexIndexLookupTable[nPolylineIndex]);
+		   for (int nRawIndex = 0; nRawIndex < pSourceVertexIndexBuffer->count(); nRawIndex++)
+		   {
+			   int nMappedVertexIndex = pSourceVertexIndexBuffer->at(nRawIndex);
+			   if (nMappedVertexIndex > nNumVerts) {
+				   QString mesg = QString("ERROR: writeAbcCurve(): nVertexIndex larger than num verts: %i").arg(nMappedVertexIndex);
+				   dzApp->warning(mesg);
+				   printf("%s\n", mesg.toLocal8Bit().data());
+				   return false;
+			   }
+			   DzVec3 vDazPosition = pFacetMesh->getVertex(nMappedVertexIndex);
 
-				if (sCompatibilityMode == "unreal")
-				{
-					DzVec3 vNewPosition(
-						vDazPosition[0],
-						vDazPosition[2],
-						vDazPosition[1]
-					);
-					vDazPosition = vNewPosition;
-				}
-				else if (sCompatibilityMode == "blender")
-				{
-					float scale = 0.01f;
-					DzVec3 vNewPosition(
-						vDazPosition[0] * scale,
-						vDazPosition[1] * scale,
-						vDazPosition[2] * scale
-					);
-					vDazPosition = vNewPosition;					
-				}
+			   if (sCompatibilityMode == "unreal")
+			   {
+				   DzVec3 vNewPosition(
+					   vDazPosition[0],
+					   vDazPosition[2],
+					   vDazPosition[1]
+				   );
+				   vDazPosition = vNewPosition;
+			   }
+			   else if (sCompatibilityMode == "blender")
+			   {
+				   float scale = 0.01f;
+				   DzVec3 vNewPosition(
+					   vDazPosition[0] * scale,
+					   vDazPosition[1] * scale,
+					   vDazPosition[2] * scale
+				   );
+				   vDazPosition = vNewPosition;					
+			   }
 
-				Imath::V3f vDataPoint(
-					vDazPosition[0],
-					vDazPosition[1],
-					vDazPosition[2]
-					);
-				aAlembicVertices.push_back(vDataPoint);
+			   Imath::V3f vDataPoint(
+				   vDazPosition[0],
+				   vDazPosition[1],
+				   vDazPosition[2]
+				   );
+			   aAlembicVertices.push_back(vDataPoint);
 
-				// CALCULATE ROOT UV
-				if (nRawIndex == 0) {
-					DzGeometry* pFigureMesh = pFigureNode->getObject()->getCurrentShape()->getGeometry();
-					DzMap* pFigureUVmap = pFigureMesh->getUVs();
-					DzVec3 oRootVertex = pFacetMesh->getVertex(nMappedVertexIndex);
-					QMap<int,float> oClosestFigureVertexIndexes = GetClosestVertexIndexes(oRootVertex, pFigureMesh, 3);
+			   // CALCULATE ROOT UV
+			   if (nRawIndex == 0) {
+				   DzGeometry* pFigureMesh = pFigureNode->getObject()->getCurrentShape()->getGeometry();
+				   DzMap* pFigureUVmap = pFigureMesh->getUVs();
+				   DzVec3 oRootVertex = pFacetMesh->getVertex(nMappedVertexIndex);
+				   QMap<int,float> oClosestFigureVertexIndexes = GetClosestVertexIndexes(oRootVertex, pFigureMesh, 3);
 
-					DzVec3 vShortestUV;
-					float fShortestDistance = -1;
-					foreach(int nFigureVertexIndex, oClosestFigureVertexIndexes.keys()) {
-						float distance = oClosestFigureVertexIndexes.value(nFigureVertexIndex);
-						DzVec3 vFigureUV = pFigureUVmap->getPnt2Vec(nFigureVertexIndex);
-						if ( fShortestDistance == -1 || distance < fShortestDistance )
-						{
-							fShortestDistance = distance;
-							vShortestUV = vFigureUV;
-						}
-					}
-					//oFigureUVvalue = vShortestUv;
+				   DzVec3 vShortestUV;
+				   float fShortestDistance = -1;
+				   foreach(int nFigureVertexIndex, oClosestFigureVertexIndexes.keys()) {
+					   float distance = oClosestFigureVertexIndexes.value(nFigureVertexIndex);
+					   DzVec3 vFigureUV = pFigureUVmap->getPnt2Vec(nFigureVertexIndex);
+					   if ( fShortestDistance == -1 || distance < fShortestDistance )
+					   {
+						   fShortestDistance = distance;
+						   vShortestUV = vFigureUV;
+					   }
+				   }
+				   //oFigureUVvalue = vShortestUv;
 
-					//DzVec3 vAverageUv(0.0f, 0.0f, 0.0f);
-					//// weight is uniform
-					//float weight = 1.0f / (float) oClosestVertexIndexes.count();
-					//foreach(int nFigureVertexIndex, oClosestVertexIndexes.keys()) {
-					//	DzVec3 UVvalue = pFigureUVmap->getPnt2Vec(nFigureVertexIndex);
-					//	vAverageUv += (UVvalue * weight);
-					//}
-					//oFigureUVvalue = vAverageUv;
+				   //DzVec3 vAverageUv(0.0f, 0.0f, 0.0f);
+				   //// weight is uniform
+				   //float weight = 1.0f / (float) oClosestVertexIndexes.count();
+				   //foreach(int nFigureVertexIndex, oClosestVertexIndexes.keys()) {
+				   //	DzVec3 UVvalue = pFigureUVmap->getPnt2Vec(nFigureVertexIndex);
+				   //	vAverageUv += (UVvalue * weight);
+				   //}
+				   //oFigureUVvalue = vAverageUv;
 
-					DzVec3 vWeightedAverageUV(0.0f, 0.0f, 0.0f);
-					QList<DzVec3> aClosestFigureVertexCoordinates;
-					QList<int> aClosestFigureVertexIndexes;
-					DzPnt3* pVertexBuffer = pFigureMesh->getVerticesPtr();
-					foreach(int nFigureVertexIndex, oClosestFigureVertexIndexes.keys()) {
-						DzVec3 vCoordinates( pVertexBuffer[nFigureVertexIndex] );
-						aClosestFigureVertexCoordinates.append(vCoordinates);
-						aClosestFigureVertexIndexes.append(nFigureVertexIndex);
-					}
-					QList<float> aBaryCentricCoordinates = CalculateBarycentricCoordinates(oRootVertex, aClosestFigureVertexCoordinates);
-					for (int i=0; i < 3; i++) {
-						float fCurrentWeight = aBaryCentricCoordinates[i];
-						DzVec3 vCurrentCoordinate = aClosestFigureVertexCoordinates[i];
-						int fCurrentVertexIndex = aClosestFigureVertexIndexes[i];
-						DzVec3 oCurrentUVvalue = pFigureUVmap->getPnt2Vec(fCurrentVertexIndex);
-						float ERROR_RESULT = -1.0f;
-						if ( fabs(fCurrentWeight - ERROR_RESULT) <= DZ_FLT_EPSILON) {
-							vWeightedAverageUV = vShortestUV;
-							break;
-						}
-						vWeightedAverageUV += oCurrentUVvalue * fCurrentWeight;
-					}
-					oFigureUVvalue = vWeightedAverageUV;
-				}
+				   DzVec3 vWeightedAverageUV(0.0f, 0.0f, 0.0f);
+				   QList<DzVec3> aClosestFigureVertexCoordinates;
+				   QList<int> aClosestFigureVertexIndexes;
+				   DzPnt3* pVertexBuffer = pFigureMesh->getVerticesPtr();
+				   foreach(int nFigureVertexIndex, oClosestFigureVertexIndexes.keys()) {
+					   DzVec3 vCoordinates( pVertexBuffer[nFigureVertexIndex] );
+					   aClosestFigureVertexCoordinates.append(vCoordinates);
+					   aClosestFigureVertexIndexes.append(nFigureVertexIndex);
+				   }
+				   QList<float> aBaryCentricCoordinates = CalculateBarycentricCoordinates(oRootVertex, aClosestFigureVertexCoordinates);
+				   for (int i=0; i < 3; i++) {
+					   float fCurrentWeight = aBaryCentricCoordinates[i];
+					   DzVec3 vCurrentCoordinate = aClosestFigureVertexCoordinates[i];
+					   int fCurrentVertexIndex = aClosestFigureVertexIndexes[i];
+					   DzVec3 oCurrentUVvalue = pFigureUVmap->getPnt2Vec(fCurrentVertexIndex);
+					   float ERROR_RESULT = -1.0f;
+					   if ( fabs(fCurrentWeight - ERROR_RESULT) <= DZ_FLT_EPSILON) {
+						   vWeightedAverageUV = vShortestUV;
+						   break;
+					   }
+					   vWeightedAverageUV += oCurrentUVvalue * fCurrentWeight;
+				   }
+				   oFigureUVvalue = vWeightedAverageUV;
+			   }
 
-				//// UVs
-				//if (pRawUvmap != nullptr) {
-				//	Imath::V2f oUVvalue;
-				//	DzPnt2 *pRawUvValue = &(pRawUvmap[nVertexIndex]);
-				//	oUVvalue[0] = (*pRawUvValue)[0];
-				//	oUVvalue[1] = (*pRawUvValue)[1];
+			   //// UVs
+			   //if (pRawUvmap != nullptr) {
+			   //	Imath::V2f oUVvalue;
+			   //	DzPnt2 *pRawUvValue = &(pRawUvmap[nVertexIndex]);
+			   //	oUVvalue[0] = (*pRawUvValue)[0];
+			   //	oUVvalue[1] = (*pRawUvValue)[1];
 
-				//	//// OVERRIDE WITH ROOT UV
-				//	//if (i == 0) {
-				//	//	oUVvalue[0] = oFigureUVvalue[0];
-				//	//	oUVvalue[1] = oFigureUVvalue[1];
-				//	//}
+			   //	//// OVERRIDE WITH ROOT UV
+			   //	//if (i == 0) {
+			   //	//	oUVvalue[0] = oFigureUVvalue[0];
+			   //	//	oUVvalue[1] = oFigureUVvalue[1];
+			   //	//}
 
-				//	aUvBuffer.push_back(oUVvalue);
-				//	if (nVertexIndex % 100 == 0 || i == 0) {
-				//		printf("DEBUG: [%i] UV= [%f, %f]\n", nVertexIndex, oUVvalue[0], oUVvalue[1]);
-				//	}
-				//}
+			   //	aUvBuffer.push_back(oUVvalue);
+			   //	if (nVertexIndex % 100 == 0 || i == 0) {
+			   //		printf("DEBUG: [%i] UV= [%f, %f]\n", nVertexIndex, oUVvalue[0], oUVvalue[1]);
+			   //	}
+			   //}
 
-			}
-			aPolylineVertexIndices.push_back(pSourceVertexIndexBuffer->count());
+		   }
+		   aPolylineVertexIndices.push_back(pSourceVertexIndexBuffer->count());
 
-			// add groom_ID to array
-			aGroomGroupIds.push_back(groom_group_id);
+		   // add groom_ID to array
+		   aGroomGroupIds.push_back(groom_group_id);
 
-			// add groom root UV to curve
-			Imath::V2f groom_root_uv;
-			groom_root_uv[0] = oFigureUVvalue[0];
-			groom_root_uv[1] = oFigureUVvalue[1];
-			aRootUvBuffer.push_back(groom_root_uv);
+		   // add groom root UV to curve
+		   Imath::V2f groom_root_uv;
+		   groom_root_uv[0] = oFigureUVvalue[0];
+		   groom_root_uv[1] = oFigureUVvalue[1];
+		   aRootUvBuffer.push_back(groom_root_uv);
 
-#if __APPLE__
-			//delete(pVertexIndices);
-#endif
 		}
-
 		// next hair node
 		groom_group_id++;
 
@@ -9760,9 +9992,14 @@ void DzBridgeAction::writeStrandHairInfo(DzJsonWriter& Writer, QMap<QString, QLi
 		Writer.startMemberArray("Node Info", true);
 		foreach(DzNode* pHairNode, oStrandHairExportData[sFilename])
 		{
+			DzShape* pShape = nullptr;
+			if (pHairNode && pHairNode->getObject()) pShape = pHairNode->getObject()->getCurrentShape();
+			if (!pShape) continue;
+
 			QString sNodeName = pHairNode->getName();
 			QString sNodeLabel = pHairNode->getLabel();
 			QString sParentName = "";
+			QString sParentLabel = "";			
 
 			DzNode* pParentNode = pHairNode->getNodeParent();
 			if (pParentNode) {
@@ -9773,11 +10010,19 @@ void DzBridgeAction::writeStrandHairInfo(DzJsonWriter& Writer, QMap<QString, QLi
 					sParentName = pParentNode->getName();
 				}
 			}
-			Writer.startObject();
-			Writer.addMember("Name", sNodeName);
-			Writer.addMember("Label", sNodeLabel);
-			Writer.addMember("Parent", sParentName);
-			Writer.finishObject();
+			int nNumMaterials = pShape->getNumMaterials();
+			for (int nMaterialIndex=0; nMaterialIndex < nNumMaterials; nMaterialIndex++)
+			{
+				DzMaterial* pMaterial = pShape->getMaterial(nMaterialIndex);
+				Writer.startObject();
+				Writer.addMember("Material Index", nMaterialIndex);
+				Writer.addMember("Material Name", pMaterial->getName());				
+				Writer.addMember("Asset Name", sNodeName);
+				Writer.addMember("Asset Label", sNodeLabel);
+				Writer.addMember("Parent Name", sParentName);
+				Writer.addMember("Parent Label", sParentLabel);
+				Writer.finishObject();
+			}
 		}
 		Writer.finishArray();
 		
