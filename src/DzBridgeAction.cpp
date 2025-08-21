@@ -525,6 +525,7 @@ bool DzBridgeAction::preProcessRigConversion(DzNode *parentNode)
 	{
 		QString sGeneration = parentNode->getName();
 		bool bIsG9 = (sGeneration == "Genesis9");
+		bool bIsG2 = (sGeneration.contains("Genesis2"));
 
 		QString sBoneConverter = "bone_converter_aArgs.dsa";
 		QString sUnrealMannyRigFile = "g9_to_unreal_manny.json";
@@ -535,6 +536,8 @@ bool DzBridgeAction::preProcessRigConversion(DzNode *parentNode)
 		QString sG8UnityRigFile = "g8_to_unity.json";
 		QString sMixamoRigFile = "g9_to_mixamo.json";
 		QString sG8MixamoRigFile = "g8_to_mixamo.json";
+		// Legacy support
+		QString sG2UnrealMannyRigFile = "g2_to_unreal.json";
 
 		preProcessProgress.setInfo(tr("Preparing Rig Converter files..."));
 		QStringList aScriptFilelist = (QStringList() <<
@@ -542,7 +545,8 @@ bool DzBridgeAction::preProcessRigConversion(DzNode *parentNode)
 			sUnrealMannyRigFile << sG8UnrealRigFile <<
 			sMetahumanRigFile << sG8MetahumanRigFile <<
 			sUnityRigFile <<
-			sMixamoRigFile << sG8MixamoRigFile
+			sMixamoRigFile << sG8MixamoRigFile <<
+			sG2UnrealMannyRigFile
 			);
 		// copy 
 		foreach(auto sScriptFilename, aScriptFilelist)
@@ -572,6 +576,9 @@ bool DzBridgeAction::preProcessRigConversion(DzNode *parentNode)
 		else if (m_sExportRigMode == "unreal") {
 			if (bIsG9) {
 				aArgs.append(QVariant(dzApp->getTempPath() + "/" + sUnrealMannyRigFile));
+			}
+			else if (bIsG2) {
+				aArgs.append(QVariant(dzApp->getTempPath() + "/" + sG2UnrealMannyRigFile));
 			}
 			else {
 				aArgs.append(QVariant(dzApp->getTempPath() + "/" + sG8UnrealRigFile));
