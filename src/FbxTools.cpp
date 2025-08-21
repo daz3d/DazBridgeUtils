@@ -1276,7 +1276,7 @@ bool FbxTools::LoadAndPoseBelowHeadOnly(QString poseFilePath, FbxScene* lCurrent
 	return true;
 }
 
-bool FbxTools::LoadAndPose(QString poseFilePath, FbxScene* lCurrentScene, DzProgress* pProgress, bool bConvertToZUp, bool bRotationOnly, QList<QString> aSkipBoneNames)
+bool FbxTools::LoadAndPose(QString poseFilePath, FbxScene* lCurrentScene, DzProgress* pProgress, bool bConvertToZUp, bool bRotationOnly, QList<QString> aSkipBoneNames, FbxPose *pNewPose)
 {
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
 
@@ -1349,6 +1349,9 @@ bool FbxTools::LoadAndPose(QString poseFilePath, FbxScene* lCurrentScene, DzProg
                 {
                     pNode->Copy(*pPoseNode);
                 }
+				if (pNewPose) {
+					pNewPose->Add(pNode, pPoseNode->EvaluateGlobalTransform());
+				}
 			}
 		}
 	}
@@ -3205,5 +3208,40 @@ bool FbxTools::MergeScenes(FbxScene* pDestinationScene, FbxScene* pSourceScene)
 	pSourceScene->DisconnectAllSrcObject();
 
 	return true;
+}
+
+bool FbxTools::RemoveAllPoses(FbxScene* pScene)
+{
+	if (pScene == nullptr) return false;
+
+	int numPoses = pScene->GetPoseCount();
+	for (int nPoseIndex = numPoses - 1; nPoseIndex >= 0; nPoseIndex--)
+	{
+		FbxPose* pPose = pScene->GetPose(nPoseIndex);
+		if (pScene->RemovePose(nPoseIndex) == false) {
+			return false;
+		}
+		pPose->Destroy();
+	}
+
+	return true;
+}
+
+FbxPose* FbxTools::SaveCurrentPose(FbxScene* pScene, FbxNode* pRootNode, FbxPose* pCurrentPose)
+{
+	if (pScene == nullptr || pRootNode == nullptr) return nullptr;
+
+	if (pCurrentPose == nullptr) {
+		pCurrentPose = FbxPose::Create(pScene->GetFbxManager(), "New Pose");
+	}
+	pCurrentPose->Add(pRootNode, pRootNode->EvaluateGlobalTransform());
+
+	for (int i = 0; i < pRootNode->GetChildCount(); i++)
+	{
+		FbxNode* pChildNode = pRootNode->GetChild(i);
+		SaveCurrentPose(pScene, pChildNode, pCurrentPose);
+	}
+
+	return pCurrentPose;
 }
 

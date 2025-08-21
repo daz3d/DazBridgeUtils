@@ -94,7 +94,7 @@ public:
 
 	static bool LoadAndPoseBelowHeadOnly(QString poseFilePath, FbxScene* lCurrentScene, DzProgress* pProgress = nullptr, bool bConvertToZUp = false);
 
-	static bool LoadAndPose(QString poseFilePath, FbxScene* lCurrentScene, DzProgress* pProgress = nullptr, bool bConvertToZUp = false, bool bRotationOnly=false, QList<QString> aSkipBoneNames=QList<QString>());
+	static bool LoadAndPose(QString poseFilePath, FbxScene* lCurrentScene, DzProgress* pProgress = nullptr, bool bConvertToZUp = false, bool bRotationOnly=false, QList<QString> aSkipBoneNames=QList<QString>(), FbxPose* pNewPose=nullptr);
 
 	static int ConvertToZUp(FbxMesh* mesh, FbxNode* rootNode);
 
@@ -133,6 +133,10 @@ public:
 
 	static void MergeFollowerRigs(FbxScene* pScene);
 	
+	static bool RemoveAllPoses(FbxScene* pScene);
+
+	static FbxPose* SaveCurrentPose(FbxScene* pScene, FbxNode* pRootNode, FbxPose* pCurrentPose);
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
