@@ -8890,6 +8890,10 @@ bool DzBridgeAction::undoHideAllStrandBasedHair()
 		}
 	}
 	
+	m_undoList_HideStrandHair.clear();
+	m_undoTable_UnparentStrandHair.clear();
+	m_undoTable_UnFitToFigureStrandHair.clear();
+	
 	return bErrorDetected;
 }
 
@@ -9881,11 +9885,13 @@ void DzBridgeAction::writeStrandHairInfo(DzJsonWriter& Writer, QMap<QString, QLi
 
 			DzNode* pParentNode = pHairNode->getNodeParent();
 			if (pParentNode) {
-				sParentName = pParentNode->getName();				
+				sParentName = pParentNode->getName();
+				sParentLabel = pParentNode->getLabel();
 			} else if (m_undoTable_UnparentStrandHair.contains(pHairNode)) {
 				pParentNode = m_undoTable_UnparentStrandHair.value(pHairNode);
 				if (pParentNode) {
 					sParentName = pParentNode->getName();
+					sParentLabel = pParentNode->getLabel();
 				}
 			}
 			int nNumMaterials = pShape->getNumMaterials();
