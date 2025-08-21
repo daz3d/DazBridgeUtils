@@ -9739,6 +9739,15 @@ bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArch
 		printf("DEBUG: %s: numPolyLines: %i, segments: %i, vert_indexes: %i, numVerts: %i\n", pNode->getLabel().toLocal8Bit().constData(), nNumLines, nNumLineSegments, nNumLineVertIndexes, nNumVerts);
 		printf("DEBUG2: %s: numUVs: %i, numNormals: %i, group_id: %i\n", pNode->getLabel().toLocal8Bit().constData(), nNumUVs, nNumNormals, groom_group_id);
 
+		// safety check and skip
+		if (nNumLines == 0 || nNumVerts == 0) {
+			printf("DEBUG: skipping %s, no polylines or verts found...\n", pNode->getLabel().toLocal8Bit().constData());
+			continue;
+		} else if (nNumLines < 1 || nNumVerts < 1) {
+			printf("DEBUG: skipping %s, invalid number of polylines or verts...\n", pNode->getLabel().toLocal8Bit().constData());
+			continue;
+		}
+		
 		DzMap* pDazUVmap = nullptr;
 		pDazUVmap = pFacetMesh->getUVs();
 
