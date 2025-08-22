@@ -1575,6 +1575,9 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 		dir.mkpath(m_sDestinationPath);
 
 		DzFileIOSettings ExportOptions;
+
+		Exporter->getDefaultOptions(&ExportOptions);
+
 		ExportOptions.setBoolValue("doSelected", true);
 		ExportOptions.setBoolValue("doVisible", false);
 		// DB 2023-11-15: Custom Asset Type Support
@@ -4993,80 +4996,106 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 	QList<FbxNode*> nodeList;
 	FbxNode* pFbxRootNode = pScene->GetRootNode();
 	FbxTools::GetAllMeshes(pFbxRootNode, nodeList);
-	FbxNode* pFbxRootBone = nullptr;
-	QString sFbxRootBoneName = "";
-	for (int ChildIndex = 0; ChildIndex < pFbxRootNode->GetChildCount(); ++ChildIndex)
-	{
-		FbxNode* ChildNode = pFbxRootNode->GetChild(ChildIndex);
-		FbxNodeAttribute* Attr = ChildNode->GetNodeAttribute();
-		if (Attr && Attr->GetAttributeType() == FbxNodeAttribute::eSkeleton)
-		{
-			pFbxRootBone = ChildNode;
-			sFbxRootBoneName = pFbxRootBone->GetName();
-			break;
-		}
-	}
+	FbxNode* pFbxRootBone = FbxTools::FindRootBone(pFbxRootNode, pScene);
+	//QString sFbxRootBoneName = "";
+	//for (int ChildIndex = 0; ChildIndex < pFbxRootNode->GetChildCount(); ++ChildIndex)
+	//{
+	//	FbxNode* ChildNode = pFbxRootNode->GetChild(ChildIndex);
+	//	FbxNodeAttribute* Attr = ChildNode->GetNodeAttribute();
+	//	if (Attr && Attr->GetAttributeType() == FbxNodeAttribute::eSkeleton)
+	//	{
+	//		pFbxRootBone = ChildNode;
+	//		sFbxRootBoneName = pFbxRootBone->GetName();
+	//		break;
+	//	}
+	//}
 
-	if (m_bBakeMeshesToSingleBindPose)
+	if (pFbxRootBone && (m_sExportRigMode == "unreal" || m_sExportRigMode == "metahuman"))
 	{
-		FbxTools::BakeMeshesToSingleBindPose(pScene);
-	}
-
-	// set m_bConvertFbxJointsEnabled to false in derived classes prior to calling base class method in order to override these operations
-	if (m_bConvertFbxJointsEnabled) 
-	{
-		if (pFbxRootBone && (m_sExportRigMode == "unreal" || m_sExportRigMode == "metahuman"))
-		{
+		if (pFbxRootBone) {
 			// Rename Root Bone
-			pFbxRootBone->SetName("root");
 			FbxNodeAttribute* pRootBoneAttributes = pFbxRootBone->GetNodeAttribute();
+			pFbxRootBone->SetName("root");
 			pRootBoneAttributes->SetName("root");
-			// Convert Joint Orientations
-			FbxTools::UnrealJointFixCallback oUnrealBoneFixer;
-			FbxTools::ModifyBindPose(pScene, pFbxRootBone, &oUnrealBoneFixer);
-			FbxTools::AddIkNodes(pScene, pFbxRootBone, "foot_l", "foot_r", "hand_l", "hand_r");
-			// Bake New Bind Pose
-			FbxPose* pNewBindPose = FbxTools::SaveBindMatrixToPose(pScene, "NewBindPose", nullptr, true);
-			FbxTools::ApplyBindPose(pScene, pNewBindPose);
-			foreach(FbxNode * pNode, nodeList) {
-				QString debugName(pNode->GetName());
-				FbxMesh* pMesh = pNode->GetMesh();
-				FbxAMatrix matrix = pNode->EvaluateGlobalTransform();
-				FbxVector4* pVertexBuffer = pMesh->GetControlPoints();
-				if (pVertexBuffer == NULL) continue;
-				FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &matrix, pNewBindPose, pMesh);
-				// Clear Pre/Post Rotations
-				pNode->SetPreRotation(FbxNode::eSourcePivot, FbxVector4(0, 0, 0));
-				pNode->SetPostRotation(FbxNode::eSourcePivot, FbxVector4(0, 0, 0));
-				pNode->LclScaling.Set(FbxDouble3(1.0, 1.0, 1.0));
-				pNode->LclRotation.Set(FbxDouble3(0, 0, 0));
-				pNode->LclTranslation.Set(FbxDouble3(0, 0, 0));
-			}
-			pNewBindPose->Destroy();
 		}
-		else if (pFbxRootBone && (m_sExportRigMode == "unity" || m_sExportRigMode == "mixamo"))
+		else if (m_sAssetType == "SkeletalMesh")
 		{
-			FbxTools::ModifyBindPose(pScene, pFbxRootBone, nullptr);
-			// Bake New Bind Pose
-			FbxPose* pNewBindPose = FbxTools::SaveBindMatrixToPose(pScene, "NewBindPose", nullptr, true);
-			FbxTools::ApplyBindPose(pScene, pNewBindPose);
-			foreach(FbxNode * pNode, nodeList) {
-				QString debugName(pNode->GetName());
-				FbxMesh* pMesh = pNode->GetMesh();
-				FbxAMatrix matrix = pNode->EvaluateGlobalTransform();
-				FbxVector4* pVertexBuffer = pMesh->GetControlPoints();
-				if (pVertexBuffer == NULL) continue;
-				FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &matrix, pNewBindPose, pMesh);
-				// Clear Pre/Post Rotations
-				pNode->SetPreRotation(FbxNode::eSourcePivot, FbxVector4(0, 0, 0));
-				pNode->SetPostRotation(FbxNode::eSourcePivot, FbxVector4(0, 0, 0));
-				pNode->LclScaling.Set(FbxDouble3(1.0, 1.0, 1.0));
-				pNode->LclRotation.Set(FbxDouble3(0, 0, 0));
-				pNode->LclTranslation.Set(FbxDouble3(0, 0, 0));
-			}
-			pNewBindPose->Destroy();			
+			pFbxRootBone = FbxTools::AddRootBone(pFbxRootNode, pScene);
 		}
-		
+
+		FbxTools::MergeFollowerRigs(pScene);
+		FbxTools::RenameDuplicateBones(pFbxRootNode);
+
+	}
+
+	if (m_sAssetType == "SkeletalMesh")
+	{
+		if (m_bBakeMeshesToSingleBindPose)
+		{
+			FbxTools::BakeMeshesToSingleBindPose(pScene);
+		}
+
+		// set m_bConvertFbxJointsEnabled to false in derived classes prior to calling base class method in order to override these operations
+		if (m_bConvertFbxJointsEnabled)
+		{
+			if (pFbxRootBone && (m_sExportRigMode == "unreal" || m_sExportRigMode == "metahuman"))
+			{
+				// Convert Joint Orientations
+				FbxTools::UnrealJointFixCallback oUnrealBoneFixer;
+				FbxTools::ModifyBindPose(pScene, pFbxRootBone, &oUnrealBoneFixer);
+				FbxTools::FixTwistBones(pFbxRootNode);
+				FbxTools::AddIkNodes(pScene, pFbxRootBone, "foot_l", "foot_r", "hand_l", "hand_r");
+				// Bake New Bind Pose
+				//FbxPose* pNewBindPose = FbxTools::SaveBindMatrixToPose(pScene, "NewBindPose", nullptr, true);
+				//FbxTools::ApplyBindPose(pScene, pNewBindPose);
+				//foreach(FbxNode * pNode, nodeList) {
+				//	QString debugName(pNode->GetName());
+				//	FbxMesh* pMesh = pNode->GetMesh();
+				//	FbxAMatrix matrix = pNode->EvaluateGlobalTransform();
+				//	FbxVector4* pVertexBuffer = pMesh->GetControlPoints();
+				//	if (pVertexBuffer == NULL) continue;
+				//	FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &matrix, pNewBindPose, pMesh);
+				//	// Clear Pre/Post Rotations
+				//	pNode->SetPreRotation(FbxNode::eSourcePivot, FbxVector4(0, 0, 0));
+				//	pNode->SetPostRotation(FbxNode::eSourcePivot, FbxVector4(0, 0, 0));
+				//	pNode->LclScaling.Set(FbxDouble3(1.0, 1.0, 1.0));
+				//	pNode->LclRotation.Set(FbxDouble3(0, 0, 0));
+				//	pNode->LclTranslation.Set(FbxDouble3(0, 0, 0));
+				//}
+				//pNewBindPose->Destroy();
+			}
+			else if (pFbxRootBone && (m_sExportRigMode == "unity" || m_sExportRigMode == "mixamo"))
+			{
+				FbxTools::ModifyBindPose(pScene, pFbxRootBone, nullptr);
+				// Bake New Bind Pose
+				//FbxPose* pNewBindPose = FbxTools::SaveBindMatrixToPose(pScene, "NewBindPose", nullptr, true);
+				//FbxTools::ApplyBindPose(pScene, pNewBindPose);
+				//foreach(FbxNode * pNode, nodeList) {
+				//	QString debugName(pNode->GetName());
+				//	FbxMesh* pMesh = pNode->GetMesh();
+				//	FbxAMatrix matrix = pNode->EvaluateGlobalTransform();
+				//	FbxVector4* pVertexBuffer = pMesh->GetControlPoints();
+				//	if (pVertexBuffer == NULL) continue;
+				//	FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &matrix, pNewBindPose, pMesh);
+				//	// Clear Pre/Post Rotations
+				//	pNode->SetPreRotation(FbxNode::eSourcePivot, FbxVector4(0, 0, 0));
+				//	pNode->SetPostRotation(FbxNode::eSourcePivot, FbxVector4(0, 0, 0));
+				//	pNode->LclScaling.Set(FbxDouble3(1.0, 1.0, 1.0));
+				//	pNode->LclRotation.Set(FbxDouble3(0, 0, 0));
+				//	pNode->LclTranslation.Set(FbxDouble3(0, 0, 0));
+				//}
+				//pNewBindPose->Destroy();
+			}
+
+			FbxTools::RemoveBindPoses(pScene);
+			FbxPose* pTempBindPose = FbxTools::SaveBindMatrixToPose(pScene, "TempBindPose", nullptr, true);
+			FbxTools::ApplyBindPose(pScene, pTempBindPose);
+
+		}
+
+	}
+	else {
+
 	}
 	
 	if (m_bExperimental_FbxPostProcessing)

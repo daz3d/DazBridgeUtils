@@ -2262,10 +2262,10 @@ void RenameDuplicateBones(FbxNode* pRootNode, QMap<QString, int>& oExistingBones
 	}
 }
 
-void RenameDuplicateBones(FbxNode* pRootNode)
+void FbxTools::RenameDuplicateBones(FbxNode* pRootNode)
 {
 	QMap<QString, int> oExistingBones;
-	RenameDuplicateBones(pRootNode, oExistingBones);
+	::RenameDuplicateBones(pRootNode, oExistingBones);
 }
 
 // Some accesories attached in ways like using the DzRigidFollowNode become additional meshes.
@@ -2293,22 +2293,9 @@ void FbxTools::MergeFollowerRigs(FbxScene* pScene)
 	}
 }
 
-
-FbxNode* FindRootBone(QString &sRootBoneName, FbxNode* pRootNode, FbxScene* pScene)
+FbxNode* FbxTools::AddRootBone(FbxNode* pRootNode, FbxScene* pScene)
 {
 	FbxNode* pRootBone = nullptr;
-
-	for (int nChildIndex = 0; nChildIndex < pRootNode->GetChildCount(); ++nChildIndex)
-	{
-		FbxNode* pChildNode = pRootNode->GetChild(nChildIndex);
-		FbxNodeAttribute* pAttr = pChildNode->GetNodeAttribute();
-		if (pAttr && pAttr->GetAttributeType() == FbxNodeAttribute::eSkeleton)
-		{
-			pRootBone = pChildNode;
-			sRootBoneName = QString(pRootBone->GetName());
-			break;
-		}
-	}
 
 	// If this is a skeleton mesh, but a root bone wasn't found, it may be a scene under a group node or something similar
 	// So create a root node.
@@ -2336,6 +2323,24 @@ FbxNode* FindRootBone(QString &sRootBoneName, FbxNode* pRootNode, FbxScene* pSce
 		}
 
 		pRootNode->AddChild(pRootBone);
+	}
+
+	return pRootBone;
+}
+
+FbxNode* FbxTools::FindRootBone(FbxNode* pRootNode, FbxScene* pScene)
+{
+	FbxNode* pRootBone = nullptr;
+
+	for (int nChildIndex = 0; nChildIndex < pRootNode->GetChildCount(); ++nChildIndex)
+	{
+		FbxNode* pChildNode = pRootNode->GetChild(nChildIndex);
+		FbxNodeAttribute* pAttr = pChildNode->GetNodeAttribute();
+		if (pAttr && pAttr->GetAttributeType() == FbxNodeAttribute::eSkeleton)
+		{
+			pRootBone = pChildNode;
+			break;
+		}
 	}
 
 	return pRootBone;
@@ -2563,9 +2568,10 @@ bool FbxTools::PostProcessRigForUnreal(QString FBXFile, bool bFixTwistBones)
 	// Find the root bone.  There should only be one bone off the scene root
 	FbxNode* RootBone = nullptr;
 
-	QString RootBoneName;
-	RootBone = FindRootBone(RootBoneName, RootNode, pScene);
-	
+	RootBone = FindRootBone(RootNode, pScene);
+	if (RootBone == NULL) RootBone = AddRootBone(RootNode, pScene);
+	QString RootBoneName = QString(RootBone->GetName());
+
 	// Rename Root Bone
 	FbxNodeAttribute* pAttr = RootBone->GetNodeAttribute();
 	RootBone->SetName("root");
