@@ -1,3 +1,5 @@
+#define USE_SCRIPT_MEMORY_DUMP 0
+
 #include <dzapp.h>
 #include <dzscene.h>
 #include <dzexportmgr.h>
@@ -4757,7 +4759,8 @@ bool DzBridgeAction::metaInvokeMethod(QObject* object, const char* methodSig, vo
 	QMetaMethod metaMethod = metaObject->method(methodIndex);
 
 	// DEBUGGING
-//	printf("metaInvokeMethod: %s : %s\n", metaMethod.signature(), metaMethod.typeName());
+	QString sDebugString = QString("metaInvokeMethod: %1 : %2\n").arg(metaMethod.signature()).arg(metaMethod.typeName());
+	printf(sDebugString.toLocal8Bit().constData());
 	
 	QGenericReturnArgument returnArgument(
 		metaMethod.typeName(),
@@ -8891,6 +8894,16 @@ bool DzBridgeAction::getPolylineVertexIndices(DzFacetMesh *pFacetMesh, int nInde
 	return false;
 }
 
+bool DzBridgeAction::getPolylineMembers(DzMaterialFaceGroup* pMaterialGroup, DzIndexList* &pReturnValues)
+{
+	if (DzBridgeAction::metaInvokeMethod(pMaterialGroup, "getPolylineMembers()", &pReturnValues)) {
+		return true;
+	}
+
+	dzApp->warning("ERROR: DzBridgeAction: Error while invoking method: DzFacetMesh::getPolylineMembers()");
+	return false;
+}
+
 bool DzBridgeAction::exSetArkitCorrectives(double fNewValue, DzNode* pParentNode)
 {
 	if (pParentNode == nullptr) return false;
@@ -9366,7 +9379,8 @@ bool DzBridgeAction::writeAbcMesh(DzNode* pNode, Alembic::Abc::OArchive &AbcArch
 	return true;
 }
 
-bool DzBridgeAction::dumpMaterialToPolylineIndexList(DzNode* pNode, QList<QList<int>> &oMaterialToPolylineIndexList)
+#if USE_SCRIPT_MEMORY_DUMP
+bool DzBridgeAction::dumpMaterialToPolylineIndexList(DzNode* pNode, QList<DzIndexList>& oMaterialToPolylineIndexList)
 {
 	QString sFilename = m_sEmbeddedFolderPath + "/writePolylineIndexes.dsa";
 	DzScript oScript;
@@ -9385,19 +9399,41 @@ bool DzBridgeAction::dumpMaterialToPolylineIndexList(DzNode* pNode, QList<QList<
 	while (!oInputStream.atEnd()) {
 		QString sInputLine = oInputStream.readLine();
 		QStringList aTokens = sInputLine.split(",");
-		QList<int> aPolylineVertexIndices;
-		foreach (QString sToken, aTokens) {
-			aPolylineVertexIndices.append(sToken.toInt());
+		DzIndexList oPolylineIndices;
+		foreach(QString sToken, aTokens) {
+			oPolylineIndices.addIndex(sToken.toInt());
 		}
-		oMaterialToPolylineIndexList.append(aPolylineVertexIndices);
+		oMaterialToPolylineIndexList.append(oPolylineIndices);
 	}
 
 	oDatafile.close();
-	
+
+	return true;
+}
+#else
+bool DzBridgeAction::dumpMaterialToPolylineIndexList(DzNode* pNode, QList<DzIndexList>& oMaterialToPolylineIndexList)
+{
+	if (pNode == nullptr || pNode->getObject() == nullptr) return false;
+	DzFacetMesh* pFacetMesh = qobject_cast<DzFacetMesh*>(pNode->getObject()->getCachedGeom());
+	if (pFacetMesh == nullptr) return false;
+
+	int numMaterialGroups = pFacetMesh->getNumMaterialGroups();
+	for (int nMaterialGroupIndex = 0; nMaterialGroupIndex < numMaterialGroups; nMaterialGroupIndex++)
+	{
+		DzIndexList *pReturnValues;
+		DzMaterialFaceGroup* pMaterialGroup = pFacetMesh->getMaterialGroup(nMaterialGroupIndex);
+		getPolylineMembers(pMaterialGroup, pReturnValues);
+		DzIndexList oPolylineIndexes(*pReturnValues);
+		oMaterialToPolylineIndexList.append(oPolylineIndexes);
+	}
+
 	return true;
 }
 
-bool DzBridgeAction::dumpPolylineVertexIndices(DzNode* pNode, QList<QList<int>> &oPolylineVertexIndexLookupTable)
+#endif
+
+#if USE_SCRIPT_MEMORY_DUMP
+bool DzBridgeAction::dumpPolylineVertexIndices(DzNode* pNode, QList<QList<QVariant>>& oPolylineVertexIndexLookupTable)
 {
 	QString sFilename = m_sEmbeddedFolderPath + "/writePolylineIndexes.dsa";
 	DzScript oScript;
@@ -9425,20 +9461,39 @@ bool DzBridgeAction::dumpPolylineVertexIndices(DzNode* pNode, QList<QList<int>> 
 	while (!oInputStream.atEnd()) {
 		QString sInputLine = oInputStream.readLine();
 		QStringList aTokens = sInputLine.split(",");
-		QList<int> aPolylineVertexIndices;
-		foreach (QString sToken, aTokens) {
-			aPolylineVertexIndices.append(sToken.toInt());
+		QList<QVariant> aPolylineVertexIndices;
+		foreach(QString sToken, aTokens) {
+			aPolylineVertexIndices.append(QVariant(sToken));
 		}
 		oPolylineVertexIndexLookupTable.append(aPolylineVertexIndices);
 	}
 
 	oDatafile.close();
-	
+
 	return true;
 }
+#else
+bool DzBridgeAction::dumpPolylineVertexIndices(DzNode* pNode, QList<QVariantList>& oPolylineVertexIndexLookupTable)
+{
+	if (pNode == nullptr || pNode->getObject() == nullptr) return false;
+	DzFacetMesh* pFacetMesh = qobject_cast<DzFacetMesh*>(pNode->getObject()->getCachedGeom());
+	if (pFacetMesh == nullptr) return false;
+
+	int numPolylines = getNumPolylines(pFacetMesh);
+
+	for (int nPolylineIndex = 0; nPolylineIndex < numPolylines; nPolylineIndex++)
+	{
+		QList<QVariant> aPolylineVertexIndices;
+		getPolylineVertexIndices(pFacetMesh, nPolylineIndex, aPolylineVertexIndices);
+		oPolylineVertexIndexLookupTable.append(aPolylineVertexIndices);
+	}
+
+	return true;
+}
+#endif
 
 bool DzBridgeAction::writePolylineToBuffer(
-	QList<int> *pSourceVertexIndexBuffer,
+	QList<QVariant> *pSourceVertexIndexBuffer,
 	DzFacetMesh* pFacetMesh,
 	QString sCompatibilityMode,
 	DzNode* pFigureNode,
@@ -9455,7 +9510,7 @@ bool DzBridgeAction::writePolylineToBuffer(
 	DzVec3 oFigureUVvalue;
 	for (int nRawIndex = 0; nRawIndex < pSourceVertexIndexBuffer->count(); nRawIndex++)
 	{
-		int nMappedVertexIndex = pSourceVertexIndexBuffer->at(nRawIndex);
+		int nMappedVertexIndex = pSourceVertexIndexBuffer->at(nRawIndex).toInt();
 		if (nMappedVertexIndex > nNumVerts) {
 			QString mesg = QString("ERROR: writeAbcCurve(): nVertexIndex larger than num verts: %i").arg(nMappedVertexIndex);
 			dzApp->warning(mesg);
@@ -9658,8 +9713,8 @@ bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArch
 		DzMap* pDazUVmap = nullptr;
 		pDazUVmap = pFacetMesh->getUVs();
 
-		QList<QList<int>> oPolylineVertexIndexLookupTable;
-		QList<QList<int>> oMaterialToPolylineIndexList;
+		QList<QVariantList> oPolylineVertexIndexLookupTable;
+		QList<DzIndexList> oMaterialToPolylineIndexList;
 		if (dumpPolylineVertexIndices(pNode, oPolylineVertexIndexLookupTable) == false ||
 			dumpMaterialToPolylineIndexList(pNode, oMaterialToPolylineIndexList) == false) {
 			QString sMesg = QString("ERROR: writeAbcCurve(): failed trying to dumpPolylineVertexIndices for %1, aborting.").arg(pNode->getLabel());
@@ -9670,16 +9725,22 @@ bool DzBridgeAction::writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArch
 
 		for (int nMaterialIndex = 0; nMaterialIndex < nNumMaterialGroups; nMaterialIndex++)
 		{
-			QList<int> *pPolylineIndexList = &(oMaterialToPolylineIndexList[nMaterialIndex]);
-			foreach(int nPolylineIndex, *pPolylineIndexList)
+			DzIndexList *pPolylineIndexList = &oMaterialToPolylineIndexList[nMaterialIndex];
+			for (int nTempIndex=0; nTempIndex < pPolylineIndexList->count(); nTempIndex++)
 			{
-				QList<int> *pSourceVertexIndexBuffer = &(oPolylineVertexIndexLookupTable[nPolylineIndex]);
+				int nPolylineIndex = pPolylineIndexList->getIndex(nTempIndex);
+				QVariantList *pSourceVertexIndexBuffer = &(oPolylineVertexIndexLookupTable[nPolylineIndex]);
 				writePolylineToBuffer(pSourceVertexIndexBuffer, pFacetMesh, sCompatibilityMode, pFigureNode, aGroomGroupIds, aAlembicVertices, aPolylineVertexIndices, aRootUvBuffer, groom_group_id);
 			}
 
 			// next hair node
 			groom_group_id++;
 		}
+
+		foreach(auto element, oPolylineVertexIndexLookupTable) element.clear();
+		oPolylineVertexIndexLookupTable.clear();
+		foreach(auto element, oMaterialToPolylineIndexList) element.clear();
+		oMaterialToPolylineIndexList.clear();
 
 		//for (int nPolylineIndex = 0; nPolylineIndex < nNumLines; nPolylineIndex++)
 		//{
@@ -9955,7 +10016,7 @@ bool DzBridgeAction::postProcessRigConversion
 			else
 			{
 				// CONVERT EXISTING RIG
-				printf("Starting FixClusterTransformLinks(): ExportRigMode=%s, pCustomBoneFixer=0x%x\n", m_sExportRigMode.toLocal8Bit().constData(), (long) pCustomJointFixer );
+				printf("Starting FixClusterTransformLinks(): ExportRigMode=%s, pCustomBoneFixer=0x%llx\n", m_sExportRigMode.toLocal8Bit().constData(), (int64_t) pCustomJointFixer );
 				FbxTools::ModifyBindPose(pScene, RootBone, pCustomJointFixer);
 
 //				FbxPose* pNewBindPose = FbxTools::SaveBindMatrixToPose(pScene, "NewBindPose", nullptr, true);
@@ -9975,7 +10036,7 @@ bool DzBridgeAction::postProcessRigConversion
 //				}
 //				pNewBindPose->Destroy();
 
-				printf("DEBUG: CONVERTJOINT PATHWAY COMPLETE USING: pCustomBoneFixer=0x%x\n", (long) pCustomJointFixer );
+				printf("DEBUG: CONVERTJOINT PATHWAY COMPLETE USING: pCustomBoneFixer=0x%llx\n", (int64_t) pCustomJointFixer );
 			}
 
 			FbxTools::RemoveBindPoses(pScene);

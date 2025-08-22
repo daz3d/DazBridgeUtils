@@ -27,6 +27,8 @@ class DzColorProperty;
 class DzNumericProperty;
 class DzFacetMesh;
 class MvcFbxBoneRetargeter;
+class DzMaterialFaceGroup;
+class DzIndexList;
 
 #include "FbxTools.h"
 
@@ -444,10 +446,10 @@ namespace DzBridgeNameSpace
 			QString sRigRoot, QString sMeshRoot, QString sGarmentRoot
 		);
 		bool fixMouthCloseBlendshape(DzNode* pNode, QString sFbxSourceFilename, QString sFbxDestinationFilename);
-		bool dumpMaterialToPolylineIndexList(DzNode* pNode, QList<QList<int>>& oMaterialToPolylineIndexList);
-		bool dumpPolylineVertexIndices(DzNode* pNode, QList<QList<int>>& oPolylineVertexIndexLookupTable);
+		bool dumpMaterialToPolylineIndexList(DzNode* pNode, QList<DzIndexList>& oMaterialToPolylineIndexList);
+		bool dumpPolylineVertexIndices(DzNode* pNode, QList<QVariantList>& oPolylineVertexIndexLookupTable);
 		bool writePolylineToBuffer(
-			QList<int>* pSourceVertexIndexBuffer,
+			QList<QVariant>* pSourceVertexIndexBuffer,
 			DzFacetMesh* pFacetMesh,
 			QString sCompatibilityMode,
 			DzNode* pFigureNode,
@@ -457,6 +459,7 @@ namespace DzBridgeNameSpace
 			std::vector<Imath::V2f>& aRootUvBuffer,
 			int groom_group_id
 		);
+		bool getPolylineMembers(DzMaterialFaceGroup* pMaterialGroup, DzIndexList* &aReturnValues);
 
 	protected:
 		// Struct to remember attachment info
