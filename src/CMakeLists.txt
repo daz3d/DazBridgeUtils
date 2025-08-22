@@ -8,7 +8,9 @@ set(COMMON_LIB_INCLUDE_DIR ${COMMON_LIB_INCLUDE_DIR} PARENT_SCOPE)
 include_directories(${COMMON_LIB_INCLUDE_DIR})
 
 if(WIN32)
-	set(OS_SOURCES "")
+	set(OS_SOURCES ""
+		${DAZ_SDK_INCLUDE}/dzsdkmemorydefines.cpp
+		)
 elseif(APPLE)
 	set(OS_SOURCES "")
 endif()
@@ -62,6 +64,7 @@ target_include_directories(dzbridge-static
 
 target_link_libraries(dzbridge-static
 	PRIVATE
+	dzsdkmemory
 	dzcore
 	${DZSDK_QT_CORE_TARGET}
 	${DZSDK_QT_GUI_TARGET}
@@ -97,6 +100,7 @@ target_include_directories(dzbridge-shared
 
 target_link_libraries(dzbridge-shared
 	PRIVATE
+	dzsdkmemory
 	dzcore
 	${DZSDK_QT_CORE_TARGET}
 	${DZSDK_QT_GUI_TARGET}
