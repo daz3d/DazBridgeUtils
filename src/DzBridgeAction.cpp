@@ -10016,6 +10016,7 @@ bool DzBridgeAction::postProcessRigConversion
 	}
 
 	FbxTools::MergeFollowerRigs(pScene);
+	FbxTools::FixTwistBones(RootNode);
 	
 	if (RootBone)
 	{
@@ -10080,7 +10081,7 @@ bool DzBridgeAction::postProcessRigConversion
 			FbxTools::RemoveBindPoses(pScene);
 			FbxPose* pTempBindPose = FbxTools::SaveBindMatrixToPose(pScene, "TempBindPose", nullptr, true);
 			FbxTools::ApplyBindPose(pScene, pTempBindPose);
-			
+
 #if 0			
 			QString sUnposedFbxFilename = QString(fbxFilePath).replace(".fbx", "_unposed.fbx", Qt::CaseInsensitive);
 			if (openFBX->SaveScene(pScene, sUnposedFbxFilename, -1, false) == false)
@@ -10138,7 +10139,9 @@ bool DzBridgeAction::postProcessRigConversion
 					FbxTools::BakePoseToBindMatrix(pMesh, nullptr);
 				}				
 			}
-			
+
+			FbxTools::AddIkNodes(pScene, RootBone, "foot_l", "foot_r", "hand_l", "hand_r");
+
 			// Merge Final Rig Template
 			if (sFinalRigTemplateFbxFilename != "") {
 				FbxScene* pFinalRigScene = openFBX->CreateScene("Final Rig Scene");

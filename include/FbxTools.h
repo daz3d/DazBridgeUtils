@@ -122,7 +122,7 @@ public:
 	static bool TransferBlendshapes(QString sSourceFilename, FbxScene* pDestinationScene, QString sMappingFilename="");
 	static bool BakeMeshesToSingleBindPose(FbxScene* pScene);
 
-	static bool PostProcessRigForUnreal(QString FBXFile);
+	static bool PostProcessRigForUnreal(QString FBXFile, bool bFixTwistBones);
 	static bool PostProcessMaterialsForUnreal(
 		QString& FBXFile,
 		QString& AssetName,
@@ -136,6 +136,8 @@ public:
 	static bool RemoveAllPoses(FbxScene* pScene);
 
 	static FbxPose* SaveCurrentPose(FbxScene* pScene, FbxNode* pRootNode, FbxPose* pCurrentPose);
+
+	static void FixTwistBones(FbxNode* pNode);
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING
