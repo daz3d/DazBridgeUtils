@@ -4800,6 +4800,7 @@ bool DzBridgeAction::upgradeToHD(QString baseFilePath, QString hdFilePath, QStri
 		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, "Error",
 			"An error occurred while loading the base scene...", QMessageBox::Ok);
 		printf("\n\nAn error occurred while loading the base scene...");
+		baseMeshScene->Destroy();
 		return false;
 	}
 	SubdivideFbxScene subdivider = SubdivideFbxScene(baseMeshScene, pLookupTable);
@@ -4810,6 +4811,8 @@ bool DzBridgeAction::upgradeToHD(QString baseFilePath, QString hdFilePath, QStri
 		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, "Error",
 			"An error occurred while loading the base scene...", QMessageBox::Ok);
 		printf("\n\nAn error occurred while loading the base scene...");
+		baseMeshScene->Destroy();
+		hdMeshScene->Destroy();
 		return false;
 	}
 	subdivider.SaveClustersToScene(hdMeshScene);
@@ -4819,8 +4822,13 @@ bool DzBridgeAction::upgradeToHD(QString baseFilePath, QString hdFilePath, QStri
 			"An error occurred while saving the scene...", QMessageBox::Ok);
 
 		printf("\n\nAn error occurred while saving the scene...");
+		baseMeshScene->Destroy();
+		hdMeshScene->Destroy();
 		return false;
 	}
+
+	baseMeshScene->Destroy();
+	hdMeshScene->Destroy();
 
 	return true;
 
@@ -4958,6 +4966,7 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 		dzApp->log(sFbxErrorMessage);
 		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, tr("Error"),
 			tr("An error occurred while processing the Fbx file:\n\n") + sFbxErrorMessage, QMessageBox::Ok);
+		pScene->Destroy();
 		return false;
 	}
 
@@ -5110,9 +5119,11 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 		dzApp->log(sFbxErrorMessage);
 		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, tr("Error"),
 			tr("An error occurred while processing the Fbx file:\n\n") + sFbxErrorMessage, QMessageBox::Ok);
+		pScene->Destroy();
 		return false;
 	}
 
+	pScene->Destroy();
 	return true;
 
 }
@@ -8605,12 +8616,15 @@ bool DzBridgeAction::calculateMouthCloseVertexDeltas(FbxVector4* pVertexDeltaBuf
 	if (openFBX->LoadScene(pSceneFacsJawOpenMouthClose, m_sFacsJawOpenMouthClose.toUtf8().data()) == false)
 	{
 		dzApp->log("ERROR: DzBridgeAction::calculateMouthCloseVertexDeltas() Unable to open fbx: " + m_sFacsJawOpenMouthClose);
+		pSceneFacsJawOpenMouthClose->Destroy();
 		return false;
 	}
 	FbxScene* pSceneFacsJawOpen = openFBX->CreateScene("FACS Scene JawOpen");
 	if (openFBX->LoadScene(pSceneFacsJawOpen, m_sFacsJawOpen.toUtf8().data()) == false)
 	{
 		dzApp->log("ERROR: DzBridgeAction::calculateMouthCloseVertexDeltas() Unable to open fbx: " + m_sFacsJawOpen);
+		pSceneFacsJawOpenMouthClose->Destroy();
+		pSceneFacsJawOpen->Destroy();
 		return false;
 	}
 	
@@ -8625,6 +8639,8 @@ bool DzBridgeAction::calculateMouthCloseVertexDeltas(FbxVector4* pVertexDeltaBuf
 	
 	if (numControlPoints != numVertexDeltaBufferIndexes) {
 //		dzApp->log("ERROR: DzBridgeAction::calculateMouthCloseVertexDeltas() nBufferSize mismatch: " + QString("%1 versus %2").arg(numControlPoints).arg(numVertexDeltaBufferIndexes) );
+		pSceneFacsJawOpen->Destroy();
+		pSceneFacsJawOpenMouthClose->Destroy();
 		return false;
 	}
 	
@@ -8676,6 +8692,7 @@ int DzBridgeAction::validateProxyMeshVerts(QString sFilename)
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();	
 	FbxScene* pMvcProxyMeshScene = openFBX->CreateScene("Mvc Proxy Mesh Scene");
 	if (openFBX->LoadScene(pMvcProxyMeshScene, sFilename) == false) {
+		pMvcProxyMeshScene->Destroy();
 		return false;
 	}
 	FbxNode* pTargetCharacterNode = pMvcProxyMeshScene->FindNodeByName("Genesis9.Shape");
@@ -8687,9 +8704,11 @@ int DzBridgeAction::validateProxyMeshVerts(QString sFilename)
 	if (numVerts != G9_MVC_PROXY_VERTS) {
 		if (true) QMessageBox::warning(0, QString("Error"),
 			QString("DzBridge: An error occurred while generating the Proxy Mesh:\n\n") + sMvcVertCheckMessage, QMessageBox::Ok);
+		pMvcProxyMeshScene->Destroy();
 		return false;
 	}
 
+	pMvcProxyMeshScene->Destroy();
 	return true;
 }
 
@@ -9135,6 +9154,7 @@ bool DzBridgeAction::prepareMvcBoneRetargeter(QString sMvcTemplateFilename, MvcF
 	
 	FbxScene* pMvcTemplateScene = openFBX->CreateScene("Rig Template Scene");
 	if (exLoadFbxScene(pMvcTemplateScene, sMvcTemplateFilename) == false) {
+		pMvcTemplateScene->Destroy();
 		return false;
 	}
 	FbxNode* pMvcTemplateFigureNode = pMvcTemplateScene->FindNodeByName("Genesis9.Shape");
@@ -9142,6 +9162,7 @@ bool DzBridgeAction::prepareMvcBoneRetargeter(QString sMvcTemplateFilename, MvcF
 		dzApp->log("ERROR: DzR2xAction: Unable to find Genesis9 node in rig template scene.");
 		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, tr("Error"),
 			tr("Unable to find Genesis9 node in rig template scene."), QMessageBox::Ok);
+		pMvcTemplateScene->Destroy();
 		return false;
 	}
 	FbxNode* pMvcTemplateRootBone = FbxTools::GetRootBone(pMvcTemplateScene);
@@ -9152,6 +9173,7 @@ bool DzBridgeAction::prepareMvcBoneRetargeter(QString sMvcTemplateFilename, MvcF
 		dzApp->log("ERROR: DzR2xAction: Error while calculating Mvc Weights Table, aborting.");
 		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, tr("Error"),
 			tr("Error while calculating Mvc Weights Table, aborting."), QMessageBox::Ok);
+		pMvcTemplateScene->Destroy();
 		return false;
 	}
 
@@ -9160,6 +9182,7 @@ bool DzBridgeAction::prepareMvcBoneRetargeter(QString sMvcTemplateFilename, MvcF
 		dzApp->log("ERROR: DzR2xAction: Error while validating Mvc Weights Table, aborting.");
 		if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, tr("Error"),
 			tr("Error while validating Mvc Weights Table, aborting."), QMessageBox::Ok);
+		pMvcTemplateScene->Destroy();
 		return false;
 	}
 	pMvcTemplateScene->Destroy();
@@ -9982,6 +10005,7 @@ bool DzBridgeAction::postProcessRigConversion
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
 	FbxScene* pScene = openFBX->CreateScene("Base Mesh Scene");
 	if (exLoadFbxScene(pScene, fbxFilePath) == false) {
+		pScene->Destroy();
 		return false;
 	}
 
@@ -10026,6 +10050,7 @@ bool DzBridgeAction::postProcessRigConversion
 				// Retarget override rig from basefigure shape to custom character shape using MVC
 				if (retargetFigureToNewRig(m_pSelectedNode, pScene, RootBone, sMvcTemplateFilename, sMvcProxyMeshFilename, sOverrideRigFilename) == false) {
 					printf("ERROR: retargetFigureToNewRig(template=%s, override=%s)\n", sMvcTemplateFilename.toLocal8Bit().constData(), sOverrideRigFilename.toLocal8Bit().constData());
+					pScene->Destroy();
 					return false;
 				}
 				printf("DEBUG: RETARGET PATHWAY COMPLETE using: %s and %s\n", sMvcTemplateFilename.toLocal8Bit().constData(), sOverrideRigFilename.toLocal8Bit().constData());
@@ -10035,6 +10060,7 @@ bool DzBridgeAction::postProcessRigConversion
 				// REPLACE EXISTING RIG WITH OVERRIDE
 				if (FbxTools::LoadAndPose(sOverrideRigFilename, pScene, NULL, false, true) == false) { // rotation only
 					printf("ERROR: LoadAndPose(%s)\n", sOverrideRigFilename.toLocal8Bit().constData());
+					pScene->Destroy();
 					return false;
 				}
 				foreach(FbxNode* pNode, nodeList) {
@@ -10083,6 +10109,7 @@ bool DzBridgeAction::postProcessRigConversion
 				dzApp->log(sFbxErrorMessage);
 				if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, QObject::tr("Error"),
 					QObject::tr("An error occurred while processing the Fbx file:\n\n") + sFbxErrorMessage, QMessageBox::Ok);
+				pScene->Destroy();
 				return false;
 			}
 #endif
@@ -10096,6 +10123,7 @@ bool DzBridgeAction::postProcessRigConversion
 				FbxTools::RemoveBindPoses(pScene);
 				if (FbxTools::LoadAndPose(sTargetPoseFilename, pScene, NULL, false, true) == false) {
 					printf("ERROR: LoadAndPose(%s)\n", sTargetPoseFilename.toLocal8Bit().constData());
+					pScene->Destroy();
 					return false;
 				}
 				///////////////////////////////////////////
@@ -10136,6 +10164,8 @@ bool DzBridgeAction::postProcessRigConversion
 			if (sFinalRigTemplateFbxFilename != "") {
 				FbxScene* pFinalRigScene = openFBX->CreateScene("Final Rig Scene");
 				if (exLoadFbxScene(pFinalRigScene, sFinalRigTemplateFbxFilename) == false) {
+					pScene->Destroy();
+					pFinalRigScene->Destroy();
 					return false;
 				} else {
 					FbxTools::MergeScenes(pScene, pFinalRigScene);
@@ -10153,6 +10183,8 @@ bool DzBridgeAction::postProcessRigConversion
 					if (sGarmentRoot != "") {
 						FbxNode* pGarmentsFolder = pScene->FindNodeByName(sGarmentRoot.toLocal8Bit().constData());
 					}
+
+					pFinalRigScene->Destroy();
 				}
 
 //				// REBAKE MESHES FOR CONTAINER
@@ -10215,6 +10247,7 @@ bool DzBridgeAction::fixMouthCloseBlendshape(DzNode* pNode, QString sFbxSourceFi
 	FbxScene* pFacsBlendshapeScene = openFBX->CreateScene("FACS Blendshape Scene");
 	if (openFBX->LoadScene(pFacsBlendshapeScene, sFbxSourceFilename) == false) {
 		dzApp->log(QObject::tr("ERROR: fixMouthCloseBlendshape() Unable to load Fbx Blendshape file: ") + sFbxSourceFilename);
+		pFacsBlendshapeScene->Destroy();
 		return false;
 	}
 
@@ -10251,6 +10284,7 @@ bool DzBridgeAction::fixMouthCloseBlendshape(DzNode* pNode, QString sFbxSourceFi
 	}	
 	if (bFoundMouthBlendshape == false || pSourceChannel == nullptr) {
 		dzApp->log(QObject::tr("ERROR: fixMouthCloseBlendshape() MouthClose blendshape not found, aborting...") );
+		pFacsBlendshapeScene->Destroy();
 		return false;
 	}
 
@@ -10262,6 +10296,7 @@ bool DzBridgeAction::fixMouthCloseBlendshape(DzNode* pNode, QString sFbxSourceFi
 	FbxVector4* pSourceBuffer = pSourceShape->GetControlPoints();
 
 	if (calculateMouthCloseVertexDeltas(pSourceBuffer, numVertsShapeBuffer) == false) {
+		pFacsBlendshapeScene->Destroy();
 		return false;
 	}
 	// iterate and transfer each vertex delta
@@ -10274,6 +10309,7 @@ bool DzBridgeAction::fixMouthCloseBlendshape(DzNode* pNode, QString sFbxSourceFi
 
 	openFBX->SaveScene(pFacsBlendshapeScene, sFbxDestinationFilename);
 
+	pFacsBlendshapeScene->Destroy();
 	return true;
 }
 

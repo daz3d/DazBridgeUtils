@@ -2046,6 +2046,7 @@ bool FbxTools::TransferBlendshapes(QString sSourceFilename, FbxScene* pDestinati
 	
 	FbxScene* pSourceScene = openFBX->CreateScene("FACS Scene");
 	if (FbxTools::ExLoadScene(pSourceScene, sSourceFilename) == false) {
+		pSourceScene->Destroy();
 		return false;
 	}
 	else
@@ -2165,6 +2166,9 @@ bool FbxTools::TransferBlendshapes(QString sSourceFilename, FbxScene* pDestinati
 			
 		} // foreach(aBlendshapeMeshNodeList)
 	}
+
+	pSourceScene->Destroy();
+
 	return true;
 }
 
@@ -2464,6 +2468,72 @@ QString GetObjectNameForMaterial(FbxSurfaceMaterial* Material)
 	return QString();
 }
 
+
+
+bool RenameBlendshapeChannel(FbxBlendShapeChannel* pChannel, QString sNewName)
+{
+	pChannel->SetName(sNewName.toLocal8Bit().constData());
+
+	int shapeCount = pChannel->GetTargetShapeCount();
+	for (int shapeIndex = 0; shapeIndex < shapeCount; ++shapeIndex)
+	{
+		FbxShape* shape = pChannel->GetTargetShape(shapeIndex);
+		if (shape)
+		{
+			// if name == name
+			if (false)
+			{
+				shape->SetName(sNewName.toLocal8Bit().constData());
+			}
+		}
+	}
+
+	return true;
+}
+
+bool RenameMorphs(FbxScene* pScene, QMap<QString, QString> &MorphMappings)
+{
+	QList<FbxNode*> aMeshList;
+	FbxTools::GetAllMeshes(pScene->GetRootNode(), aMeshList);
+
+	foreach(FbxNode * pMeshNode, aMeshList)
+	{
+		// Check if the node has a mesh
+		FbxMesh* pMesh = pMeshNode->GetMesh();
+		// Rename Shapes
+		if (pMesh)
+		{
+			int deformerCount = pMesh->GetDeformerCount(FbxDeformer::eBlendShape);
+			for (int deformerIndex = 0; deformerIndex < deformerCount; ++deformerIndex)
+			{
+				FbxBlendShape* blendShape = static_cast<FbxBlendShape*>(pMesh->GetDeformer(deformerIndex, FbxDeformer::eBlendShape));
+
+				int blendShapeChannelCount = blendShape->GetBlendShapeChannelCount();
+				for (int channelIndex = 0; channelIndex < blendShapeChannelCount; ++channelIndex)
+				{
+					FbxBlendShapeChannel* channel = blendShape->GetBlendShapeChannel(channelIndex);
+					if (channel)
+					{
+						// Rename the shapes associated with this channel
+//						removeMorphExportPrefixFromBlendShapeChannel(channel, prefix);
+					}
+				}
+			}
+		}
+
+		foreach(QString key, MorphMappings)
+		{
+			QString MorphName = key;
+			QString MorphLabel = MorphMappings[key];
+
+
+		}
+
+	}
+
+	return true;
+}
+
 bool ProcessMorphs(FbxScene* Scene
 //	const UDazToUnrealSettings* CachedSettings, 
 //	TSharedPtr<FJsonObject>& JsonObject
@@ -2559,6 +2629,7 @@ bool FbxTools::PostProcessRigForUnreal(QString FBXFile, bool bFixTwistBones)
 	if (openFBX->LoadScene(pScene, FBXFile.toLocal8Bit().constData()) == false)
 	{
 		printf("ERROR! Can't load scene: %s\n", FBXFile.toLocal8Bit().constData());
+		pScene->Destroy();
 		return false;
 	}
 //	printf("DEBUG: Loaded file: %s\n", FBXFile.toLocal8Bit().constData());
@@ -2599,10 +2670,13 @@ bool FbxTools::PostProcessRigForUnreal(QString FBXFile, bool bFixTwistBones)
 	
 	if (openFBX->SaveScene(pScene, FBXFile.toLocal8Bit().constData()) == false) {
 		printf("ERROR! Can't **SAVE** scene: %s\n", FBXFile.toLocal8Bit().constData());
+		pScene->Destroy();
 		return false;
 	}
 //	printf("DEBUG: Saved to file: %s\n", FBXFile.toLocal8Bit().constData());
-	
+
+	pScene->Destroy();
+
 	return true;
 }
 
@@ -2614,9 +2688,10 @@ bool FbxTools::PostProcessMaterialsForUnreal(
 {
 
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
-	FbxScene* pScene = openFBX->CreateScene("");
+	FbxScene* pScene = openFBX->CreateScene("Process Materials");
 	if (openFBX->LoadScene(pScene, FBXFile.toLocal8Bit().constData()) == false)
 	{
+		pScene->Destroy();
 		return false;
 	}
 	
@@ -2726,16 +2801,18 @@ bool FbxTools::PostProcessMaterialsForUnreal(
 	}
 
 	for (int i=0; i < MaterialsToDelete.GetCount(); i++) {
-		FbxSurfaceMaterial* pMat = MaterialsToDelete[i];
-		if (pMat) {
-			printf("DEBUG: Delete: material %s\n", pMat->GetName());
-			pMat->Destroy();
+		FbxSurfaceMaterial* pMaterial = MaterialsToDelete[i];
+		if (pMaterial) {
+			pScene->RemoveMaterial(pMaterial);
 		}
 	}
 
 	if (openFBX->SaveScene(pScene, FBXFile.toLocal8Bit().constData()) == false) {
+		pScene->Destroy();
 		return false;
 	}
+
+	pScene->Destroy();
 
 	return true;
 }

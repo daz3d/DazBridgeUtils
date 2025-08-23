@@ -93,6 +93,8 @@ OpenFBXInterface::~OpenFBXInterface()
 // ASCII nFileFormat=1
 bool OpenFBXInterface::SaveScene(FbxScene* pScene, QString sFilename, int nFileFormat, bool bEmbedMedia)
 {
+	if (pScene == nullptr) return false;
+
 	bool bStatus = true;
 
 	// Create FbxExporter
