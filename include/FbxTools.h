@@ -128,7 +128,8 @@ public:
 		QString& FBXFile,
 		QString& AssetName,
 		QMap<DzMaterial*, DzMaterial*>& DuplicateMaterials,
-		QList<QString>& MaterialSlotNames);
+		QList<QString>& MaterialSlotNames,
+		int nCombineMethod);
 
 	static bool MergeScenes(FbxScene* pDestinationScene, FbxScene* pSourceScene);
 

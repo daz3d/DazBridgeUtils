@@ -2687,7 +2687,8 @@ bool FbxTools::PostProcessMaterialsForUnreal(
 	QString& FBXFile,
 	QString& AssetName,
 	QMap<DzMaterial*, DzMaterial*>& DuplicateMaterials,
-	QList<QString>& MaterialSlotNames)
+	QList<QString>& MaterialSlotNames,
+	int nCombineMethod)
 {
 
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
@@ -2714,8 +2715,7 @@ bool FbxTools::PostProcessMaterialsForUnreal(
 	FbxArray<FbxSurfaceMaterial*> FbxMaterialArray;
 	pScene->FillMaterialArray(FbxMaterialArray);
 
-	bool bCombineMaterials = true;
-	if (bCombineMaterials)
+	if (nCombineMethod == 1)
 	{
 		// Create a mapping of the names of duplicate (identical) materials
 		QMap<QString, QString> DuplicateToOriginalName;
@@ -2803,6 +2803,7 @@ bool FbxTools::PostProcessMaterialsForUnreal(
 		MaterialSlotNames.append(NewMaterialName);
 	}
 
+	// Remove unused materials
 	for (int i=0; i < MaterialsToDelete.GetCount(); i++) {
 		FbxSurfaceMaterial* pMaterial = MaterialsToDelete[i];
 		if (pMaterial) {
