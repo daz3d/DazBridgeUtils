@@ -420,7 +420,11 @@ bool DzBridgeAction::preProcessRigConversion(DzNode *parentNode)
 {
 	DzProgress preProcessProgress(0);
 	
-	if (m_bConvertRigEnabled && parentNode && m_sExportRigMode != "" && m_sExportRigMode != "--")
+	if (parentNode &&
+		parentNode->inherits("DzFigure") &&
+		m_sAssetType == "SkeletalMesh" &&
+		m_bConvertRigEnabled &&
+		m_sExportRigMode != "" && m_sExportRigMode != "--")
 	{
 		QString sGeneration = parentNode->getName();
 		bool bIsG9 = (sGeneration == "Genesis9");
