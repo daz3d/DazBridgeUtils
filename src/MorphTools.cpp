@@ -1013,8 +1013,9 @@ QMap<QString, MorphInfo>* MorphTools::getAvailableMorphs(DzNode* Node)
 		{
 			MorphInfo morphInfo;
 			QString sCorrectedMorphName = QString(propName).replace(MORPH_EXPORT_PREFIX, "");
+			QString sCorrectedLabel = QString(propLabel).replace(MORPH_EXPORT_PREFIX, "");
 			morphInfo.Name = sCorrectedMorphName;
-			morphInfo.Label = propLabel;
+			morphInfo.Label = sCorrectedLabel;
 			morphInfo.Path = Node->getLabel() + "/" + property->getPath();
 			morphInfo.Type = presentation->getType();
 			morphInfo.Property = property;
@@ -1046,8 +1047,9 @@ QMap<QString, MorphInfo>* MorphTools::getAvailableMorphs(DzNode* Node)
 					{
 						MorphInfo morphInfoProp;
 						QString sCorrectedMorphName = QString(modName).replace(MORPH_EXPORT_PREFIX, "");
+						QString sCorrectedLabel = QString(propLabel).replace(MORPH_EXPORT_PREFIX, "");
 						morphInfoProp.Name = sCorrectedMorphName;
-						morphInfoProp.Label = propLabel;
+						morphInfoProp.Label = sCorrectedLabel;
 						morphInfoProp.Path = Node->getLabel() + "/" + property->getPath();
 						morphInfoProp.Type = presentation->getType();
 						morphInfoProp.Property = property;
@@ -1097,8 +1099,9 @@ QMap<QString, MorphInfo> MorphTools::GetAvailableMorphs(DzNode* Node, bool bRecu
 		{
 			MorphInfo morphInfo;
 			QString sCorrectedMorphName = QString(propName).replace(MORPH_EXPORT_PREFIX, "");
+			QString sCorrectedLabel = QString(propLabel).replace(MORPH_EXPORT_PREFIX, "");
 			morphInfo.Name = sCorrectedMorphName;
-			morphInfo.Label = propLabel;
+			morphInfo.Label = sCorrectedLabel;
 			morphInfo.Path = Node->getLabel() + "/" + property->getPath();
 			morphInfo.Type = presentation->getType();
 			morphInfo.Property = property;
@@ -1130,8 +1133,9 @@ QMap<QString, MorphInfo> MorphTools::GetAvailableMorphs(DzNode* Node, bool bRecu
 					{
 						MorphInfo morphInfoProp;
 						QString sCorrectedMorphName = QString(modName).replace(MORPH_EXPORT_PREFIX, "");
+						QString sCorrectedLabel = QString(propLabel).replace(MORPH_EXPORT_PREFIX, "");
 						morphInfoProp.Name = sCorrectedMorphName;
-						morphInfoProp.Label = propLabel;
+						morphInfoProp.Label = sCorrectedLabel;
 						morphInfoProp.Path = Node->getLabel() + "/" + property->getPath();
 						morphInfoProp.Type = presentation->getType();
 						morphInfoProp.Property = property;

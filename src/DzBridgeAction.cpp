@@ -4977,6 +4977,9 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 
     // Remove Morph Export Prefix from FBX
     FbxTools::removeMorphExportPrefixFromNode(pScene->GetRootNode(), MORPH_EXPORT_PREFIX);
+	// Rename Morphs to Morph Labels
+//	auto oMorphInfoTable = MorphTools::GetAvailableMorphs(m_pSelectedNode);
+	FbxTools::RenameMorphs(pScene, m_AvailableMorphsTable, true);	
 
 	// Remove Extra Geograft nodes and geometry
 	if (m_bRemoveDuplicateGeografts)

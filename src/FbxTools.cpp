@@ -2472,18 +2472,19 @@ QString GetObjectNameForMaterial(FbxSurfaceMaterial* Material)
 
 bool RenameBlendshapeChannel(FbxBlendShapeChannel* pChannel, QString sNewName)
 {
+	if (pChannel == nullptr) return false;
+	
+	QString sChannelName(pChannel->GetName());
 	pChannel->SetName(sNewName.toLocal8Bit().constData());
 
-	int shapeCount = pChannel->GetTargetShapeCount();
-	for (int shapeIndex = 0; shapeIndex < shapeCount; ++shapeIndex)
+	int numShapes = pChannel->GetTargetShapeCount();
+	for (int nShapeIndex = 0; nShapeIndex < numShapes; ++nShapeIndex)
 	{
-		FbxShape* shape = pChannel->GetTargetShape(shapeIndex);
-		if (shape)
-		{
-			// if name == name
-			if (false)
-			{
-				shape->SetName(sNewName.toLocal8Bit().constData());
+		FbxShape* pTargetShape = pChannel->GetTargetShape(nShapeIndex);
+		if (pTargetShape) {
+			QString sTargetShapeName(pTargetShape->GetName());
+			if (sTargetShapeName.compare(sChannelName) == 0) {
+				pTargetShape->SetName(sNewName.toLocal8Bit().constData());
 			}
 		}
 	}
@@ -2491,46 +2492,48 @@ bool RenameBlendshapeChannel(FbxBlendShapeChannel* pChannel, QString sNewName)
 	return true;
 }
 
-bool RenameMorphs(FbxScene* pScene, QMap<QString, QString> &MorphMappings)
+#include "MorphTools.h"
+bool FbxTools::RenameMorphs(FbxScene* pScene, QMap<QString, MorphInfo> &MorphMappings, bool bUseLabels)
 {
-	QList<FbxNode*> aMeshList;
-	FbxTools::GetAllMeshes(pScene->GetRootNode(), aMeshList);
+	if (pScene == nullptr) return false;
+	QList<FbxNode*> aMeshNodeList;
+	FbxTools::GetAllMeshes(pScene->GetRootNode(), aMeshNodeList);
 
-	foreach(FbxNode * pMeshNode, aMeshList)
+	foreach(FbxNode * pNode, aMeshNodeList)
 	{
+		if (pNode == nullptr) continue;
+		QString sNodeName(pNode->GetName());
 		// Check if the node has a mesh
-		FbxMesh* pMesh = pMeshNode->GetMesh();
+		FbxMesh* pMesh = pNode->GetMesh();
+		if (pMesh == nullptr) continue;
+		QString sMeshName = QString(pMesh->GetName()).replace(".Shape", "");
 		// Rename Shapes
-		if (pMesh)
+		int numBlendshapes = pMesh->GetDeformerCount(FbxDeformer::eBlendShape);
+		for (int nBlendshapeIndex = 0; nBlendshapeIndex < numBlendshapes; ++nBlendshapeIndex)
 		{
-			int deformerCount = pMesh->GetDeformerCount(FbxDeformer::eBlendShape);
-			for (int deformerIndex = 0; deformerIndex < deformerCount; ++deformerIndex)
+			FbxBlendShape* pBlendShape = static_cast<FbxBlendShape*>(pMesh->GetDeformer(nBlendshapeIndex, FbxDeformer::eBlendShape));
+			if (pBlendShape == nullptr) continue;
+			int numChannels = pBlendShape->GetBlendShapeChannelCount();
+			for (int nChannelIndex = 0; nChannelIndex < numChannels; ++nChannelIndex)
 			{
-				FbxBlendShape* blendShape = static_cast<FbxBlendShape*>(pMesh->GetDeformer(deformerIndex, FbxDeformer::eBlendShape));
-
-				int blendShapeChannelCount = blendShape->GetBlendShapeChannelCount();
-				for (int channelIndex = 0; channelIndex < blendShapeChannelCount; ++channelIndex)
+				FbxBlendShapeChannel* pChannel = pBlendShape->GetBlendShapeChannel(nChannelIndex);
+				if (pChannel == nullptr) continue;
+				QString sChannelName = QString(pChannel->GetName());
+				QString sChannelNameCleaned = QString(sChannelName).replace(sMeshName + "__", "");
+//				printf("DEBUG: sChannelName = %s, changing to %s\n", sChannelName.toLocal8Bit().constData(), sChannelNameCleaned.toLocal8Bit().constData());
+				QString sNewName = MorphMappings.value(sChannelNameCleaned).Label;
+				if (bUseLabels && !sNewName.isEmpty()) {
+					printf("DEBUG: Renaming sChannelName: %s to %s\n", sChannelNameCleaned.toLocal8Bit().constData(), sNewName.toLocal8Bit().constData());
+					RenameBlendshapeChannel(pChannel, sNewName);
+				}
+				else
 				{
-					FbxBlendShapeChannel* channel = blendShape->GetBlendShapeChannel(channelIndex);
-					if (channel)
-					{
-						// Rename the shapes associated with this channel
-//						removeMorphExportPrefixFromBlendShapeChannel(channel, prefix);
-					}
+					RenameBlendshapeChannel(pChannel, sChannelNameCleaned);
 				}
 			}
 		}
-
-		foreach(QString key, MorphMappings)
-		{
-			QString MorphName = key;
-			QString MorphLabel = MorphMappings[key];
-
-
-		}
-
-	}
-
+	}	
+	
 	return true;
 }
 
