@@ -433,7 +433,7 @@ bool DzBridgeAction::preProcessRigConversion(DzNode *parentNode)
 		bool bIsG2 = (sGeneration.contains("Genesis2"));
 		bool bIsG1 = (sGeneration == "Genesis");
 
-		QString sBoneConverter = "bone_converter_aArgs.dsa";
+		QString sBoneConverter = "bone_converter2_aArgs.dsa";
 		QString sUnrealMannyRigFile = "g9_to_unreal_manny.json";
 		QString sG8UnrealRigFile = "g8_to_unreal.json";
 		QString sMetahumanRigFile = "g9_to_metahuman.json";
@@ -4767,7 +4767,7 @@ bool DzBridgeAction::metaInvokeMethod(QObject* object, const char* methodSig, vo
 
 	// DEBUGGING
 	QString sDebugString = QString("metaInvokeMethod: %1 : %2\n").arg(metaMethod.signature()).arg(metaMethod.typeName());
-	printf(sDebugString.toLocal8Bit().constData());
+//	printf(sDebugString.toLocal8Bit().constData());
 	
 	QGenericReturnArgument returnArgument(
 		metaMethod.typeName(),

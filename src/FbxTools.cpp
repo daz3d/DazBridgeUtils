@@ -2821,7 +2821,7 @@ bool FbxTools::PostProcessMaterialsForUnreal(
 		}
 
 		NewMaterialName = SanitizeName(NewMaterialName);
-		printf("DEBUG: FbxMaterial %s - Renaming to %s\n", FbxMaterial->GetName(), NewMaterialName.toLocal8Bit().constData());
+//		printf("DEBUG: FbxMaterial %s - Renaming to %s\n", FbxMaterial->GetName(), NewMaterialName.toLocal8Bit().constData());
 		FbxMaterial->SetName(NewMaterialName.toLocal8Bit().constData());
 		MaterialSlotNames.append(NewMaterialName);
 	}
@@ -3454,31 +3454,7 @@ bool FbxTools::ExportSkeleton(DzNode* pNode, QString sFilename, bool bIncludeFac
 	QMap<DzNode*, FbxNode*> BoneMap;
 	GenerateSkeleton(Figure, pNode, nullptr, nullptr, pScene, BoneMap, bIncludeFaceBones, bFixTwistBones);
 
-	// Get the play range
-	DzTimeRange PlayRange = dzScene->getPlayRange();
-
-	// Root Node
-//	exportNodeAnimation(Figure, BoneMap, AnimBaseLayer, FigureScale /*, bExportingForMLDeformer*/);
-
-	// Iterate the bones
-	DzBoneList Bones; // = getAllBones(pNode);
-	Skeleton->getAllBones(Bones);
-	for (auto Bone : Bones)
-	{
-//		exportNodeAnimation(Bone, BoneMap, AnimBaseLayer, FigureScale /*, bExportingForMLDeformer*/);
-	}
-
-	// Get a list of animated properties
-//	if (m_bAnimationExportActiveCurves)
-	{
-		QList<DzNumericProperty*> animatedProperties; // = getAnimatedProperties(pNode);
-//		exportAnimatedProperties(animatedProperties, Scene, AnimBaseLayer);
-	}
-
 	bool bAsciiMode = false;
-#if VODSVERSION
-	bAsciiMode = true;
-#endif
 	bool bSaveResult = openFBX->SaveScene(pScene, sFilename, bAsciiMode);
 	
 	return bSaveResult;
