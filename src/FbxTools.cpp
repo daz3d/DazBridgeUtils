@@ -3443,12 +3443,12 @@ bool FbxTools::ExportSkeleton(DzNode* pNode, QString sFilename, bool bIncludeFac
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
 	FbxScene* pScene = openFBX->CreateScene("Animation Scene");
 	
-	// Get the Figure Scale
-	float FigureScale = pNode->getScaleControl()->getValue();
+//	// Get the Figure Scale
+//	float FigureScale = pNode->getScaleControl()->getValue();
 
-	FbxAnimStack* AnimStack = FbxAnimStack::Create(pScene, "AnimStack");
-	FbxAnimLayer* AnimBaseLayer = FbxAnimLayer::Create(pScene, "Layer0");
-	AnimStack->AddMember(AnimBaseLayer);
+//	FbxAnimStack* AnimStack = FbxAnimStack::Create(pScene, "AnimStack");
+//	FbxAnimLayer* AnimBaseLayer = FbxAnimLayer::Create(pScene, "Layer0");
+//	AnimStack->AddMember(AnimBaseLayer);
 
 	// Add the skeleton to the scene
 	QMap<DzNode*, FbxNode*> BoneMap;
@@ -3456,7 +3456,8 @@ bool FbxTools::ExportSkeleton(DzNode* pNode, QString sFilename, bool bIncludeFac
 
 	bool bAsciiMode = false;
 	bool bSaveResult = openFBX->SaveScene(pScene, sFilename, bAsciiMode);
-	
+
+	pScene->Destroy();
 	return bSaveResult;
 }
 

@@ -8165,8 +8165,7 @@ bool DzBridgeAction::generateMorphProxyRigs(DzNode* pNode, QString sFbxBaseFileP
 
 	// Generate base skeleton
 	QString sOutputFile = sFbxBaseFilePath + "_base.fbx";
-	if (FbxTools::ExportSkeleton(pNode, sOutputFile, m_bAnimationTransferFace, m_bFixTwistBones) == true) {
-		aOutputFileList.append(sOutputFile);
+	if (FbxTools::ExportSkeleton(pNode, sOutputFile, true, false) == true) {
 		printf("DEBUG: exported proxy rig: %s\n", sOutputFile.toLocal8Bit().constData());
 	} else {
 		printf("ERROR: failed trying to export rig: %s\n", sOutputFile.toLocal8Bit().constData());
@@ -8184,7 +8183,7 @@ bool DzBridgeAction::generateMorphProxyRigs(DzNode* pNode, QString sFbxBaseFileP
 				double nBackupValue = oMorphProperty->getRawValue();
 				oMorphProperty->setValue(1.0);
 				QString sOutputFile = sFbxBaseFilePath + "_" + cleanString(sMorphName) + ".fbx";
-				if (FbxTools::ExportSkeleton(pNode, sOutputFile, m_bAnimationTransferFace, m_bFixTwistBones) == true) {
+				if (FbxTools::ExportSkeleton(pNode, sOutputFile, true, false) == true) {
 					aOutputFileList.append(sOutputFile);
 					printf("DEBUG: exported proxy rig: %s\n", sOutputFile.toLocal8Bit().constData());
 				} else {
