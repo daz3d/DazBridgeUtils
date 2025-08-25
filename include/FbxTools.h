@@ -8,6 +8,8 @@
 #define NEGY_TO_NEGZ(a) FbxVector4(a[0], -a[2], -a[1])
 #define NEGZ(a) FbxVector4(a[0], a[1], -a[2])
 
+class DzNode;
+class DzFigure;
 class DzProgress;
 class DzMaterial;
 class MorphInfo;
@@ -149,6 +151,10 @@ public:
 
 	static bool RenameMorphs(FbxScene* pScene, QMap<QString, MorphInfo> &MorphMappings, bool bUseLabels);
 	
+	static bool ExportSkeleton(DzNode* pNode, QString sFilename, bool bIncludeFaceBones, bool bFixTwistBones);
+
+	static bool ExportAnimation(DzNode* pNode, QString sFilename, bool bIncludeFaceBones, bool bFixTwistBones);
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -157,5 +163,8 @@ public:
 	static void ReparentTwistBone(FbxNode* pNode);
 	static void FindAndProcessTwistBones(FbxNode* pNode);
 	static void AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLeftFoot, const char* sRightFoot, const char* sLeftHand, const char* sRightHand);
+
+private:
+	static void GenerateSkeleton(DzFigure* Figure, DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzNode*, FbxNode*>& BoneMap, bool bIncludeFaceBones, bool bFixTwistBones);
 
 };

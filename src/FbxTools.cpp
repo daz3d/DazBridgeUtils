@@ -3375,3 +3375,220 @@ FbxPose* FbxTools::SaveCurrentPose(FbxScene* pScene, FbxNode* pRootNode, FbxPose
 	return pCurrentPose;
 }
 
+#include "dzfigure.h"
+#include "dzproperty.h"
+#include "dzfloatproperty.h"
+bool FbxTools::ExportAnimation(DzNode* pNode, QString sFilename, bool bIncludeFaceBones, bool bFixTwistBones)
+{
+	if (!pNode) return false;
+
+	DzSkeleton* Skeleton = pNode->getSkeleton();
+	DzFigure* Figure = Skeleton ? qobject_cast<DzFigure*>(Skeleton) : NULL;
+
+	if (!Figure) return false;
+
+	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
+	FbxScene* pScene = openFBX->CreateScene("Animation Scene");
+	
+	// Get the Figure Scale
+	float FigureScale = pNode->getScaleControl()->getValue();
+
+	FbxAnimStack* AnimStack = FbxAnimStack::Create(pScene, "AnimStack");
+	FbxAnimLayer* AnimBaseLayer = FbxAnimLayer::Create(pScene, "Layer0");
+	AnimStack->AddMember(AnimBaseLayer);
+
+	// Add the skeleton to the scene
+	QMap<DzNode*, FbxNode*> BoneMap;
+	GenerateSkeleton(Figure, pNode, nullptr, nullptr, pScene, BoneMap, bIncludeFaceBones, bFixTwistBones);
+
+	// Get the play range
+	DzTimeRange PlayRange = dzScene->getPlayRange();
+
+	// Root Node
+//	exportNodeAnimation(Figure, BoneMap, AnimBaseLayer, FigureScale /*, bExportingForMLDeformer*/);
+
+	// Iterate the bones
+	DzBoneList Bones; // = getAllBones(pNode);
+	Skeleton->getAllBones(Bones);
+	for (auto Bone : Bones)
+	{
+//		exportNodeAnimation(Bone, BoneMap, AnimBaseLayer, FigureScale /*, bExportingForMLDeformer*/);
+	}
+
+	// Get a list of animated properties
+//	if (m_bAnimationExportActiveCurves)
+	{
+		QList<DzNumericProperty*> animatedProperties; // = getAnimatedProperties(pNode);
+//		exportAnimatedProperties(animatedProperties, Scene, AnimBaseLayer);
+	}
+
+	bool bAsciiMode = false;
+#if VODSVERSION
+	bAsciiMode = true;
+#endif
+	bool bSaveResult = openFBX->SaveScene(pScene, sFilename, bAsciiMode);
+	
+	return bSaveResult;
+}
+
+bool FbxTools::ExportSkeleton(DzNode* pNode, QString sFilename, bool bIncludeFaceBones, bool bFixTwistBones)
+{
+	if (!pNode) return false;
+
+	DzSkeleton* Skeleton = pNode->getSkeleton();
+	DzFigure* Figure = Skeleton ? qobject_cast<DzFigure*>(Skeleton) : NULL;
+
+	if (!Figure) return false;
+
+	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
+	FbxScene* pScene = openFBX->CreateScene("Animation Scene");
+	
+	// Get the Figure Scale
+	float FigureScale = pNode->getScaleControl()->getValue();
+
+	FbxAnimStack* AnimStack = FbxAnimStack::Create(pScene, "AnimStack");
+	FbxAnimLayer* AnimBaseLayer = FbxAnimLayer::Create(pScene, "Layer0");
+	AnimStack->AddMember(AnimBaseLayer);
+
+	// Add the skeleton to the scene
+	QMap<DzNode*, FbxNode*> BoneMap;
+	GenerateSkeleton(Figure, pNode, nullptr, nullptr, pScene, BoneMap, bIncludeFaceBones, bFixTwistBones);
+
+	// Get the play range
+	DzTimeRange PlayRange = dzScene->getPlayRange();
+
+	// Root Node
+//	exportNodeAnimation(Figure, BoneMap, AnimBaseLayer, FigureScale /*, bExportingForMLDeformer*/);
+
+	// Iterate the bones
+	DzBoneList Bones; // = getAllBones(pNode);
+	Skeleton->getAllBones(Bones);
+	for (auto Bone : Bones)
+	{
+//		exportNodeAnimation(Bone, BoneMap, AnimBaseLayer, FigureScale /*, bExportingForMLDeformer*/);
+	}
+
+	// Get a list of animated properties
+//	if (m_bAnimationExportActiveCurves)
+	{
+		QList<DzNumericProperty*> animatedProperties; // = getAnimatedProperties(pNode);
+//		exportAnimatedProperties(animatedProperties, Scene, AnimBaseLayer);
+	}
+
+	bool bAsciiMode = false;
+#if VODSVERSION
+	bAsciiMode = true;
+#endif
+	bool bSaveResult = openFBX->SaveScene(pScene, sFilename, bAsciiMode);
+	
+	return bSaveResult;
+}
+
+#include "dzbone.h"
+void FbxTools::GenerateSkeleton(DzFigure* pFigure, DzNode* pDazNode, DzNode* pDazParent, FbxNode* pFbxParent, FbxScene* pScene, QMap<DzNode*, FbxNode*>& oBoneMap, bool bIncludeFaceBones, bool bFixTwistBones)
+{
+	// Only transfer face bones if requested.  MLDeformer doesn't like missing bones in UE5.3 and earlier
+	if (pDazParent != nullptr && pDazParent->getName() == "head" && bIncludeFaceBones == false) return;
+
+	FbxNode* pFbxBone;
+
+	// null parent is the root bone
+	if (pFbxParent == nullptr)
+	{
+		// Create a root bone.  Always named root so we don't have to fix it in Unreal
+		FbxSkeleton* pSkeletonAttribute = FbxSkeleton::Create(pScene, "root");
+		pSkeletonAttribute->SetSkeletonType(FbxSkeleton::eRoot);
+		pFbxBone = FbxNode::Create(pScene, "root");
+		pFbxBone->SetNodeAttribute(pSkeletonAttribute);
+
+		FbxNode* pRootNode = pScene->GetRootNode();
+		pRootNode->AddChild(pFbxBone);
+
+		// Looks through the child nodes for more bones
+		for (int nChildIndex = 0; nChildIndex < pDazNode->getNumNodeChildren(); nChildIndex++)
+		{
+			DzNode* pDazChild = pDazNode->getNodeChild(nChildIndex);
+			GenerateSkeleton(pFigure, pDazChild, pDazNode, pFbxBone, pScene, oBoneMap, bIncludeFaceBones, bFixTwistBones);
+		}
+	}
+	else
+	{
+		// Child nodes need to be bones
+		if (DzBone* pDazBone = qobject_cast<DzBone*>(pDazNode))
+		{
+			// create the bone
+			FbxSkeleton* SkeletonAttribute = FbxSkeleton::Create(pScene, pDazBone->getName().toUtf8().data());
+			SkeletonAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
+			pFbxBone = FbxNode::Create(pScene, pDazBone->getName().toUtf8().data());
+			pFbxBone->SetNodeAttribute(SkeletonAttribute);
+
+			// find the bones position
+			DzVec3 Position = pDazBone->getWSPos(DzTime(0), true);
+			DzVec3 ParentPosition = pDazParent->getWSPos(DzTime(0), true);
+			DzVec3 LocalPosition = Position - ParentPosition;
+
+			// find the bone's rotation
+			DzQuat Rotation = pDazBone->getWSRot(DzTime(0), true);
+			DzQuat ParentRotation = pDazParent->getWSRot(DzTime(0), true);
+			DzQuat LocalRotation = pDazBone->getOrientation(true);//Rotation * ParentRotation.inverse();
+			DzVec3 VectorRotation;
+			LocalRotation.getValue(VectorRotation);
+
+			// set the position and rotation properties
+			pFbxBone->LclTranslation.Set(FbxVector4(LocalPosition.m_x, LocalPosition.m_y, LocalPosition.m_z));
+			pFbxBone->LclRotation.Set(FbxVector4(VectorRotation.m_x, VectorRotation.m_y, VectorRotation.m_z));
+
+			// if fixing twist bones, reparent their children
+			if (bFixTwistBones && pDazBone->getNodeParent() != nullptr && pDazBone->getNodeParent()->getName().contains("twist", Qt::CaseInsensitive))
+			{
+				pFbxParent->GetParent()->AddChild(pFbxBone);
+			}
+			else
+			{
+				pFbxParent->AddChild(pFbxBone);
+			}
+
+			// Looks through the child nodes for more bones
+			QList<QString> DirectChildBones;
+			for (int nChildIndex = 0; nChildIndex < pDazBone->getNumNodeChildren(); nChildIndex++)
+			{
+				DzNode* pChildNode = pDazBone->getNodeChild(nChildIndex);
+				if (pChildNode && pChildNode->inherits("DzBone"))
+				{
+					DirectChildBones.append(pChildNode->getName());
+				}
+				GenerateSkeleton(pFigure, pChildNode, pDazBone, pFbxBone, pScene, oBoneMap, bIncludeFaceBones, bFixTwistBones);
+			}
+
+			// Add child figure bones
+			for (int nChildFigureIndex = 0; nChildFigureIndex < pFigure->getNumNodeChildren(); nChildFigureIndex++)
+			{
+				DzNode* pTempPointer = pFigure->getNodeChild(nChildFigureIndex);
+				if (DzFigure* pChildFigure = qobject_cast<DzFigure*>(pTempPointer))
+				{
+					// Find matching parent bone in child figures
+					if (DzNode* pChildFigureMatchingParentBone = pChildFigure->findBone(pDazBone->getName()))
+					{
+						// Look for new child bones
+						for (int nChildBoneIndex = 0; nChildBoneIndex < pChildFigureMatchingParentBone->getNumNodeChildren(); nChildBoneIndex++)
+						{
+							DzNode* pTempPointer = pChildFigureMatchingParentBone->getNodeChild(nChildBoneIndex);
+							if (DzBone* pChildBone = qobject_cast<DzBone*>(pTempPointer))
+							{
+								if (!DirectChildBones.contains(pChildBone->getName()))
+								{
+									DirectChildBones.append(pChildBone->getName());
+									GenerateSkeleton(pFigure, pChildBone, pDazBone, pFbxBone, pScene, oBoneMap, bIncludeFaceBones, bFixTwistBones);
+//									printf("DEBUG: Found Extra Bone: %s\n", pChildBone->getName().toLocal8Bit().constData());
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+	}
+
+	// Add the bone to the map
+	oBoneMap.insert(pDazNode, pFbxBone);
+}
