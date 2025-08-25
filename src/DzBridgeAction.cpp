@@ -4981,9 +4981,6 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 
     // Remove Morph Export Prefix from FBX
     FbxTools::removeMorphExportPrefixFromNode(pScene->GetRootNode(), MORPH_EXPORT_PREFIX);
-	// Rename Morphs to Morph Labels
-//	auto oMorphInfoTable = MorphTools::GetAvailableMorphs(m_pSelectedNode);
-	FbxTools::RenameMorphs(pScene, m_AvailableMorphsTable, true);	
 
 	// Remove Extra Geograft nodes and geometry
 	if (m_bRemoveDuplicateGeografts)
@@ -8694,7 +8691,7 @@ bool DzBridgeAction::makeDebugFbx()
 	return true;	
 }
 
-int DzBridgeAction::validateProxyMeshVerts(QString sFilename)
+int DzBridgeAction::validateProxyMeshVerts(QString sFilename, QString sGeneration)
 {
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();	
 	FbxScene* pMvcProxyMeshScene = openFBX->CreateScene("Mvc Proxy Mesh Scene");
@@ -8702,13 +8699,15 @@ int DzBridgeAction::validateProxyMeshVerts(QString sFilename)
 		pMvcProxyMeshScene->Destroy();
 		return false;
 	}
-	FbxNode* pTargetCharacterNode = pMvcProxyMeshScene->FindNodeByName("Genesis9.Shape");
+	QString sNodeSearchString = sGeneration + ".Shape";
+	FbxNode* pTargetCharacterNode = pMvcProxyMeshScene->FindNodeByName(sNodeSearchString.toLocal8Bit().constData());
+	if (pTargetCharacterNode == NULL) return false;
 	FbxMesh* pTargetMesh = pTargetCharacterNode->GetMesh();
 	int numVerts = pTargetMesh->GetControlPointsCount();
-	QString sMvcVertCheckMessage = QString("DEBUG: DzBridgeAction::validateProxyMeshVerts() Genesis9.Shape has numVerts=%1").arg(numVerts);
+	QString sMvcVertCheckMessage = QString("DEBUG: DzBridgeAction::validateProxyMeshVerts() %1.Shape has numVerts=%2").arg(sGeneration).arg(numVerts);
 //	dzApp->log(sMvcVertCheckMessage);
 #define G9_MVC_PROXY_VERTS 25182
-	if (numVerts != G9_MVC_PROXY_VERTS) {
+	if (sGeneration == "Genesis9" && numVerts != G9_MVC_PROXY_VERTS) {
 		if (true) QMessageBox::warning(0, QString("Error"),
 			QString("DzBridge: An error occurred while generating the Proxy Mesh:\n\n") + sMvcVertCheckMessage, QMessageBox::Ok);
 		pMvcProxyMeshScene->Destroy();
@@ -10016,6 +10015,12 @@ bool DzBridgeAction::postProcessRigConversion
 		return false;
 	}
 
+	// Transfer blendshapes from proxy to main output file
+	QString sMappingFilename = "";
+	if (m_pSelectedNode->getName() == "Genesis9") sMappingFilename = dzApp->getTempPath() + "/g9_to_arkit_facs_mapping.csv";
+	if (m_pSelectedNode->getName() == "Genesis81") sMappingFilename = dzApp->getTempPath() + "/g81_to_arkit_facs_mapping.csv";
+	FbxTools::TransferBlendshapes(m_sFacsProxyFilePath, pScene, sMappingFilename);
+
 	// Find the root bone.  There should only be one bone off the scene root
 	FbxNode* RootNode = pScene->GetRootNode();
 	FbxNode* RootBone = nullptr;
@@ -10044,61 +10049,41 @@ bool DzBridgeAction::postProcessRigConversion
 		QList<FbxNode*> nodeList;
 		FbxTools::GetAllMeshes(RootNode, nodeList);
 
-		///////////////////////////////////////////////////////
 		if (m_sExportRigMode != "" && m_sExportRigMode != "--")
 		{
-
 //			FbxTools::DetachGeometry(pScene);
-
 			FbxTools::RemoveBindPoses(pScene);
 
 			if (sMvcTemplateFilename != "" && sOverrideRigFilename != "")
 			{
 				// Retarget override rig from basefigure shape to custom character shape using MVC
 				if (retargetFigureToNewRig(m_pSelectedNode, pScene, RootBone, sMvcTemplateFilename, sMvcProxyMeshFilename, sOverrideRigFilename) == false) {
-					printf("ERROR: retargetFigureToNewRig(template=%s, override=%s)\n", sMvcTemplateFilename.toLocal8Bit().constData(), sOverrideRigFilename.toLocal8Bit().constData());
+//					printf("ERROR: retargetFigureToNewRig(template=%s, override=%s)\n", sMvcTemplateFilename.toLocal8Bit().constData(), sOverrideRigFilename.toLocal8Bit().constData());
 					pScene->Destroy();
 					return false;
 				}
-				printf("DEBUG: RETARGET PATHWAY COMPLETE using: %s and %s\n", sMvcTemplateFilename.toLocal8Bit().constData(), sOverrideRigFilename.toLocal8Bit().constData());
+//				printf("DEBUG: RETARGET PATHWAY COMPLETE using: %s and %s\n", sMvcTemplateFilename.toLocal8Bit().constData(), sOverrideRigFilename.toLocal8Bit().constData());
 			}
 			else if (sOverrideRigFilename != "")
 			{
 				// REPLACE EXISTING RIG WITH OVERRIDE
 				if (FbxTools::LoadAndPose(sOverrideRigFilename, pScene, NULL, false, true) == false) { // rotation only
-					printf("ERROR: LoadAndPose(%s)\n", sOverrideRigFilename.toLocal8Bit().constData());
+//					printf("ERROR: LoadAndPose(%s)\n", sOverrideRigFilename.toLocal8Bit().constData());
 					pScene->Destroy();
 					return false;
 				}
 				foreach(FbxNode* pNode, nodeList) {
 					FbxTools::BakePoseToBindMatrix(pNode->GetMesh(), nullptr);
 				}
-				printf("DEBUG: OVERRIDE PATHWAY COMPLETE USING: %s\n", sOverrideRigFilename.toLocal8Bit().constData());
+//				printf("DEBUG: OVERRIDE PATHWAY COMPLETE USING: %s\n", sOverrideRigFilename.toLocal8Bit().constData());
 			}
 			else
 			{
 				// CONVERT EXISTING RIG
-				printf("Starting FixClusterTransformLinks(): ExportRigMode=%s, pCustomBoneFixer=0x%llx\n", m_sExportRigMode.toLocal8Bit().constData(), (int64_t) pCustomJointFixer );
+//				printf("Starting FixClusterTransformLinks(): ExportRigMode=%s, pCustomBoneFixer=0x%llx\n", m_sExportRigMode.toLocal8Bit().constData(), (int64_t) pCustomJointFixer );
 				FbxTools::ModifyBindPose(pScene, RootBone, pCustomJointFixer);
 
-//				FbxPose* pNewBindPose = FbxTools::SaveBindMatrixToPose(pScene, "NewBindPose", nullptr, true);
-//				FbxTools::ApplyBindPose(pScene, pNewBindPose);
-//				foreach(FbxNode * pNode, nodeList) {
-//					QString debugName(pNode->GetName());
-//					FbxMesh* pMesh = pNode->GetMesh();
-//					FbxAMatrix matrix = pNode->EvaluateGlobalTransform();
-//					FbxVector4* pVertexBuffer = pMesh->GetControlPoints();
-//					if (pVertexBuffer == NULL) continue;
-//					FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &matrix, pNewBindPose, pMesh);
-//					pNode->SetPreRotation(FbxNode::eSourcePivot, FbxVector4(0, 0, 0));
-//					pNode->SetPostRotation(FbxNode::eSourcePivot, FbxVector4(0, 0, 0));
-//					pNode->LclScaling.Set(FbxDouble3(1.0, 1.0, 1.0));
-//					pNode->LclRotation.Set(FbxDouble3(0, 0, 0));
-//					pNode->LclTranslation.Set(FbxDouble3(0, 0, 0));
-//				}
-//				pNewBindPose->Destroy();
-
-				printf("DEBUG: CONVERTJOINT PATHWAY COMPLETE USING: pCustomBoneFixer=0x%llx\n", (int64_t) pCustomJointFixer );
+//				printf("DEBUG: CONVERTJOINT PATHWAY COMPLETE USING: pCustomBoneFixer=0x%llx\n", (int64_t) pCustomJointFixer );
 			}
 
 			FbxTools::RemoveBindPoses(pScene);
@@ -10133,24 +10118,7 @@ bool DzBridgeAction::postProcessRigConversion
 					pScene->Destroy();
 					return false;
 				}
-				///////////////////////////////////////////
-				// HARDCODE SPECIAL CASE FOR UNREAL PELVIS
-//				if (m_sExportRigMode == "unreal" && sMvcTemplateFilename == "") {
-//					FbxNode* pPelvis = pScene->FindNodeByName("pelvis");
-//					if (pPelvis) {
-//						FbxVector4 vRotation = pPelvis->LclRotation.Get();
-//						vRotation[1] += 90.0f;
-//						pPelvis->LclRotation.Set(vRotation);
-//					}
-//					if (sFinalRigTemplateFbxFilename != "")
-//					{
-//						// HARDCODE ROOTBONE FOR TARGET UNREAL CONTAINER FILE
-//						FbxVector4 vRotation = RootBone->LclRotation.Get();
-//						vRotation[0] += 90.0f;
-//						RootBone->LclRotation.Set(vRotation);
-//					}
-//				}
-				///////////////////////////////////////////
+
 				foreach(FbxNode * pNode, nodeList) {
 					QString debugName(pNode->GetName());
 					FbxMesh* pMesh = pNode->GetMesh();
@@ -10158,6 +10126,29 @@ bool DzBridgeAction::postProcessRigConversion
 					FbxVector4* pVertexBuffer = pMesh->GetControlPoints();
 					if (pVertexBuffer == NULL) continue;
 					FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &matrix, nullptr, pMesh);
+					int numBlendshapes = pMesh->GetDeformerCount(FbxDeformer::eBlendShape);
+					for (int nBlendshapeIndex = 0; nBlendshapeIndex < numBlendshapes; ++nBlendshapeIndex)
+					{
+						FbxBlendShape* pBlendShape = static_cast<FbxBlendShape*>(pMesh->GetDeformer(nBlendshapeIndex, FbxDeformer::eBlendShape));
+						if (pBlendShape == nullptr) continue;
+						int numChannels = pBlendShape->GetBlendShapeChannelCount();
+						for (int nChannelIndex = 0; nChannelIndex < numChannels; ++nChannelIndex)
+						{
+							FbxBlendShapeChannel* pChannel = pBlendShape->GetBlendShapeChannel(nChannelIndex);
+							if (pChannel == nullptr) continue;
+							int numShapes = pChannel->GetTargetShapeCount();
+							for (int nShapeIndex = 0; nShapeIndex < numShapes; ++nShapeIndex)
+							{
+								FbxShape* pTargetShape = pChannel->GetTargetShape(nShapeIndex);
+								if (pTargetShape) 
+								{
+									FbxVector4* pTargetShapeVertexBuffer = pTargetShape->GetControlPoints();
+									if (pTargetShapeVertexBuffer == NULL) continue;
+									FbxTools::BakePoseToVertexBuffer(pTargetShapeVertexBuffer, &matrix, nullptr, pMesh);									
+								}
+							}
+						}
+					}
 				}
 				foreach(FbxNode* pNode, nodeList) {
 					FbxMesh* pMesh = pNode->GetMesh();
@@ -10208,16 +10199,6 @@ bool DzBridgeAction::postProcessRigConversion
 
 		}
 		//////////////////////////////////////////////////////
-
-		// Transfer blendshapes from proxy to main output file
-		QString sMappingFilename = "";
-		// Genesis 9
-		if (m_pSelectedNode->getName() == "Genesis9") sMappingFilename = dzApp->getTempPath() + "/g9_to_arkit_facs_mapping.csv";
-		// Genesis 8.1
-		if (m_pSelectedNode->getName() == "Genesis81") sMappingFilename = dzApp->getTempPath() + "/g81_to_arkit_facs_mapping.csv";
-		if (sMappingFilename.isEmpty() == false && sMappingFilename != "") {
-			FbxTools::TransferBlendshapes(m_sFacsProxyFilePath, pScene, sMappingFilename);
-		}
 
 	} // if (RootBone)
 

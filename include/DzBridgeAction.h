@@ -657,7 +657,7 @@ namespace DzBridgeNameSpace
 
 		// DEBUG, ERROR CHECKING
 		bool makeDebugFbx();
-		int validateProxyMeshVerts(QString sFilename);
+		int validateProxyMeshVerts(QString sFilename, QString sGeneration);
 
 		// DB, 2025-08-05: Undo Hide Strand Hair
 		QList<DzNode*> m_undoList_HideStrandHair; // todo: deprecate strand-specific and use generic node

@@ -2028,23 +2028,17 @@ bool FbxTools::LoadBlendshapeMappingTable(QString sMappingFilename, QMap<QString
 bool FbxTools::TransferBlendshapes(QString sSourceFilename, FbxScene* pDestinationScene, QString sMappingFilename)
 {
 	if (sSourceFilename.isEmpty() || sSourceFilename == "" || pDestinationScene == nullptr) return false;
+
+	QString sLog;
+//	sLog = "*************************DEBUG: TransferBlendshapes() START HERE **************************";
+//	dzApp->log(sLog);
+//	printf("%s\n", sLog.toLocal8Bit().constData());
 	
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
 	QList<FbxNode*> aDestinationMeshNodeList;
 	FbxTools::GetAllMeshes(pDestinationScene->GetRootNode(), aDestinationMeshNodeList);
-
-	// Load Ordered Blendshape Mapping Table
-	QMap<QString, QString> oChannelMappingTable;
-	QList<QString> aChannelOrderedList;
-
-	bool bNoRemapping = false;
-	if (sMappingFilename.isEmpty() || sMappingFilename == "") {
-		bNoRemapping = true;
-	} else {
-		LoadBlendshapeMappingTable(sMappingFilename, oChannelMappingTable, aChannelOrderedList);
-	}
 	
-	FbxScene* pSourceScene = openFBX->CreateScene("FACS Scene");
+	FbxScene* pSourceScene = openFBX->CreateScene("Blendshapes Scene");
 	if (FbxTools::ExLoadScene(pSourceScene, sSourceFilename) == false) {
 		pSourceScene->Destroy();
 		return false;
@@ -2055,10 +2049,23 @@ bool FbxTools::TransferBlendshapes(QString sSourceFilename, FbxScene* pDestinati
 		FbxNode* pSourceRootNode = pSourceScene->GetRootNode();
 		QList<FbxNode*> aSourceMeshNodeList;
 		FbxTools::GetAllMeshes(pSourceRootNode, aSourceMeshNodeList);
-//		dzApp->log( QString("DzR2xAction: FACS proxy loaded with %1 meshes.").arg(aBlendshapeMeshNodeList.count()) );
+		sLog = QString("FbxTools::TransferBlendshapes() proxy file '%1' loaded with %2 meshes.").arg(sSourceFilename).arg(aSourceMeshNodeList.count());
+		dzApp->log(sLog);
+		printf("%s\n", sLog.toLocal8Bit().constData());
 		
 		for (int nSourceMeshIndex=0; nSourceMeshIndex < aSourceMeshNodeList.count(); nSourceMeshIndex++)
 		{
+			// Load Ordered Blendshape Mapping Table
+			QMap<QString, QString> oChannelMappingTable;
+			QMap<QString, QString> oReverseLookupChannelMapping;
+			QList<QString> aChannelOrderedList;
+			
+			LoadBlendshapeMappingTable(sMappingFilename, oChannelMappingTable, aChannelOrderedList);
+			foreach(auto key, oChannelMappingTable.keys()) {
+				auto value = oChannelMappingTable.value(key);
+				oReverseLookupChannelMapping.insert(value, key);
+			}
+			
 			FbxNode* pSourceNode = aSourceMeshNodeList[nSourceMeshIndex];
 			FbxMesh* pSourceMesh = pSourceNode->GetMesh();
 			FbxMesh* pDestinationMesh = nullptr;
@@ -2078,10 +2085,14 @@ bool FbxTools::TransferBlendshapes(QString sSourceFilename, FbxScene* pDestinati
 				}
 			}
 			if (pDestinationMesh == nullptr) {
-				dzApp->log( QString("DzR2xAction: Skipping mesh %1, no match found with %2 verts.").arg(pSourceNode->GetName()).arg(nSourceMeshVertexCount) );
+				sLog = QString("FbxTools::TransferBlendshapes() Skipping mesh %1, no match found with %2 verts.").arg(pSourceNode->GetName()).arg(nSourceMeshVertexCount);
+				dzApp->log(sLog);
+				printf("%s\n", sLog.toLocal8Bit().constData());
 				continue;
 			}
-//			dzApp->log( QString("DzR2xAction: Attempting blendshape transfer for mesh %1, with %2 verts.").arg(pBlendshapeNode->GetName()).arg(nBlendShapeMeshVertexCount) );
+			sLog = QString("FbxTools::TransferBlendshapes() Attempting blendshape transfer for mesh %1, with %2 verts.").arg(pSourceNode->GetName()).arg(nSourceMeshVertexCount);
+			dzApp->log(sLog);
+			printf("%s\n", sLog.toLocal8Bit().constData());
 			
 			// First Pass to build Blendshape Proxy Lookup Table
 			QMap<QString, int> oChannelIndexLookup;
@@ -2103,7 +2114,11 @@ bool FbxTools::TransferBlendshapes(QString sSourceFilename, FbxScene* pDestinati
 					QString sCleanedChannelName = QString(pChannelName).replace(sCleanedMeshName+"__", "");
 					oChannelIndexLookup.insert(sCleanedChannelName, nBlendshapeChannelIndex);
 					
-					if (bNoRemapping) {
+					// check for existing entry
+					bool bInChannelMappingTable = (oReverseLookupChannelMapping.find(sCleanedChannelName) != oReverseLookupChannelMapping.end());
+					if (!bInChannelMappingTable)
+					{
+						printf("DEBUG: adding unmapped channel name: %s", pChannelName);
 						oChannelMappingTable.insert(pChannelName, sCleanedChannelName);
 						aChannelOrderedList.append(pChannelName);
 					}
@@ -2117,7 +2132,9 @@ bool FbxTools::TransferBlendshapes(QString sSourceFilename, FbxScene* pDestinati
 			QString sDestinationBlendshapeName = QString(pDestinationMesh->GetName()).replace(".Shape", "") + "BlendShapes";
 			FbxBlendShape* pDestinationShape = FbxBlendShape::Create(pDestinationScene->GetFbxManager(), sDestinationBlendshapeName.toLocal8Bit().data());
 			pDestinationMesh->AddDeformer((FbxDeformer*) pDestinationShape);
-//			dzApp->log( QString("DzR2xAction: Adding blendshape[%1]: %2").arg(0).arg(sDestinationBlendshapeName) );
+			sLog = QString("FbxTools::TransferBlendshapes() Adding blendshape[%1]: %2, numChannels: %3").arg(0).arg(sDestinationBlendshapeName).arg(aChannelOrderedList.count());
+			dzApp->log(sLog);
+			printf("%s\n", sLog.toLocal8Bit().constData());
 
 			FbxBlendShape* pSourceBlendshape = static_cast<FbxBlendShape*>(pSourceMesh->GetDeformer(0, FbxDeformer::eBlendShape));
 
@@ -2127,12 +2144,16 @@ bool FbxTools::TransferBlendshapes(QString sSourceFilename, FbxScene* pDestinati
 				QString sDestinationChannelName = aChannelOrderedList[nDestinationBlendshapeChannelIndex];
 				FbxBlendShapeChannel* pDestinationChannel = FbxBlendShapeChannel::Create(pDestinationScene->GetFbxManager(), sDestinationChannelName.toLocal8Bit().data());
 				pDestinationShape->AddBlendShapeChannel(pDestinationChannel);
-//				dzApp->log( QString("DzR2xAction: Adding channel [%1]: %2").arg(nDestinationBlendshapeChannelIndex).arg(sDestinationChannelName) );
+				sLog = QString("FbxTools::TransferBlendshapes() Adding channel [%1]: %2").arg(nDestinationBlendshapeChannelIndex).arg(sDestinationChannelName);
+				dzApp->log(sLog);
+				printf("%s\n", sLog.toLocal8Bit().constData());
 
 				// Lookup Correct Source Channel
 				QString sMappedChannelName = oChannelMappingTable[sDestinationChannelName];
 				if (oChannelIndexLookup.find(sMappedChannelName) == oChannelIndexLookup.end()) {
-					dzApp->log("DzR2xAction: ERROR: unable to lookup channel index for: " + sMappedChannelName + ", skipping...");
+					sLog = QString("FbxTools: ERROR: unable to lookup channel index for: " + sMappedChannelName + ", skipping...");
+					dzApp->log(sLog);
+					printf("%s\n", sLog.toLocal8Bit().constData());
 					continue;
 				}
 				int nSourceChannel = oChannelIndexLookup[sMappedChannelName];
@@ -2144,7 +2165,9 @@ bool FbxTools::TransferBlendshapes(QString sSourceFilename, FbxScene* pDestinati
 				// ***** CREATE SHAPE IN pScene ******
 				FbxShape* pDestinationShape = FbxShape::Create(pDestinationScene->GetFbxManager(), sDestinationChannelName.toLocal8Bit().data());
 				pDestinationChannel->AddTargetShape(pDestinationShape);
-//				dzApp->log( QString("DzR2xAction: Adding target shape [%1]: %2").arg(0).arg(sDestinationChannelName) );
+				sLog = QString("FbxTools::TransferBlendshapes() Adding target shape [%1]: %2").arg(0).arg(sDestinationChannelName);
+				dzApp->log(sLog);
+				printf("%s\n", sLog.toLocal8Bit().constData());
 
 				// prepare source
 				FbxVector4* pSourceBasisBuffer = pSourceMesh->GetControlPoints();
@@ -3304,7 +3327,7 @@ bool FbxTools::MergeScenes(FbxScene* pDestinationScene, FbxScene* pSourceScene)
 		}
 		FbxClassId classID = lObj->GetClassId();
 		QString className = classID.GetName();
-//        dzApp->log("DzR2xAction.cpp MergeScenes() DEBUG: adding object=" + objName + " [" + className + "]  to destination scene.");
+//        dzApp->log("FbxTools::MergeScenes() DEBUG: adding object=" + objName + " [" + className + "]  to destination scene.");
 		/*************************/
 
 		// Attach the object to the reference scene.
