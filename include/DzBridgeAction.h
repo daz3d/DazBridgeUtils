@@ -275,6 +275,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool generateBakedJawOpen(DzNode* pParentNode, bool bUseArKitFacs=true);
 		Q_INVOKABLE virtual bool calculateMouthCloseVertexDeltas(FbxVector4* pVertexDeltaBuffer, int numVertexDeltaBufferIndexes);
 		QString m_sMvcProxyMeshFilePath = "";
+		Q_INVOKABLE virtual bool retargetBlendshapesToBaseRig(QList<QString> aProxyRigList, QString sFileBasePath);
 		
 		// STRAND-BASED-HAIR TOOLS
 		Q_INVOKABLE virtual bool isStrandBasedHair(DzNode* pNode);
