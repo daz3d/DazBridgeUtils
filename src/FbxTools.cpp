@@ -2090,9 +2090,9 @@ bool FbxTools::TransferBlendshapes(QString sSourceFilename, FbxScene* pDestinati
 				printf("%s\n", sLog.toLocal8Bit().constData());
 				continue;
 			}
-			sLog = QString("FbxTools::TransferBlendshapes() Attempting blendshape transfer for mesh %1, with %2 verts.").arg(pSourceNode->GetName()).arg(nSourceMeshVertexCount);
-			dzApp->log(sLog);
-			printf("%s\n", sLog.toLocal8Bit().constData());
+//			sLog = QString("FbxTools::TransferBlendshapes() Attempting blendshape transfer for mesh %1, with %2 verts.").arg(pSourceNode->GetName()).arg(nSourceMeshVertexCount);
+//			dzApp->log(sLog);
+//			printf("%s\n", sLog.toLocal8Bit().constData());
 			
 			// First Pass to build Blendshape Proxy Lookup Table
 			QMap<QString, int> oChannelIndexLookup;
@@ -2118,7 +2118,7 @@ bool FbxTools::TransferBlendshapes(QString sSourceFilename, FbxScene* pDestinati
 					bool bInChannelMappingTable = (oReverseLookupChannelMapping.find(sCleanedChannelName) != oReverseLookupChannelMapping.end());
 					if (!bInChannelMappingTable)
 					{
-						printf("DEBUG: adding unmapped channel name: %s", pChannelName);
+//						printf("DEBUG: adding unmapped channel name: %s\n", pChannelName);
 						oChannelMappingTable.insert(pChannelName, sCleanedChannelName);
 						aChannelOrderedList.append(pChannelName);
 					}
@@ -2132,9 +2132,9 @@ bool FbxTools::TransferBlendshapes(QString sSourceFilename, FbxScene* pDestinati
 			QString sDestinationBlendshapeName = QString(pDestinationMesh->GetName()).replace(".Shape", "") + "BlendShapes";
 			FbxBlendShape* pDestinationShape = FbxBlendShape::Create(pDestinationScene->GetFbxManager(), sDestinationBlendshapeName.toLocal8Bit().data());
 			pDestinationMesh->AddDeformer((FbxDeformer*) pDestinationShape);
-			sLog = QString("FbxTools::TransferBlendshapes() Adding blendshape[%1]: %2, numChannels: %3").arg(0).arg(sDestinationBlendshapeName).arg(aChannelOrderedList.count());
-			dzApp->log(sLog);
-			printf("%s\n", sLog.toLocal8Bit().constData());
+//			sLog = QString("FbxTools::TransferBlendshapes() Adding blendshape[%1]: %2, numChannels: %3").arg(0).arg(sDestinationBlendshapeName).arg(aChannelOrderedList.count());
+//			dzApp->log(sLog);
+//			printf("%s\n", sLog.toLocal8Bit().constData());
 
 			FbxBlendShape* pSourceBlendshape = static_cast<FbxBlendShape*>(pSourceMesh->GetDeformer(0, FbxDeformer::eBlendShape));
 
@@ -2144,16 +2144,16 @@ bool FbxTools::TransferBlendshapes(QString sSourceFilename, FbxScene* pDestinati
 				QString sDestinationChannelName = aChannelOrderedList[nDestinationBlendshapeChannelIndex];
 				FbxBlendShapeChannel* pDestinationChannel = FbxBlendShapeChannel::Create(pDestinationScene->GetFbxManager(), sDestinationChannelName.toLocal8Bit().data());
 				pDestinationShape->AddBlendShapeChannel(pDestinationChannel);
-				sLog = QString("FbxTools::TransferBlendshapes() Adding channel [%1]: %2").arg(nDestinationBlendshapeChannelIndex).arg(sDestinationChannelName);
-				dzApp->log(sLog);
-				printf("%s\n", sLog.toLocal8Bit().constData());
+//				sLog = QString("FbxTools::TransferBlendshapes() Adding channel [%1]: %2").arg(nDestinationBlendshapeChannelIndex).arg(sDestinationChannelName);
+//				dzApp->log(sLog);
+//				printf("%s\n", sLog.toLocal8Bit().constData());
 
 				// Lookup Correct Source Channel
 				QString sMappedChannelName = oChannelMappingTable[sDestinationChannelName];
 				if (oChannelIndexLookup.find(sMappedChannelName) == oChannelIndexLookup.end()) {
-					sLog = QString("FbxTools: ERROR: unable to lookup channel index for: " + sMappedChannelName + ", skipping...");
-					dzApp->log(sLog);
-					printf("%s\n", sLog.toLocal8Bit().constData());
+//					sLog = QString("FbxTools: ERROR: unable to lookup channel index for: " + sMappedChannelName + ", skipping...");
+//					dzApp->log(sLog);
+//					printf("%s\n", sLog.toLocal8Bit().constData());
 					continue;
 				}
 				int nSourceChannel = oChannelIndexLookup[sMappedChannelName];
@@ -2165,9 +2165,9 @@ bool FbxTools::TransferBlendshapes(QString sSourceFilename, FbxScene* pDestinati
 				// ***** CREATE SHAPE IN pScene ******
 				FbxShape* pDestinationShape = FbxShape::Create(pDestinationScene->GetFbxManager(), sDestinationChannelName.toLocal8Bit().data());
 				pDestinationChannel->AddTargetShape(pDestinationShape);
-				sLog = QString("FbxTools::TransferBlendshapes() Adding target shape [%1]: %2").arg(0).arg(sDestinationChannelName);
-				dzApp->log(sLog);
-				printf("%s\n", sLog.toLocal8Bit().constData());
+//				sLog = QString("FbxTools::TransferBlendshapes() Adding target shape [%1]: %2").arg(0).arg(sDestinationChannelName);
+//				dzApp->log(sLog);
+//				printf("%s\n", sLog.toLocal8Bit().constData());
 
 				// prepare source
 				FbxVector4* pSourceBasisBuffer = pSourceMesh->GetControlPoints();
@@ -2546,7 +2546,7 @@ bool FbxTools::RenameMorphs(FbxScene* pScene, QMap<QString, MorphInfo> &MorphMap
 //				printf("DEBUG: sChannelName = %s, changing to %s\n", sChannelName.toLocal8Bit().constData(), sChannelNameCleaned.toLocal8Bit().constData());
 				QString sNewName = MorphMappings.value(sChannelNameCleaned).Label;
 				if (bUseLabels && !sNewName.isEmpty()) {
-					printf("DEBUG: Renaming sChannelName: %s to %s\n", sChannelNameCleaned.toLocal8Bit().constData(), sNewName.toLocal8Bit().constData());
+//					printf("DEBUG: Renaming sChannelName: %s to %s\n", sChannelNameCleaned.toLocal8Bit().constData(), sNewName.toLocal8Bit().constData());
 					RenameBlendshapeChannel(pChannel, sNewName);
 				}
 				else
