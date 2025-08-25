@@ -264,6 +264,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual DzNode* applyGeograft(DzNode* pBaseNode, QString geograftFilename, QString geograftNodeName);
 		Q_INVOKABLE virtual bool undoHideFollowerMeshes(QMap<DzNode*, DzNode*> &oUndoTable, bool bUndoUnfitting=false);
 		Q_INVOKABLE virtual bool copyMaterialsToGeograft(DzNode* pGeograftNode, DzNode* pBaseNode);
+		Q_INVOKABLE virtual bool generateMorphProxyRigs(DzNode* pNode, QString sFbxBaseFilePath, QList<QString> aMorphNames, QList<QString> &aOutputFileList);
 
 		// MORPH PROXY TOOLS
 		QString m_sFacsProxyFilePath = "";

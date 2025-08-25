@@ -8122,25 +8122,6 @@ bool DzBridgeAction::generateProxyMesh(DzNode* pNode, QString sFbxFilePath, bool
 		m_sMorphSelectionRule = MorphTools::getMorphString(m_MorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm, pNode);
 		ExportOptions.setStringValue("rules", m_sMorphSelectionRule);
 //		dzApp->log("DEBUG: DzBridgeAction::generateProxyMesh() rules=" + m_sMorphSelectionRule);
-
-		// Generate proxy skeletons
-		foreach(QString sMorphName, m_MorphNamesToExport)
-		{
-			MorphInfo oMorphInfo = m_AvailableMorphsTable.value(sMorphName);
-			if (oMorphInfo.Property && oMorphInfo.hasPoseErc())
-			{
-				DzFloatProperty* oMorphProperty = qobject_cast<DzFloatProperty*>(oMorphInfo.Property);
-				if (oMorphProperty)
-				{
-					double nBackupValue = oMorphProperty->getRawValue();
-					oMorphProperty->setValue(1.0);
-					FbxTools::ExportSkeleton(pNode, getTempBasefilename() + "_" + cleanString(sMorphName), m_bAnimationTransferFace, m_bFixTwistBones);
-					printf("DEBUG: exporting skeleton for: %s\n", sMorphName.toLocal8Bit().constData());
-					oMorphProperty->setValue(nBackupValue);
-				}
-			}
-		}
-
 	} else {
 		// Make sure base figure has correct number of faces
 		int numVisibleFaces = getNumVisibleFacesFromNode(pNode);
@@ -8174,6 +8155,37 @@ bool DzBridgeAction::generateProxyMesh(DzNode* pNode, QString sFbxFilePath, bool
 
 	undoHideFollowerMeshes(oUndoTable, bUndoUnfitting);
 	
+	return true;
+}
+
+bool DzBridgeAction::generateMorphProxyRigs(DzNode* pNode, QString sFbxBaseFilePath, QList<QString> aMorphNames, QList<QString> &aOutputFileList)
+{
+	if (pNode == nullptr) return false;
+	if (sFbxBaseFilePath.isEmpty()) return false;
+
+	// Generate proxy skeletons
+	foreach(QString sMorphName, m_MorphNamesToExport)
+	{
+		MorphInfo oMorphInfo = m_AvailableMorphsTable.value(sMorphName);
+		if (oMorphInfo.Property && oMorphInfo.hasPoseErc() && oMorphInfo.Path.contains("Actor"))
+		{
+			DzFloatProperty* oMorphProperty = qobject_cast<DzFloatProperty*>(oMorphInfo.Property);
+			if (oMorphProperty)
+			{
+				double nBackupValue = oMorphProperty->getRawValue();
+				oMorphProperty->setValue(1.0);
+				QString sOutputFile = sFbxBaseFilePath + "_" + cleanString(sMorphName) + ".fbx";
+				if (FbxTools::ExportSkeleton(pNode, sOutputFile, m_bAnimationTransferFace, m_bFixTwistBones) == true) {
+					aOutputFileList.append(sOutputFile);
+					printf("DEBUG: exported proxy rig: %s\n", sOutputFile.toLocal8Bit().constData());
+				} else {
+					printf("ERROR: failed trying to export rig: %s\n", sOutputFile.toLocal8Bit().constData());
+				}
+				oMorphProperty->setValue(nBackupValue);
+			}
+		}
+	}
+
 	return true;
 }
 
