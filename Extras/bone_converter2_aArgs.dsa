@@ -1,0 +1,273 @@
+// DAZ Studio version 4.21.0.5 filetype DAZ Script
+
+// Script: bone_converter.dsa
+// Description: This script converts a Genesis 8 or 9 skeleton to be compatible with a custom rig.
+// It iterates through all bones within a selected figure hierarchy, renames them according to a mapping,
+// and deletes any unmapped bones.  Weights from deleted bones are redistributed to the parent bone by
+// Daz Studio.
+// Usage: Select a Genesis 8 or 9 figure in DAZ Studio before running this script.
+
+// bone_converter Version 2: ignore unmapped nodes, only explicitly delete nodes; if there is unmapped node collistion, rename original to "_original"
+
+(function( aArgs ){
+
+var aBoneMapFiles = [];
+var includeDir_oFILE = new DzFile( getScriptFileName() );
+var sIncludePath = includeDir_oFILE.path();   
+
+var aRenamedBones = [];
+var aBonesToDelete = [];
+
+function processArguments() {
+    print("processArguments(): Sanity Checking...");
+//    print("DEBUG: aArgs= " + aArgs + ", aArgs.length= " + aArgs.length);
+    if (!aArgs || Array.isArray(aArgs) == false || aArgs.length == 0) {
+        return false;
+    }
+    for( var i = 0, nArgs = aArgs.length; i < nArgs; i += 1 ){
+        // add each arg to bonemap files
+        aBoneMapFiles.push(aArgs[i]);
+    }
+    return true;
+}
+
+function recursiveTraverseNodes(node) {
+    var aBoneList = [];
+
+    var children = node.getNodeChildren();
+    for (var i = 0; i < children.length; i++) {
+        recursiveList = recursiveTraverseNodes(children[i]);
+        aBoneList = aBoneList.concat(recursiveList);
+    }
+    var dzObject = new DzObject();
+    dzObject = node;
+    if (dzObject && dzObject.inherits("DzBone")) {
+//    	print("DEBUG: adding bone to bonelist: " + dzObject.name)
+        aBoneList.push(dzObject);
+    }
+
+//	print("DEBUG: bonelist.length= " + aBoneList.length);
+    return aBoneList;
+}
+
+// Retrieves all bones of the selected figure.
+function getBones(figure) {
+    var aBoneList = recursiveTraverseNodes(figure);
+    // print("DEBUG: bonelist.length= " + aBoneList.length);
+    return aBoneList;
+}
+
+// Renames bones in the selected figure according to the mapping.
+function renameBones(figure, mapping) {
+    var aBoneList = getBones(figure); // Assuming getBones() retrieves all bones of the figure
+
+    // only mark bones for deletion if they are not on either side of the mapping table
+    var aSafeList = [];
+    // for (var key in mapping) {
+    //     var val = mapping[key];
+    //     print("DEBUG: pushing safe bone: " + val)
+    //     aSafeList.push(val);
+    // }
+
+    // create lookup table for original bone names
+    var aOriginalBoneNames = [];
+    for (var i = 0; i < aBoneList.length; i++)
+    {
+        aOriginalBoneNames.push(aBoneList[i].name);
+    }
+
+    for (var i = 0; i < aBoneList.length; i++) 
+    {
+        var bone = aBoneList[i];
+        // print("DEBUG: processing bone: " + bone.name);
+        var key = bone.name;
+        if (mapping.hasOwnProperty(key)) {
+            var value = mapping[key];
+            if (value == key) {
+                continue;
+            }
+            if (typeof(value) == "string")
+            {
+                // check if existing original bone with name==value
+                if (arrayContainsValue(aOriginalBoneNames, value)) {
+                    // rename original bone
+                    original_bone_index = aOriginalBoneNames.indexOf(value);
+                    original_bone = aBoneList[original_bone_index];
+                    original_bone_new_name = value + "__original";
+                    // print("DEBUG: renaming original bone to " + original_bone_new_name);
+                    original_bone.setName(original_bone_new_name);
+                    original_bone.setLabel(original_bone_new_name);
+                }
+                // print("DEBUG: renaming bone: " + key + " to " + value);
+                bone.setName(value);
+                bone.setLabel(value);
+                aRenamedBones.push(bone);
+            }
+            else if (typeof(value) == "number") {
+                if (value == -1) {
+                    // print("DEBUG: marking bone for deletion: " + key);
+                    aBonesToDelete.push(bone);
+                }
+            }
+        }
+        // else if (!arrayContainsValue(aSafeList, key)) {
+        //     print("DEBUG: marking bone for deletion: " + key);
+        //     aBonesToDelete.push(bone);
+        // }
+    }
+}
+
+function arrayContainsValue(array, value) {
+	for (var i=0; i < array.length; i++) {
+		if (array[i] == value) {
+			return true;
+		}
+	}
+	return false;
+}
+
+function deleteBone(node) {
+    var dzobject = new DzObject();
+    dzobject = node;
+    if (dzobject.inherits("DzBone")) {
+        // select none
+        Scene.selectAllNodes(false);
+        // select node to delete
+        Scene.setPrimarySelection(node);
+        // double check that this is really DzBone node
+        dbl_check = Scene.getSelectedNode(0);
+        if (dbl_check == node)
+        {
+            print("deleting bone: " + node.name);
+            obj = DzJEDeleteBoneAction();
+            obj.executeAction();
+        }
+    }
+}
+
+// Deletes bones not present in the mapping from the selected figure.
+function deleteUnmappedBones() {
+    for (var i = 0; i < aBonesToDelete.length; i++) {
+        var bone = aBonesToDelete[i];
+        // final sanity check
+        if (!arrayContainsValue(aRenamedBones, bone)) {
+            // print("DEBUG: deleting bone: " + bone.name);
+            deleteBone(bone);
+        }
+    }
+}
+
+// Validates if the selected figure is compatible.
+function isValidFigure(figure) {
+    // Implement validation logic here, possibly checking figure's type or name.
+    if (figure.inherits("DzFigure") == false) return false;
+    var sGeneration = figure.getName();
+    var bIsG9 = (sGeneration == "Genesis9");
+    var bIsG8 = (sGeneration.indexOf("Genesis8") == 0);
+    var bIsG3 = (sGeneration.indexOf("Genesis3") == 0);
+    var bIsG2 = (sGeneration.indexOf("Genesis2") == 0);
+    var bIsG1 = (sGeneration == "Genesis");
+
+    if (bIsG9 || bIsG8 || bIsG3 || bIsG2 || bIsG1) {
+        return true;
+    }
+
+    return false; // Placeholder for validation logic
+}
+
+// Main script execution function.
+function main() {
+    print("bone_converter2: Starting script...");
+
+    var selectedFigure = Scene.getPrimarySelection(); // Assuming getSelectedNode() retrieves the currently selected figure.
+    if (!selectedFigure || !isValidFigure(selectedFigure)) {
+        var sFigureName = "Invalid Object";
+        if (selectedFigure) sFigureName = selectedFigure.getName();
+        var sMesg = "ERROR: bone_converter2: Invalid figure selected: " + sFigureName + ", aborting script.";
+        App.log(sMesg);
+        // MessageBox.information("Please select a valid Genesis 8 or 9 figure.", "Invalid selection", "OK");
+        return;
+    }
+
+    if (!processArguments()) {
+        App.log("bone_converter_aArgs.dsa: Failed to process arguments, aborting script, see Log for details.");
+        print("bone_converter_aArgs.dsa: Failed to process arguments, aborting script, see Log for details.");
+        return;
+    }
+
+    var mapping = {};
+    for (var i = 0; i < aBoneMapFiles.length; i++) {
+        mapping = loadMappingTable(aBoneMapFiles[i], mapping);
+    }
+
+    // Sanity Check, make sure all bones exist and will not be deleted
+    var aBoneList = getBones(selectedFigure); // Assuming getBones() retrieves all bones of the figure
+    var numKeys = Object.keys(mapping).length;
+    var bonesMatchingKeys = 0;
+    var bonesMatchingVals = 0;
+    for (var key in mapping) {
+        for (var i = 0; i < aBoneList.length; i++) {
+            if (aBoneList[i].name == key) {
+                bonesMatchingKeys++;
+            }
+            if (aBoneList[i].name == mapping[key]) {
+                bonesMatchingVals++;
+            }
+        }
+    }
+    if ( bonesMatchingVals == numKeys) {
+        App.log("bone_converter_aArgs.dsa: ERROR: Bones appear to already be converted.");
+        print("bone_converter_aArgs.dsa: ERROR: Bones appear to already be converted.");
+        return;
+    }
+    if ( bonesMatchingKeys == 0) {
+        App.log("bone_converter_aArgs.dsa: CRITICAL ERROR: No bones were found in the figure.");
+        print("bone_converter_aArgs.dsa: CRITICAL ERROR: No bones were found in the figure.");
+        return;
+    }
+    if (bonesMatchingKeys < numKeys) {
+        App.log("bone_converter_aArgs.dsa: WARNING: Not all bones were found in the figure.");
+        print("bone_converter_aArgs.dsa: WARNING: Not all bones were found in the figure.");
+        return;
+    }
+    renameBones(selectedFigure, mapping);
+    deleteUnmappedBones();
+
+	Scene.setPrimarySelection(selectedFigure);
+
+    //MessageBox.information("Bone renaming process completed successfully.", "Script complete", "OK");
+    App.log("bone_converter_aArgs.dsa: Bone renaming process completed successfully.");
+    print("bone_converter_aArgs.dsa: Bone renaming process completed successfully.");
+}
+
+// Loads the bone mapping table.
+function loadMappingTable(sMapFile, mapping) {
+    if (mapping != null) {
+        var boneMapping = mapping;
+    } else {
+        var boneMapping = {};
+    }
+    
+    var file = new DzFile(sMapFile);
+    if (file.open(DzFile.ReadOnly)) {
+        var jsonString = file.read();
+        file.close();
+        var fileMapping = JSON.parse(jsonString);
+
+        for (var key in fileMapping) {
+            if (fileMapping.hasOwnProperty(key)) {
+                boneMapping[key] = fileMapping[key];
+            }
+        }
+    }
+    else {
+        App.log("bone_converter_aArgs.dsa: loadMappingTable(): Failed to open file: " + sMapFile);
+    }
+
+    return boneMapping;
+}
+
+// Run the main function
+main();
+
+})( getArguments() );
