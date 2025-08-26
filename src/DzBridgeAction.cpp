@@ -8163,11 +8163,7 @@ bool DzBridgeAction::generateMorphProxyRigs(DzNode* pNode, QString sFbxBaseFileP
 
 	// Generate base skeleton
 	QString sOutputFile = sFbxBaseFilePath + "_base.fbx";
-	if (FbxTools::ExportSkeleton(pNode, sOutputFile, true, false) == true) {
-		printf("DEBUG: exported proxy rig: %s\n", sOutputFile.toLocal8Bit().constData());
-	} else {
-		printf("ERROR: failed trying to export rig: %s\n", sOutputFile.toLocal8Bit().constData());
-	}	
+	generateProxyMesh(pNode, sOutputFile, false);
 	
 	// Generate proxy skeletons
 	foreach(QString sMorphName, m_MorphNamesToExport)
@@ -8178,11 +8174,11 @@ bool DzBridgeAction::generateMorphProxyRigs(DzNode* pNode, QString sFbxBaseFileP
 			DzFloatProperty* oMorphProperty = qobject_cast<DzFloatProperty*>(oMorphInfo.Property);
 			if (oMorphProperty)
 			{
+				QString sOutputFile = sFbxBaseFilePath + "_" + cleanString(sMorphName) + ".fbx";
 				double nBackupValue = oMorphProperty->getRawValue();
 				oMorphProperty->setValue(1.0);
-				QString sOutputFile = sFbxBaseFilePath + "_" + cleanString(sMorphName) + ".fbx";
-				if (FbxTools::ExportSkeleton(pNode, sOutputFile, true, false) == true) {
-					aOutputFileList.append(sOutputFile);
+				if (generateProxyMesh(pNode, sOutputFile, false) == true) {
+					aOutputFileList.append(sOutputFile);					
 					printf("DEBUG: exported proxy rig: %s\n", sOutputFile.toLocal8Bit().constData());
 				} else {
 					printf("ERROR: failed trying to export rig: %s\n", sOutputFile.toLocal8Bit().constData());
@@ -10014,6 +10010,9 @@ bool DzBridgeAction::postProcessRigConversion(QString sExportRigMode, QString fb
 //		sRigRoot = "SKM_Genesis";
 //		sMeshRoot = "SKM_Genesis";
 	}
+	if (sExportRigMode == "daz") {
+		pCustomJointFixer = &oUnrealFixer2;
+	}	
 	else if (sExportRigMode == "" || sExportRigMode == "--") {
 		// pass
 	} else {
@@ -10415,7 +10414,6 @@ bool DzBridgeAction::retargetBlendshapesToBaseRig(QList<QString> aProxyRigList, 
 //				if (bMeshRetargeted) break;
 			}
 		}
-		// ???===> figure out evaluation matrix to combine above steps and bake vertex buffer with custom transform matrix instead of pose
 		pMorphPose->Destroy();
 		pBasePose->Destroy();
 	}

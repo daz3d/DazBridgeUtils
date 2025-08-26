@@ -346,7 +346,7 @@ functionality for some Morph and JCM products.\
 	/**********************************************************************/
 	 m_wExportRigCombobox = new QComboBox();
 	 m_wExportRigCombobox->addItem(tr("Rig Conversion Options..."), "--");
-	 m_wExportRigCombobox->addItem(tr("Unmodified Daz Rig"), "--");
+	 m_wExportRigCombobox->addItem(tr("Unmodified Daz Rig"), "daz");
 	 m_wExportRigCombobox->addItem(tr("Metahuman Rig"), "metahuman");
 	 m_wExportRigCombobox->addItem(tr("Unreal Mannequin Rig"), "unreal");
 	 m_wExportRigCombobox->addItem(tr("Unity Humanoid Rig"), "unity");
