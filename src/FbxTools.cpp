@@ -3462,6 +3462,7 @@ bool FbxTools::ExportSkeleton(DzNode* pNode, QString sFilename, bool bIncludeFac
 }
 
 #include "dzbone.h"
+#include "dzrotationorder.h"
 void FbxTools::GenerateSkeleton(DzFigure* pFigure, DzNode* pDazNode, DzNode* pDazParent, FbxNode* pFbxParent, FbxScene* pScene, QMap<DzNode*, FbxNode*>& oBoneMap, bool bIncludeFaceBones, bool bFixTwistBones)
 {
 	// Only transfer face bones if requested.  MLDeformer doesn't like missing bones in UE5.3 and earlier
@@ -3499,15 +3500,40 @@ void FbxTools::GenerateSkeleton(DzFigure* pFigure, DzNode* pDazNode, DzNode* pDa
 			pFbxBone = FbxNode::Create(pScene, pDazBone->getName().toUtf8().data());
 			pFbxBone->SetNodeAttribute(SkeletonAttribute);
 
+			DzRotationOrder oRotOrder = pDazBone->getRotationOrder();
+			switch (oRotOrder.order())
+			{
+				case DzRotationOrder::RotOrder::XYZ:
+					pFbxBone->SetRotationOrder(FbxNode::eSourcePivot, FbxEuler::EOrder::eOrderXYZ);
+					break;
+				case DzRotationOrder::RotOrder::XZY:
+					pFbxBone->SetRotationOrder(FbxNode::eSourcePivot, FbxEuler::EOrder::eOrderXZY);
+					break;
+				case DzRotationOrder::RotOrder::YXZ:
+					pFbxBone->SetRotationOrder(FbxNode::eSourcePivot, FbxEuler::EOrder::eOrderYXZ);
+					break;
+				case DzRotationOrder::RotOrder::YZX:
+					pFbxBone->SetRotationOrder(FbxNode::eSourcePivot, FbxEuler::EOrder::eOrderYZX);
+					break;
+				case DzRotationOrder::RotOrder::ZXY:
+					pFbxBone->SetRotationOrder(FbxNode::eSourcePivot, FbxEuler::EOrder::eOrderZXY);
+					break;
+				case DzRotationOrder::RotOrder::ZYX:
+					pFbxBone->SetRotationOrder(FbxNode::eSourcePivot, FbxEuler::EOrder::eOrderZYX);
+					break;
+				default:
+					break;
+			}
+
 			// find the bones position
-			DzVec3 Position = pDazBone->getWSPos(DzTime(0), true);
-			DzVec3 ParentPosition = pDazParent->getWSPos(DzTime(0), true);
+			DzVec3 Position = pDazBone->getWSPos(DzTime(0), false);
+			DzVec3 ParentPosition = pDazParent->getWSPos(DzTime(0), false);
 			DzVec3 LocalPosition = Position - ParentPosition;
 
 			// find the bone's rotation
-			DzQuat Rotation = pDazBone->getWSRot(DzTime(0), true);
-			DzQuat ParentRotation = pDazParent->getWSRot(DzTime(0), true);
-			DzQuat LocalRotation = pDazBone->getOrientation(true);//Rotation * ParentRotation.inverse();
+			DzQuat Rotation = pDazBone->getWSRot(DzTime(0), false);
+			DzQuat ParentRotation = pDazParent->getWSRot(DzTime(0), false);
+			DzQuat LocalRotation = Rotation * ParentRotation.inverse();
 			DzVec3 VectorRotation;
 			LocalRotation.getValue(VectorRotation);
 
@@ -3516,12 +3542,9 @@ void FbxTools::GenerateSkeleton(DzFigure* pFigure, DzNode* pDazNode, DzNode* pDa
 			pFbxBone->LclRotation.Set(FbxVector4(VectorRotation.m_x, VectorRotation.m_y, VectorRotation.m_z));
 
 			// if fixing twist bones, reparent their children
-			if (bFixTwistBones && pDazBone->getNodeParent() != nullptr && pDazBone->getNodeParent()->getName().contains("twist", Qt::CaseInsensitive))
-			{
+			if (bFixTwistBones && pDazBone->getNodeParent() != nullptr && pDazBone->getNodeParent()->getName().contains("twist", Qt::CaseInsensitive)) {
 				pFbxParent->GetParent()->AddChild(pFbxBone);
-			}
-			else
-			{
+			} else {
 				pFbxParent->AddChild(pFbxBone);
 			}
 

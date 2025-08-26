@@ -5010,18 +5010,6 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 	FbxNode* pFbxRootNode = pScene->GetRootNode();
 	FbxTools::GetAllMeshes(pFbxRootNode, nodeList);
 	FbxNode* pFbxRootBone = FbxTools::FindRootBone(pFbxRootNode, pScene);
-	//QString sFbxRootBoneName = "";
-	//for (int ChildIndex = 0; ChildIndex < pFbxRootNode->GetChildCount(); ++ChildIndex)
-	//{
-	//	FbxNode* ChildNode = pFbxRootNode->GetChild(ChildIndex);
-	//	FbxNodeAttribute* Attr = ChildNode->GetNodeAttribute();
-	//	if (Attr && Attr->GetAttributeType() == FbxNodeAttribute::eSkeleton)
-	//	{
-	//		pFbxRootBone = ChildNode;
-	//		sFbxRootBoneName = pFbxRootBone->GetName();
-	//		break;
-	//	}
-	//}
 
 	if (pFbxRootBone && (m_sExportRigMode == "unreal" || m_sExportRigMode == "metahuman"))
 	{
@@ -5037,7 +5025,9 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 		}
 
 		FbxTools::MergeFollowerRigs(pScene);
-		FbxTools::RenameDuplicateBones(pFbxRootNode);
+
+		// ???
+//		FbxTools::RenameDuplicateBones(pFbxRootNode);
 
 	}
 
@@ -8116,6 +8106,14 @@ bool DzBridgeAction::generateProxyMesh(DzNode* pNode, QString sFbxFilePath, bool
 	ExportOptions.setStringValue("format", m_sFbxVersion);
 	ExportOptions.setIntValue("RunSilent", true); // generateProxyMesh is always silent (no direct fbx export options to user)
 
+	ExportOptions.setBoolValue("doDiffuseOpacity", false);
+	ExportOptions.setBoolValue("doMergeClothing", true);
+	ExportOptions.setBoolValue("doStaticClothing", false);
+	ExportOptions.setBoolValue("degradedSkinning", true);
+	ExportOptions.setBoolValue("degradedScaling", true);
+	ExportOptions.setBoolValue("doSubD", false);
+	ExportOptions.setBoolValue("doCollapseUVTiles", false);
+	
 	bool bUndoUnfitting = false;
 	if (bExportFacsBlendshapes) {
 		ExportOptions.setBoolValue("doMorphs", true);
@@ -10340,42 +10338,50 @@ bool DzBridgeAction::fixMouthCloseBlendshape(DzNode* pNode, QString sFbxSourceFi
 	return true;
 }
 
-bool DzBridgeAction::retargetBlendshapesToBaseRig(QList<QString> aProxyRigList, QString sFileBasePath)
+bool DzBridgeAction::retargetBlendshapesToBaseRig(QList<QString> aProxyRigList, QString sFileBasePath, QString sBaseFigureName)
 {
 	OpenFBXInterface *openFbx = OpenFBXInterface::GetInterface();
 	FbxScene *pMorphProxyScene = openFbx->CreateScene("Morph Proxy Scene");
 	printf("DEBUG: Loading Morph Proxy File: %s to retarget blendshapes...\n", m_sFacsProxyFilePath.toLocal8Bit().constData());
 
 	exLoadFbxScene(pMorphProxyScene, m_sFacsProxyFilePath);
+
+//	QString sBaseFigureName = QString("Genesis9") + ".Shape";
+	FbxNode* pBaseFigure = pMorphProxyScene->FindNodeByName(sBaseFigureName.toLocal8Bit().constData());
+	FbxAMatrix matrix = pBaseFigure->EvaluateGlobalTransform();
+
 	QString sBaseRigFile = sFileBasePath + "_base.fbx";
 	QList<FbxNode*> aMeshList;
 	FbxTools::GetAllMeshes(pMorphProxyScene->GetRootNode(), aMeshList);
+	FbxTools::RemoveAllPoses(pMorphProxyScene);
 	foreach (QString sMorphRigFile, aProxyRigList)
 	{
 		QString sMorphName = QString(sMorphRigFile).replace(sFileBasePath + "_", "").replace(".fbx", "");
 		if (sMorphName == "base") continue;
 		// 1. load and pose with morph rig
 		FbxPose* pMorphPose = FbxPose::Create(openFbx->GetManager(), "Morph Bind Pose");
-		FbxTools::LoadAndPose(sMorphRigFile, pMorphProxyScene);
+		pMorphPose->SetIsBindPose(true);
+		FbxTools::LoadAndPose(sMorphRigFile, pMorphProxyScene, NULL, false, false, QList<QString>(), pMorphPose);
 		// 2. bake pose to bind matrix
 		foreach(FbxNode* pFbxNode, aMeshList) {
 			FbxTools::BakePoseToBindMatrix(pFbxNode->GetMesh(), pMorphPose);
 		}
 		// 3. load and pose to base rig
 		FbxPose* pBasePose = FbxPose::Create(openFbx->GetManager(), "Base Rig Pose");
-		FbxTools::LoadAndPose(sBaseRigFile, pMorphProxyScene);
+		pBasePose->SetIsBindPose(false);
+		FbxTools::LoadAndPose(sBaseRigFile, pMorphProxyScene, NULL, false, false, QList<QString>(), pBasePose);
 		// 4. bake vertex buffer to pose
 		foreach(FbxNode* pFbxNode, aMeshList) {
 			bool bMeshRetargeted = false;
 			FbxMesh* pMesh = pFbxNode->GetMesh();
-			FbxAMatrix matrix = pFbxNode->EvaluateGlobalTransform();
+//			FbxAMatrix matrix = pFbxNode->EvaluateGlobalTransform();
 			// get blendshape vertex buffer corresponding with morphpose
 			int numBlendshapes = pMesh->GetDeformerCount(FbxDeformer::eBlendShape);
 			for (int nBlendshapeIndex = 0; nBlendshapeIndex < numBlendshapes; ++nBlendshapeIndex)
 			{
 				FbxBlendShape* pBlendShape = static_cast<FbxBlendShape*>(pMesh->GetDeformer(nBlendshapeIndex, FbxDeformer::eBlendShape));
 				if (pBlendShape == nullptr) continue;
-				printf("DEBUG: Searching blendshape for morph (%s): blendshape name: %s\n", sMorphName.toLocal8Bit().constData(), pBlendShape->GetName());
+//				printf("DEBUG: Searching blendshape for morph (%s): blendshape name: %s\n", sMorphName.toLocal8Bit().constData(), pBlendShape->GetName());
 				int numChannels = pBlendShape->GetBlendShapeChannelCount();
 				for (int nChannelIndex = 0; nChannelIndex < numChannels; ++nChannelIndex)
 				{
@@ -10383,7 +10389,7 @@ bool DzBridgeAction::retargetBlendshapesToBaseRig(QList<QString> aProxyRigList, 
 					if (pChannel == nullptr) continue;
 					// CHECK CHANNEL NAME
 					QString sChannelName = QString(pChannel->GetName());
-					printf("DEBUG: Searching channel for morph (%s): channel name: %s\n", sMorphName.toLocal8Bit().constData(), pChannel->GetName());
+//					printf("DEBUG: Searching channel for morph (%s): channel name: %s\n", sMorphName.toLocal8Bit().constData(), pChannel->GetName());
 					if (sChannelName.contains(sMorphName) == false) continue;
 					if (sChannelName.contains(sMorphName))
 					{
@@ -10402,15 +10408,24 @@ bool DzBridgeAction::retargetBlendshapesToBaseRig(QList<QString> aProxyRigList, 
 							// perform for ALL shapes in channel
 						}
 						// stop searching other channels
-						break;
+//						break;
 					}
 				}
 				// stop searching other blendshapes
-				if (bMeshRetargeted) break;
+//				if (bMeshRetargeted) break;
 			}
 		}
 		// ???===> figure out evaluation matrix to combine above steps and bake vertex buffer with custom transform matrix instead of pose
+		pMorphPose->Destroy();
+		pBasePose->Destroy();
 	}
+	FbxPose* pBasePose = FbxPose::Create(openFbx->GetManager(), "Base Rig Pose");
+	pBasePose->SetIsBindPose(true);
+	FbxTools::LoadAndPose(sBaseRigFile, pMorphProxyScene, NULL, false, false, QList<QString>(), pBasePose);
+	foreach(FbxNode* pFbxNode, aMeshList) {
+		FbxTools::BakePoseToBindMatrix(pFbxNode->GetMesh(), pBasePose);
+	}
+	pMorphProxyScene->AddPose(pBasePose);
 	// save and close
 	printf("DEBUG: Saving Morph Proxy File after blendshape retargeting: %s\n", m_sFacsProxyFilePath.toLocal8Bit().constData());
 	openFbx->SaveScene(pMorphProxyScene, m_sFacsProxyFilePath);
