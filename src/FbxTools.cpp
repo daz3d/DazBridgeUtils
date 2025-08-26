@@ -3380,6 +3380,235 @@ FbxPose* FbxTools::SaveCurrentPose(FbxScene* pScene, FbxNode* pRootNode, FbxPose
 	return pCurrentPose;
 }
 
+#include "dzbone.h"
+#include "dzfloatproperty.h"
+void exportNodeAnimation(DzNode* Bone, QMap<DzNode*, FbxNode*>& BoneMap, FbxAnimLayer* AnimBaseLayer, float FigureScale, bool bFixTwistBones=true)
+{
+	DzTimeRange PlayRange = dzScene->getPlayRange();
+
+	DzProgress exportProgress = DzProgress("DazBridge: Exporting Animation", PlayRange.getEnd() - PlayRange.getStart(), false, true);
+	exportProgress.setCloseOnFinish(true);
+	exportProgress.enable(true);
+	exportProgress.step();
+	QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+
+	// Get a tick size for the progress bar
+	int progressTickSize = (PlayRange.getEnd() - PlayRange.getStart() + 50) / 50;
+
+	QString Name = Bone->getName();
+
+	FbxNode* Node = BoneMap.value(Bone);
+	if (Node == nullptr) return;
+
+	//qDebug() << Bone->getName() << " Order: " << Bone->getRotationOrder().toString();
+
+	// Create a curve node for this bone
+	FbxAnimCurveNode* AnimCurveNode = Node->LclRotation.GetCurveNode(AnimBaseLayer, true);
+
+	// For each frame, write a key (equivalent of bake)
+	for (DzTime CurrentTime = PlayRange.getStart(); CurrentTime <= PlayRange.getEnd(); CurrentTime += dzScene->getTimeStep())
+	{
+		DzTime Frame = CurrentTime / dzScene->getTimeStep();
+
+		// Need this for the UI to update, but it's very slow, so run every 100th frame.
+		if (Frame % progressTickSize == 0)
+		{
+			exportProgress.update(Frame);
+			QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+		}
+
+		DzVec3 DefaultPosition;
+		DefaultPosition.m_x = Bone->getOriginXControl()->getValue(CurrentTime);
+		DefaultPosition.m_y = Bone->getOriginYControl()->getValue(CurrentTime);
+		DefaultPosition.m_z = Bone->getOriginZControl()->getValue(CurrentTime);
+		DzMatrix3 Scale = Bone->getWSScale();
+		//qDebug() << Bone->getName() << " Scale: " << Scale.row(0).length() << "," << Scale.row(1).length() << "," << Scale.row(2).length();
+
+		//qDebug() << Bone->getName() << " Default Position: " << DefaultPosition.m_x << "," << DefaultPosition.m_y << "," << DefaultPosition.m_z;
+		DzVec3 Position;
+		Position.m_x = Bone->getXPosControl()->getValue(CurrentTime);
+		Position.m_y = Bone->getYPosControl()->getValue(CurrentTime);
+		Position.m_z = Bone->getZPosControl()->getValue(CurrentTime);
+		//qDebug() << Bone->getName() << " Position: " << Position.m_x << "," << Position.m_y << "," << Position.m_z;
+
+		// Get an initial rotation via the controls
+		DzVec3 ControlRotation;
+		ControlRotation.m_x = Bone->getXRotControl()->getValue(CurrentTime);
+		ControlRotation.m_y = Bone->getYRotControl()->getValue(CurrentTime);
+		ControlRotation.m_z = Bone->getZRotControl()->getValue(CurrentTime);
+
+		// If fixing twist bones, add any child twist bone rotations
+		if (bFixTwistBones)
+		{
+			// Looks through the child nodes for more bones
+			for (int ChildIndex = 0; ChildIndex < Bone->getNumNodeChildren(); ChildIndex++)
+			{
+				DzNode* ChildNode = Bone->getNodeChild(ChildIndex);
+				if (ChildNode->getName().contains("twist", Qt::CaseInsensitive))
+				{
+					if (DzBone* ChildBone = qobject_cast<DzBone*>(ChildNode))
+					{
+						ControlRotation.m_x += ChildBone->getXRotControl()->getValue(CurrentTime);
+						ControlRotation.m_y += ChildBone->getYRotControl()->getValue(CurrentTime);
+						ControlRotation.m_z += ChildBone->getZRotControl()->getValue(CurrentTime);
+					}
+				}
+			}
+
+			// If this is a twist bone, zero it's rotation
+			if (Bone->getName().contains("twist", Qt::CaseInsensitive))
+			{
+				ControlRotation.m_x = 0.0f;
+				ControlRotation.m_y = 0.0f;
+				ControlRotation.m_z = 0.0f;
+			}
+		}
+
+		DzVec3 VectorRotation = ControlRotation;
+
+		// Scale
+		DzVec3 ControlScale(1.0f, 1.0f, 1.0f);
+		//float FigureScale = 1.0f;
+		if (bool bAnimationApplyBoneScale = false)
+		{
+			//DzSkeleton* Skeleton = m_pSelectedNode->getSkeleton();
+			//DzFigure* Figure = Skeleton ? qobject_cast<DzFigure*>(Skeleton) : NULL;
+			FigureScale = Bone->getScaleControl()->getValue(CurrentTime);
+
+			ControlScale.m_x = Bone->getXScaleControl()->getValue(CurrentTime) * FigureScale;
+			ControlScale.m_y = Bone->getYScaleControl()->getValue(CurrentTime) * FigureScale;
+			ControlScale.m_z = Bone->getZScaleControl()->getValue(CurrentTime) * FigureScale;
+
+			//DzMatrix3 Scale = Bone->getLocalScale(CurrentTime);
+			//qDebug() << Bone->getName() << " Scale: " << ControlScale.m_x << "," << ControlScale.m_y << "," << ControlScale.m_z;
+		}
+
+		// Get the rotation and position relative to the parent
+		if (DzNode* ParentBone = Bone->getNodeParent())
+		{
+
+			// Get the local orientation
+			DzQuat Orientation = Bone->getOrientation(true) * ParentBone->getOrientation(true).inverse();
+
+			// Fix the rotation order
+			VectorRotation = ControlRotation;
+			DzQuat ReorderQuat;
+			VectorRotation.m_x = VectorRotation.m_x / FBXSDK_180_DIV_PI;
+			VectorRotation.m_y = VectorRotation.m_y / FBXSDK_180_DIV_PI;
+			VectorRotation.m_z = VectorRotation.m_z / FBXSDK_180_DIV_PI;
+			//qDebug() << Bone->getName() << " ControlRot: " << VectorRotation.m_x << "," << VectorRotation.m_y << "," << VectorRotation.m_z;
+			ReorderQuat.setValue(Bone->getRotationOrder().order(), VectorRotation);
+			ReorderQuat = ReorderQuat * Orientation;
+
+			ReorderQuat.getValue(DzRotationOrder::RotOrder::XYZ, VectorRotation);
+			VectorRotation.m_x = VectorRotation.m_x * FBXSDK_180_DIV_PI;
+			VectorRotation.m_y = VectorRotation.m_y * FBXSDK_180_DIV_PI;
+			VectorRotation.m_z = VectorRotation.m_z * FBXSDK_180_DIV_PI;
+
+			//qDebug() << Bone->getName() << " Reorder LocalRot: " << VectorRotation.m_x << "," << VectorRotation.m_y << "," << VectorRotation.m_z;
+
+			//qDebug() << Bone->getName() << " Parent Default Position: " << DefaultParentPosition.m_x << "," << DefaultParentPosition.m_y << "," << DefaultParentPosition.m_z;
+			DzVec3 ParentPosition;
+			ParentPosition.m_x = ParentBone->getXPosControl()->getValue(CurrentTime);
+			ParentPosition.m_y = ParentBone->getYPosControl()->getValue(CurrentTime);
+			ParentPosition.m_z = ParentBone->getZPosControl()->getValue(CurrentTime);
+			//qDebug() << Bone->getName() << " Parent Position: " << ParentPosition.m_x << "," << ParentPosition.m_y << "," << ParentPosition.m_z;
+
+			DzVec3 DefaultParentPosition;
+			DefaultParentPosition.m_x = ParentBone->getOriginXControl()->getValue(CurrentTime);
+			DefaultParentPosition.m_y = ParentBone->getOriginYControl()->getValue(CurrentTime);
+			DefaultParentPosition.m_z = ParentBone->getOriginZControl()->getValue(CurrentTime);
+			//qDebug() << Bone->getName() << " Parent Default Position: " << DefaultParentPosition.m_x << "," << DefaultParentPosition.m_y << "," << DefaultParentPosition.m_z;
+
+			DzVec3 RelativeDefaultPosition = DefaultPosition - DefaultParentPosition;
+			//float Length = RelativeDefaultPosition.length();
+			DzVec3 OrientedRelativeDefaultPosition = ParentBone->getOrientation(true).inverse().multVec(RelativeDefaultPosition);
+
+			//qDebug() << Bone->getName() << " RelativeDefaultPosition: " << OrientedRelativeDefaultPosition.m_x << "," << OrientedRelativeDefaultPosition.m_y << "," << OrientedRelativeDefaultPosition.m_z;
+			DzVec3 RelativeMovement = Position - ParentPosition;
+			//qDebug() << Bone->getName() << " RelativeMovement: " << RelativeMovement.m_x << "," << RelativeMovement.m_y << "," << RelativeMovement.m_z;
+			//qDebug() << Bone->getName() << " Position: " << Position.m_x << "," << Position.m_y << "," << Position.m_z;
+			if (ParentBone->isRootNode())
+			{
+				Position = (Position + OrientedRelativeDefaultPosition) * FigureScale;
+			}
+			else
+			{
+				Position = OrientedRelativeDefaultPosition + RelativeMovement;
+			}
+		}
+
+		// Set the frame
+		FbxTime Time;
+		int KeyIndex = 0;
+		Time.SetFrame(Frame);
+
+		// Write X Rot
+		FbxAnimCurve* RotXCurve = Node->LclRotation.GetCurve(AnimBaseLayer, "X", true);
+		RotXCurve->KeyModifyBegin();
+		KeyIndex = RotXCurve->KeyAdd(Time);
+		RotXCurve->KeySet(KeyIndex, Time, VectorRotation.m_x);
+		RotXCurve->KeyModifyEnd();
+
+		// Write Y Rot
+		FbxAnimCurve* RotYCurve = Node->LclRotation.GetCurve(AnimBaseLayer, "Y", true);
+		RotYCurve->KeyModifyBegin();
+		KeyIndex = RotYCurve->KeyAdd(Time);
+		RotYCurve->KeySet(KeyIndex, Time, VectorRotation.m_y);
+		RotYCurve->KeyModifyEnd();
+
+		// Write Z Rot
+		FbxAnimCurve* RotZCurve = Node->LclRotation.GetCurve(AnimBaseLayer, "Z", true);
+		RotZCurve->KeyModifyBegin();
+		KeyIndex = RotZCurve->KeyAdd(Time);
+		RotZCurve->KeySet(KeyIndex, Time, VectorRotation.m_z);
+		RotZCurve->KeyModifyEnd();
+
+		// Write X Pos
+		FbxAnimCurve* PosXCurve = Node->LclTranslation.GetCurve(AnimBaseLayer, "X", true);
+		PosXCurve->KeyModifyBegin();
+		KeyIndex = PosXCurve->KeyAdd(Time);
+		PosXCurve->KeySet(KeyIndex, Time, Position.m_x);
+		PosXCurve->KeyModifyEnd();
+
+		// Write Y Pos
+		FbxAnimCurve* PosYCurve = Node->LclTranslation.GetCurve(AnimBaseLayer, "Y", true);
+		PosYCurve->KeyModifyBegin();
+		KeyIndex = PosYCurve->KeyAdd(Time);
+		PosYCurve->KeySet(KeyIndex, Time, Position.m_y);
+		PosYCurve->KeyModifyEnd();
+
+		// Write Z Pos
+		FbxAnimCurve* PosZCurve = Node->LclTranslation.GetCurve(AnimBaseLayer, "Z", true);
+		PosZCurve->KeyModifyBegin();
+		KeyIndex = PosZCurve->KeyAdd(Time);
+		PosZCurve->KeySet(KeyIndex, Time, Position.m_z);
+		PosZCurve->KeyModifyEnd();
+
+		// Write X Scale
+		FbxAnimCurve* ScaleXCurve = Node->LclScaling.GetCurve(AnimBaseLayer, "X", true);
+		ScaleXCurve->KeyModifyBegin();
+		KeyIndex = ScaleXCurve->KeyAdd(Time);
+		ScaleXCurve->KeySet(KeyIndex, Time, ControlScale.m_x);
+		ScaleXCurve->KeyModifyEnd();
+
+		// Write Y Scale
+		FbxAnimCurve* ScaleYCurve = Node->LclScaling.GetCurve(AnimBaseLayer, "Y", true);
+		ScaleYCurve->KeyModifyBegin();
+		KeyIndex = ScaleYCurve->KeyAdd(Time);
+		ScaleYCurve->KeySet(KeyIndex, Time, ControlScale.m_y);
+		ScaleYCurve->KeyModifyEnd();
+
+		// Write Z Scale
+		FbxAnimCurve* ScaleZCurve = Node->LclScaling.GetCurve(AnimBaseLayer, "Z", true);
+		ScaleZCurve->KeyModifyBegin();
+		KeyIndex = ScaleZCurve->KeyAdd(Time);
+		ScaleZCurve->KeySet(KeyIndex, Time, ControlScale.m_z);
+		ScaleZCurve->KeyModifyEnd();
+	}
+}
+
+
 #include "dzfigure.h"
 #include "dzproperty.h"
 #include "dzfloatproperty.h"
@@ -3410,7 +3639,7 @@ bool FbxTools::ExportAnimation(DzNode* pNode, QString sFilename, bool bIncludeFa
 	DzTimeRange PlayRange = dzScene->getPlayRange();
 
 	// Root Node
-//	exportNodeAnimation(Figure, BoneMap, AnimBaseLayer, FigureScale /*, bExportingForMLDeformer*/);
+	exportNodeAnimation(Figure, BoneMap, AnimBaseLayer, FigureScale /*, bExportingForMLDeformer*/);
 
 	// Iterate the bones
 	DzBoneList Bones; // = getAllBones(pNode);
@@ -3700,4 +3929,73 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 	pScene->Destroy();
 	
 	return bSaveResult;
+}
+
+bool FbxTools::GetBoneList(FbxNode* pRootNode, QList<FbxNode*> &aBoneList )
+{
+	if (pRootNode == nullptr) return false;
+
+	QList<FbxNode*> aTodoList;
+	aTodoList.push_back(pRootNode);
+
+	while (aTodoList.isEmpty() == false) 
+	{
+		FbxNode* pNode = aTodoList.front(); aTodoList.pop_front();
+		if (pNode == nullptr) continue;
+		FbxNodeAttribute* pAttr = pNode->GetNodeAttribute();
+		if (pAttr && pAttr->GetAttributeType() == FbxNodeAttribute::eSkeleton) {
+			QString sNodeName(pNode->GetName());
+			if (aBoneList.contains(pNode) == false) {
+				aBoneList.append(pNode);
+			}
+		}
+		for (int i = 0; i < pNode->GetChildCount(); i++) {
+			FbxNode* pChild = pNode->GetChild(i);
+			aTodoList.push_back(pChild);
+		}
+	}
+
+	return true;
+}
+
+bool FbxTools::AddRotationCurve(FbxNode* pNode, FbxAnimLayer* pAnimLayer, FbxTime oTime, const char *pChannel, float fValue, bool bCreate)
+{
+	if (pNode == nullptr || pAnimLayer == nullptr) return false;
+
+	FbxAnimCurve* pAnimCurve = pNode->LclRotation.GetCurve(pAnimLayer, pChannel, bCreate);
+	pAnimCurve->KeyModifyBegin();
+	int nKeyIndex = pAnimCurve->KeyAdd(oTime);
+	pAnimCurve->KeySet(nKeyIndex, oTime, fValue);
+
+	return true;
+}
+
+bool FbxTools::AddTranslationCurve(FbxNode* pNode, FbxAnimLayer* pAnimLayer, FbxTime oTime, const char* pChannel, float fValue, bool bCreate)
+{
+	if (pNode == nullptr || pAnimLayer == nullptr) return false;
+
+	FbxAnimCurve* pAnimCurve = pNode->LclTranslation.GetCurve(pAnimLayer, pChannel, bCreate);
+	pAnimCurve->KeyModifyBegin();
+	int nKeyIndex = pAnimCurve->KeyAdd(oTime);
+	pAnimCurve->KeySet(nKeyIndex, oTime, fValue);
+
+	return true;
+}
+
+bool FbxTools::AddKeyCurrentNode(FbxNode* pNode, FbxAnimLayer* pAnimLayer, FbxTime oTime)
+{
+	if (pNode == nullptr || pAnimLayer == nullptr) return false;
+
+	FbxVector4 oPosition = pNode->LclTranslation.Get();
+	FbxVector4 oRotation = pNode->LclRotation.Get();
+
+	AddTranslationCurve(pNode, pAnimLayer, oTime, "X", oPosition[0], true);
+	AddTranslationCurve(pNode, pAnimLayer, oTime, "Y", oPosition[1], true);
+	AddTranslationCurve(pNode, pAnimLayer, oTime, "Z", oPosition[2], true);
+
+	AddRotationCurve(pNode, pAnimLayer, oTime, "X", oRotation[0], true);
+	AddRotationCurve(pNode, pAnimLayer, oTime, "Y", oRotation[1], true);
+	AddRotationCurve(pNode, pAnimLayer, oTime, "Z", oRotation[2], true);
+
+	return true;
 }

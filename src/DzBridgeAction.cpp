@@ -8098,6 +8098,17 @@ bool DzBridgeAction::generateProxyMesh(DzNode* pNode, QString sFbxFilePath, bool
 	DzFileIOSettings ExportOptions;
 	DzNode* pGeograftNode = nullptr;
 
+	Exporter->getDefaultOptions(&ExportOptions);
+
+	for (int i = 0; i < ExportOptions.getNumValues(); i++)
+	{
+		QString sKey = ExportOptions.getKey(i);
+		QString sValue = ExportOptions.getValue(i);
+		QString sKVP = QString("%1 = %2").arg(sKey).arg(sValue);
+		printf("%s\n", sKVP.toLocal8Bit().constData());
+		dzApp->log(sKVP);
+	}
+
 	ExportOptions.setBoolValue("doSelected", true);
 	ExportOptions.setBoolValue("doVisible", false);
 	ExportOptions.setBoolValue("doFigures", true);
@@ -8106,15 +8117,25 @@ bool DzBridgeAction::generateProxyMesh(DzNode* pNode, QString sFbxFilePath, bool
 	ExportOptions.setStringValue("format", m_sFbxVersion);
 	ExportOptions.setIntValue("RunSilent", true); // generateProxyMesh is always silent (no direct fbx export options to user)
 
-	ExportOptions.setBoolValue("doDiffuseOpacity", false);
 	ExportOptions.setBoolValue("doMergeClothing", true);
-	ExportOptions.setBoolValue("doStaticClothing", false);
 	ExportOptions.setBoolValue("degradedSkinning", true);
 	ExportOptions.setBoolValue("degradedScaling", true);
+
+	ExportOptions.setBoolValue("doDiffuseOpacity", false);
+	ExportOptions.setBoolValue("doStaticClothing", false);
 	ExportOptions.setBoolValue("doSubD", false);
 	ExportOptions.setBoolValue("doCollapseUVTiles", false);
-	
+
+	ExportOptions.setBoolValue("IncludeFaceGroupsAsPolygonSets", false);
+	ExportOptions.setBoolValue("IncludeNodeNamesLabels", false);
+	ExportOptions.setBoolValue("IncludeNodePresentation", false);
+	ExportOptions.setBoolValue("IncludeNodeSelectionMap", false);
+	ExportOptions.setBoolValue("IncludeSceneIDs", false);
+	ExportOptions.setBoolValue("IncludeFollowTargets", false);
+
+//	"MergeFollowers", "EmbedTextures", "IncludeNodeNamesLabels", "IncludeNodePresentation", "IncludeNodeSelectionMap", "IncludeSceneIDs", "IncludeFollowTargets", 
 	bool bUndoUnfitting = false;
+
 	if (bExportFacsBlendshapes) {
 		ExportOptions.setBoolValue("doMorphs", true);
 		m_sMorphSelectionRule = MorphTools::getMorphString(m_MorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm, pNode);

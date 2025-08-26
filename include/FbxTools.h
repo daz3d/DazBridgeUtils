@@ -157,6 +157,12 @@ public:
 
 	static bool ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConversionJsonFilename);
 	
+	static bool GetBoneList(FbxNode* pRootNode, QList<FbxNode*>& aBoneList);
+
+	static bool AddRotationCurve(FbxNode* pNode, FbxAnimLayer* pAnimLayer, FbxTime oTime, const char* pChannel, float fValue, bool bCreate);
+	static bool AddTranslationCurve(FbxNode* pNode, FbxAnimLayer* pAnimLayer, FbxTime oTime, const char* pChannel, float fValue, bool bCreate);
+	static bool AddKeyCurrentNode(FbxNode* pNode, FbxAnimLayer* pAnimLayer, FbxTime oTime);
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
