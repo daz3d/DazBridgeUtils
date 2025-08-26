@@ -900,6 +900,8 @@ FbxPose* FbxTools::SaveBindMatrixToPose(FbxScene* pScene, const char* lpPoseName
 					{
 						FbxCluster* pCluster = pSkin->GetCluster(nClusterIndex);
 						FbxNode* pClusterBone = pCluster->GetLink();
+						// crash protection
+						if (pClusterBone == nullptr) continue;
 						const char* pBoneName = pClusterBone->GetName();
 						FbxAMatrix bindMatrix;
 						pCluster->GetTransformLinkMatrix(bindMatrix);
@@ -1659,6 +1661,9 @@ void FbxTools::ModifyBindPose(FbxScene* Scene, FbxNode* RootNode, ModifyBindPose
 					FbxCluster* Cluster = Skin->GetCluster(ClusterIndex);
 					Cluster->GetTransformLinkMatrix(Matrix);
 
+					// crash protection
+					if (Cluster->GetLink() == nullptr) continue;
+					
 					QString sBoneName(Cluster->GetLink()->GetName());
 
 					// Update the rotation
@@ -3443,13 +3448,6 @@ bool FbxTools::ExportSkeleton(DzNode* pNode, QString sFilename, bool bIncludeFac
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
 	FbxScene* pScene = openFBX->CreateScene("Animation Scene");
 	
-//	// Get the Figure Scale
-//	float FigureScale = pNode->getScaleControl()->getValue();
-
-//	FbxAnimStack* AnimStack = FbxAnimStack::Create(pScene, "AnimStack");
-//	FbxAnimLayer* AnimBaseLayer = FbxAnimLayer::Create(pScene, "Layer0");
-//	AnimStack->AddMember(AnimBaseLayer);
-
 	// Add the skeleton to the scene
 	QMap<DzNode*, FbxNode*> BoneMap;
 	GenerateSkeleton(Figure, pNode, nullptr, nullptr, pScene, BoneMap, bIncludeFaceBones, bFixTwistBones);
@@ -3591,4 +3589,115 @@ void FbxTools::GenerateSkeleton(DzFigure* pFigure, DzNode* pDazNode, DzNode* pDa
 
 	// Add the bone to the map
 	oBoneMap.insert(pDazNode, pFbxBone);
+}
+
+
+#include <QtScript/QScriptEngine>
+#include <QtScript/QScriptValue>
+
+QMap<QString, QVariant> readJsonToMap(const QString& sFilename)
+{
+	QFile oFile(sFilename);
+	if (!oFile.open(QIODevice::ReadOnly))
+		return {};
+
+	const QByteArray aData = oFile.readAll();
+	oFile.close();
+
+	const QString sJson = QString::fromUtf8(aData);
+
+	QScriptEngine oEngine;
+	// Wrap in parentheses so it's parsed as an expression, not a block
+	QScriptValue oVal = oEngine.evaluate("(" + sJson + ")");
+
+	if (oEngine.hasUncaughtException() || !oVal.isObject())
+		return {};
+
+	QVariant oVar = oVal.toVariant();               // nested objects → QVariantMap, arrays → QVariantList
+	if (oVar.type() == QVariant::Map)
+		return oVar.toMap();                         // typedef of QMap<QString,QVariant>
+	return {};
+}
+
+bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConversionJsonFilename)
+{
+	
+	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
+	FbxScene* pScene = openFBX->CreateScene("Animation Scene");
+	bool bLoadResult = FbxTools::ExLoadScene(pScene, sProxyFbxFilename);
+	if (!bLoadResult) {
+		return false;
+	}
+
+	QMap<QString, FbxNode*> oBoneMap;
+	for (int i=0; i < pScene->GetNodeCount(); i++) {
+		FbxNode* pNode = pScene->GetNode(i);
+		FbxNodeAttribute* pAttr = pNode->GetNodeAttribute();
+		if (pAttr && pAttr->GetAttributeType() == FbxNodeAttribute::eSkeleton) {
+			QString sNodeName(pNode->GetName());
+			oBoneMap.insert(sNodeName, pNode);
+		}
+	}
+	
+	QList<FbxNode*> aBonesToDelete;
+	QMap<QString, QVariant> oRigConversionDictionary = readJsonToMap(sRigConversionJsonFilename);
+	QMap<QString, QString> oReverseLookup;
+	
+	foreach(QString sKey, oRigConversionDictionary.keys()) {
+		QVariant oValue = oRigConversionDictionary.value(sKey);
+		oReverseLookup.insert(oValue.toString(), sKey);
+	}
+
+	foreach(QString sKey, oRigConversionDictionary.keys()) {
+		FbxNode* pFbxNode = oBoneMap.value(sKey);
+		if (pFbxNode == nullptr) continue;
+		QVariant oValue = oRigConversionDictionary.value(sKey);
+		QString sValue = oValue.toString();
+		if (oValue.type() == QVariant::Type::String) {
+			if (sValue == sKey) continue;
+			if (oReverseLookup.contains(sValue)) {
+				// rename original bone
+//				FbxNode* pOriginalBone = pScene->FindNodeByName(sValue.toLocal8Bit().constData());
+				FbxNode* pOriginalBone = oBoneMap.value(sValue);
+				if (pOriginalBone) {
+					QString sNewName = sValue + "__original";
+					pOriginalBone->SetName(sNewName.toLocal8Bit().constData());
+				}
+			}
+			printf("ProxyMeshBoneRenamer: Renaming %s to %s\n", pFbxNode->GetName(), sValue.toLocal8Bit().constData());
+			pFbxNode->SetName(sValue.toLocal8Bit().constData());
+		}
+		else if (oValue.type() == QVariant::Type::Int) {
+			if (oValue.toInt() == -1) {
+				printf("ProxyMeshBoneRenamer: marking for deletion: %s\n", pFbxNode->GetName());
+				aBonesToDelete.append(pFbxNode);				
+			}
+		}
+	}
+
+	foreach (FbxNode* pBoneToDelete, aBonesToDelete)
+	{
+		if (pBoneToDelete == nullptr) continue;
+		// reparent
+		FbxNode* pParent = pBoneToDelete->GetParent();
+		if (pParent) {
+			int numChildren = pBoneToDelete->GetChildCount();
+			for (int i=numChildren; i >= 0 ; i--) {
+				FbxNode* pChild = pBoneToDelete->GetChild(i);
+				if (pChild == nullptr) continue;
+				printf("ProxyMeshBoneRenamer: reparenting child: %s\n", pChild->GetName());
+				pParent->AddChild(pChild);
+			}
+		}
+		// remove bone
+		printf("ProxyMeshBoneRenamer: deleting %s\n", pBoneToDelete->GetName());
+		pScene->RemoveNode(pBoneToDelete);
+	}
+	
+	bool bAsciiMode = false;
+	bool bSaveResult = openFBX->SaveScene(pScene, sProxyFbxFilename, bAsciiMode);
+
+	pScene->Destroy();
+	
+	return bSaveResult;
 }

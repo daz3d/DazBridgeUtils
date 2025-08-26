@@ -267,7 +267,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool generateMorphProxyRigs(DzNode* pNode, QString sFbxBaseFilePath, QList<QString> aMorphNames, QList<QString> &aOutputFileList);
 
 		// MORPH PROXY TOOLS
-		QString m_sFacsProxyFilePath = "";
+		QString m_sMorphProxyFilePath = "";
 		QString m_sFacsJawOpen = "";
 		QString m_sFacsJawOpenMouthClose = "";
 		Q_INVOKABLE virtual bool loadMorphSelectionOverride(QString sMorphExportFilename);
@@ -276,6 +276,7 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool calculateMouthCloseVertexDeltas(FbxVector4* pVertexDeltaBuffer, int numVertexDeltaBufferIndexes);
 		QString m_sMvcProxyMeshFilePath = "";
 		Q_INVOKABLE virtual bool retargetBlendshapesToBaseRig(QList<QString> aProxyRigList, QString sFileBasePath, QString sBaseFigureName);
+		QList<QString> m_aMorphProxyRigList;
 		
 		// STRAND-BASED-HAIR TOOLS
 		Q_INVOKABLE virtual bool isStrandBasedHair(DzNode* pNode);
@@ -445,7 +446,8 @@ namespace DzBridgeNameSpace
 			QString sMvcTemplateFilename, QString sMvcProxyMeshFilename,
 			QString sOverrideRigFilename, FbxTools::ModifyBindPoseCallback *pCustomJointFixer,
 			QString sTargetPoseFilename, QString sFinalRigTemplateFbxFilename,
-			QString sRigRoot, QString sMeshRoot, QString sGarmentRoot
+			QString sRigRoot, QString sMeshRoot, QString sGarmentRoot,
+			bool bTransferBlendshapes=true
 		);
 		bool fixMouthCloseBlendshape(DzNode* pNode, QString sFbxSourceFilename, QString sFbxDestinationFilename);
 		bool dumpMaterialToPolylineIndexList(DzNode* pNode, QList<DzIndexList>& oMaterialToPolylineIndexList);

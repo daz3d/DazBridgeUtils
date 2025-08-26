@@ -10025,8 +10025,8 @@ bool DzBridgeAction::postProcessRigConversion(QString sExportRigMode, QString fb
 				sTargetPoseFilename, sFinalRigTemplateFbxFilename,
 				sRigRoot, sMeshRoot, sGarmentRoot);
 
-	if (sExportRigMode == "unreal" || sExportRigMode == "metahuman") {
-		
+	// post-postprocess here
+	if (sExportRigMode == "unreal" || sExportRigMode == "metahuman") {		
 	}
 	
 	return bResult;
@@ -10041,7 +10041,8 @@ bool DzBridgeAction::postProcessRigConversion
 	FbxTools::ModifyBindPoseCallback *pCustomJointFixer,
 	QString sTargetPoseFilename,
 	QString sFinalRigTemplateFbxFilename,
-	QString sRigRoot, QString sMeshRoot, QString sGarmentRoot
+	QString sRigRoot, QString sMeshRoot, QString sGarmentRoot,
+	bool bTransferBlendshapes
 )
 {	
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
@@ -10051,11 +10052,14 @@ bool DzBridgeAction::postProcessRigConversion
 		return false;
 	}
 
-	// Transfer blendshapes from proxy to main output file
-	QString sMappingFilename = "";
-	if (m_pSelectedNode->getName() == "Genesis9") sMappingFilename = dzApp->getTempPath() + "/g9_to_arkit_facs_mapping.csv";
-	if (m_pSelectedNode->getName() == "Genesis81") sMappingFilename = dzApp->getTempPath() + "/g81_to_arkit_facs_mapping.csv";
-	FbxTools::TransferBlendshapes(m_sFacsProxyFilePath, pScene, sMappingFilename);
+	if (bTransferBlendshapes) 
+	{
+		// Transfer blendshapes from proxy to main output file
+		QString sMappingFilename = "";
+		if (m_pSelectedNode->getName() == "Genesis9") sMappingFilename = dzApp->getTempPath() + "/g9_to_arkit_facs_mapping.csv";
+		if (m_pSelectedNode->getName() == "Genesis81") sMappingFilename = dzApp->getTempPath() + "/g81_to_arkit_facs_mapping.csv";
+		FbxTools::TransferBlendshapes(m_sMorphProxyFilePath, pScene, sMappingFilename);
+	}
 
 	// Find the root bone.  There should only be one bone off the scene root
 	FbxNode* RootNode = pScene->GetRootNode();
@@ -10118,7 +10122,6 @@ bool DzBridgeAction::postProcessRigConversion
 				// CONVERT EXISTING RIG
 //				printf("Starting FixClusterTransformLinks(): ExportRigMode=%s, pCustomBoneFixer=0x%llx\n", m_sExportRigMode.toLocal8Bit().constData(), (int64_t) pCustomJointFixer );
 				FbxTools::ModifyBindPose(pScene, RootBone, pCustomJointFixer);
-
 //				printf("DEBUG: CONVERTJOINT PATHWAY COMPLETE USING: pCustomBoneFixer=0x%llx\n", (int64_t) pCustomJointFixer );
 			}
 
@@ -10341,9 +10344,9 @@ bool DzBridgeAction::retargetBlendshapesToBaseRig(QList<QString> aProxyRigList, 
 {
 	OpenFBXInterface *openFbx = OpenFBXInterface::GetInterface();
 	FbxScene *pMorphProxyScene = openFbx->CreateScene("Morph Proxy Scene");
-	printf("DEBUG: Loading Morph Proxy File: %s to retarget blendshapes...\n", m_sFacsProxyFilePath.toLocal8Bit().constData());
+	printf("DEBUG: Loading Morph Proxy File: %s to retarget blendshapes...\n", m_sMorphProxyFilePath.toLocal8Bit().constData());
 
-	exLoadFbxScene(pMorphProxyScene, m_sFacsProxyFilePath);
+	exLoadFbxScene(pMorphProxyScene, m_sMorphProxyFilePath);
 
 //	QString sBaseFigureName = QString("Genesis9") + ".Shape";
 	FbxNode* pBaseFigure = pMorphProxyScene->FindNodeByName(sBaseFigureName.toLocal8Bit().constData());
@@ -10425,8 +10428,8 @@ bool DzBridgeAction::retargetBlendshapesToBaseRig(QList<QString> aProxyRigList, 
 	}
 	pMorphProxyScene->AddPose(pBasePose);
 	// save and close
-	printf("DEBUG: Saving Morph Proxy File after blendshape retargeting: %s\n", m_sFacsProxyFilePath.toLocal8Bit().constData());
-	openFbx->SaveScene(pMorphProxyScene, m_sFacsProxyFilePath);
+	printf("DEBUG: Saving Morph Proxy File after blendshape retargeting: %s\n", m_sMorphProxyFilePath.toLocal8Bit().constData());
+	openFbx->SaveScene(pMorphProxyScene, m_sMorphProxyFilePath);
 	pMorphProxyScene->Destroy();
 
 	return true;
