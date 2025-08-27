@@ -165,17 +165,18 @@ public:
 
 	static inline void SetSceneTimeMode(FbxScene* pScene, FbxTime::EMode eMode = FbxTime::eFrames30) { if (!pScene) return; pScene->GetGlobalSettings().SetTimeMode(eMode); }
 	static inline FbxTime MakeFrame(int nFrame, FbxTime::EMode eMode = FbxTime::eFrames30) { FbxTime t; t.SetFrame(nFrame, eMode); return t; }
+	static void AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLeftFoot, const char* sRightFoot, const char* sLeftHand, const char* sRightHand, FbxMesh* pFigureMesh);
+	static void ModifyBindPose(FbxScene* Scene, FbxNode* RootNode, ModifyBindPoseCallback* pCustomBoneFix);
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-	static void ModifyBindPose(FbxScene* Scene, FbxNode* RootNode, ModifyBindPoseCallback* pCustomBoneFix);
 	static void RemovePrePostRotations(FbxNode* pNode);
 	static void ReparentTwistBone(FbxNode* pNode);
 	static void FindAndProcessTwistBones(FbxNode* pNode);
-	static void AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLeftFoot, const char* sRightFoot, const char* sLeftHand, const char* sRightHand);
 
 private:
 	static void GenerateSkeleton(DzFigure* Figure, DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzNode*, FbxNode*>& BoneMap, bool bIncludeFaceBones, bool bFixTwistBones);
+	static bool AddMinimumIkWeight(FbxScene* pScene, FbxMesh* pMesh, FbxNode* pIkNode, FbxNode* pLocalEffectorNode, double fEpsilonWeight = 0.01);
 
 };

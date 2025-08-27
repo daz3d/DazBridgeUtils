@@ -5041,53 +5041,22 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 		// set m_bConvertFbxJointsEnabled to false in derived classes prior to calling base class method in order to override these operations
 		if (m_bConvertFbxJointsEnabled)
 		{
+			// find main figure mesh
+			QString sFigureNodeName = cleanString( m_pSelectedNode->getName() ) + ".Shape";
+			FbxNode* pFigureNode = pScene->FindNodeByName(sFigureNodeName.toLocal8Bit().constData());
+			FbxMesh* pFigureMesh = pFigureNode ? pFigureNode->GetMesh() : nullptr;
+			
 			if (pFbxRootBone && (m_sExportRigMode == "unreal" || m_sExportRigMode == "metahuman"))
 			{
 				// Convert Joint Orientations
 				FbxTools::UnrealJointFixCallback oUnrealBoneFixer;
 				FbxTools::ModifyBindPose(pScene, pFbxRootBone, &oUnrealBoneFixer);
 				FbxTools::FixTwistBones(pFbxRootNode);
-				FbxTools::AddIkNodes(pScene, pFbxRootBone, "foot_l", "foot_r", "hand_l", "hand_r");
-				// Bake New Bind Pose
-				//FbxPose* pNewBindPose = FbxTools::SaveBindMatrixToPose(pScene, "NewBindPose", nullptr, true);
-				//FbxTools::ApplyBindPose(pScene, pNewBindPose);
-				//foreach(FbxNode * pNode, nodeList) {
-				//	QString debugName(pNode->GetName());
-				//	FbxMesh* pMesh = pNode->GetMesh();
-				//	FbxAMatrix matrix = pNode->EvaluateGlobalTransform();
-				//	FbxVector4* pVertexBuffer = pMesh->GetControlPoints();
-				//	if (pVertexBuffer == NULL) continue;
-				//	FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &matrix, pNewBindPose, pMesh);
-				//	// Clear Pre/Post Rotations
-				//	pNode->SetPreRotation(FbxNode::eSourcePivot, FbxVector4(0, 0, 0));
-				//	pNode->SetPostRotation(FbxNode::eSourcePivot, FbxVector4(0, 0, 0));
-				//	pNode->LclScaling.Set(FbxDouble3(1.0, 1.0, 1.0));
-				//	pNode->LclRotation.Set(FbxDouble3(0, 0, 0));
-				//	pNode->LclTranslation.Set(FbxDouble3(0, 0, 0));
-				//}
-				//pNewBindPose->Destroy();
+				FbxTools::AddIkNodes(pScene, pFbxRootBone, "foot_l", "foot_r", "hand_l", "hand_r", pFigureMesh);
 			}
 			else if (pFbxRootBone && (m_sExportRigMode == "unity" || m_sExportRigMode == "mixamo"))
 			{
 				FbxTools::ModifyBindPose(pScene, pFbxRootBone, nullptr);
-				// Bake New Bind Pose
-				//FbxPose* pNewBindPose = FbxTools::SaveBindMatrixToPose(pScene, "NewBindPose", nullptr, true);
-				//FbxTools::ApplyBindPose(pScene, pNewBindPose);
-				//foreach(FbxNode * pNode, nodeList) {
-				//	QString debugName(pNode->GetName());
-				//	FbxMesh* pMesh = pNode->GetMesh();
-				//	FbxAMatrix matrix = pNode->EvaluateGlobalTransform();
-				//	FbxVector4* pVertexBuffer = pMesh->GetControlPoints();
-				//	if (pVertexBuffer == NULL) continue;
-				//	FbxTools::BakePoseToVertexBuffer(pVertexBuffer, &matrix, pNewBindPose, pMesh);
-				//	// Clear Pre/Post Rotations
-				//	pNode->SetPreRotation(FbxNode::eSourcePivot, FbxVector4(0, 0, 0));
-				//	pNode->SetPostRotation(FbxNode::eSourcePivot, FbxVector4(0, 0, 0));
-				//	pNode->LclScaling.Set(FbxDouble3(1.0, 1.0, 1.0));
-				//	pNode->LclRotation.Set(FbxDouble3(0, 0, 0));
-				//	pNode->LclTranslation.Set(FbxDouble3(0, 0, 0));
-				//}
-				//pNewBindPose->Destroy();
 			}
 
 			FbxTools::RemoveBindPoses(pScene);
@@ -10109,6 +10078,10 @@ bool DzBridgeAction::postProcessRigConversion
 	{
 		QList<FbxNode*> nodeList;
 		FbxTools::GetAllMeshes(RootNode, nodeList);
+		
+		QString sFigureNodeName = m_pSelectedNode->getName() + ".Shape";
+		FbxNode* pFigureNode = pScene->FindNodeByName(sFigureNodeName.toLocal8Bit().constData());
+		FbxMesh* pFigureMesh = pFigureNode ? pFigureNode->GetMesh() : nullptr;
 
 		if (m_sExportRigMode != "" && m_sExportRigMode != "--")
 		{
@@ -10216,7 +10189,7 @@ bool DzBridgeAction::postProcessRigConversion
 				}				
 			}
 
-			FbxTools::AddIkNodes(pScene, RootBone, "foot_l", "foot_r", "hand_l", "hand_r");
+			FbxTools::AddIkNodes(pScene, RootBone, "foot_l", "foot_r", "hand_l", "hand_r", pFigureMesh);
 
 			// Merge Final Rig Template
 			if (sFinalRigTemplateFbxFilename != "") {

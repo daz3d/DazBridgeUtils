@@ -1767,9 +1767,107 @@ void FbxTools::FindAndProcessTwistBones(FbxNode* pNode)
 	}
 }
 
+// Required for UE/Fab Marketplace requirements for Characters (aka, IK node must not be greyed out in UE)
+// Adds a single 0.01 influence for pIkNode on one control point of pMesh.
+bool FbxTools::AddMinimumIkWeight(FbxScene* pScene, FbxMesh* pMesh, FbxNode* pIkNode, FbxNode* pLocalEffectorNode, double fEpsilonWeight)
+{
+	if (!pScene || !pMesh || !pIkNode || !pLocalEffectorNode) return false;
+
+	FbxNode* pMeshNode = pMesh->GetNode();
+	if (!pMeshNode) return false;
+
+	FbxSkin* pSkin = nullptr;
+	const int nDef = pMesh->GetDeformerCount(FbxDeformer::eSkin);
+	for (int i = 0; i < nDef; ++i) {
+		FbxDeformer* pDef = pMesh->GetDeformer(i, FbxDeformer::eSkin);
+		if (pDef) { pSkin = FbxCast<FbxSkin>(pDef); break; }
+	}
+	if (!pSkin) { pSkin = FbxSkin::Create(pScene, "Skin"); pMesh->AddDeformer(pSkin); }
+
+	FbxCluster* pIkCluster = nullptr;
+	for (int i = 0; i < pSkin->GetClusterCount(); ++i) {
+		FbxCluster* pC = pSkin->GetCluster(i);
+		if (pC && pC->GetLink() == pIkNode) { pIkCluster = pC; break; }
+	}
+	if (!pIkCluster) {
+		pIkCluster = FbxCluster::Create(pScene, (std::string("Cluster_") + pIkNode->GetName()).c_str());
+		pIkCluster->SetLink(pIkNode);
+		pIkCluster->SetLinkMode(FbxCluster::eNormalize); // normalize to 1.0
+		pSkin->AddCluster(pIkCluster);
+	}
+
+	FbxAMatrix oMeshWsTransform = pMeshNode->EvaluateGlobalTransform();
+	FbxAMatrix oIkWsTransform   = pIkNode->EvaluateGlobalTransform();
+	pIkCluster->SetTransformMatrix(oMeshWsTransform);
+	pIkCluster->SetTransformLinkMatrix(oIkWsTransform); // required for correct skinning
+
+	FbxAMatrix oEffectorWsTransform = pLocalEffectorNode->EvaluateGlobalTransform();
+	FbxVector4 oEffectorGlobalPosition = oEffectorWsTransform.GetT();
+
+	// find vertex index to vertex closest to effector node (ex: hand or foot joint)
+	int numVertices = pMesh->GetControlPointsCount();
+	FbxVector4* pVertexBuffer = pMesh->GetControlPoints();
+	int nClosestVertexIndex = (numVertices > 0) ? 0 : -1;
+	double fDistanceToClosestVertex = DBL_MAX;
+	for (int nVertexIndex = 0; nVertexIndex < numVertices; ++nVertexIndex) {
+		FbxVector4 oLocalPosition = pVertexBuffer[nVertexIndex];
+		// point is in object space; bring to world
+		FbxVector4 oGlobalPosition = oMeshWsTransform.MultT(oLocalPosition);
+		FbxVector4 oDistanceVector = oGlobalPosition - oEffectorGlobalPosition;
+		// squared distance
+		double fCurrentDistance = oDistanceVector[0]*oDistanceVector[0] + oDistanceVector[1]*oDistanceVector[1] + oDistanceVector[2]*oDistanceVector[2];
+		if (fCurrentDistance < fDistanceToClosestVertex)
+		{
+			fDistanceToClosestVertex = fCurrentDistance;
+			nClosestVertexIndex = nVertexIndex;
+		}
+	}
+	if (nClosestVertexIndex < 0) return false;
+
+	// find cluster with strongest influence on closest vertex
+	int nStrongestClusterIndex = -1;
+	double fStrongestWeight = 0.0;
+	for (int nClusterIndex = 0; nClusterIndex < pSkin->GetClusterCount(); ++nClusterIndex)
+	{
+		FbxCluster* pCluster = pSkin->GetCluster(nClusterIndex);
+		const int numClusterVertices = pCluster->GetControlPointIndicesCount();
+		int* pVertexIndexBuffer = pCluster->GetControlPointIndices();
+		double* pClusterVertexWeights = pCluster->GetControlPointWeights();
+		for (int i = 0; i < numClusterVertices; ++i)
+		{
+			if (pVertexIndexBuffer[i] == nClosestVertexIndex &&
+				pClusterVertexWeights[i] > fStrongestWeight)
+			{
+				fStrongestWeight = pClusterVertexWeights[i];
+				nStrongestClusterIndex = nClusterIndex;
+			}
+		}
+	}
+	
+	// subtract minimum weight influence from the strongest cluster to add to the IK cluster
+	if (nStrongestClusterIndex >= 0 && fStrongestWeight > fEpsilonWeight) {
+		FbxCluster* pStrongestCluster = pSkin->GetCluster(nStrongestClusterIndex);
+		const int numClusterVertices = pStrongestCluster->GetControlPointIndicesCount();
+		int* pVertexIndexBuffer = pStrongestCluster->GetControlPointIndices();
+		double* pClusterVertexWeights = pStrongestCluster->GetControlPointWeights();
+		for (int i = 0; i < numClusterVertices; ++i) {
+			if (pVertexIndexBuffer[i] == nClosestVertexIndex)
+			{
+				pClusterVertexWeights[i] = std::max(0.0, pClusterVertexWeights[i] - fEpsilonWeight);
+				break;
+			}
+		}
+	}
+
+	// add minimum weight influence to closest vertex for IK cluster
+	pIkCluster->AddControlPointIndex(nClosestVertexIndex, fEpsilonWeight);
+
+	return true;
+}
+
 #define TCHAR_TO_UTF8(a) QString(a).toUtf8().constData()
 #define TEXT(a) a
-void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLeftFoot, const char* sRightFoot, const char* sLeftHand, const char* sRightHand)
+void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLeftFoot, const char* sRightFoot, const char* sLeftHand, const char* sRightHand, FbxMesh* pFigureMesh)
 {
 	bool AddIKBones = true;
 	// Add IK bones
@@ -1810,6 +1908,7 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			IKFootLNode->LclTranslation.Set(FootLocation);
 			IKFootLNode->LclRotation.Set(FootOrientation);
 			IKRootNode->AddChild(IKFootLNode);
+			if (pFigureMesh) AddMinimumIkWeight(pScene, pFigureMesh, IKFootLNode, FootLNode);
 		}
 
 		// ik_foot_r
@@ -1832,6 +1931,7 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			IKFootRNode->LclTranslation.Set(FootLocation);
 			IKFootLNode->LclRotation.Set(FootOrientation);
 			IKRootNode->AddChild(IKFootRNode);
+			if (pFigureMesh) AddMinimumIkWeight(pScene, pFigureMesh, IKFootRNode, FootRNode);
 		}
 
 		// ik_hand_root
@@ -1869,6 +1969,7 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			IKHandGunNode->LclTranslation.Set(HandLocation);
 			IKHandGunNode->LclRotation.Set(HandOrientation);
 			IKHandRootNode->AddChild(IKHandGunNode);
+			if (pFigureMesh) AddMinimumIkWeight(pScene, pFigureMesh, IKHandGunNode, HandRNode);
 		}
 
 		// ik_hand_r
@@ -1883,6 +1984,7 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			IKHandRNode->SetNodeAttribute(IKHandRNodeAttribute);
 			IKHandRNode->LclTranslation.Set(FbxVector4(0.0, 00.0, 0.0));
 			IKHandGunNode->AddChild(IKHandRNode);
+			if (pFigureMesh) AddMinimumIkWeight(pScene, pFigureMesh, IKHandRNode, HandRNode);
 		}
 
 		// ik_hand_l
@@ -1905,6 +2007,7 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			IKHandLNode->LclTranslation.Set(HandLocation);
 			IKHandLNode->LclRotation.Set(HandOrientation);
 			IKHandGunNode->AddChild(IKHandLNode);
+			if (pFigureMesh) AddMinimumIkWeight(pScene, pFigureMesh, IKHandLNode, HandLNode);
 		}
 	}
 
