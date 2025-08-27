@@ -3966,6 +3966,8 @@ bool FbxTools::AddRotationCurve(FbxNode* pNode, FbxAnimLayer* pAnimLayer, FbxTim
 	pAnimCurve->KeyModifyBegin();
 	int nKeyIndex = pAnimCurve->KeyAdd(oTime);
 	pAnimCurve->KeySet(nKeyIndex, oTime, fValue);
+	pAnimCurve->KeySetInterpolation(nKeyIndex, FbxAnimCurveDef::eInterpolationCubic);
+	pAnimCurve->KeyModifyEnd();
 
 	return true;
 }
@@ -3978,6 +3980,8 @@ bool FbxTools::AddTranslationCurve(FbxNode* pNode, FbxAnimLayer* pAnimLayer, Fbx
 	pAnimCurve->KeyModifyBegin();
 	int nKeyIndex = pAnimCurve->KeyAdd(oTime);
 	pAnimCurve->KeySet(nKeyIndex, oTime, fValue);
+	pAnimCurve->KeySetInterpolation(nKeyIndex, FbxAnimCurveDef::eInterpolationCubic);
+	pAnimCurve->KeyModifyEnd();
 
 	return true;
 }

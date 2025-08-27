@@ -8184,8 +8184,8 @@ bool DzBridgeAction::generateMorphProxyRigs(DzNode* pNode, QString sFbxBaseFileP
 
 	// Generate base skeleton
 	QString sOutputFile = sFbxBaseFilePath + "_base.fbx";
-	generateProxyMesh(pNode, sOutputFile, false);
-	
+	if (generateProxyMesh(pNode, sOutputFile, false) == true) aOutputFileList.append(sOutputFile);
+
 	// Generate proxy skeletons
 	foreach(QString sMorphName, m_MorphNamesToExport)
 	{
@@ -8199,7 +8199,7 @@ bool DzBridgeAction::generateMorphProxyRigs(DzNode* pNode, QString sFbxBaseFileP
 				double nBackupValue = oMorphProperty->getRawValue();
 				oMorphProperty->setValue(1.0);
 				if (generateProxyMesh(pNode, sOutputFile, false) == true) {
-					aOutputFileList.append(sOutputFile);					
+					aOutputFileList.append(sOutputFile);
 					printf("DEBUG: exported proxy rig: %s\n", sOutputFile.toLocal8Bit().constData());
 				} else {
 					printf("ERROR: failed trying to export rig: %s\n", sOutputFile.toLocal8Bit().constData());

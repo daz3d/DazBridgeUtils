@@ -163,6 +163,9 @@ public:
 	static bool AddTranslationCurve(FbxNode* pNode, FbxAnimLayer* pAnimLayer, FbxTime oTime, const char* pChannel, float fValue, bool bCreate);
 	static bool AddKeyCurrentNode(FbxNode* pNode, FbxAnimLayer* pAnimLayer, FbxTime oTime);
 
+	static inline void SetSceneTimeMode(FbxScene* pScene, FbxTime::EMode eMode = FbxTime::eFrames30) { if (!pScene) return; pScene->GetGlobalSettings().SetTimeMode(eMode); }
+	static inline FbxTime MakeFrame(int nFrame, FbxTime::EMode eMode = FbxTime::eFrames30) { FbxTime t; t.SetFrame(nFrame, eMode); return t; }
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
