@@ -8083,6 +8083,7 @@ bool DzBridgeAction::generateProxyMesh(DzNode* pNode, QString sFbxFilePath, bool
 	ExportOptions.setBoolValue("doFigures", true);
 	ExportOptions.setBoolValue("doProps", false);
 	ExportOptions.setBoolValue("doEmbed", false);
+	ExportOptions.setBoolValue("doAnims", false);
 	ExportOptions.setStringValue("format", m_sFbxVersion);
 	ExportOptions.setIntValue("RunSilent", true); // generateProxyMesh is always silent (no direct fbx export options to user)
 
@@ -8164,7 +8165,7 @@ bool DzBridgeAction::generateMorphProxyRigs(DzNode* pNode, QString sFbxBaseFileP
 			DzFloatProperty* oMorphProperty = qobject_cast<DzFloatProperty*>(oMorphInfo.Property);
 			if (oMorphProperty)
 			{
-				QString sOutputFile = sFbxBaseFilePath + "_" + cleanString(sMorphName) + ".fbx";
+				QString sOutputFile = sFbxBaseFilePath + "_" + sMorphName + ".fbx";
 				double nBackupValue = oMorphProperty->getRawValue();
 				oMorphProperty->setValue(1.0);
 				if (generateProxyMesh(pNode, sOutputFile, false) == true) {

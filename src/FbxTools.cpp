@@ -2653,6 +2653,7 @@ bool FbxTools::RenameMorphs(FbxScene* pScene, QMap<QString, MorphInfo> &MorphMap
 				QString sChannelNameCleaned = QString(sChannelName).replace(sMeshName + "__", "");
 //				printf("DEBUG: sChannelName = %s, changing to %s\n", sChannelName.toLocal8Bit().constData(), sChannelNameCleaned.toLocal8Bit().constData());
 				QString sNewName = MorphMappings.value(sChannelNameCleaned).Label;
+				sNewName = QString(sNewName).replace(" ", "_"); // *** workaround for Unreal + AddMorphCurveByName ****
 				if (bUseLabels && !sNewName.isEmpty()) {
 //					printf("DEBUG: Renaming sChannelName: %s to %s\n", sChannelNameCleaned.toLocal8Bit().constData(), sNewName.toLocal8Bit().constData());
 					RenameBlendshapeChannel(pChannel, sNewName);
@@ -4106,3 +4107,60 @@ bool FbxTools::AddKeyCurrentNode(FbxNode* pNode, FbxAnimLayer* pAnimLayer, FbxTi
 
 	return true;
 }
+
+
+// Adds Animation Keyframe for a User Defined Property
+// In some engines like UE, can drive Blendshape when Property names are exact match
+bool FbxTools::AddMorphCurveByName(FbxNode* pNode, FbxAnimLayer* pAnimLayer, FbxTime oTime, QString sMorphName, float fValue, bool bCreate)
+{
+	if (!pNode || !pAnimLayer || sMorphName.isEmpty() || sMorphName == "") return false;
+
+	// Create/find a user-defined double property
+	FbxPropertyT<FbxDouble> oProp = pNode->FindProperty(sMorphName.toLocal8Bit().constData());
+	if (!oProp.IsValid() && bCreate)
+	{
+		oProp = FbxPropertyT<FbxDouble>::Create(pNode, FbxDoubleDT, sMorphName.toLocal8Bit().constData());
+		if (!oProp.IsValid()) return false;
+		oProp.ModifyFlag(FbxPropertyFlags::eUserDefined, true);
+		oProp.Set(0.0);
+		oProp.SetMaxLimit(1.0);
+		oProp.SetMinLimit(0.0);
+	}
+	if (!oProp.IsValid()) return false;
+	oProp.ModifyFlag(FbxPropertyFlags::eAnimatable, true);
+
+	FbxAnimCurveNode* pCurveNode = oProp.GetCurveNode(pAnimLayer, bCreate);
+	if (!pCurveNode)
+	{
+		if (!bCreate) return false;
+		FbxScene* pScene = pNode->GetScene();
+		pCurveNode = FbxAnimCurveNode::Create(pScene, sMorphName.toLocal8Bit().constData());
+		if (!pCurveNode) return false;
+		oProp.ConnectSrcObject(pCurveNode);
+		pAnimLayer->ConnectSrcObject(pCurveNode);
+	}
+
+	if (pCurveNode->GetChannelsCount() == 0)
+	{
+		if (!bCreate) return false;
+		bool bResult = pCurveNode->AddChannel("d", 0.0);
+		if (!bResult) return false;
+	}
+
+	FbxAnimCurve* pCurve = pCurveNode->GetCurve(0);
+	if (!pCurve)
+	{
+		if (!bCreate) return false;
+		pCurve = pCurveNode->CreateCurve(sMorphName.toLocal8Bit().constData());
+		if (!pCurve) return false;
+	}
+
+	pCurve->KeyModifyBegin();
+	const int nKey = pCurve->KeyAdd(oTime);
+	pCurve->KeySet(nKey, oTime, (float)fValue);
+	pCurve->KeySetInterpolation(nKey, FbxAnimCurveDef::eInterpolationCubic);
+	pCurve->KeyModifyEnd();
+
+	return true;
+}
+
