@@ -63,9 +63,15 @@ target_include_directories(dzbridge-static
 	${IMATH_INCLUDE}
 )
 
+if(WIN32)
+	set(DAZ_SDK_MEMORY_TARGET "dzsdkmemory")
+else()
+	set(DAZ_SDK_MEMORY_TARGET "")
+endif()
+
 target_link_libraries(dzbridge-static
 	PRIVATE
-	dzsdkmemory
+	${DAZ_SDK_MEMORY_TARGET}
 	dzcore
 	${DZSDK_QT_CORE_TARGET}
 	${DZSDK_QT_GUI_TARGET}
@@ -99,9 +105,15 @@ target_include_directories(dzbridge-shared
 	${IMATH_INCLUDE}
 )
 
+if(WIN32)
+	set(DAZ_SDK_MEMORY_TARGET "dzsdkmemory")
+else()
+	set(DAZ_SDK_MEMORY_TARGET "")
+endif()
+
 target_link_libraries(dzbridge-shared
 	PRIVATE
-	dzsdkmemory
+	${DAZ_SDK_MEMORY_TARGET}
 	dzcore
 	${DZSDK_QT_CORE_TARGET}
 	${DZSDK_QT_GUI_TARGET}
