@@ -7502,7 +7502,7 @@ bool DzBridgeAction::cleanIntermediateSubFolder(QString sSubFolder)
 	if (sSubFolder == "*.*") {
 		// clean entire Intermediate Folder
 		// perform sanity check that root folder is not global root and not user documents or other important folder
-		if (DzBridgeTools::IsDangerousPath(m_sRootFolder))
+		if (BridgeTools::IsDangerousPath(m_sRootFolder))
 		{
 			dzApp->log("CRITICAL ERROR: cleanIntermediateSubFolder() can not run because target folder is set to dangerous sPath: " + m_sRootFolder);
 			return false;
@@ -7523,7 +7523,7 @@ bool DzBridgeAction::cleanIntermediateSubFolder(QString sSubFolder)
 	else
 	{
 		QString sSubFolderPath = m_sRootFolder + "/" + sSubFolder;
-		if (DzBridgeTools::IsDangerousPath(sSubFolderPath))
+		if (BridgeTools::IsDangerousPath(sSubFolderPath))
 		{
 			dzApp->log("CRITICAL ERROR: cleanIntermediateSubFolder() can not run because target folder is set to dangerous sPath: " + sSubFolderPath);
 			return false;
@@ -7538,20 +7538,20 @@ bool DzBridgeAction::cleanIntermediateSubFolder(QString sSubFolder)
 		dzApp->log("DEBUG: cleanIntermediateSubFolder() attempting to clean Intermedediate subfolder: " + sSubFolderPath);
 		// clean hardcoded folders and known file
 		// delete ExportTextures subfolder
-		bResult = DzBridgeTools::SafeCleanIntermediateSubFolder(
+		bResult = BridgeTools::SafeCleanIntermediateSubFolder(
 			sSubFolderPath + "/ExportTextures",
 			m_aKnownIntermediateFileExtensionsList);
 		//// delete scripts subfolder
-		bResult = DzBridgeTools::SafeCleanIntermediateSubFolder(
+		bResult = BridgeTools::SafeCleanIntermediateSubFolder(
 			sSubFolderPath + "/scripts/__pycache__",
 			m_aKnownIntermediateFileExtensionsList
 		);
-		bResult = DzBridgeTools::SafeCleanIntermediateSubFolder(
+		bResult = BridgeTools::SafeCleanIntermediateSubFolder(
 			sSubFolderPath + "/scripts",
 			m_aKnownIntermediateFileExtensionsList
 		);
 		// clean main asset subfolder
-		bResult = DzBridgeTools::SafeCleanIntermediateSubFolder(
+		bResult = BridgeTools::SafeCleanIntermediateSubFolder(
 			sSubFolderPath,
 			m_aKnownIntermediateFileExtensionsList
 		);
@@ -7912,7 +7912,6 @@ bool DzBridgeAction::generateProxyMesh(DzNode* pNode, QString sFbxFilePath, bool
 	DzNode* pGeograftNode = nullptr;
 
 	Exporter->getDefaultOptions(&ExportOptions);
-
 	for (int i = 0; i < ExportOptions.getNumValues(); i++)
 	{
 		QString sKey = ExportOptions.getKey(i);
