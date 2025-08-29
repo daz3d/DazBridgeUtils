@@ -42,6 +42,7 @@ set(LIB_SRCS
 	MorphTools.cpp
 	MvcTools.cpp
 	FbxTools.cpp
+	BridgeTools.cpp
 	${QA_SRCS}
 )
 

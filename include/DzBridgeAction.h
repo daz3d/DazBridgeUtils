@@ -79,16 +79,6 @@ namespace DzBridgeNameSpace
 		DzExporterModeRunSilent = 4 // used by DzBlenderExporter
 	};
 
-	class DzBridgeTools
-	{
-	public:
-		static bool CalculateRawOffset(const DzNode* pNode, DzVec3 &vOffset);
-		static bool IsFileTypeInList(QFileInfo fi, QStringList aExtensionsList);
-		static bool SafeCleanIntermediateSubFolder(QString sSubFolderPath, QStringList aExtensionsToDelete);
-		static bool IsDangerousPath(const QString& sPath);
-		static QString CleanTrailingSeparator(QString sFolderPath);
-	};
-
 	/// <summary>
 	/// Abstract base class that manages exporting of assets to Target Software via FBX/DTU
 	/// intermediate files.  Manages destination filepaths, morphs, subdivisions, animations, etc.
