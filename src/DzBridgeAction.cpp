@@ -7911,48 +7911,15 @@ bool DzBridgeAction::generateProxyMesh(DzNode* pNode, QString sFbxFilePath, bool
 	DzFileIOSettings ExportOptions;
 	DzNode* pGeograftNode = nullptr;
 
-	Exporter->getDefaultOptions(&ExportOptions);
-	for (int i = 0; i < ExportOptions.getNumValues(); i++)
-	{
-		QString sKey = ExportOptions.getKey(i);
-		QString sValue = ExportOptions.getValue(i);
-		QString sKVP = QString("%1 = %2").arg(sKey).arg(sValue);
-		printf("%s\n", sKVP.toLocal8Bit().constData());
-		dzApp->log(sKVP);
-	}
-
-	ExportOptions.setBoolValue("doSelected", true);
-	ExportOptions.setBoolValue("doVisible", false);
-	ExportOptions.setBoolValue("doFigures", true);
-	ExportOptions.setBoolValue("doProps", false);
-	ExportOptions.setBoolValue("doEmbed", false);
-	ExportOptions.setBoolValue("doAnims", false);
-	ExportOptions.setStringValue("format", m_sFbxVersion);
-	ExportOptions.setIntValue("RunSilent", true); // generateProxyMesh is always silent (no direct fbx export options to user)
-
-	ExportOptions.setBoolValue("doMergeClothing", true);
-	ExportOptions.setBoolValue("degradedSkinning", true);
-	ExportOptions.setBoolValue("degradedScaling", true);
-
-	ExportOptions.setBoolValue("doDiffuseOpacity", false);
-	ExportOptions.setBoolValue("doStaticClothing", false);
-	ExportOptions.setBoolValue("doSubD", false);
-	ExportOptions.setBoolValue("doCollapseUVTiles", false);
-
-	ExportOptions.setBoolValue("IncludeFaceGroupsAsPolygonSets", false);
-	ExportOptions.setBoolValue("IncludeNodeNamesLabels", false);
-	ExportOptions.setBoolValue("IncludeNodePresentation", false);
-	ExportOptions.setBoolValue("IncludeNodeSelectionMap", false);
-	ExportOptions.setBoolValue("IncludeSceneIDs", false);
-	ExportOptions.setBoolValue("IncludeFollowTargets", false);
-
-//	"MergeFollowers", "EmbedTextures", "IncludeNodeNamesLabels", "IncludeNodePresentation", "IncludeNodeSelectionMap", "IncludeSceneIDs", "IncludeFollowTargets", 
+	BridgeTools::LogDefaultExportOptions(Exporter);
+	BridgeTools::SetFbxExportOptionsMvcProxyMesh(ExportOptions);
+	
 	bool bUndoUnfitting = false;
 
 	if (bExportFacsBlendshapes) {
-		ExportOptions.setBoolValue("doMorphs", true);
+		ExportOptions.setBoolValue("doMorphs", true); // IncludeMorphs
 		m_sMorphSelectionRule = MorphTools::getMorphString(m_MorphNamesToExport, m_AvailableMorphsTable, m_bEnableAutoJcm, pNode);
-		ExportOptions.setStringValue("rules", m_sMorphSelectionRule);
+		ExportOptions.setStringValue("rules", m_sMorphSelectionRule); // MorphRules
 //		dzApp->log("DEBUG: DzBridgeAction::generateProxyMesh() rules=" + m_sMorphSelectionRule);
 	} else {
 		// Make sure base figure has correct number of faces

@@ -15,9 +15,10 @@ public:
 	static bool IsDangerousPath(const QString& sPath);
 	static QString CleanTrailingSeparator(QString sFolderPath);
 
-	static void SetExportOptionsAllOff(DzFileIOSettings &ExportOptions);
-	static void SetExportOptionsBridgeDefaults(DzFileIOSettings &ExportOptions);
-	static void SetExportOptionsMvcProxyMesh(DzFileIOSettings &ExportOptions);
+	static bool LogDefaultExportOptions(DzExporter* Exporter);
+	static void SetFbxExportOptionsAllOff(DzFileIOSettings &ExportOptions);
+	static void SetFbxExportOptionsBridgeDefaults(DzFileIOSettings &ExportOptions);
+	static void SetFbxExportOptionsMvcProxyMesh(DzFileIOSettings &ExportOptions);
 	
 };
 

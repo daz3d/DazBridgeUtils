@@ -3,6 +3,7 @@
 
 #include "dzapp.h"
 #include "dzfloatproperty.h"
+#include "dzexporter.h"
 
 #include "DzBridgeAction.h"
 #include "BridgeTools.h"
@@ -132,7 +133,7 @@ bool BridgeTools::IsDangerousPath(const QString& sPath)
 }
 
 // 40 Options for FbxExporter (as of 2025-08-29)
-void BridgeTools::SetExportOptionsAllOff(DzFileIOSettings &ExportOptions)
+void BridgeTools::SetFbxExportOptionsAllOff(DzFileIOSettings &ExportOptions)
 {
 //	ExportOptions.setStringValue("Format", "FBX 2012 -- Binary");
 	ExportOptions.setStringValue("Format", "FBX 2012 -- Ascii");
@@ -178,9 +179,29 @@ void BridgeTools::SetExportOptionsAllOff(DzFileIOSettings &ExportOptions)
 	ExportOptions.setIntValue("RunSilent", 0);
 }
 
-void BridgeTools::SetExportOptionsBridgeDefaults(DzFileIOSettings &ExportOptions)
+bool BridgeTools::LogDefaultExportOptions(DzExporter* Exporter)
 {
-	SetExportOptionsAllOff(ExportOptions);
+	if (!Exporter) return false;
+	DzFileIOSettings ExportOptions;
+	Exporter->getDefaultOptions(&ExportOptions);
+	QString sMesg = QString("ExportOptions (DzFileIOSettings) for '%1'").arg(Exporter->className());
+	dzApp->log(sMesg);
+	for (int i = 0; i < ExportOptions.getNumValues(); i++)
+	{
+		QString sKey = ExportOptions.getKey(i);
+		QString sValue = ExportOptions.getValue(i);
+		QString sKVP = QString("%1 = %2").arg(sKey).arg(sValue);
+		printf("%s\n", sKVP.toLocal8Bit().constData());
+		dzApp->log(sKVP);
+	}
+	sMesg = QString("End of ExportOptions for '%1'").arg(Exporter->className());
+	dzApp->log(sMesg);
+	return true;
+}
+
+void BridgeTools::SetFbxExportOptionsBridgeDefaults(DzFileIOSettings &ExportOptions)
+{
+	SetFbxExportOptionsAllOff(ExportOptions);
 	ExportOptions.setStringValue("Format", "FBX 2012 -- Binary");
 	ExportOptions.setBoolValue("IncludeSelectedOnly", true);
 //	ExportOptions.setBoolValue("IncludeVisibleOnly", false);
@@ -193,7 +214,7 @@ void BridgeTools::SetExportOptionsBridgeDefaults(DzFileIOSettings &ExportOptions
 //	ExportOptions.setBoolValue("IncludeRotationLimits", false);
 //	ExportOptions.setBoolValue("IncludeRotationLocks", false);
 //	ExportOptions.setBoolValue("IncludeAnimations", false);
-//	ExportOptions.setStringValue("Take", "Animation");
+	ExportOptions.setStringValue("Take", "Animation");
 	ExportOptions.setBoolValue("IncludeSubD", true);
 //	ExportOptions.setBoolValue("IncludeMorphs", false);
 //	ExportOptions.setStringValue("MorphRules", "");
@@ -204,9 +225,9 @@ void BridgeTools::SetExportOptionsBridgeDefaults(DzFileIOSettings &ExportOptions
 	ExportOptions.setIntValue("RunSilent", 1);
 }
 
-void BridgeTools::SetExportOptionsMvcProxyMesh(DzFileIOSettings &ExportOptions)
+void BridgeTools::SetFbxExportOptionsMvcProxyMesh(DzFileIOSettings &ExportOptions)
 {
-	SetExportOptionsAllOff(ExportOptions);
+	SetFbxExportOptionsAllOff(ExportOptions);
 	ExportOptions.setStringValue("Format", "FBX 2012 -- Binary");
 	ExportOptions.setBoolValue("IncludeSelectedOnly", true);
 	ExportOptions.setBoolValue("IncludeVisibleOnly", true);
