@@ -2824,135 +2824,183 @@ bool FbxTools::PostProcessRigForUnreal(QString FBXFile, bool bFixTwistBones)
 	return true;
 }
 
-bool FbxTools::PostProcessMaterialsForUnreal(
-	QString& FBXFile,
-	QString& AssetName,
-	QMap<DzMaterial*, DzMaterial*>& DuplicateMaterials,
-	QList<QString>& MaterialSlotNames,
+// helper function to resolve duplicate material to replacement
+static FbxSurfaceMaterial* GetReplacementMaterial(
+	FbxSurfaceMaterial* pMaterial,
+	const QMap<QString, QString>& oDuplicateToReplacementName,
+	const QMap<QString, FbxSurfaceMaterial*>& oMaterialNameToFbxMaterial)
+{
+	if (!pMaterial) return NULL;
+
+	const QString sName = QString(pMaterial->GetName());
+	const QString sReplacementName = oDuplicateToReplacementName.value(sName);
+	if (!sReplacementName.isEmpty() && oMaterialNameToFbxMaterial.contains(sReplacementName)) {
+		return oMaterialNameToFbxMaterial[sReplacementName];
+	}
+	return pMaterial;
+}
+
+bool FbxTools::PostProcessMaterials(
+	const QString& sFbxFilePath,
+	const QMap<DzMaterial*, DzMaterial*>& oDuplicateMaterials,
+	QList<QString>& aMaterialSlotNames,
 	int nCombineMethod)
 {
 
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
 	FbxScene* pScene = openFBX->CreateScene("Process Materials");
-	if (openFBX->LoadScene(pScene, FBXFile.toLocal8Bit().constData()) == false)
+	if (openFBX->LoadScene(pScene, sFbxFilePath.toLocal8Bit().constData()) == false)
 	{
 		pScene->Destroy();
 		return false;
 	}
 	
-//	FbxNode* RootNode = pScene->GetRootNode();
-//
-//	// Find the root bone.  There should only be one bone off the scene root
-//	FbxNode* RootBone = nullptr;
-//
-//	bool bProcessRig = true;
-//	if (bProcessRig)
-//	{
-//		QString RootBoneName;
-//		RootBone = FindRootBone(RootBoneName, RootNode, pScene);
-//	}
-
 	// Get FBX scene materials
-	FbxArray<FbxSurfaceMaterial*> FbxMaterialArray;
-	pScene->FillMaterialArray(FbxMaterialArray);
+	FbxArray<FbxSurfaceMaterial*> aFbxMaterialArray;
+	pScene->FillMaterialArray(aFbxMaterialArray);
 
+	// combine identical materials
 	if (nCombineMethod == 1)
 	{
 		// Create a mapping of the names of duplicate (identical) materials
-		QMap<QString, QString> DuplicateToOriginalName;
-		foreach (DzMaterial* DuplicateMaterial, DuplicateMaterials.keys())
+		QMap<QString, QString> oDuplicateToReplacementName;
+		foreach (DzMaterial* pDuplicateMaterial, oDuplicateMaterials.keys())
 		{
-			QString DuplicateMaterialName = DuplicateMaterial->getName();
-			DzMaterial* OriginalMaterial = DuplicateMaterials[DuplicateMaterial];
-			QString OriginalMaterialName = OriginalMaterial->getName();
-			DuplicateToOriginalName.insert(DuplicateMaterialName, OriginalMaterialName);
+			QString sDuplicateMaterialName = pDuplicateMaterial->getName();
+			DzMaterial* pReplacementMaterial = oDuplicateMaterials[pDuplicateMaterial];
+			QString sReplacementMaterialName = pReplacementMaterial->getName();
+			oDuplicateToReplacementName.insert(sDuplicateMaterialName, sReplacementMaterialName);
 		}
 
-		// Remap FBX Surfaces to remove references to duplicate materials
-		QMap<QString, FbxSurfaceMaterial*> MaterialNameToFbxMaterial;
-		for (int MaterialIndex = FbxMaterialArray.Size() - 1; MaterialIndex >= 0; --MaterialIndex)
+		// Create material to name lookup
+		QMap<QString, FbxSurfaceMaterial*> oMaterialNameToFbxMaterial;
+		for (int MaterialIndex = aFbxMaterialArray.Size() - 1; MaterialIndex >= 0; --MaterialIndex)
 		{
-			FbxSurfaceMaterial* Material = FbxMaterialArray[MaterialIndex];
-			QString OriginalMaterialName = QString(Material->GetName());
-			MaterialNameToFbxMaterial.insert(OriginalMaterialName, Material);
+			FbxSurfaceMaterial* pMaterial = aFbxMaterialArray[MaterialIndex];
+			QString sMaterialName = QString(pMaterial->GetName());
+			oMaterialNameToFbxMaterial.insert(sMaterialName, pMaterial);
 		}
 
-		for (int MeshIndex = pScene->GetGeometryCount() - 1; MeshIndex >= 0; --MeshIndex)
+		// Remap and MERGE material slots per geometry node
+		for (int nMesh = pScene->GetGeometryCount() - 1; nMesh >= 0; --nMesh)
 		{
-			FbxArray<FbxSurfaceMaterial*> NewMaterialArray;
-			FbxGeometry* Geometry = pScene->GetGeometry(MeshIndex);
-			FbxNode* GeometryNode = Geometry->GetNode();
-			int MaterialCount = GeometryNode->GetMaterialCount();
-			for (int AddIndex = 0; AddIndex < MaterialCount; AddIndex++)
-			{
-				FbxSurfaceMaterial* MaterialToReplace = GeometryNode->GetMaterial(AddIndex);
-				QString MaterialToReplaceName = QString(MaterialToReplace->GetName());
-				if (DuplicateToOriginalName.contains(MaterialToReplaceName) && MaterialNameToFbxMaterial.contains(DuplicateToOriginalName[MaterialToReplaceName]))
-				{
-					NewMaterialArray.Add(MaterialNameToFbxMaterial[DuplicateToOriginalName[MaterialToReplaceName]]);
-				}
-				else
-				{
-					NewMaterialArray.Add(MaterialToReplace);
-				}
+			FbxMesh* pMesh = FbxCast<FbxMesh>(pScene->GetGeometry(nMesh));
+			if (!pMesh) { continue; }
+			FbxNode* pNode = pMesh->GetNode();
+			if (!pNode) { continue; }
+
+			QList<FbxSurfaceMaterial*> aNewMaterialSlotArray;
+			QMap<FbxSurfaceMaterial*, int> oMaterialToNewSlotMap;
+
+			FbxLayerElementMaterial* pMeshElementMaterial = pMesh->GetElementMaterial();
+
+			if (!pMeshElementMaterial) {
+				printf("DEBUG: mesh (%s) is missing layer element material, no material slots to reduce, skipping....\n", pMesh->GetName());
+				continue;
 			}
 
-			GeometryNode->RemoveAllMaterials();
-			for (int AddIndex = 0; AddIndex < MaterialCount; AddIndex++)
-			{
-				GeometryNode->AddMaterial(NewMaterialArray[AddIndex]);
+			pMeshElementMaterial->SetReferenceMode(FbxLayerElement::eIndexToDirect);
+
+			const FbxLayerElement::EMappingMode eMaterialMappingMode = pMeshElementMaterial->GetMappingMode();
+			FbxLayerElementArrayTemplate<int>& aMaterialMappingIndexArray = pMeshElementMaterial->GetIndexArray();
+
+			if (eMaterialMappingMode != FbxLayerElement::eByPolygon) { continue; } // unsupported mapping
+
+			const int nPolygonCount = pMesh->GetPolygonCount();
+			// sanity check for correct polygon count
+			if (aMaterialMappingIndexArray.GetCount() != nPolygonCount) {
+				aMaterialMappingIndexArray.SetCount(nPolygonCount);
+				for (int nFix = 0; nFix < nPolygonCount; ++nFix) aMaterialMappingIndexArray.SetAt(nFix, 0);
+			}
+
+			// for each polygon, assign final material slot index
+			for (int nPoly = 0; nPoly < nPolygonCount; ++nPoly) {
+				const int nOldSlot = aMaterialMappingIndexArray.GetAt(nPoly);
+
+				// get original material
+				FbxSurfaceMaterial* pOriginalMaterial = NULL;
+				if (nOldSlot >= 0 && nOldSlot < pNode->GetMaterialCount())
+				{
+					pOriginalMaterial = pNode->GetMaterial(nOldSlot);
+				}
+
+				// lookup replacement material
+				FbxSurfaceMaterial* pReplacementMaterial = GetReplacementMaterial(pOriginalMaterial, oDuplicateToReplacementName, oMaterialNameToFbxMaterial);
+
+				if (!pReplacementMaterial) {
+					printf("ERROR: FbxTools::PostProcessMaterials() replacement material in mesh (%s) not found, assigning slot 0...\n", pNode->GetName());
+					aMaterialMappingIndexArray.SetAt(nPoly, 0);
+					continue;
+				}
+
+				// keep track of new material slots for replacement materials
+				int nNewSlot = oMaterialToNewSlotMap.value(pReplacementMaterial, -1);
+				if (nNewSlot < 0) {
+					nNewSlot = aNewMaterialSlotArray.size();
+					aNewMaterialSlotArray.append(pReplacementMaterial);
+					oMaterialToNewSlotMap.insert(pReplacementMaterial, nNewSlot);
+				}
+				aMaterialMappingIndexArray.SetAt(nPoly, nNewSlot);
+			}
+			
+			// Recreate new material slots
+			if (aNewMaterialSlotArray.isEmpty()) { continue; }
+			pNode->RemoveAllMaterials();
+			for (int nAdd = 0; nAdd < aNewMaterialSlotArray.size(); ++nAdd) {
+				pNode->AddMaterial(aNewMaterialSlotArray[nAdd]);
 			}
 		}
-
+		
 	}
 
 	FbxArray<FbxSurfaceMaterial*> MaterialsToDelete;
 
 	// Rename Material Slots
-	for (int MaterialIndex = FbxMaterialArray.Size() - 1; MaterialIndex >= 0; --MaterialIndex)
+	for (int MaterialIndex = aFbxMaterialArray.Size() - 1; MaterialIndex >= 0; --MaterialIndex)
 	{
-		FbxSurfaceMaterial* FbxMaterial = FbxMaterialArray[MaterialIndex];
-		QString OriginalMaterialName = QString(FbxMaterial->GetName());
-		FbxNode* pMaterialObject = GetObjectForMaterial(FbxMaterial);
-		if (!pMaterialObject) {
-			printf("ERROR: FbxMaterial %s has no geometry node, removing...\n", FbxMaterial->GetName());
-			if (MaterialsToDelete.Find(FbxMaterial) == -1) {
-				MaterialsToDelete.Add(FbxMaterial);
+		FbxSurfaceMaterial* pFbxMaterial = aFbxMaterialArray[MaterialIndex];
+		QString sOriginalMaterialName = QString(pFbxMaterial->GetName());
+		FbxNode* pMaterialGeometry = GetObjectForMaterial(pFbxMaterial);
+		if (!pMaterialGeometry) {
+			printf("ERROR: FbxMaterial %s has no geometry node, marking for removal...\n", pFbxMaterial->GetName());
+			if (MaterialsToDelete.Find(pFbxMaterial) == -1) {
+				MaterialsToDelete.Add(pFbxMaterial);
 			}
 			continue;
 		}
-		QString MaterialObjectName = GetFriendlyObjectName(pMaterialObject);
-		if (MaterialObjectName.isEmpty()) {
-			printf("ERROR: FbxMaterial %s - Unable to find friendly name, reverting to geometry name: %s\n", FbxMaterial->GetName(), pMaterialObject->GetName());
-			MaterialObjectName = QString(pMaterialObject->GetName()).replace(".Shape", "", Qt::CaseInsensitive);
+		QString sMaterialGeometryName = GetFriendlyObjectName(pMaterialGeometry);
+		if (sMaterialGeometryName.isEmpty()) {
+			printf("ERROR: FbxMaterial %s - Unable to find friendly name, reverting to geometry name: %s\n", pFbxMaterial->GetName(), pMaterialGeometry->GetName());
+			sMaterialGeometryName = QString(pMaterialGeometry->GetName()).replace(".Shape", "", Qt::CaseInsensitive);
 		}
 
 		bool bUseOriginalMaterialName = false;
 		QString NewMaterialName;
 		if (bUseOriginalMaterialName)
 		{
-			NewMaterialName = OriginalMaterialName;
+			NewMaterialName = sOriginalMaterialName;
 		}
 		else
 		{
-			NewMaterialName = MaterialObjectName + TEXT("_") + OriginalMaterialName;
+			NewMaterialName = sMaterialGeometryName + TEXT("_") + sOriginalMaterialName;
 		}
 
 		NewMaterialName = SanitizeName(NewMaterialName);
 //		printf("DEBUG: FbxMaterial %s - Renaming to %s\n", FbxMaterial->GetName(), NewMaterialName.toLocal8Bit().constData());
-		FbxMaterial->SetName(NewMaterialName.toLocal8Bit().constData());
-		MaterialSlotNames.append(NewMaterialName);
+		pFbxMaterial->SetName(NewMaterialName.toLocal8Bit().constData());
+		aMaterialSlotNames.append(NewMaterialName);
 	}
 
 	// Remove unused materials
 	for (int i=0; i < MaterialsToDelete.GetCount(); i++) {
 		FbxSurfaceMaterial* pMaterial = MaterialsToDelete[i];
 		if (pMaterial) {
+			printf("PostProcessMaterials: Removing Material: %s\n", pMaterial->GetName());
 			pScene->RemoveMaterial(pMaterial);
 		}
 	}
 
-	if (openFBX->SaveScene(pScene, FBXFile.toLocal8Bit().constData()) == false) {
+	if (openFBX->SaveScene(pScene, sFbxFilePath.toLocal8Bit().constData()) == false) {
 		pScene->Destroy();
 		return false;
 	}

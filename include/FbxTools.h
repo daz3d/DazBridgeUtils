@@ -126,11 +126,10 @@ public:
 	static bool BakeMeshesToSingleBindPose(FbxScene* pScene);
 
 	static bool PostProcessRigForUnreal(QString FBXFile, bool bFixTwistBones);
-	static bool PostProcessMaterialsForUnreal(
-		QString& FBXFile,
-		QString& AssetName,
-		QMap<DzMaterial*, DzMaterial*>& DuplicateMaterials,
-		QList<QString>& MaterialSlotNames,
+	static bool PostProcessMaterials(
+		const QString& sFbxFilePath,
+		const QMap<DzMaterial*, DzMaterial*>& oDuplicateMaterials,
+		QList<QString>& aMaterialSlotNames,
 		int nCombineMethod);
 
 	static bool MergeScenes(FbxScene* pDestinationScene, FbxScene* pSourceScene);
