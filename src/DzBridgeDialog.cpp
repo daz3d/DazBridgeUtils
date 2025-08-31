@@ -200,7 +200,7 @@ To find out more about Daz Bridges, go to <a href=\"https://www.daz3d.com/daz-br
 	assetTypeCombo->addItem("Animation", EAssetType::Animation);
 	assetTypeCombo->addItem("Environment", EAssetType::Scene);
 	assetTypeCombo->addItem("Pose", EAssetType::Pose);
-	connect(assetTypeCombo, SIGNAL(activated(int)), this, SLOT(HandleAssetTypeComboChange(int)));
+	connect(assetTypeCombo, SIGNAL(currentIndexChanged(int)), this, SLOT(HandleAssetTypeComboChange(int)));
 
 	// Animation Settings
 #ifdef VODSVERSION
@@ -689,9 +689,6 @@ functionality for some Morph and JCM products.\
 	fixRowLabelStyle();
 	fixRowLabelWidths();
 
-	// detect scene change
-//	connect(dzScene, SIGNAL(nodeSelectionListChanged()), this, SLOT(handleSceneSelectionChanged()));
-
 	// Set Defaults
 	resetToDefaults();
 
@@ -954,6 +951,7 @@ void DzBridgeDialog::accept()
 		return;
 
 	saveSettings();
+	m_pPreviousSelection = dzScene->getPrimarySelection();
 	return DzBasicDialog::accept();
 }
 
@@ -966,30 +964,31 @@ void DzBridgeDialog::resetToDefaults()
 	showFbxDialogCheckBox->setChecked(false);
 	exportMaterialPropertyCSVCheckBox->setChecked(false);
 
-	refreshAsset();
+//	refreshAsset();
 	m_bDontSaveSettings = false;
 }
 
-void DzBridgeDialog::handleSceneSelectionChanged()
+void DzBridgeDialog::showEvent(QShowEvent* event) 
 {
-	// crashfix
-	if (dzApp->isClosing()) return;
-
-	refreshAsset();
-
-	if (dzScene->getPrimarySelection() == nullptr)
+	DzNode* pCurrentSelection = dzScene->getPrimarySelection();
+	if (m_pPreviousSelection == nullptr || m_pPreviousSelection != pCurrentSelection)
 	{
-		m_bSetupMode = true;
-		setDisabled(true);
-	}
-	else
-	{
-		m_bSetupMode = false;
-		setDisabled(false);
+		refreshAsset();
+
+		if (pCurrentSelection == nullptr)
+		{
+			m_bSetupMode = true;
+			setDisabled(true);
+		}
+		else
+		{
+			m_bSetupMode = false;
+			setDisabled(false);
+		}
 	}
 
-	// DB, 2024-09-29: morphselectiondialog Crashfix moved to  DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog) line 3873
-
+	fixRowLabelWidths();
+	QDialog::showEvent(event);
 }
 
 int DzBridgeDialog::HandleChooseMorphsButton()
@@ -1218,7 +1217,7 @@ void DzBridgeDialog::HandleOpenIntermediateFolderButton(QString sFolderPath)
 
 }
 
-void DzBridgeDialog::HandleAssetTypeComboChange(int state)
+void DzBridgeDialog::HandleAssetTypeComboChange(int index)
 {
 	QString assetNameString = assetNameEdit->text();
 

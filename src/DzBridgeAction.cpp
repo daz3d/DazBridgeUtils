@@ -3896,6 +3896,7 @@ bool DzBridgeAction::readGui(DzBridgeDialog* BridgeDialog)
 		}
 		else if (varItemData.type() == QVariant::Type::Int)
 		{
+			m_eSelectedNodeAssetType = (EAssetType) varItemData.toInt();
 			switch (varItemData.toInt())
 			{
 			case EAssetType::SkeletalMesh:

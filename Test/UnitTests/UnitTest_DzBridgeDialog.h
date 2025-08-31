@@ -24,7 +24,6 @@ private:
 	bool resetToDefaults(UnitTest::TestResult* testResult);
 	bool loadSavedSettings(UnitTest::TestResult* testResult);
 	bool Accepted(UnitTest::TestResult* testResult);
-	bool handleSceneSelectionChanged(UnitTest::TestResult* testResult);
 	bool HandleChooseMorphsButton(UnitTest::TestResult* testResult);
 	bool HandleMorphsCheckBoxChange(UnitTest::TestResult* testResult);
 	bool HandleChooseSubdivisionsButton(UnitTest::TestResult* testResult);

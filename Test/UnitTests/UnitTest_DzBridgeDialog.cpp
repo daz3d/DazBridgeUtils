@@ -33,7 +33,6 @@ bool UnitTest_DzBridgeDialog::runUnitTests()
 	RUNTEST(resetToDefaults);
 	RUNTEST(loadSavedSettings);
 	RUNTEST(Accepted);
-	RUNTEST(handleSceneSelectionChanged);
 	RUNTEST(HandleChooseMorphsButton);
 	RUNTEST(HandleMorphsCheckBoxChange);
 	RUNTEST(HandleChooseSubdivisionsButton);
@@ -134,13 +133,6 @@ bool UnitTest_DzBridgeDialog::Accepted(UnitTest::TestResult* testResult)
 	bool bResult = true;
 	LOGTEST_TEXT("Accepted is Qt framework GUI method. Skipping UnitTest...");
 //	TRY_METHODCALL(qobject_cast<DzBridgeDialog*>(m_testObject)->Accepted());
-	return bResult;
-}
-
-bool UnitTest_DzBridgeDialog::handleSceneSelectionChanged(UnitTest::TestResult* testResult)
-{
-	bool bResult = true;
-	TRY_METHODCALL(qobject_cast<DzBridgeDialog*>(m_testObject)->handleSceneSelectionChanged());
 	return bResult;
 }
 

@@ -156,10 +156,9 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE QString getExportRigMode() { return m_wExportRigCombobox->itemData(m_wExportRigCombobox->currentIndex()).toString(); }
 
 	protected:
-		virtual void showEvent(QShowEvent* event) override { handleSceneSelectionChanged(); fixRowLabelWidths(); QDialog::showEvent(event); }
+		virtual void showEvent(QShowEvent* event) override;
 
 	protected slots:
-		virtual void handleSceneSelectionChanged();
 		virtual int  HandleChooseMorphsButton();
 		virtual void HandleMorphsCheckBoxChange(int state);
 		virtual void HandleChooseSubdivisionsButton();
@@ -170,7 +169,7 @@ namespace DzBridgeNameSpace
 		virtual void HandleConvertBumpToNormalCheckBoxChange(int state);
 		virtual void HandleTargetPluginInstallerButton();
 		virtual void HandleOpenIntermediateFolderButton(QString sFolderPath="");
-		virtual void HandleAssetTypeComboChange(int state);
+		virtual void HandleAssetTypeComboChange(int index);
         virtual void HandleExperimentalOptionsCheckBoxClicked();
         virtual void HandleLodSettingsButton();
 		virtual void HandleEnableLodCheckBoxChange(int state);
@@ -192,6 +191,7 @@ namespace DzBridgeNameSpace
 		QSettings* settings = nullptr;
 
 		virtual void refreshAsset();
+		DzNode* m_pPreviousSelection = nullptr;
 
 		QGroupBox* m_wMainGroupBox = nullptr;
 		QFormLayout* mainLayout = nullptr;
