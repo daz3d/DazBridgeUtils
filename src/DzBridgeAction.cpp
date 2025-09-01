@@ -466,6 +466,11 @@ bool DzBridgeAction::preProcessRigConversion(DzNode *parentNode)
 			srcFile.close();
 		}
 
+		// BAKE PIVOTS for G8, G3 compatibility
+		if (!bakePivots()) {
+			printf("ERROR! DzUnrealAction::postProcessFbx(): Bake Pivots Failed!\n");
+		}
+		
 		/// BONE CONVERSION OPERATION
 		preProcessProgress.setInfo(tr("Converting Rig..."));
 		preProcessProgress.step();
