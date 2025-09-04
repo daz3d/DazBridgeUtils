@@ -122,7 +122,7 @@ bool BridgeTools::IsDangerousPath(const QString& sPath)
 	}
 	QStringList sSplit = sNormalizedPath.split(":");
 	if (sSplit.length() == 2) {
-		QString cleanedString = DzBridgeTools::CleanTrailingSeparator(sSplit[1]);
+		QString cleanedString = BridgeTools::CleanTrailingSeparator(sSplit[1]);
 		if (cleanedString == "/windows") {
 			return true;
 		}
