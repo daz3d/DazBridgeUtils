@@ -9821,7 +9821,7 @@ bool DzBridgeAction::postProcessRigConversion(QString sExportRigMode, QString fb
 		pCustomJointFixer = &oUnrealFixer2;
 //		sTargetPoseFilename = dzApp->getTempPath() + "/unreal_apose_noroot.fbx";
 		sTargetPoseFilename = dzApp->getTempPath() + "/g9_unreal_apose_fixed_4.fbx";
-		if (bIsG1) {
+		if (bIsG1 || bIsG2) {
 			sTargetPoseFilename = dzApp->getTempPath() + "/g1_unreal_apose_fixed.fbx";
 			pCustomJointFixer = &oUnrealFixer2_G1;
 		}
