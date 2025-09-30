@@ -37,7 +37,13 @@ public:
 	public:
 		virtual void performTask(FbxAMatrix &Matrix, FbxCluster* Cluster, QString sBoneName, FbxDouble3 Rotation) override;
 	};
-	
+
+	class UnrealJointFixCallback2_G1 : public ModifyBindPoseCallback
+	{
+	public:
+		virtual void performTask(FbxAMatrix& Matrix, FbxCluster* Cluster, QString sBoneName, FbxDouble3 Rotation) override;
+	};
+
 	static double getLength(double a, double b);
 
 	static double getLength(double a, double b, double c);

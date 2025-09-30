@@ -9794,6 +9794,13 @@ void DzBridgeAction::writeStrandHairInfo(DzJsonWriter& Writer, QMap<QString, QLi
 
 bool DzBridgeAction::postProcessRigConversion(QString sExportRigMode, QString fbxFilePath)
 {
+	QString sGeneration = m_pSelectedNode->getName();
+	bool bIsG9 = (sGeneration == "Genesis9");
+	bool bIsG8or81 = (sGeneration.contains("Genesis8"));
+	bool bIsG3 = (sGeneration.contains("Genesis3"));
+	bool bIsG2 = (sGeneration.contains("Genesis2"));
+	bool bIsG1 = (sGeneration == "Genesis");
+
 	QString sMvcTemplateFilename = "";
 	QString sOverrideRigFilename = "";
 	FbxTools::ModifyBindPoseCallback *pCustomJointFixer = nullptr;
@@ -9804,6 +9811,7 @@ bool DzBridgeAction::postProcessRigConversion(QString sExportRigMode, QString fb
 	QString sGarmentRoot = "";
 
 	FbxTools::UnrealJointFixCallback2 oUnrealFixer2;
+	FbxTools::UnrealJointFixCallback2_G1 oUnrealFixer2_G1;
 	if (sExportRigMode == "unreal" || sExportRigMode == "metahuman") {
 		if (m_pSelectedNode->getName() == "Genesis9") {
 //			sMvcTemplateFilename = dzApp->getTempPath() + "/g9_to_unreal_mvc_template.fbx";
@@ -9813,6 +9821,10 @@ bool DzBridgeAction::postProcessRigConversion(QString sExportRigMode, QString fb
 		pCustomJointFixer = &oUnrealFixer2;
 //		sTargetPoseFilename = dzApp->getTempPath() + "/unreal_apose_noroot.fbx";
 		sTargetPoseFilename = dzApp->getTempPath() + "/g9_unreal_apose_fixed_4.fbx";
+		if (bIsG1) {
+			sTargetPoseFilename = dzApp->getTempPath() + "/g1_unreal_apose_fixed.fbx";
+			pCustomJointFixer = &oUnrealFixer2_G1;
+		}
 //		sFinalRigTemplateFbxFilename = dzApp->getTempPath() + "/unreal_rig_template.fbx";
 //		sRigRoot = "SKM_Genesis";
 //		sMeshRoot = "SKM_Genesis";
