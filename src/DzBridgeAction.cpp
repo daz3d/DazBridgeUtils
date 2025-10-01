@@ -466,9 +466,28 @@ bool DzBridgeAction::preProcessRigConversion(DzNode *parentNode)
 			srcFile.close();
 		}
 
-		// BAKE PIVOTS for G8, G3 compatibility
-		if (!bakePivots()) {
-			printf("ERROR! DzUnrealAction::postProcessFbx(): Bake Pivots Failed!\n");
+		// G8, G3 twist-locked joint compatibility
+		if (bIsG8or81 || bIsG3)
+		{
+			// unlock upperarm and lowerarm rotation limits
+			for (int nIndex = 0; nIndex < dzScene->getNumNodes(); nIndex++)
+			{
+				DzNode* pNode = dzScene->getNode(nIndex);
+				if (pNode == nullptr) continue;
+				if (pNode->inherits("DzBone") &&
+					(pNode->getName().contains("ShldrBend") ||
+					pNode->getName().contains("ForearmBend") ||
+					pNode->getName().contains("ThighBend"))
+					)
+				{
+					pNode->getXRotControl()->lock(false);
+					pNode->getXRotControl()->setIsClamped(false);
+					pNode->getYRotControl()->lock(false);
+					pNode->getYRotControl()->setIsClamped(false);
+					pNode->getZRotControl()->lock(false);
+					pNode->getZRotControl()->setIsClamped(false);
+				}
+			}
 		}
 		
 		/// BONE CONVERSION OPERATION
