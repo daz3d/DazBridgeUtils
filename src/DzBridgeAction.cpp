@@ -622,11 +622,11 @@ bool DzBridgeAction::generateMissingNormalMap(DzMaterial* material)
 							bumpMax = bumpMaxProp->getDoubleValue();
 						}
 						double range = bumpMax - bumpMin;
-						conversionFactor = range * 25;
+						conversionFactor = range * 10;
 					}
 					double heightStrength = getHeightMapStrength(material);
 					double normalStrength = heightStrength * conversionFactor;
-					double bakeStrength = 1.0;
+					double bakeStrength = 0.8;
 					// If not numeric property, then save normal map strength to external
 					//   value so it can be added into the DTU file on export.
 					if (!numericProp && imageProp)
@@ -3193,6 +3193,10 @@ void DzBridgeAction::writeMaterialProperty(DzNode* Node, DzJsonWriter& Writer, Q
 		dtuPropType = QString("Double");
 		dtuPropNumericValue = NumericProperty->getDoubleValue();
 		bUseNumeric = true;
+		// UNREAL Compatibility
+		if (sLabel == "Index of Refraction") {
+			dtuPropNumericValue = 1.0;
+		}
 	}
 	else
 	{
