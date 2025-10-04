@@ -9842,7 +9842,7 @@ bool DzBridgeAction::postProcessRigConversion(QString sExportRigMode, QString fb
 		sTargetPoseFilename = dzApp->getTempPath() + "/g9_unreal_apose_fixed_4.fbx";
 		if (bIsG1 || bIsG2) {
 			sTargetPoseFilename = dzApp->getTempPath() + "/g1_unreal_apose_fixed.fbx";
-			pCustomJointFixer = &oUnrealFixer2_G1;
+			//pCustomJointFixer = &oUnrealFixer2_G1;
 		}
 //		sFinalRigTemplateFbxFilename = dzApp->getTempPath() + "/unreal_rig_template.fbx";
 //		sRigRoot = "SKM_Genesis";
@@ -9909,13 +9909,20 @@ bool DzBridgeAction::postProcessRigConversion
 		FbxNodeAttribute* Attr = ChildNode->GetNodeAttribute();
 		if (Attr && Attr->GetAttributeType() == FbxNodeAttribute::eSkeleton)
 		{
-			RootBone = ChildNode;
-			RootBoneName = RootBone->GetName();
-			if (m_sExportRigMode == "unreal") {
-				RootBone->SetName("root");
-				Attr->SetName("root");
+			FbxSkeleton* pSkeletonAttr = (FbxSkeleton*)Attr;
+			if (RootBone == nullptr)
+			{
+				RootBone = ChildNode;
+				RootBoneName = RootBone->GetName();
+				if (m_sExportRigMode == "unreal") {
+					RootBone->SetName("root");
+					pSkeletonAttr->SetName("Root");
+					pSkeletonAttr->Reset();
+					pSkeletonAttr->SetSkeletonType(FbxSkeleton::EType::eRoot);
+				}
 			}
-			break;
+			pSkeletonAttr->Size.Set(100);
+			ChildNode->SetNodeAttribute(pSkeletonAttr);
 		}
 	}
 
@@ -9971,9 +9978,9 @@ bool DzBridgeAction::postProcessRigConversion
 			FbxPose* pTempBindPose = FbxTools::SaveBindMatrixToPose(pScene, "TempBindPose", nullptr, true);
 			FbxTools::ApplyBindPose(pScene, pTempBindPose);
 
-#if 0			
+#if 0
 			QString sUnposedFbxFilename = QString(fbxFilePath).replace(".fbx", "_unposed.fbx", Qt::CaseInsensitive);
-			if (openFBX->SaveScene(pScene, sUnposedFbxFilename, -1, false) == false)
+			if (openFBX->SaveScene(pScene, sUnposedFbxFilename, 1, false) == false)
 			{
 				QString sFbxErrorMessage = QObject::tr("ERROR: DzR2xBridge: openFBX->SaveScene():\n\n")
 					+ QString("File: \"%1\"\n\n").arg(fbxFilePath)
@@ -9999,6 +10006,22 @@ bool DzBridgeAction::postProcessRigConversion
 					pScene->Destroy();
 					return false;
 				}
+
+#if 1
+				QString sUnposedFbxFilename = QString(fbxFilePath).replace(".fbx", "_posed.fbx", Qt::CaseInsensitive);
+				if (openFBX->SaveScene(pScene, sUnposedFbxFilename, 1, false) == false)
+				{
+					QString sFbxErrorMessage = QObject::tr("ERROR: DzR2xBridge: openFBX->SaveScene():\n\n")
+						+ QString("File: \"%1\"\n\n").arg(fbxFilePath)
+						+ QString("FbxStatusCode: %1\n").arg(openFBX->GetErrorCode())
+						+ QString("Error Message: %1\n\n").arg(openFBX->GetErrorString());
+					dzApp->log(sFbxErrorMessage);
+					if (m_nNonInteractiveMode == 0) QMessageBox::warning(0, QObject::tr("Error"),
+						QObject::tr("An error occurred while processing the Fbx file:\n\n") + sFbxErrorMessage, QMessageBox::Ok);
+					pScene->Destroy();
+					return false;
+				}
+#endif
 
 				foreach(FbxNode * pNode, nodeList) {
 					QString debugName(pNode->GetName());
@@ -10037,7 +10060,8 @@ bool DzBridgeAction::postProcessRigConversion
 				}				
 			}
 
-			FbxTools::AddIkNodes(pScene, RootBone, "foot_l", "foot_r", "hand_l", "hand_r", pFigureMesh);
+			//FbxTools::AddIkNodes(pScene, RootBone, "foot_l", "foot_r", "hand_l", "hand_r", pFigureMesh);
+			FbxTools::AddIkNodes(pScene, RootBone, "foot_l", "foot_r", "hand_l", "hand_r", nullptr);
 
 			// Merge Final Rig Template
 			if (sFinalRigTemplateFbxFilename != "") {
@@ -10077,7 +10101,30 @@ bool DzBridgeAction::postProcessRigConversion
 //				}
 
 			}
+			else if (m_sExportRigMode == "unreal")
+			{
+				FbxNull* pNullAttr = FbxNull::Create(pScene, "");
+				FbxPropertyT<FbxEnum> oLookProperty = pNullAttr->Look;
+				oLookProperty.Set(0);
 
+				FbxNode* pNullNode = FbxNode::Create(pScene, m_sAssetName.toLocal8Bit().constData());
+				pNullNode->SetNodeAttribute(pNullAttr);
+
+				// Optionally set transform defaults
+				pNullNode->SetPreRotation(fbxsdk::FbxNode::eSourcePivot, FbxVector4(90, 0, 0));
+				pNullNode->LclTranslation.Set(FbxDouble3(0.0, 0.0, 0.0));
+				pNullNode->LclRotation.Set(FbxDouble3(-90.0, 0.0, 0.0));
+				pNullNode->LclScaling.Set(FbxDouble3(1.0, 1.0, 1.0));
+
+				// Add to the scene�s root
+				pScene->GetRootNode()->AddChild(pNullNode);
+				FbxTools::ParentInPlace(pNullNode, RootBone);
+				foreach(FbxNode* pMeshNode, nodeList) {
+					FbxTools::ParentInPlace(pNullNode, pMeshNode);
+				}
+
+
+			}
 		}
 		//////////////////////////////////////////////////////
 
