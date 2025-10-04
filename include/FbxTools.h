@@ -174,6 +174,8 @@ public:
 	static void AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLeftFoot, const char* sRightFoot, const char* sLeftHand, const char* sRightHand, FbxMesh* pFigureMesh);
 	static void ModifyBindPose(FbxScene* Scene, FbxNode* RootNode, ModifyBindPoseCallback* pCustomBoneFix);
 
+	static bool ParentInPlace(FbxNode* pParentNode, FbxNode* pChildNode);
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

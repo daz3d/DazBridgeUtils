@@ -1889,7 +1889,7 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			// Create IK Root
 			FbxSkeleton* IKRootNodeAttribute = FbxSkeleton::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_foot_root")));
 			IKRootNodeAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
-			IKRootNodeAttribute->Size.Set(1.0);
+			IKRootNodeAttribute->Size.Set(100);
 			IKRootNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_foot_root")));
 			IKRootNode->SetNodeAttribute(IKRootNodeAttribute);
 			IKRootNode->LclTranslation.Set(FbxVector4(0.0, 0.0, 0.0));
@@ -1906,7 +1906,7 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			// Create IK Root
 			FbxSkeleton* IKFootLNodeAttribute = FbxSkeleton::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_foot_l")));
 			IKFootLNodeAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
-			IKFootLNodeAttribute->Size.Set(1.0);
+			IKFootLNodeAttribute->Size.Set(100);
 			IKFootLNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_foot_l")));
 			IKFootLNode->SetNodeAttribute(IKFootLNodeAttribute);
 			FbxAMatrix FootTransform = FootLNode->EvaluateGlobalTransform();
@@ -1929,7 +1929,7 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			// Create IK FootR
 			FbxSkeleton* IKFootRNodeAttribute = FbxSkeleton::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_foot_r")));
 			IKFootRNodeAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
-			IKFootRNodeAttribute->Size.Set(1.0);
+			IKFootRNodeAttribute->Size.Set(100);
 			IKFootRNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_foot_r")));
 			IKFootRNode->SetNodeAttribute(IKFootRNodeAttribute);
 			FbxAMatrix FootTransform = FootRNode->EvaluateGlobalTransform();
@@ -1950,7 +1950,7 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			// Create IK HandRoot
 			FbxSkeleton* IKHandRootNodeAttribute = FbxSkeleton::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_hand_root")));
 			IKHandRootNodeAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
-			IKHandRootNodeAttribute->Size.Set(1.0);
+			IKHandRootNodeAttribute->Size.Set(100);
 			IKHandRootNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_hand_root")));
 			IKHandRootNode->SetNodeAttribute(IKHandRootNodeAttribute);
 			IKHandRootNode->LclTranslation.Set(FbxVector4(0.0, 0.0, 0.0));
@@ -1967,7 +1967,7 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			// Create IK GUN
 			FbxSkeleton* IKHandGunNodeAttribute = FbxSkeleton::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_hand_gun")));
 			IKHandGunNodeAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
-			IKHandGunNodeAttribute->Size.Set(1.0);
+			IKHandGunNodeAttribute->Size.Set(100);
 			IKHandGunNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_hand_gun")));
 			IKHandGunNode->SetNodeAttribute(IKHandGunNodeAttribute);
 			FbxAMatrix HandTransform = HandRNode->EvaluateGlobalTransform();
@@ -1988,7 +1988,7 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			// Create IK HANDR
 			FbxSkeleton* IKHandRNodeAttribute = FbxSkeleton::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_hand_r")));
 			IKHandRNodeAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
-			IKHandRNodeAttribute->Size.Set(1.0);
+			IKHandRNodeAttribute->Size.Set(100);
 			IKHandRNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_hand_r")));
 			IKHandRNode->SetNodeAttribute(IKHandRNodeAttribute);
 			IKHandRNode->LclTranslation.Set(FbxVector4(0.0, 00.0, 0.0));
@@ -2005,7 +2005,7 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			// Create IK HANDL
 			FbxSkeleton* IKHandRNodeAttribute = FbxSkeleton::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_hand_l")));
 			IKHandRNodeAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
-			IKHandRNodeAttribute->Size.Set(1.0);
+			IKHandRNodeAttribute->Size.Set(100);
 			IKHandLNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_hand_l")));
 			IKHandLNode->SetNodeAttribute(IKHandRNodeAttribute);
 			FbxAMatrix HandTransform = HandLNode->EvaluateGlobalTransform();
@@ -2018,6 +2018,24 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			IKHandGunNode->AddChild(IKHandLNode);
 			if (pFigureMesh) AddMinimumIkWeight(pScene, pFigureMesh, IKHandLNode, HandLNode);
 		}
+
+
+		// interaction
+		FbxSkeleton* pInteractionAttr = FbxSkeleton::Create(pScene, "interaction");
+		pInteractionAttr->SetSkeletonType(FbxSkeleton::eLimbNode);
+		pInteractionAttr->Size.Set(100);
+		FbxNode* pInteractionNode = FbxNode::Create(pScene, "interaction");
+		pInteractionNode->SetNodeAttribute(pInteractionAttr);
+		pRootBone->AddChild(pInteractionNode);
+
+		// center of mass
+		FbxSkeleton* pCenterOfMassAttr = FbxSkeleton::Create(pScene, "center_of_mass");
+		pCenterOfMassAttr->SetSkeletonType(FbxSkeleton::eLimbNode);
+		pCenterOfMassAttr->Size.Set(100);
+		FbxNode* pCenterOfMassNode = FbxNode::Create(pScene, "center_of_mass");
+		pCenterOfMassNode->SetNodeAttribute(pCenterOfMassAttr);
+		pRootBone->AddChild(pCenterOfMassNode);
+
 	}
 
 }
@@ -2452,7 +2470,7 @@ FbxNode* FbxTools::AddRootBone(FbxNode* pRootNode, FbxScene* pScene)
 	{
 		FbxSkeleton* NewRootNodeAttribute = FbxSkeleton::Create(pScene, TCHAR_TO_UTF8(TEXT("root")));
 		NewRootNodeAttribute->SetSkeletonType(FbxSkeleton::eRoot);
-		NewRootNodeAttribute->Size.Set(1.0);
+		NewRootNodeAttribute->Size.Set(100);
 		pRootBone = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("root")));
 		pRootBone->SetNodeAttribute(NewRootNodeAttribute);
 		pRootBone->LclTranslation.Set(FbxVector4(0.0, 00.0, 0.0));
@@ -4256,3 +4274,73 @@ bool FbxTools::AddMorphCurveByName(FbxNode* pNode, FbxAnimLayer* pAnimLayer, Fbx
 	return true;
 }
 
+//bool cacheGlobalTransforms(FbxNode* pNode, QMap<FbxNode*, FbxAMatrix>& oCachedGlobalTransforms)
+//{
+//	if (!pNode) return false;
+//	FbxAMatrix oGlobalTransform = pNode->EvaluateGlobalTransform(FbxTime(0));
+//	oCachedGlobalTransforms.insert(pNode, oGlobalTransform);
+//
+//	return true;
+//	for (int nIndex = 0; nIndex < pNode->GetChildCount(); nIndex++) {
+//		FbxNode* pChildNode = pNode->GetChild(nIndex);
+//		cacheGlobalTransforms(pChildNode, oCachedGlobalTransforms);
+//	}
+//	return true;
+//}
+//
+//bool restoreGlobalTransforms(FbxNode* pNode, QMap<FbxNode*, FbxAMatrix>& oCachedGlobalTransforms)
+//{
+//	if (!pNode) return false;
+//	FbxAMatrix oGlobalTransform = oCachedGlobalTransforms.value(pNode);
+//
+//	QString sNodeName = QString(pNode->GetName());
+//	if (sNodeName == "pectoral_") {
+//		return true;
+//	}
+//
+//	FbxAMatrix oParentGlobalTransform;
+//	if (FbxNode *pParent = pNode->GetParent()) {
+//		oParentGlobalTransform = pParent->EvaluateGlobalTransform(FbxTime(0));
+//	} else {
+//		oParentGlobalTransform.SetIdentity();
+//	}
+//
+//	FbxAMatrix oLocalTransform = oParentGlobalTransform.Inverse() * oGlobalTransform;
+//
+//	FbxVector4 oLocalT = oLocalTransform.GetT();
+//	FbxVector4 oLocalR = oLocalTransform.GetR();
+//	FbxVector4 oLocalS = oLocalTransform.GetS();
+//
+//	pNode->LclTranslation.Set(oLocalT);
+//	pNode->LclRotation.Set(oLocalR);
+//	pNode->LclScaling.Set(oLocalS);
+//
+//	return true;
+//	for (int nIndex = 0; nIndex < pNode->GetChildCount(); nIndex++) {
+//		FbxNode* pChildNode = pNode->GetChild(nIndex);
+//		restoreGlobalTransforms(pChildNode, oCachedGlobalTransforms);
+//	}
+//
+//	return true;
+//}
+
+bool FbxTools::ParentInPlace(FbxNode* pParentNode, FbxNode* pChildNode)
+{
+	if (!pParentNode || !pChildNode) return false;
+
+	FbxAMatrix oGlobalTransform = pChildNode->EvaluateGlobalTransform(FbxTime(0));
+	FbxAMatrix oParentGlobalTransform = pParentNode->EvaluateGlobalTransform(FbxTime(0));
+
+	pParentNode->AddChild(pChildNode);
+
+	FbxAMatrix oLocalTransform = oParentGlobalTransform.Inverse() * oGlobalTransform;
+	FbxVector4 oLocalT = oLocalTransform.GetT();
+	FbxVector4 oLocalR = oLocalTransform.GetR();
+	FbxVector4 oLocalS = oLocalTransform.GetS();
+
+	pChildNode->LclTranslation.Set(oLocalT);
+	pChildNode->LclRotation.Set(oLocalR);
+	pChildNode->LclScaling.Set(oLocalS);
+
+	return true;
+}
