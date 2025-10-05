@@ -1637,6 +1637,12 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 		// DB 2024-08-24: Fix selected node before exporting to Fbx
 		dzScene->selectAllNodes(false);
 		dzScene->setPrimarySelection(Node);
+
+		// wait for scene ready to export
+		while (DzBackgroundProgress::isActive() == true) {
+			QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+		}
+
 		if (m_EnableSubdivisions && m_bExportingBaseMesh)
 		{
 			QString CharacterBaseFBX = this->m_sDestinationFBX;
