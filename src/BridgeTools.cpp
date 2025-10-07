@@ -309,7 +309,8 @@ bool BridgeTools::ExpandClothingFit(DzNode* pNode)
 				pChildFigure->getName().contains("mouth", Qt::CaseInsensitive) ||
 				pChildFigure->getName().contains("brow", Qt::CaseInsensitive) ||
 				pChildFigure->getName().contains("lash", Qt::CaseInsensitive) ||
-				pChildFigure->getName().contains("tear", Qt::CaseInsensitive))
+				pChildFigure->getName().contains("tear", Qt::CaseInsensitive) ||
+				pChildFigure->getName().contains("hair", Qt::CaseInsensitive))
 			{
 				continue;
 			}
