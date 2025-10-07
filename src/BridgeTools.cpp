@@ -288,6 +288,8 @@ bool addPushModifier(DzNode* pNode)
 }
 
 #include "dzscene.h"
+#include "dzapp.h"
+#include "dzassetmgr.h"
 #include "dzvertexmesh.h"
 #include "dzfacetmesh.h"
 #include "dzboolproperty.h"
@@ -303,6 +305,18 @@ bool BridgeTools::ExpandClothingFit(DzNode* pNode)
 		if (!pChildFigure) continue;
 		if (pChildFigure->getSkeleton()->getFollowTarget() == pNode->getSkeleton())
 		{
+			if (pChildFigure->getName().contains("eye", Qt::CaseInsensitive) ||
+				pChildFigure->getName().contains("mouth", Qt::CaseInsensitive) ||
+				pChildFigure->getName().contains("brow", Qt::CaseInsensitive) ||
+				pChildFigure->getName().contains("lash", Qt::CaseInsensitive) ||
+				pChildFigure->getName().contains("tear", Qt::CaseInsensitive))
+			{
+				continue;
+			}
+			QString sContentType = dzApp->getAssetMgr()->getTypeForNode(pChildFigure);
+			if (sContentType.contains("Follower/Attachment/Head")) {
+				continue;
+			}
 			aClothingFollowers.append(pChildFigure);
 		}
 	}
