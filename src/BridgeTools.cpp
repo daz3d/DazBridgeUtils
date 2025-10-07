@@ -240,3 +240,160 @@ void BridgeTools::SetFbxExportOptionsMvcProxyMesh(DzFileIOSettings &ExportOption
 	ExportOptions.setBoolValue("IncludeSceneIDs", true);
 	ExportOptions.setIntValue("RunSilent", 1);
 }
+
+#include "dzobject.h"
+#include "dzfigure.h"
+#include "dzgeometry.h"
+#include "dzmodifier.h"
+#include "dzpushmodifier.h"
+#include "dzintproperty.h"
+#include "dzprogress.h"
+#include "dzscript.h"
+
+bool addSmoothingModifier(DzNode* pNode)
+{
+	DzScript* Script = new DzScript();
+
+	Script->addLine("function myFunction(oRawNode) {");
+	Script->addLine("var oSmoothing = new DzMeshSmoothModifier();");
+	Script->addLine("oSmoothing.setName(\"DzMeshSmoothModifier\");");
+	Script->addLine("Scene.setPrimarySelection(oRawNode);");
+	Script->addLine("var oNode = Scene.getPrimarySelection();");
+	Script->addLine("oNode.getObject().addModifier(oSmoothing);");
+	Script->addLine("var result = oSmoothing;");
+	Script->addLine("};");
+	QVariantList Args;
+	Args.append(QVariant(QMetaType::QObjectStar, &pNode));
+	return Script->call("myFunction", Args);
+}
+
+bool addPushModifier(DzNode* pNode)
+{
+	DzScript* Script = new DzScript();
+
+	Script->addLine("function myFunction(oRawNode) {");
+	Script->addLine("print(\"test\");");
+	Script->addLine("App.log(\"test\");");
+	Script->addLine("var oPushMod = new DzPushModifier();");
+	Script->addLine("oPushMod.setName(\"PushModifier\");");
+	Script->addLine("oPushMod.getProperty(0).setValue(100);");
+	Script->addLine("Scene.setPrimarySelection(oRawNode);");
+	Script->addLine("var oNode = Scene.getPrimarySelection();");
+	Script->addLine("oNode.getObject().addModifier(oPushMod);");
+	Script->addLine("var result = oPushMod;");
+	Script->addLine("};");
+	QVariantList Args;
+	Args.append(QVariant(QMetaType::QObjectStar, &pNode));
+	return Script->call("myFunction", Args);
+}
+
+#include "dzscene.h"
+#include "dzvertexmesh.h"
+#include "dzfacetmesh.h"
+#include "dzboolproperty.h"
+bool BridgeTools::ExpandClothingFit(DzNode* pNode)
+{
+	if (!pNode) return false;
+
+	QList<DzFigure*>aClothingFollowers;
+	auto aAllChildren = pNode->getNodeChildren(/*scanHierarchy*/ true);
+	foreach(QObject * pQObject, aAllChildren)
+	{
+		DzFigure* pChildFigure = qobject_cast<DzFigure*>(pQObject);
+		if (!pChildFigure) continue;
+		if (pChildFigure->getSkeleton()->getFollowTarget() == pNode->getSkeleton())
+		{
+			aClothingFollowers.append(pChildFigure);
+		}
+	}
+
+	if (aClothingFollowers.isEmpty()) return false;
+
+	foreach(DzFigure* pClothing, aClothingFollowers)
+	{
+		// adjust mesh smoothing
+		DzModifier* pModifier = pClothing->getObject()->findModifier("DzMeshSmoothModifier");
+		if (!pModifier)
+		{
+			// add smoothing modifier
+			addSmoothingModifier(pClothing);
+			pModifier = pClothing->getObject()->findModifier("DzMeshSmoothModifier");
+			if (!pModifier) {
+				continue;
+			}
+		}
+		DzIntProperty* pSmoothingProp = (DzIntProperty*)pModifier->findProperty("Smoothing Iterations");
+		pSmoothingProp->setValue(10);
+		DzIntProperty* pCollisionProp = (DzIntProperty*)pModifier->findProperty("Collision Iterations");
+		pCollisionProp->setValue(50);
+		auto prop = (DzBoolProperty*)pModifier->findProperty("Enable Smoothing");
+		if (prop) prop->setBoolValue(1);
+		// Must Re-Fit Clothing
+		pClothing->setFollowTarget(nullptr);
+		QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+		pClothing->setFollowTarget(pNode->getSkeleton());
+		QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+	}
+
+	DzObject* pObject = pNode->getObject();
+	DzGeometry* pMesh = (DzGeometry*) pObject->getCachedGeom();
+	addPushModifier(pNode);
+	DzModifier* pPushMod = pObject->findModifier("PushModifier");
+	if (pPushMod) {
+		DzFloatProperty* pPushValue = (DzFloatProperty*)pPushMod->findProperty("Value");
+		pPushValue->setValue(0.5);
+		QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+	}
+
+	// wait for background
+	while (DzBackgroundProgress::isActive()) {
+		QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+	}
+
+	QMap<DzFigure*, DzVertexMesh*> bakedMeshLookup;
+	foreach(DzFigure* pClothing, aClothingFollowers)
+	{
+		//pClothing->getObject()->forceCacheUpdate(pClothing, true);
+		auto pMesh = pClothing->getObject()->getCachedGeom();
+		DzFacetMesh* pCachedMesh = new DzFacetMesh();
+		pCachedMesh->copyFrom(pMesh, false, false);
+		bakedMeshLookup.insert(pClothing, (DzVertexMesh*) pCachedMesh);
+	}
+
+	if (pPushMod) {
+		DzFloatProperty* pPushValue = (DzFloatProperty*)pPushMod->findProperty("Value");
+		pPushValue->setValue(0);
+		QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+//		pObject->removeModifier(pPushMod);
+	}
+//
+	foreach(DzFigure* pClothing, aClothingFollowers)
+	{
+		DzModifier* pModifier = pClothing->getObject()->findModifier("DzMeshSmoothModifier");
+		if (!pModifier) continue;
+		auto prop = (DzBoolProperty*) pModifier->findProperty("Enable Smoothing");
+		if (prop) prop->setBoolValue(0);
+		QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+	}
+
+	// wait for background
+	while (DzBackgroundProgress::isActive()) {
+		QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+	}
+
+	foreach(DzFigure* pClothing, aClothingFollowers)
+	{
+		DzModifier* pModifier = pClothing->getObject()->findModifier("DzMeshSmoothModifier");
+		if (!pModifier) continue;
+		auto pCachedMesh = bakedMeshLookup.value(pClothing);
+		if (!pCachedMesh) continue;
+		MorphTools::createMorph("better_fit", pCachedMesh, pClothing);
+		DzFloatProperty* prop = (DzFloatProperty*) MorphTools::BruteForceFindMorph(pClothing, "better_fit");
+		if (!prop) continue;
+		prop->setValue(1.0);
+	}
+	
+	dzScene->setPrimarySelection(pNode);
+
+	return true;
+}

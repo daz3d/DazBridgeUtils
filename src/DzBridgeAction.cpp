@@ -8730,6 +8730,7 @@ bool DzBridgeAction::undoHideAllStrandBasedHair()
 	return bErrorDetected;
 }
 
+// 2025-10-07, DB: unused version? see hideAllStrandBasedHair()
 bool DzBridgeAction::hideStrandBasedHair(DzNode* pNode, QMap<DzNode*, DzNode*> &oUndoTable)
 {
 	if (pNode == nullptr) return false;
@@ -10333,6 +10334,7 @@ bool DzBridgeAction::retargetBlendshapesToBaseRig(QList<QString> aProxyRigList, 
 
 	return true;
 }
+
 
 
 

@@ -5,6 +5,7 @@ class DzVec3;
 class QFileInfo;
 class QString;
 class QStringList;
+class DzExporter;
 
 class BridgeTools
 {
@@ -20,5 +21,6 @@ public:
 	static void SetFbxExportOptionsBridgeDefaults(DzFileIOSettings &ExportOptions);
 	static void SetFbxExportOptionsMvcProxyMesh(DzFileIOSettings &ExportOptions);
 	
+	static bool ExpandClothingFit(DzNode* pNode);
 };
 

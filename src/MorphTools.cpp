@@ -600,10 +600,9 @@ void MorphTools::createMorph(const QString NewMorphName, DzVertexMesh* Mesh, DzN
 	Script->addLine("var oMorphLoader = new DzMorphLoader();");
 	Script->addLine("oMorphLoader.setMorphName(sName);");
 	Script->addLine("oMorphLoader.setDeltaTolerance(0.01);");
-//	Script->addLine("oMorphLoader.setCreateControlProperty(true);");
+	Script->addLine("oMorphLoader.setCreateControlProperty(true);");
 	Script->addLine("oMorphLoader.setPropertyGroupPath(\"Morphs/Morph Loader\");");
 	Script->addLine("oMorphLoader.setReverseDeformations(true);");
-//	Script->addLine("oMorphLoader.setReverseDeformations(false);");
 	Script->addLine("oMorphLoader.setOverwriteExisting(DzMorphLoader.MakeUnique);");
 	Script->addLine("oMorphLoader.setCleanUpOrphans(true);");
 	Script->addLine("oMorphLoader.setMorphMirroring(DzMorphLoader.DoNotMirror);");
