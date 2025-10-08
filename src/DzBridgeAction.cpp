@@ -434,7 +434,7 @@ bool DzBridgeAction::preProcessRigConversion(DzNode *parentNode)
 		bool bIsG2 = (sGeneration.contains("Genesis2"));
 		bool bIsG1 = (sGeneration == "Genesis");
 
-		QString sBoneConverter = "bone_converter2_aArgs.dsa";
+		QString sBoneConverter = "bone_converter3_aArgs.dsa";
 		QString sUnrealMannyRigFile = "g9_to_unreal_manny.json";
 		QString sG8UnrealRigFile = "g8_to_unreal.json";
 		QString sMetahumanRigFile = "g9_to_metahuman.json";
@@ -543,7 +543,13 @@ bool DzBridgeAction::preProcessRigConversion(DzNode *parentNode)
 			dzScene->setPrimarySelection(parentNode);
 			Script.reset(new DzScript());
 			Script->loadFromFile(sScriptFilepath);
-			Script->execute(aArgs);
+			bool bScriptResult = Script->execute(aArgs);
+			if (bScriptResult != true)
+			{
+				// try to fail safely
+				dzApp->log("Script failed: " + sScriptFilepath + ", aborting operation...");
+				return false;
+			}
 			// iterate through node children list before making changes to it, otherwise it gets invalidated during processing
 			QList<DzFigure*> figureList;
 			foreach(QObject* listNode, parentNode->getNodeChildren())
@@ -9958,7 +9964,8 @@ bool DzBridgeAction::postProcessRigConversion
 			{
 				// Retarget override rig from basefigure shape to custom character shape using MVC
 				if (retargetFigureToNewRig(m_pSelectedNode, pScene, RootBone, sMvcTemplateFilename, sMvcProxyMeshFilename, sOverrideRigFilename) == false) {
-//					printf("ERROR: retargetFigureToNewRig(template=%s, override=%s)\n", sMvcTemplateFilename.toLocal8Bit().constData(), sOverrideRigFilename.toLocal8Bit().constData());
+					QString sErrorMesg = QString("ERROR: DzBridgeAction.cpp: retargetFigureToNewRig(template=%1, override=%2)").arg(sMvcTemplateFilename).arg(sOverrideRigFilename);
+					dzApp->warning(sErrorMesg);
 					pScene->Destroy();
 					return false;
 				}
@@ -9968,7 +9975,8 @@ bool DzBridgeAction::postProcessRigConversion
 			{
 				// REPLACE EXISTING RIG WITH OVERRIDE
 				if (FbxTools::LoadAndPose(sOverrideRigFilename, pScene, NULL, false, true) == false) { // rotation only
-//					printf("ERROR: LoadAndPose(%s)\n", sOverrideRigFilename.toLocal8Bit().constData());
+					QString sErrorMesg = QString("ERROR: DzBridgeAction.cpp: LoadAndPose(%s)").arg(sOverrideRigFilename);
+					dzApp->warning(sErrorMesg);
 					pScene->Destroy();
 					return false;
 				}
@@ -9989,7 +9997,7 @@ bool DzBridgeAction::postProcessRigConversion
 			FbxPose* pTempBindPose = FbxTools::SaveBindMatrixToPose(pScene, "TempBindPose", nullptr, true);
 			FbxTools::ApplyBindPose(pScene, pTempBindPose);
 
-#if 0
+#if 1
 			QString sUnposedFbxFilename = QString(fbxFilePath).replace(".fbx", "_unposed.fbx", Qt::CaseInsensitive);
 			if (openFBX->SaveScene(pScene, sUnposedFbxFilename, 1, false) == false)
 			{
@@ -10141,7 +10149,7 @@ bool DzBridgeAction::postProcessRigConversion
 
 	} // if (RootBone)
 
-#if 0
+#if 1
 	fbxFilePath.replace(".fbx", "_postProcessed.fbx", Qt::CaseInsensitive);
 #endif
 	if (openFBX->SaveScene(pScene, fbxFilePath, -1, m_bEmbedTexturesInOutputFile) == false)
