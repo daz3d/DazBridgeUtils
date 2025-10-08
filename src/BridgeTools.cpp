@@ -310,8 +310,13 @@ bool BridgeTools::ExpandClothingFit(DzNode* pNode)
 				pChildFigure->getName().contains("brow", Qt::CaseInsensitive) ||
 				pChildFigure->getName().contains("lash", Qt::CaseInsensitive) ||
 				pChildFigure->getName().contains("tear", Qt::CaseInsensitive) ||
-				pChildFigure->getName().contains("hair", Qt::CaseInsensitive))
+				pChildFigure->getName().contains("hair", Qt::CaseInsensitive) ||
+				pChildFigure->getName().contains("tail", Qt::CaseInsensitive) ||
+				pChildFigure->getName().contains("legs", Qt::CaseInsensitive) )
 			{
+				continue;
+			}
+			if (DzBridgeAction::isGeograft(pChildFigure)) {
 				continue;
 			}
 			QString sContentType = dzApp->getAssetMgr()->getTypeForNode(pChildFigure);
