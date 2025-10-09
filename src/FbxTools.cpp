@@ -4148,9 +4148,9 @@ bool TransferWeights(FbxScene* pScene, FbxMesh* pMesh, FbxNode* pDestNode, FbxNo
 	return true;
 }
 
-bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConversionJsonFilename)
+bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConversionJsonFilename, FbxTools::ModifyBindPoseCallback* pCustomJointFixer)
 {
-	
+
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
 	FbxScene* pScene = openFBX->CreateScene("Scene");
 	bool bLoadResult = FbxTools::ExLoadScene(pScene, sProxyFbxFilename);
@@ -4158,6 +4158,10 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 		return false;
 	}
 
+	QList<FbxNode*> aMeshList;
+	FbxTools::GetAllMeshes(pScene->GetRootNode(), aMeshList);
+
+	// initialize Fbx Scene Bone Mapping
 	QMap<QString, FbxNode*> oBoneMap;
 	for (int i=0; i < pScene->GetNodeCount(); i++) {
 		FbxNode* pNode = pScene->GetNode(i);
@@ -4168,15 +4172,116 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 		}
 	}
 	
+	// Load JSON Conversion Mappping
 	QList<FbxNode*> aBonesToDelete;
-	QMap<QString, QVariant> oRigConversionDictionary = readJsonToMap(sRigConversionJsonFilename);
+	QMap<QString, QVariant> oRawJsonDictionary = readJsonToMap(sRigConversionJsonFilename);
+	QMap<QString, QVariant> oRigConversionDictionary;
 	QMap<QString, QString> oReverseLookup;
-	
-	foreach(QString sKey, oRigConversionDictionary.keys()) {
-		QVariant oValue = oRigConversionDictionary.value(sKey);
-		oReverseLookup.insert(oValue.toString(), sKey);
+	QMap<QString, QString> oAddBoneDictionary;
+
+	QMap<FbxNode*, FbxNode*> oPostModifyAddParent;
+	QMap<FbxNode*, QList<FbxNode*>> oPostModifyAddChildren;
+
+	// PROCESS CONVERSION TABLE
+	foreach(QString sKey, oRawJsonDictionary.keys()) {
+		QVariant oValue = oRawJsonDictionary.value(sKey);
+		QString sValue = oValue.toString();
+		if (sKey.startsWith("++"))
+		{
+			// ADD BONE
+			QString sKeyExpression = sKey.mid(2);
+			QString sNewBoneName = sValue;
+			oAddBoneDictionary.insert(sNewBoneName, sKeyExpression);
+		}
+		else
+		{
+			oRigConversionDictionary.insert(sKey, oValue);
+			oReverseLookup.insert(sValue, sKey);
+		}
 	}
 
+	// ADD BONES
+	foreach(QString sNewBoneName, oAddBoneDictionary.keys())
+	{
+		if (oBoneMap.contains(sNewBoneName)) {
+			printf("DEBUG: Bone already exists: %s, skipping\n", sNewBoneName.toLocal8Bit().constData());
+			continue;
+		}
+		QString sAddBoneExpression = oAddBoneDictionary.value(sNewBoneName);
+		printf("DEBUG: sAddBoneExpression: %s\n", sAddBoneExpression.toLocal8Bit().constData());
+		QStringList aExpression01 = sAddBoneExpression.split(">>")[0].split("&");
+		QString sParentBoneName = aExpression01[0];
+		QStringList aChildBoneNames;
+		for (int i = 1; i < aExpression01.length(); i++) { aChildBoneNames << aExpression01[i]; }
+		QStringList aAdditionalChildBoneNames;
+		QStringList aExpression02 = sAddBoneExpression.split(">>");
+		for (int i = 1; i < aExpression02.length(); i++) { aAdditionalChildBoneNames << aExpression02[i]; }
+		printf("DEBUG: aAdditionalChildBones: %s\n", aAdditionalChildBoneNames.join(",").toLocal8Bit().constData());
+		// Prepare variables
+		FbxNode* pParentBone = oBoneMap.value(sParentBoneName);
+		QList<FbxNode*> aChildBones;
+		QList<FbxNode*> aAdditionalChildBones;
+		foreach(QString sBoneName, aChildBoneNames) {
+			if (oBoneMap.contains(sBoneName)) { aChildBones.append(oBoneMap.value(sBoneName)); }
+		}
+		foreach(QString sBoneName, aAdditionalChildBoneNames) {
+			if (oBoneMap.contains(sBoneName)) { aAdditionalChildBones.append(oBoneMap.value(sBoneName)); }
+		}
+		if (pParentBone) {
+			// create new bone
+			FbxSkeleton* pNewBoneAttribute = FbxSkeleton::Create(pScene, TCHAR_TO_UTF8(TEXT(sNewBoneName.toLocal8Bit().constData())));
+			pNewBoneAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
+			pNewBoneAttribute->Size.Set(100);
+			FbxNode* pNewBone = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT(sNewBoneName.toLocal8Bit().constData())));
+			pScene->AddNode(pNewBone);
+			pScene->GetRootNode()->AddChild(pNewBone);
+			//pNewBone->Copy(*pParentBone);
+			pNewBone->SetName(TCHAR_TO_UTF8(TEXT(sNewBoneName.toLocal8Bit().constData())));
+			pNewBone->SetNodeAttribute(pNewBoneAttribute);
+
+			////pScene->GetRootNode()->AddChild(pNewBone);
+			//ParentInPlace(pScene->GetRootNode(), pNewBone);
+
+			//pNewBone->LclTranslation.Set(FbxVector4(0.0, 0.0, 0.0));
+			//pNewBone->LclRotation.Set(FbxVector4(0.0, 0.0, 0.0));
+			//pNewBone->LclScaling.Set(FbxVector4(1.0, 1.0, 1.0));
+			//pNewBone->SetPreRotation(FbxNode::eSourcePivot, FbxVector4(0.0, 0.0, 0.0));
+			//pNewBone->SetPostRotation(FbxNode::eSourcePivot, FbxVector4(0.0, 0.0, 0.0));
+			pNewBone->SetRotationOrder(FbxNode::eSourcePivot, pParentBone->RotationOrder.Get());
+
+			// get average position for children
+			FbxVector4 oAverageWsPosition(0.0, 0.0, 0.0);
+			foreach(FbxNode * pChildBone, aChildBones) {
+				FbxVector4 oWsPos = pChildBone->EvaluateGlobalTransform().GetT();
+				oAverageWsPosition += oWsPos;
+			}
+			oAverageWsPosition /= aChildBones.length();
+			// average final value with parent global position
+			oAverageWsPosition += pParentBone->EvaluateGlobalTransform().GetT();
+			oAverageWsPosition *= 0.5;
+
+			pNewBone->LclTranslation.Set(oAverageWsPosition);
+			////pNewBone->LclScaling.Set(FbxVector4(1.0, 1.0, 1.0));
+			////pNewBone->SetPreRotation(FbxNode::eSourcePivot, pParentBone->PreRotation.Get());
+			////pNewBone->SetPostRotation(FbxNode::eSourcePivot, pParentBone->PreRotation.Get());
+
+			// add for later
+			oPostModifyAddParent.insert(pNewBone, pParentBone);
+			oPostModifyAddChildren.insert(pNewBone, aChildBones);
+
+			foreach(FbxNode * pMeshNode, aMeshList) {
+				TransferWeights(pScene, pMeshNode->GetMesh(), pNewBone, pParentBone, 0.01);
+			}
+
+			printf("DEBUG: added new bone: %s, parent: %s, children: %s\n", sNewBoneName.toLocal8Bit().constData(), sParentBoneName.toLocal8Bit().constData(), aChildBoneNames.join(",").toLocal8Bit().constData());
+		}
+		else {
+			printf("DEBUG: ERROR: could not find parent for new bone: %s, skipping\n", sNewBoneName.toLocal8Bit().constData());
+		}
+
+	}
+
+	// RENAME BONES
 	foreach(QString sKey, oRigConversionDictionary.keys()) {
 		FbxNode* pFbxNode = oBoneMap.value(sKey);
 		if (pFbxNode == nullptr) continue;
@@ -4186,7 +4291,6 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 			if (sValue == sKey) continue;
 			if (oReverseLookup.contains(sValue)) {
 				// rename original bone
-//				FbxNode* pOriginalBone = pScene->FindNodeByName(sValue.toLocal8Bit().constData());
 				FbxNode* pOriginalBone = oBoneMap.value(sValue);
 				if (pOriginalBone) {
 					QString sNewName = sValue + "__original";
@@ -4204,9 +4308,24 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 		}
 	}
 
-	QList<FbxNode*> aMeshList;
-	FbxTools::GetAllMeshes(pScene->GetRootNode(), aMeshList);
+	//FbxNode* pRootBone = GetRootBone(pScene);
+	//FbxTools::ModifyBindPose(pScene, pRootBone, pCustomJointFixer);
+	//FbxTools::RemoveBindPoses(pScene);
+	//FbxPose* pTempBindPose = FbxTools::SaveBindMatrixToPose(pScene, "TempBindPose", nullptr, true);
+	//FbxTools::ApplyBindPose(pScene, pTempBindPose);
 
+	// POST MODIFY ADD RELATIONS
+	foreach(FbxNode* pNewBone, oPostModifyAddParent.keys())
+	{
+		FbxNode* pParentBone = oPostModifyAddParent[pNewBone];
+		ParentInPlace(pParentBone, pNewBone);
+		auto aChildBones = oPostModifyAddChildren[pNewBone];
+		foreach(FbxNode * pChild, aChildBones) {
+			ParentInPlace(pNewBone, pChild);
+		}
+	}
+
+	// DELETE BONES
 	foreach (FbxNode* pBoneToDelete, aBonesToDelete)
 	{
 		if (pBoneToDelete == nullptr) continue;
@@ -4223,6 +4342,7 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 				if (pChild == nullptr) continue;
 				printf("ProxyMeshBoneRenamer: reparenting child: %s\n", pChild->GetName());
 				pParent->AddChild(pChild);
+				//ParentInPlace(pParent, pChild);
 			}
 		}
 		// remove bone
@@ -4230,13 +4350,179 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 		pScene->RemoveNode(pBoneToDelete);
 	}
 	
-	bool bAsciiMode = false;
+	bool bAsciiMode = true;
 	bool bSaveResult = openFBX->SaveScene(pScene, sProxyFbxFilename, bAsciiMode);
 
 	pScene->Destroy();
 	
 	return bSaveResult;
 }
+
+bool FbxTools::ProxyMeshBoneAdder(QString sProxyFbxFilename, QString sRigConversionJsonFilename, FbxTools::ModifyBindPoseCallback* pCustomJointFixer)
+{
+
+	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
+	FbxScene* pScene = openFBX->CreateScene("Scene");
+	bool bLoadResult = FbxTools::ExLoadScene(pScene, sProxyFbxFilename);
+	if (!bLoadResult) {
+		return false;
+	}
+
+	FbxNode* pRootBone = GetRootBone(pScene);
+	FbxTools::ModifyBindPose(pScene, pRootBone, pCustomJointFixer);
+	FbxTools::RemoveBindPoses(pScene);
+	FbxPose* pTempBindPose = FbxTools::SaveBindMatrixToPose(pScene, "TempBindPose", nullptr, true);
+	FbxTools::ApplyBindPose(pScene, pTempBindPose);
+
+	QList<FbxNode*> aMeshList;
+	FbxTools::GetAllMeshes(pScene->GetRootNode(), aMeshList);
+
+	// initialize Fbx Scene Bone Mapping
+	QMap<QString, FbxNode*> oBoneMap;
+	for (int i = 0; i < pScene->GetNodeCount(); i++) {
+		FbxNode* pNode = pScene->GetNode(i);
+		FbxNodeAttribute* pAttr = pNode->GetNodeAttribute();
+		if (pAttr && pAttr->GetAttributeType() == FbxNodeAttribute::eSkeleton) {
+			QString sNodeName(pNode->GetName());
+			oBoneMap.insert(sNodeName, pNode);
+		}
+	}
+
+	// Load JSON Conversion Mappping
+	QList<FbxNode*> aBonesToDelete;
+	QMap<QString, QVariant> oRawJsonDictionary = readJsonToMap(sRigConversionJsonFilename);
+	QMap<QString, QVariant> oRigConversionDictionary;
+	QMap<QString, QString> oReverseLookup;
+	QMap<QString, QString> oAddBoneDictionary;
+
+	// PROCESS CONVERSION TABLE
+	foreach(QString sKey, oRawJsonDictionary.keys()) {
+		QVariant oValue = oRawJsonDictionary.value(sKey);
+		QString sValue = oValue.toString();
+		if (sKey.startsWith("++"))
+		{
+			// ADD BONE
+			QString sKeyExpression = sKey.mid(2);
+			QString sNewBoneName = sValue;
+			oAddBoneDictionary.insert(sNewBoneName, sKeyExpression);
+		}
+		else
+		{
+			oRigConversionDictionary.insert(sKey, oValue);
+			oReverseLookup.insert(sValue, sKey);
+		}
+	}
+
+	// ADD BONES
+	foreach(QString sNewBoneName, oAddBoneDictionary.keys())
+	{
+		if (oBoneMap.contains(sNewBoneName)) {
+			printf("DEBUG: Bone already exists: %s, skipping\n", sNewBoneName.toLocal8Bit().constData());
+			continue;
+		}
+		QString sAddBoneExpression = oAddBoneDictionary.value(sNewBoneName);
+		printf("DEBUG: sAddBoneExpression: %s\n", sAddBoneExpression.toLocal8Bit().constData());
+		QStringList aExpression01 = sAddBoneExpression.split(">>")[0].split("&");
+		QString sParentBoneName = aExpression01[0];
+		QStringList aChildBoneNames;
+		for (int i = 1; i < aExpression01.length(); i++) { aChildBoneNames << aExpression01[i]; }
+		QStringList aAdditionalChildBoneNames;
+		QStringList aExpression02 = sAddBoneExpression.split(">>");
+		for (int i = 1; i < aExpression02.length(); i++) { aAdditionalChildBoneNames << aExpression02[i]; }
+		printf("DEBUG: aAdditionalChildBones: %s\n", aAdditionalChildBoneNames.join(",").toLocal8Bit().constData());
+		// Prepare variables
+		FbxNode* pParentBone = oBoneMap.value(sParentBoneName);
+		QList<FbxNode*> aChildBones;
+		QList<FbxNode*> aAdditionalChildBones;
+		foreach(QString sBoneName, aChildBoneNames) {
+			if (oBoneMap.contains(sBoneName)) { aChildBones.append(oBoneMap.value(sBoneName)); }
+		}
+		foreach(QString sBoneName, aAdditionalChildBoneNames) {
+			if (oBoneMap.contains(sBoneName)) { aAdditionalChildBones.append(oBoneMap.value(sBoneName)); }
+		}
+		if (pParentBone) {
+			// create new bone
+			FbxSkeleton* pNewBoneAttribute = FbxSkeleton::Create(pScene, TCHAR_TO_UTF8(TEXT(sNewBoneName.toLocal8Bit().constData())));
+			pNewBoneAttribute->SetSkeletonType(FbxSkeleton::eLimbNode);
+			pNewBoneAttribute->Size.Set(100);
+			FbxNode* pNewBone = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT(sNewBoneName.toLocal8Bit().constData())));
+			pNewBone->SetNodeAttribute(pNewBoneAttribute);
+			pScene->GetRootNode()->AddChild(pNewBone);
+
+			pNewBone->LclTranslation.Set(FbxVector4(0.0, 0.0, 0.0));
+			pNewBone->LclRotation.Set(FbxVector4(0.0, 0.0, 0.0));
+			pNewBone->LclScaling.Set(FbxVector4(1.0, 1.0, 1.0));
+			pNewBone->SetPreRotation(FbxNode::eSourcePivot, FbxVector4(0.0, 0.0, 0.0));
+			pNewBone->SetPostRotation(FbxNode::eSourcePivot, FbxVector4(0.0, 0.0, 0.0));
+			pNewBone->SetRotationOrder(FbxNode::eSourcePivot, pParentBone->RotationOrder.Get());
+
+			// get average position for children
+			FbxVector4 oAverageWsPosition(0.0, 0.0, 0.0);
+			foreach(FbxNode * pChildBone, aChildBones) {
+				FbxVector4 oWsPos = pChildBone->EvaluateGlobalTransform().GetT();
+				oAverageWsPosition += oWsPos;
+			}
+			oAverageWsPosition /= aChildBones.length();
+			// average final value with parent global position
+			oAverageWsPosition += pParentBone->EvaluateGlobalTransform().GetT();
+			oAverageWsPosition *= 0.5;
+
+			pNewBone->LclTranslation.Set(oAverageWsPosition);
+
+			//FbxAMatrix oNewBoneMatrix = pNewBone->EvaluateGlobalTransform();
+			//FbxAMatrix oParentMatrix = pParentBone->EvaluateGlobalTransform();
+			//QMap<FbxNode*, FbxAMatrix> oChildMatrixes;
+			//foreach(FbxNode* pChild, aChildBones) { oChildMatrixes.insert(pChild, pChild->EvaluateGlobalTransform()); }
+			//foreach(FbxNode* pChild, aAdditionalChildBones) { oChildMatrixes.insert(pChild, pChild->EvaluateGlobalTransform()); }
+
+			//FbxAMatrix oLocalTransform0 = oParentMatrix.Inverse() * oNewBoneMatrix;
+			//FbxVector4 oLocalT = oLocalTransform0.GetT();
+			//FbxVector4 oLocalR = oLocalTransform0.GetR();
+			//FbxVector4 oLocalS = oLocalTransform0.GetS();
+			//pParentBone->AddChild(pNewBone);
+			//pNewBone->LclTranslation.Set(oLocalT);
+			//pNewBone->LclRotation.Set(oLocalR);
+			//pNewBone->LclScaling.Set(oLocalS);
+
+			//foreach(FbxNode* pChild, oChildMatrixes.keys())
+			//{
+			//	pChild->TranslationActive.Set(false);
+			//	pChild->RotationActive.Set(false);
+			//	FbxAMatrix oChildMatrix = oChildMatrixes.value(pChild);
+			//	FbxAMatrix oLocalTransform1 = oNewBoneMatrix.Inverse() * oLocalTransform0.Inverse() * oLocalTransform0.Inverse() * oChildMatrix;
+			//	FbxVector4 oLocalT = oLocalTransform1.GetT();
+			//	FbxVector4 oLocalR = oLocalTransform1.GetR();
+			//	FbxVector4 oLocalS = oLocalTransform1.GetS();
+			//	pNewBone->AddChild(pChild);
+			//	pChild->LclTranslation.Set(oLocalT);
+			//	pChild->LclRotation.Set(oLocalR);
+			//	pChild->LclScaling.Set(oLocalS);
+			//}
+
+			ParentInPlace(pParentBone, pNewBone);
+			foreach(FbxNode* pChildBone, aChildBones) { ParentInPlace(pNewBone, pChildBone); }
+			foreach(FbxNode* pChildBone, aAdditionalChildBones) { ParentInPlace(pNewBone, pChildBone); }
+
+			foreach(FbxNode * pMeshNode, aMeshList) {
+				TransferWeights(pScene, pMeshNode->GetMesh(), pNewBone, pParentBone, 0.01);
+			}
+
+			printf("DEBUG: added new bone: %s, parent: %s, children: %s\n", sNewBoneName.toLocal8Bit().constData(), sParentBoneName.toLocal8Bit().constData(), aChildBoneNames.join(",").toLocal8Bit().constData());
+		}
+		else {
+			printf("DEBUG: ERROR: could not find parent for new bone: %s, skipping\n", sNewBoneName.toLocal8Bit().constData());
+		}
+
+	}
+
+	bool bAsciiMode = true;
+	bool bSaveResult = openFBX->SaveScene(pScene, sProxyFbxFilename, bAsciiMode);
+
+	pScene->Destroy();
+
+	return bSaveResult;
+}
+
 
 bool FbxTools::GetBoneList(FbxNode* pRootNode, QList<FbxNode*> &aBoneList )
 {
@@ -4421,19 +4707,70 @@ bool FbxTools::ParentInPlace(FbxNode* pParentNode, FbxNode* pChildNode)
 {
 	if (!pParentNode || !pChildNode) return false;
 
-	FbxAMatrix oGlobalTransform = pChildNode->EvaluateGlobalTransform(FbxTime(0));
-	FbxAMatrix oParentGlobalTransform = pParentNode->EvaluateGlobalTransform(FbxTime(0));
+	FbxScene* pScene = pParentNode->GetScene();
+	FbxNode* pRootNode = pScene->GetRootNode();
+
+	FbxAMatrix oGlobalTransform = pChildNode->EvaluateGlobalTransform();
+
+	//pRootNode->AddChild(pChildNode);
+	//pChildNode->LclTranslation.Set(oGlobalTransform.GetT());
+	//pChildNode->LclRotation.Set(oGlobalTransform.GetR());
+	//pChildNode->LclScaling.Set(oGlobalTransform.GetS());
+
+	oGlobalTransform = pChildNode->EvaluateGlobalTransform();
+	FbxAMatrix oParentGlobalTransform = pParentNode->EvaluateGlobalTransform();
+	//FbxAMatrix oLocalTransform = oParentGlobalTransform.Inverse() * oGlobalTransform;
+	//FbxVector4 oLocalT = oLocalTransform.GetT();
+	//FbxVector4 oLocalR = oLocalTransform.GetR();
+	//FbxVector4 oLocalS = oLocalTransform.GetS();
+
+	// derive pure local matrix
+	FbxAMatrix local = oParentGlobalTransform.Inverse() * oGlobalTransform;
+
+	// build matrices for child’s existing pivots and pre/post rotations
+	FbxRotationOrder ro(pChildNode->RotationOrder.Get());
+	FbxAMatrix preM, postM, rOffM, rPivM, rPivInvM, sPivM, sPivInvM;
+
+	ro.V2M(preM, pChildNode->GetPreRotation(FbxNode::eSourcePivot));
+	ro.V2M(postM, pChildNode->GetPostRotation(FbxNode::eSourcePivot));
+	rOffM.SetT(pChildNode->GetRotationOffset(FbxNode::eSourcePivot));
+	rPivM.SetT(pChildNode->GetRotationPivot(FbxNode::eSourcePivot));
+	rPivInvM = rPivM.Inverse();
+	sPivM.SetT(pChildNode->GetScalingPivot(FbxNode::eSourcePivot));
+	sPivInvM = sPivM.Inverse();
 
 	pParentNode->AddChild(pChildNode);
 
-	FbxAMatrix oLocalTransform = oParentGlobalTransform.Inverse() * oGlobalTransform;
-	FbxVector4 oLocalT = oLocalTransform.GetT();
-	FbxVector4 oLocalR = oLocalTransform.GetR();
-	FbxVector4 oLocalS = oLocalTransform.GetS();
+	// remove them from the composed local
+	// world = parent * T * Roff * Rp * Pre * R * Post^-1 * Rp^-1 * Soff * Sp * S * Sp^-1
+	// ⇒ local pure = Roff^-1 * Rp^-1 * Pre^-1 * local * Post * Rp * Soff^-1 * Sp^-1
+	FbxAMatrix pureLocal = rOffM.Inverse() * rPivM.Inverse() * preM.Inverse() * local * postM * rPivM * sPivM.Inverse();
 
-	pChildNode->LclTranslation.Set(oLocalT);
-	pChildNode->LclRotation.Set(oLocalR);
-	pChildNode->LclScaling.Set(oLocalS);
+	// decompose in correct order
+	FbxVector4 t = pureLocal.GetT();
+	FbxVector4 s = pureLocal.GetS();
+	FbxVector4 r;
+	ro.M2V(r, pureLocal);
+
+	pChildNode->LclTranslation.Set(t);
+	pChildNode->LclRotation.Set(r);
+	pChildNode->LclScaling.Set(s);
+
+	FbxVector4 oZeroVec(0.0, 0.0, 0.0);
+	FbxVector4 oOneVec(1.0, 1.0, 1.0);
+	//pChildNode->SetPreRotation(FbxNode::eSourcePivot, oZeroVec);
+	//pChildNode->SetPostRotation(FbxNode::eSourcePivot, oZeroVec);
+	//pChildNode->SetRotationPivot(FbxNode::eSourcePivot, oZeroVec);
+	//pChildNode->SetGeometricRotation(FbxNode::eSourcePivot, oZeroVec);
+	//pChildNode->SetGeometricScaling(FbxNode::eSourcePivot, oOneVec);
+	//pChildNode->SetGeometricTranslation(FbxNode::eSourcePivot, oZeroVec);
+	//pChildNode->SetPostTargetRotation(oZeroVec);
+	//pChildNode->SetRotationOffset(FbxNode::eSourcePivot, oZeroVec);
+	//pChildNode->SetRotationPivot(FbxNode::eSourcePivot, oZeroVec);
+
+	//pChildNode->LclTranslation.Set(oLocalT);
+	//pChildNode->LclRotation.Set(oLocalR);
+	//pChildNode->LclScaling.Set(oLocalS);
 
 	return true;
 }

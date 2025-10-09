@@ -419,6 +419,7 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 
 bool DzBridgeAction::preProcessRigConversion(DzNode *parentNode)
 {
+
 	DzProgress preProcessProgress(0);
 	
 	if (parentNode &&
@@ -9859,8 +9860,8 @@ bool DzBridgeAction::postProcessRigConversion(QString sExportRigMode, QString fb
 		pCustomJointFixer = &oUnrealFixer2;
 //		sTargetPoseFilename = dzApp->getTempPath() + "/unreal_apose_noroot.fbx";
 		sTargetPoseFilename = dzApp->getTempPath() + "/g9_unreal_apose_fixed.fbx";
-		if (bIsG1 || bIsG2) {
-			sTargetPoseFilename = dzApp->getTempPath() + "/g1_unreal_apose_fixed.fbx";
+		if (bIsG2) {
+			//sTargetPoseFilename = dzApp->getTempPath() + "/g1_unreal_apose_fixed.fbx";
 			//pCustomJointFixer = &oUnrealFixer2_G1;
 		}
 //		sFinalRigTemplateFbxFilename = dzApp->getTempPath() + "/unreal_rig_template.fbx";
@@ -9959,6 +9960,7 @@ bool DzBridgeAction::postProcessRigConversion
 
 		if (m_sExportRigMode != "" && m_sExportRigMode != "--")
 		{
+
 //			FbxTools::DetachGeometry(pScene);
 			FbxTools::RemoveBindPoses(pScene);
 
@@ -9999,9 +10001,9 @@ bool DzBridgeAction::postProcessRigConversion
 			FbxPose* pTempBindPose = FbxTools::SaveBindMatrixToPose(pScene, "TempBindPose", nullptr, true);
 			FbxTools::ApplyBindPose(pScene, pTempBindPose);
 
-#if 0
+#if 1
 			QString sUnposedFbxFilename = QString(fbxFilePath).replace(".fbx", "_unposed.fbx", Qt::CaseInsensitive);
-			if (openFBX->SaveScene(pScene, sUnposedFbxFilename, -1, false) == false)
+			if (openFBX->SaveScene(pScene, sUnposedFbxFilename, 1, false) == false)
 			{
 				QString sFbxErrorMessage = QObject::tr("ERROR: DzR2xBridge: openFBX->SaveScene():\n\n")
 					+ QString("File: \"%1\"\n\n").arg(fbxFilePath)
@@ -10028,9 +10030,9 @@ bool DzBridgeAction::postProcessRigConversion
 					return false;
 				}
 
-#if 0
+#if 1
 				QString sUnposedFbxFilename = QString(fbxFilePath).replace(".fbx", "_posed.fbx", Qt::CaseInsensitive);
-				if (openFBX->SaveScene(pScene, sUnposedFbxFilename, -1, false) == false)
+				if (openFBX->SaveScene(pScene, sUnposedFbxFilename, 1, false) == false)
 				{
 					QString sFbxErrorMessage = QObject::tr("ERROR: DzR2xBridge: openFBX->SaveScene():\n\n")
 						+ QString("File: \"%1\"\n\n").arg(fbxFilePath)
@@ -10151,7 +10153,7 @@ bool DzBridgeAction::postProcessRigConversion
 
 	} // if (RootBone)
 
-#if 0
+#if 1
 	fbxFilePath.replace(".fbx", "_postProcessed.fbx", Qt::CaseInsensitive);
 #endif
 	if (openFBX->SaveScene(pScene, fbxFilePath, -1, m_bEmbedTexturesInOutputFile) == false)
