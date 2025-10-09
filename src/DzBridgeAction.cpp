@@ -490,6 +490,8 @@ bool DzBridgeAction::preProcessRigConversion(DzNode *parentNode)
 			}
 		}
 		
+		return true;
+
 		/// BONE CONVERSION OPERATION
 		preProcessProgress.setInfo(tr("Converting Rig..."));
 		preProcessProgress.step();

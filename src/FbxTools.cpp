@@ -4062,11 +4062,97 @@ QMap<QString, QVariant> readJsonToMap(const QString& sFilename)
 	return {};
 }
 
+bool TransferWeights(FbxScene* pScene, FbxMesh* pMesh, FbxNode* pDestNode, FbxNode* pSourceNode, double fTransferWeight)
+{
+	if (!pScene || !pMesh || !pDestNode || !pSourceNode) return false;
+
+	FbxNode* pMeshNode = pMesh->GetNode();
+	if (!pMeshNode) return false;
+
+	FbxSkin* pSkin = nullptr;
+	const int nDef = pMesh->GetDeformerCount(FbxDeformer::eSkin);
+	for (int i = 0; i < nDef; ++i) {
+		FbxDeformer* pDef = pMesh->GetDeformer(i, FbxDeformer::eSkin);
+		if (pDef) { pSkin = FbxCast<FbxSkin>(pDef); break; }
+	}
+	if (!pSkin) { pSkin = FbxSkin::Create(pScene, "Skin"); pMesh->AddDeformer(pSkin); }
+
+	FbxCluster* pDestCluster = nullptr;
+	for (int i = 0; i < pSkin->GetClusterCount(); ++i) {
+		FbxCluster* pC = pSkin->GetCluster(i);
+		if (pC && pC->GetLink() == pDestNode) {
+			pDestCluster = pC;
+			break;
+		}
+	}
+	if (!pDestCluster) {
+		pDestCluster = FbxCluster::Create(pScene, (std::string("Cluster_") + pDestNode->GetName()).c_str());
+		pDestCluster->SetLink(pDestNode);
+		pDestCluster->SetLinkMode(FbxCluster::eNormalize); // normalize to 1.0
+		pSkin->AddCluster(pDestCluster);
+	}
+
+	int numSourceClusters = -1;
+	QList<FbxCluster*> aSourceClusters;
+	for (int i = 0; i < pSkin->GetClusterCount(); ++i) {
+		FbxCluster* pC = pSkin->GetCluster(i);
+		if (pC && pC->GetLink() == pSourceNode) {
+			aSourceClusters.append(pC);
+		}
+	}
+	numSourceClusters = aSourceClusters.length();
+
+	FbxAMatrix oMeshWsTransform = pMeshNode->EvaluateGlobalTransform();
+	FbxAMatrix oDestWsTransform = pDestNode->EvaluateGlobalTransform();
+	pDestCluster->SetTransformMatrix(oMeshWsTransform);
+	pDestCluster->SetTransformLinkMatrix(oDestWsTransform); // required for correct skinning
+
+	QMap<int, double> oDestWeightMap;
+	int numDestWeights = pDestCluster->GetControlPointIndicesCount();
+	const int* pDestVertexIndexBuffer = pDestCluster->GetControlPointIndices();
+	const double* pDestWeights = pDestCluster->GetControlPointWeights();
+
+	for (int i = 0; i < numDestWeights; i++)
+	{
+		int nActualVertexIndex = pDestVertexIndexBuffer[i];
+		double fDestWeight = pDestWeights[i];
+		oDestWeightMap.insert(nActualVertexIndex, fDestWeight);
+	}
+
+	foreach(FbxCluster *pSourceCluster, aSourceClusters)
+	{
+		const int numSourceVertices = pSourceCluster->GetControlPointIndicesCount();
+		int* pSourceVertexIndexBuffer = pSourceCluster->GetControlPointIndices();
+		double* pSourceWeights = pSourceCluster->GetControlPointWeights();
+		for (int i = 0; i < numSourceVertices; ++i)
+		{
+			double fWeightToTransfer = std::min(pSourceWeights[i], fTransferWeight);
+			if (fTransferWeight == -1) {
+				fWeightToTransfer = pSourceWeights[i];
+			}
+			pSourceWeights[i] = std::max(0.0, pSourceWeights[i] - fWeightToTransfer);
+			int nActualVertexIndex = pSourceVertexIndexBuffer[i];
+			oDestWeightMap[nActualVertexIndex] += fWeightToTransfer;
+
+		}
+	}
+
+	pDestCluster->SetControlPointIWCount(0);
+
+	foreach(int nActualVertexIndex, oDestWeightMap.keys())
+	{
+		double fDestWeight = oDestWeightMap[nActualVertexIndex];
+		pDestCluster->AddControlPointIndex(nActualVertexIndex, fDestWeight);
+	}
+
+	return true;
+}
+
 bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConversionJsonFilename)
 {
 	
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
-	FbxScene* pScene = openFBX->CreateScene("Animation Scene");
+	FbxScene* pScene = openFBX->CreateScene("Scene");
 	bool bLoadResult = FbxTools::ExLoadScene(pScene, sProxyFbxFilename);
 	if (!bLoadResult) {
 		return false;
@@ -4118,12 +4204,19 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 		}
 	}
 
+	QList<FbxNode*> aMeshList;
+	FbxTools::GetAllMeshes(pScene->GetRootNode(), aMeshList);
+
 	foreach (FbxNode* pBoneToDelete, aBonesToDelete)
 	{
 		if (pBoneToDelete == nullptr) continue;
 		// reparent
 		FbxNode* pParent = pBoneToDelete->GetParent();
 		if (pParent) {
+			// transfer weight to parnt bone
+			foreach(FbxNode * pMeshNode, aMeshList) {
+				TransferWeights(pScene, pMeshNode->GetMesh(), pParent, pBoneToDelete, -1);
+			}
 			int numChildren = pBoneToDelete->GetChildCount();
 			for (int i=numChildren; i >= 0 ; i--) {
 				FbxNode* pChild = pBoneToDelete->GetChild(i);
