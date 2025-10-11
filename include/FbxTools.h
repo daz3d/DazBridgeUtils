@@ -187,5 +187,6 @@ public:
 private:
 	static void GenerateSkeleton(DzFigure* Figure, DzNode* Node, DzNode* Parent, FbxNode* FbxParent, FbxScene* Scene, QMap<DzNode*, FbxNode*>& BoneMap, bool bIncludeFaceBones, bool bFixTwistBones);
 	static bool AddMinimumIkWeight(FbxScene* pScene, FbxMesh* pMesh, FbxNode* pIkNode, FbxNode* pLocalEffectorNode, double fEpsilonWeight = 0.01);
+	static bool ParentInPlace_RotationOffset(FbxNode* pParentNode, FbxNode* pChildNode);
 
 };

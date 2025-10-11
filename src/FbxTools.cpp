@@ -1905,7 +1905,7 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			IKRootNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_foot_root")));
 			IKRootNode->SetNodeAttribute(IKRootNodeAttribute);
 			IKRootNode->LclTranslation.Set(FbxVector4(0.0, 0.0, 0.0));
-			IKRootNode->LclRotation.Set(FbxVector4(-90.0, 0.0, 0.0));
+			//IKRootNode->LclRotation.Set(FbxVector4(-90.0, 0.0, 0.0));
 			pRootBone->AddChild(IKRootNode);
 		}
 
@@ -1922,13 +1922,17 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			IKFootLNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_foot_l")));
 			IKFootLNode->SetNodeAttribute(IKFootLNodeAttribute);
 			FbxAMatrix FootTransform = FootLNode->EvaluateGlobalTransform();
-			FbxAMatrix ParentTransform = IKRootNode->EvaluateGlobalTransform();
-			FbxAMatrix LocalTransform = ParentTransform.Inverse() * FootTransform;
-			FbxVector4 FootLocation = LocalTransform.GetT();
-			FbxVector4 FootOrientation = LocalTransform.GetR();
-			IKFootLNode->LclTranslation.Set(FootLocation);
-			IKFootLNode->LclRotation.Set(FootOrientation);
-			IKRootNode->AddChild(IKFootLNode);
+			//FbxAMatrix ParentTransform = IKRootNode->EvaluateGlobalTransform();
+			//FbxAMatrix LocalTransform = ParentTransform.Inverse() * FootTransform;
+			//FbxVector4 FootLocation = LocalTransform.GetT();
+			//FbxVector4 FootOrientation = LocalTransform.GetR();
+			//IKFootLNode->LclTranslation.Set(FootLocation);
+			//IKFootLNode->LclRotation.Set(FootOrientation);
+			//IKRootNode->AddChild(IKFootLNode);
+			IKFootLNode->LclTranslation.Set(FootTransform.GetT());
+			IKFootLNode->LclRotation.Set(FootTransform.GetR());
+			IKFootLNode->LclScaling.Set(FootTransform.GetS());
+			ParentInPlace(IKRootNode, IKFootLNode);
 			if (pFigureMesh) AddMinimumIkWeight(pScene, pFigureMesh, IKFootLNode, FootLNode);
 		}
 
@@ -1945,13 +1949,17 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			IKFootRNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_foot_r")));
 			IKFootRNode->SetNodeAttribute(IKFootRNodeAttribute);
 			FbxAMatrix FootTransform = FootRNode->EvaluateGlobalTransform();
-			FbxAMatrix ParentTransform = IKRootNode->EvaluateGlobalTransform();
-			FbxAMatrix LocalTransform = ParentTransform.Inverse() * FootTransform;
-			FbxVector4 FootLocation = LocalTransform.GetT();
-			FbxVector4 FootOrientation = LocalTransform.GetR();
-			IKFootRNode->LclTranslation.Set(FootLocation);
-			IKFootLNode->LclRotation.Set(FootOrientation);
-			IKRootNode->AddChild(IKFootRNode);
+			//FbxAMatrix ParentTransform = IKRootNode->EvaluateGlobalTransform();
+			//FbxAMatrix LocalTransform = ParentTransform.Inverse() * FootTransform;
+			//FbxVector4 FootLocation = LocalTransform.GetT();
+			//FbxVector4 FootOrientation = LocalTransform.GetR();
+			//IKFootRNode->LclTranslation.Set(FootLocation);
+			//IKFootLNode->LclRotation.Set(FootOrientation);
+			//IKRootNode->AddChild(IKFootRNode);
+			IKFootRNode->LclTranslation.Set(FootTransform.GetT());
+			IKFootRNode->LclRotation.Set(FootTransform.GetR());
+			IKFootRNode->LclScaling.Set(FootTransform.GetS());
+			ParentInPlace(IKRootNode, IKFootRNode);
 			if (pFigureMesh) AddMinimumIkWeight(pScene, pFigureMesh, IKFootRNode, FootRNode);
 		}
 
@@ -1966,7 +1974,7 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			IKHandRootNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_hand_root")));
 			IKHandRootNode->SetNodeAttribute(IKHandRootNodeAttribute);
 			IKHandRootNode->LclTranslation.Set(FbxVector4(0.0, 0.0, 0.0));
-			IKHandRootNode->LclRotation.Set(FbxVector4(-90.0, 0.0, 0.0));
+			//IKHandRootNode->LclRotation.Set(FbxVector4(-90.0, 0.0, 0.0));
 			pRootBone->AddChild(IKHandRootNode);
 		}
 
@@ -1983,13 +1991,17 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			IKHandGunNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_hand_gun")));
 			IKHandGunNode->SetNodeAttribute(IKHandGunNodeAttribute);
 			FbxAMatrix HandTransform = HandRNode->EvaluateGlobalTransform();
-			FbxAMatrix ParentTransform = IKHandRootNode->EvaluateGlobalTransform();
-			FbxAMatrix LocalTransform = ParentTransform.Inverse() * HandTransform;
-			FbxVector4 HandLocation = LocalTransform.GetT();
-			FbxVector4 HandOrientation = LocalTransform.GetR();
-			IKHandGunNode->LclTranslation.Set(HandLocation);
-			IKHandGunNode->LclRotation.Set(HandOrientation);
-			IKHandRootNode->AddChild(IKHandGunNode);
+			//FbxAMatrix ParentTransform = IKHandRootNode->EvaluateGlobalTransform();
+			//FbxAMatrix LocalTransform = ParentTransform.Inverse() * HandTransform;
+			//FbxVector4 HandLocation = LocalTransform.GetT();
+			//FbxVector4 HandOrientation = LocalTransform.GetR();
+			//IKHandGunNode->LclTranslation.Set(HandLocation);
+			//IKHandGunNode->LclRotation.Set(HandOrientation);
+			//IKHandRootNode->AddChild(IKHandGunNode);
+			IKHandGunNode->LclTranslation.Set(HandTransform.GetT());
+			IKHandGunNode->LclRotation.Set(HandTransform.GetR());
+			IKHandGunNode->LclScaling.Set(HandTransform.GetS());
+			ParentInPlace(IKHandRootNode, IKHandGunNode);
 			if (pFigureMesh) AddMinimumIkWeight(pScene, pFigureMesh, IKHandGunNode, HandRNode);
 		}
 
@@ -2021,13 +2033,17 @@ void FbxTools::AddIkNodes(FbxScene* pScene, FbxNode* pRootBone, const char* sLef
 			IKHandLNode = FbxNode::Create(pScene, TCHAR_TO_UTF8(TEXT("ik_hand_l")));
 			IKHandLNode->SetNodeAttribute(IKHandRNodeAttribute);
 			FbxAMatrix HandTransform = HandLNode->EvaluateGlobalTransform();
-			FbxAMatrix ParentTransform = IKHandGunNode->EvaluateGlobalTransform();
-			FbxAMatrix LocalTransform = ParentTransform.Inverse() * HandTransform;
-			FbxVector4 HandLocation = LocalTransform.GetT();
-			FbxVector4 HandOrientation = LocalTransform.GetR();
-			IKHandLNode->LclTranslation.Set(HandLocation);
-			IKHandLNode->LclRotation.Set(HandOrientation);
-			IKHandGunNode->AddChild(IKHandLNode);
+			//FbxAMatrix ParentTransform = IKHandGunNode->EvaluateGlobalTransform();
+			//FbxAMatrix LocalTransform = ParentTransform.Inverse() * HandTransform;
+			//FbxVector4 HandLocation = LocalTransform.GetT();
+			//FbxVector4 HandOrientation = LocalTransform.GetR();
+			//IKHandLNode->LclTranslation.Set(HandLocation);
+			//IKHandLNode->LclRotation.Set(HandOrientation);
+			//IKHandGunNode->AddChild(IKHandLNode);
+			IKHandLNode->LclTranslation.Set(HandTransform.GetT());
+			IKHandLNode->LclRotation.Set(HandTransform.GetR());
+			IKHandLNode->LclScaling.Set(HandTransform.GetS());
+			ParentInPlace(IKHandGunNode, IKHandLNode);
 			if (pFigureMesh) AddMinimumIkWeight(pScene, pFigureMesh, IKHandLNode, HandLNode);
 		}
 
@@ -4296,6 +4312,8 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 
 			// add for later
 			oPostModifyAddParent.insert(pNewBone, pParentBone);
+			// add aAdditionalChildBones to aChildBones
+			aChildBones += aAdditionalChildBones;
 			oPostModifyAddChildren.insert(pNewBone, aChildBones);
 
 			foreach(FbxNode * pMeshNode, aMeshList) {
@@ -4348,14 +4366,14 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 	foreach(FbxNode* pNewBone, oPostModifyAddParent.keys())
 	{
 		FbxNode* pParentBone = oPostModifyAddParent[pNewBone];
-		ParentInPlace(pParentBone, pNewBone);
+		ParentInPlace_RotationOffset(pParentBone, pNewBone);
 		if (aBindPoses.length() > 0) {
 			aBindPoses[0]->Add(pNewBone, pNewBone->EvaluateGlobalTransform());
 		}
 
 		auto aChildBones = oPostModifyAddChildren[pNewBone];
 		foreach(FbxNode * pChild, aChildBones) {
-			ParentInPlace(pNewBone, pChild);
+			ParentInPlace_RotationOffset(pNewBone, pChild);
 		}
 	}
 #endif
@@ -4377,7 +4395,7 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 				if (pChild == nullptr) continue;
 				debug_printf("ProxyMeshBoneRenamer: reparenting child: %s\n", pChild->GetName());
 				//pParent->AddChild(pChild);
-				ParentInPlace(pParent, pChild);
+				ParentInPlace_RotationOffset(pParent, pChild);
 			}
 		}
 		// remove bone
@@ -4573,26 +4591,12 @@ bool FbxTools::AddMorphCurveByName(FbxNode* pNode, FbxAnimLayer* pAnimLayer, Fbx
 //}
 
 
-bool FbxTools::ParentInPlace(FbxNode* pParentNode, FbxNode* pChildNode)
+bool FbxTools::ParentInPlace_RotationOffset(FbxNode* pParentNode, FbxNode* pChildNode)
 {
 	if (!pParentNode || !pChildNode) return false;
 
-	FbxScene* pScene = pParentNode->GetScene();
-	FbxNode* pRootNode = pScene->GetRootNode();
-
 	FbxAMatrix oGlobalTransform = pChildNode->EvaluateGlobalTransform();
-
-	//pRootNode->AddChild(pChildNode);
-	//pChildNode->LclTranslation.Set(oGlobalTransform.GetT());
-	//pChildNode->LclRotation.Set(oGlobalTransform.GetR());
-	//pChildNode->LclScaling.Set(oGlobalTransform.GetS());
-
-	oGlobalTransform = pChildNode->EvaluateGlobalTransform();
 	FbxAMatrix oParentGlobalTransform = pParentNode->EvaluateGlobalTransform();
-	//FbxAMatrix oLocalTransform = oParentGlobalTransform.Inverse() * oGlobalTransform;
-	//FbxVector4 oLocalT = oLocalTransform.GetT();
-	//FbxVector4 oLocalR = oLocalTransform.GetR();
-	//FbxVector4 oLocalS = oLocalTransform.GetS();
 
 	// derive pure local matrix
 	FbxAMatrix local = oParentGlobalTransform.Inverse() * oGlobalTransform;
@@ -4617,7 +4621,6 @@ bool FbxTools::ParentInPlace(FbxNode* pParentNode, FbxNode* pChildNode)
 //	FbxAMatrix pureLocal = rOffM.Inverse() * rPivM.Inverse() * preM.Inverse() * local * postM * rPivM * sPivM.Inverse();
 
 	local.SetR(FbxVector4(0,0,0));
-
 	FbxAMatrix pureLocal = rPivM.Inverse() * local * rPivM * sPivM.Inverse();
 
 	// decompose in correct order
@@ -4627,224 +4630,50 @@ bool FbxTools::ParentInPlace(FbxNode* pParentNode, FbxNode* pChildNode)
 	ro.M2V(r, pureLocal);
 
 	pChildNode->SetRotationOffset(FbxNode::eSourcePivot, t);
-	//pChildNode->LclTranslation.Set(t);
-	//pChildNode->LclRotation.Set(r);
-	//pChildNode->LclScaling.Set(s);
-
-
-/*
-	FbxVector4 new_t = t + rOffM.GetT();
-	FbxVector4 new_pre = r + preM.GetR();
-	FbxVector4 new_post = r + postM.GetR();
-	FbxVector4 new_s = s * sPivM.GetS();
-
-	pChildNode->SetRotationOffset(FbxNode::eSourcePivot, new_t);
-	pChildNode->SetPreRotation(FbxNode::eSourcePivot, new_pre);
-	pChildNode->SetPostRotation(FbxNode::eSourcePivot, new_post);
-	pChildNode->SetScalingPivot(FbxNode::eSourcePivot, new_s);
-*/
-
-	return true;
-
-	/////////////////////////////////////////////////////////////////
-
-	FbxVector4 oZeroVec(0.0, 0.0, 0.0);
-	FbxVector4 oOneVec(1.0, 1.0, 1.0);
-	//pChildNode->SetPreRotation(FbxNode::eSourcePivot, oZeroVec);
-	//pChildNode->SetPostRotation(FbxNode::eSourcePivot, oZeroVec);
-	//pChildNode->SetRotationPivot(FbxNode::eSourcePivot, oZeroVec);
-	//pChildNode->SetGeometricRotation(FbxNode::eSourcePivot, oZeroVec);
-	//pChildNode->SetGeometricScaling(FbxNode::eSourcePivot, oOneVec);
-	//pChildNode->SetGeometricTranslation(FbxNode::eSourcePivot, oZeroVec);
-	//pChildNode->SetPostTargetRotation(oZeroVec);
-	//pChildNode->SetRotationOffset(FbxNode::eSourcePivot, oZeroVec);
-	//pChildNode->SetRotationPivot(FbxNode::eSourcePivot, oZeroVec);
-
-	//pChildNode->LclTranslation.Set(oLocalT);
-	//pChildNode->LclRotation.Set(oLocalR);
-	//pChildNode->LclScaling.Set(oLocalS);
 
 	return true;
 }
 
-bool FbxTools::ParentInPlace_BindPose(FbxScene* pScene, FbxNode* pParentNode, FbxNode* pChildNode)
+bool FbxTools::ParentInPlace(FbxNode* pParentNode, FbxNode* pChildNode)
 {
-	if (!pScene || !pParentNode || !pChildNode)
-		return false;
+	if (!pParentNode || !pChildNode) return false;
 
-	const FbxTime Tinf = FBXSDK_TIME_INFINITE;
+	FbxAMatrix oGlobalTransform = pChildNode->EvaluateGlobalTransform();
+	FbxAMatrix oParentGlobalTransform = pParentNode->EvaluateGlobalTransform();
 
-	// --- 1. Cache world transforms before hierarchy change
-	FbxAMatrix childWs = pChildNode->EvaluateGlobalTransform(Tinf);
-	FbxAMatrix parentWs = pParentNode->EvaluateGlobalTransform(Tinf);
+	// derive pure local matrix
+	FbxAMatrix local = oParentGlobalTransform.Inverse() * oGlobalTransform;
 
-	// --- 2. Compute desired local matrix under new parent
-	FbxAMatrix local = parentWs.Inverse() * childWs;
-	FbxVector4 t = local.GetT();     // world-space translation in new parent frame
+	// build matrices for child’s existing pivots and pre/post rotations
+	FbxRotationOrder ro(pChildNode->RotationOrder.Get());
+	FbxAMatrix preM, postM, rOffM, rPivM, rPivInvM, sPivM, sPivInvM;
 
-	// --- 3. Gather current definition parameters
-	FbxVector4 Tloc = pChildNode->LclTranslation.Get();              // unchanged
-	FbxVector4 S = pChildNode->LclScaling.Get();                  // unchanged
-	FbxVector4 Sp = pChildNode->GetScalingPivot(FbxNode::eSourcePivot);
-	FbxVector4 Soff = pChildNode->GetScalingOffset(FbxNode::eSourcePivot);
+	ro.V2M(preM, pChildNode->GetPreRotation(FbxNode::eSourcePivot));
+	ro.V2M(postM, pChildNode->GetPostRotation(FbxNode::eSourcePivot));
+	rOffM.SetT(pChildNode->GetRotationOffset(FbxNode::eSourcePivot));
+	rPivM.SetT(pChildNode->GetRotationPivot(FbxNode::eSourcePivot));
+	rPivInvM = rPivM.Inverse();
+	sPivM.SetT(pChildNode->GetScalingPivot(FbxNode::eSourcePivot));
+	sPivInvM = sPivM.Inverse();
 
-	// --- 4. Compute new RotationOffset so that Parent*Local == ChildWS
-	FbxVector4 Roff;
-	const bool hasScaleTerm =
-		(fabs(S[0] - 1.0) > 1e-8 || fabs(S[1] - 1.0) > 1e-8 || fabs(S[2] - 1.0) > 1e-8 ||
-			Sp[0] != 0.0 || Sp[1] != 0.0 || Sp[2] != 0.0 ||
-			Soff[0] != 0.0 || Soff[1] != 0.0 || Soff[2] != 0.0);
-
-	if (!hasScaleTerm) {
-		Roff = t - Tloc - Soff;
-	}
-	else {
-		FbxVector4 SSp(S[0] * Sp[0], S[1] * Sp[1], S[2] * Sp[2]);
-		Roff = t - Tloc - (Sp - SSp) - Soff;
-	}
-
-	// --- 5. Reparent while keeping world pose intact
 	pParentNode->AddChild(pChildNode);
-	pChildNode->SetRotationOffset(FbxNode::eSourcePivot, Roff);
 
-	//// --- 7. Rebuild bind pose to match new hierarchy
-	//FbxPose* pBind = FbxPose::Create(pScene, "BindPose_Rebuilt");
-	//for (int i = 0; i < pScene->GetNodeCount(); ++i)
-	//{
-	//	FbxNode* n = pScene->GetNode(i);
-	//	pBind->Add(n, n->EvaluateGlobalTransform(Tinf), true);
-	//}
-	//pScene->AddPose(pBind);
+	// remove them from the composed local
+	// world = parent * T * Roff * Rp * Pre * R * Post^-1 * Rp^-1 * Soff * Sp * S * Sp^-1
+	// ⇒ local pure = Roff^-1 * Rp^-1 * Pre^-1 * local * Post * Rp * Soff^-1 * Sp^-1
+	FbxAMatrix pureLocal = rOffM.Inverse() * rPivM.Inverse() * preM.Inverse() * local * postM * rPivM * sPivM.Inverse();
 
-	//// --- 8. Update cluster link matrices for every skinned mesh
-	//for (int i = 0; i < pScene->GetNodeCount(); ++i)
-	//{
-	//	FbxNode* n = pScene->GetNode(i);
-	//	FbxMesh* mesh = n->GetMesh();
-	//	if (!mesh) continue;
+	// decompose in correct order
+	FbxVector4 t = pureLocal.GetT();
+	FbxVector4 s = pureLocal.GetS();
+	FbxVector4 r;
+	ro.M2V(r, pureLocal);
 
-	//	const int skinCount = mesh->GetDeformerCount(FbxDeformer::eSkin);
-	//	for (int si = 0; si < skinCount; ++si)
-	//	{
-	//		FbxSkin* skin = FbxCast<FbxSkin>(mesh->GetDeformer(si, FbxDeformer::eSkin));
-	//		if (!skin) continue;
-
-	//		for (int ci = 0; ci < skin->GetClusterCount(); ++ci)
-	//		{
-	//			FbxCluster* cluster = skin->GetCluster(ci);
-	//			if (!cluster) continue;
-
-	//			cluster->SetTransformMatrix(mesh->GetNode()->EvaluateGlobalTransform(Tinf));
-	//			if (FbxNode* link = cluster->GetLink())
-	//				cluster->SetTransformLinkMatrix(link->EvaluateGlobalTransform(Tinf));
-	//		}
-	//	}
-	//}
-	return true;
-}
-
-
-bool FbxTools_ParentInPlace_BindPose(FbxScene* pScene, FbxNode* pParentNode, FbxNode* pChildNode)
-{
-	if (!pScene || !pParentNode || !pChildNode)
-		return false;
-
-	const FbxTime Tinf = FBXSDK_TIME_INFINITE;
-
-	//------------------------------------------------------------
-	// 1. Cache world transforms before hierarchy change
-	//------------------------------------------------------------
-	FbxAMatrix childWs = pChildNode->EvaluateGlobalTransform(Tinf);
-	FbxAMatrix parentWs = pParentNode->EvaluateGlobalTransform(Tinf);
-
-	//------------------------------------------------------------
-	// 2. Compute desired local matrix under new parent
-	//------------------------------------------------------------
-	FbxAMatrix local = parentWs.Inverse() * childWs;
-	FbxVector4 t = local.GetT(); // translation of child in parent space
-
-	//------------------------------------------------------------
-	// 3. Gather current definition parameters
-	//------------------------------------------------------------
-	FbxVector4 Tloc = pChildNode->LclTranslation.Get();
-	FbxVector4 S = pChildNode->LclScaling.Get();
-	FbxVector4 Sp = pChildNode->GetScalingPivot(FbxNode::eSourcePivot);
-	FbxVector4 Soff = pChildNode->GetScalingOffset(FbxNode::eSourcePivot);
-
-	//------------------------------------------------------------
-	// 4. Compute new RotationOffset so that Parent*Local == ChildWS
-	//------------------------------------------------------------
-	FbxVector4 Roff;
-	const bool hasScaleTerm =
-		(fabs(S[0] - 1.0) > 1e-8 || fabs(S[1] - 1.0) > 1e-8 || fabs(S[2] - 1.0) > 1e-8 ||
-			Sp[0] != 0.0 || Sp[1] != 0.0 || Sp[2] != 0.0 ||
-			Soff[0] != 0.0 || Soff[1] != 0.0 || Soff[2] != 0.0);
-
-	if (!hasScaleTerm)
-	{
-		Roff = t - Tloc - Soff;
-	}
-	else
-	{
-		FbxVector4 SSp(S[0] * Sp[0], S[1] * Sp[1], S[2] * Sp[2]);
-		Roff = t - Tloc - (Sp - SSp) - Soff;
-	}
-
-	//------------------------------------------------------------
-	// 5. Reparent while keeping world pose intact
-	//------------------------------------------------------------
-	pParentNode->AddChild(pChildNode);
-	pChildNode->RotationOffset.Set(Roff);
-
-	//------------------------------------------------------------
-	// 6. Rebuild bind pose to match new hierarchy
-	//------------------------------------------------------------
-	FbxPose* pBind = FbxPose::Create(pScene, "BindPose_Rebuilt");
-	for (int i = 0; i < pScene->GetNodeCount(); ++i)
-	{
-		FbxNode* n = pScene->GetNode(i);
-		pBind->Add(n, n->EvaluateGlobalTransform(Tinf), true);
-	}
-	pScene->AddPose(pBind);
-
-	//------------------------------------------------------------
-	// 7. Update cluster link matrices for every skinned mesh
-	//------------------------------------------------------------
-	for (int i = 0; i < pScene->GetNodeCount(); ++i)
-	{
-		FbxNode* n = pScene->GetNode(i);
-		FbxMesh* mesh = n->GetMesh();
-		if (!mesh)
-			continue;
-
-		const int skinCount = mesh->GetDeformerCount(FbxDeformer::eSkin);
-		for (int si = 0; si < skinCount; ++si)
-		{
-			FbxSkin* skin = FbxCast<FbxSkin>(mesh->GetDeformer(si, FbxDeformer::eSkin));
-			if (!skin)
-				continue;
-
-			for (int ci = 0; ci < skin->GetClusterCount(); ++ci)
-			{
-				FbxCluster* cluster = skin->GetCluster(ci);
-				if (!cluster)
-					continue;
-
-				// FbxMesh has no EvaluateGlobalTransform(); use its owner node.
-				FbxNode* meshNode = mesh->GetNode();
-				if (!meshNode)
-					continue;
-
-				cluster->SetTransformMatrix(meshNode->EvaluateGlobalTransform(Tinf));
-
-				if (FbxNode* link = cluster->GetLink())
-					cluster->SetTransformLinkMatrix(link->EvaluateGlobalTransform(Tinf));
-			}
-		}
-	}
+	pChildNode->LclTranslation.Set(t);
+	pChildNode->LclRotation.Set(r);
+	pChildNode->LclScaling.Set(s);
 
 	return true;
 }
-
 
 

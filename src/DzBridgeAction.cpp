@@ -9940,7 +9940,7 @@ bool DzBridgeAction::postProcessRigConversion
 				RootBone = ChildNode;
 				RootBoneName = RootBone->GetName();
 				if (m_sExportRigMode == "unreal") {
-					RootBone->SetName("root");
+					RootBone->SetName("old_root");
 					pSkeletonAttr->SetName("Root");
 					pSkeletonAttr->Reset();
 					pSkeletonAttr->SetSkeletonType(FbxSkeleton::EType::eRoot);
@@ -10088,9 +10088,6 @@ bool DzBridgeAction::postProcessRigConversion
 				}				
 			}
 
-			//FbxTools::AddIkNodes(pScene, RootBone, "foot_l", "foot_r", "hand_l", "hand_r", pFigureMesh);
-			FbxTools::AddIkNodes(pScene, RootBone, "foot_l", "foot_r", "hand_l", "hand_r", nullptr);
-
 			// Merge Final Rig Template
 			if (sFinalRigTemplateFbxFilename != "") {
 				FbxScene* pFinalRigScene = openFBX->CreateScene("Final Rig Scene");
@@ -10131,6 +10128,35 @@ bool DzBridgeAction::postProcessRigConversion
 			}
 			else if (m_sExportRigMode == "unreal")
 			{
+
+				FbxSkeleton* pNewRootAttr = FbxSkeleton::Create(pScene, "root");
+				pNewRootAttr->SetSkeletonType(FbxSkeleton::eRoot);
+				pNewRootAttr->Size.Set(100);
+				FbxNode* pNewRootBone = FbxNode::Create(pScene, "root");
+				pScene->AddNode(pNewRootBone);
+				pScene->GetRootNode()->AddChild(pNewRootBone);
+				pNewRootBone->SetNodeAttribute(pNewRootAttr);
+				pNewRootBone->LclRotation.Set(FbxDouble3(-90.0, 0.0, 0.0));
+				for (int i = 0; i < RootBone->GetChildCount(); i++) {
+					FbxNode* pChild = RootBone->GetChild(i);
+					FbxTools::ParentInPlace(pNewRootBone, pChild);
+				}
+				pScene->RemoveNode(RootBone);
+				RootBone = pNewRootBone;
+
+				//FbxTools::AddIkNodes(pScene, RootBone, "foot_l", "foot_r", "hand_l", "hand_r", pFigureMesh);
+				FbxTools::AddIkNodes(pScene, RootBone, "foot_l", "foot_r", "hand_l", "hand_r", nullptr);
+
+#if 0
+				//RootBone->SetRotationActive(true);
+				//RootBone->SetPreRotation(FbxNode::eSourcePivot, FbxVector4(-90, 0, 0));
+				//RootBone->SetPostRotation(FbxNode::eSourcePivot, FbxVector4(-90, 0,0));
+				RootBone->LclTranslation.Set(FbxDouble3(0,0,0));
+				RootBone->LclRotation.Set(FbxDouble3(-90.0, 0.0, 0.0));
+#endif
+
+
+#if 0
 				FbxNull* pNullAttr = FbxNull::Create(pScene, "");
 				FbxPropertyT<FbxEnum> oLookProperty = pNullAttr->Look;
 				oLookProperty.Set(0);
@@ -10144,13 +10170,13 @@ bool DzBridgeAction::postProcessRigConversion
 				pNullNode->LclRotation.Set(FbxDouble3(-90.0, 0.0, 0.0));
 				pNullNode->LclScaling.Set(FbxDouble3(1.0, 1.0, 1.0));
 
-				// Add to the scene�s root
+				// Add to the scene root
 				pScene->GetRootNode()->AddChild(pNullNode);
 				FbxTools::ParentInPlace(pNullNode, RootBone);
 				foreach(FbxNode* pMeshNode, nodeList) {
 					FbxTools::ParentInPlace(pNullNode, pMeshNode);
 				}
-
+#endif
 
 			}
 		}
