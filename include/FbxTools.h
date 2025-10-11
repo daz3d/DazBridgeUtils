@@ -160,8 +160,6 @@ public:
 
 	static bool ExportAnimation(DzNode* pNode, QString sFilename, bool bIncludeFaceBones, bool bFixTwistBones);
 
-	static bool ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConversionJsonFilename, FbxTools::ModifyBindPoseCallback* pCustomJointFixer=nullptr);
-	
 	static bool GetBoneList(FbxNode* pRootNode, QList<FbxNode*>& aBoneList);
 
 	static bool AddRotationCurve(FbxNode* pNode, FbxAnimLayer* pAnimLayer, FbxTime oTime, const char* pChannel, float fValue, bool bCreate);
@@ -176,8 +174,8 @@ public:
 
 	static bool ParentInPlace(FbxNode* pParentNode, FbxNode* pChildNode);
 
-	static bool ProxyMeshBoneAdder(QString sProxyFbxFilename, QString sRigConversionJsonFilename, FbxTools::ModifyBindPoseCallback* pCustomJointFixer);
-
+	static bool ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConversionJsonFilename, FbxTools::ModifyBindPoseCallback* pCustomJointFixer = nullptr);
+	static bool ParentInPlace_BindPose(FbxScene* pScene, FbxNode* pParentNode, FbxNode* pChildNode);
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING

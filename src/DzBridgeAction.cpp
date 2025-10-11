@@ -490,9 +490,11 @@ bool DzBridgeAction::preProcessRigConversion(DzNode *parentNode)
 				}
 			}
 		}
-		
+
+		dzScene->selectAllNodes(false);
 		return true;
 
+/*
 		/// BONE CONVERSION OPERATION
 		preProcessProgress.setInfo(tr("Converting Rig..."));
 		preProcessProgress.step();
@@ -567,9 +569,12 @@ bool DzBridgeAction::preProcessRigConversion(DzNode *parentNode)
 			//	dzScene->setPrimarySelection(parentNode);
 
 		}
+*/
+
 	}
 	
 	return true;
+
 }
 
 /// <summary>
@@ -1643,14 +1648,14 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 
 		setExportOptions(ExportOptions);
 
-		// DB 2024-08-24: Fix selected node before exporting to Fbx
-		dzScene->selectAllNodes(false);
-		dzScene->setPrimarySelection(Node);
-
 		// wait for scene ready to export
 		while (DzBackgroundProgress::isActive() == true) {
 			QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 		}
+
+		// DB 2024-08-24: Fix selected node before exporting to Fbx
+		dzScene->selectAllNodes(false);
+		dzScene->setPrimarySelection(Node);
 
 		if (m_EnableSubdivisions && m_bExportingBaseMesh)
 		{
@@ -9861,7 +9866,7 @@ bool DzBridgeAction::postProcessRigConversion(QString sExportRigMode, QString fb
 //		sTargetPoseFilename = dzApp->getTempPath() + "/unreal_apose_noroot.fbx";
 		sTargetPoseFilename = dzApp->getTempPath() + "/g9_unreal_apose_fixed.fbx";
 		if (bIsG2) {
-			//sTargetPoseFilename = dzApp->getTempPath() + "/g1_unreal_apose_fixed.fbx";
+			sTargetPoseFilename = dzApp->getTempPath() + "/g1_unreal_apose_fixed.fbx";
 			//pCustomJointFixer = &oUnrealFixer2_G1;
 		}
 //		sFinalRigTemplateFbxFilename = dzApp->getTempPath() + "/unreal_rig_template.fbx";
@@ -10153,7 +10158,7 @@ bool DzBridgeAction::postProcessRigConversion
 
 	} // if (RootBone)
 
-#if 1
+#if 0
 	fbxFilePath.replace(".fbx", "_postProcessed.fbx", Qt::CaseInsensitive);
 #endif
 	if (openFBX->SaveScene(pScene, fbxFilePath, -1, m_bEmbedTexturesInOutputFile) == false)
