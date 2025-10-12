@@ -176,6 +176,11 @@ public:
 
 	static bool ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConversionJsonFilename, FbxTools::ModifyBindPoseCallback* pCustomJointFixer = nullptr);
 	static bool ParentInPlace_BindPose(FbxScene* pScene, FbxNode* pParentNode, FbxNode* pChildNode);
+	static double FindGroundLevel(QList<FbxNode*> aMeshNodes);
+
+	static bool ParentInPlace0(FbxNode* pParentNode, FbxNode* pChildNode);
+
+	static bool ExSaveScene(FbxScene* pScene, QString sFilename, bool bShowGuiError = false, QString sErrorMessageTemplate = "");
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING

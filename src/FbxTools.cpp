@@ -1033,6 +1033,8 @@ bool FbxTools::BakePoseToBindMatrix(FbxMesh* pMesh, FbxPose* pPose)
 	// look up link node in pose
 	// apply pose matrix to bindmatrix with SetTransformLinkMatrix
 
+	FbxAMatrix oMeshWsMatrix = pMesh->GetNode()->EvaluateGlobalTransform();
+
 	int numSkinDeformers = pMesh->GetDeformerCount(FbxSkin::eSkin);
 	for (int skinIndex = 0; skinIndex < numSkinDeformers; skinIndex++)
 	{
@@ -1068,6 +1070,7 @@ bool FbxTools::BakePoseToBindMatrix(FbxMesh* pMesh, FbxPose* pPose)
 				{
 					assert(pPose->IsLocalMatrix(poseNodeIndex) == false);
 					FbxAMatrix poseMatrix = GetPoseMatrix(pPose, poseNodeIndex);
+					pCurrentCluster->SetTransformMatrix(oMeshWsMatrix);
 					pCurrentCluster->SetTransformLinkMatrix(poseMatrix);
 				}
 				else
@@ -1080,6 +1083,7 @@ bool FbxTools::BakePoseToBindMatrix(FbxMesh* pMesh, FbxPose* pPose)
 			if (pPose == nullptr || bNoPoseBone == true)
 			{
 				FbxAMatrix poseMatrix = FbxTools::GetAffineMatrix(nullptr, clusterBone);
+				pCurrentCluster->SetTransformMatrix(oMeshWsMatrix);
 				pCurrentCluster->SetTransformLinkMatrix(poseMatrix);
 			}
 
@@ -2113,6 +2117,42 @@ void FbxTools::UnrealJointFixCallback::performTask(FbxAMatrix &Matrix, FbxCluste
 }
 
 #include <QMessageBox>
+bool FbxTools::ExSaveScene(FbxScene* pScene, QString sFilename, bool bShowGuiError, QString sErrorMessageTemplate)
+{
+	if (pScene == nullptr) return false;
+
+	if (sErrorMessageTemplate.isEmpty() || sErrorMessageTemplate == "")
+	{
+		sErrorMessageTemplate = QObject::tr("\
+ERROR: FbxTools::ExSaveScene():\n\n\
+File: \"%1\"\n\n\
+FbxStatusCode: %2\n\n\
+Error Message: \"%3\"\n\n"
+);
+	}
+
+	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
+
+	if (openFBX->SaveScene(pScene, sFilename, 1) == false)
+	{
+		QString sFbxErrorMessage = QString(sErrorMessageTemplate).arg(sFilename).arg(openFBX->GetErrorCode()).arg(openFBX->GetErrorString());
+
+		dzApp->log(sFbxErrorMessage);
+
+		if (bShowGuiError)
+		{
+			QMessageBox::warning(0,
+				QObject::tr("Error"),
+				QObject::tr("An error occurred while processing the Fbx file:\n\n") + sFbxErrorMessage,
+				QMessageBox::Ok);
+		}
+		return false;
+
+	}
+
+	return true;
+}
+
 bool FbxTools::ExLoadScene(FbxScene* pScene, QString sFilename, void (*pfLogFunction)(QString), bool bShowGuiError, QString sErrorMessageTemplate)
 {
 	if (pScene == nullptr) return false;
@@ -3715,11 +3755,14 @@ FbxPose* FbxTools::SaveCurrentPose(FbxScene* pScene, FbxNode* pRootNode, FbxPose
 	if (pCurrentPose == nullptr) {
 		pCurrentPose = FbxPose::Create(pScene->GetFbxManager(), "New Pose");
 	}
-	pCurrentPose->Add(pRootNode, pRootNode->EvaluateGlobalTransform());
+	const char* psRootNodeName = pRootNode->GetName();
+	int nResult = pCurrentPose->Add(pRootNode, pRootNode->EvaluateGlobalTransform(), /*local matrix*/ false, /* multiple bind pose */ true);
+	assert(nResult != -1);
 
 	for (int i = 0; i < pRootNode->GetChildCount(); i++)
 	{
 		FbxNode* pChildNode = pRootNode->GetChild(i);
+		const char* psChildNodeName = pChildNode->GetName();
 		SaveCurrentPose(pScene, pChildNode, pCurrentPose);
 	}
 
@@ -4634,6 +4677,25 @@ bool FbxTools::ParentInPlace_RotationOffset(FbxNode* pParentNode, FbxNode* pChil
 	return true;
 }
 
+bool FbxTools::ParentInPlace0(FbxNode* pParentNode, FbxNode* pChildNode)
+{
+	if (!pParentNode || !pChildNode) return false;
+
+	FbxAMatrix oGlobalTransform = pChildNode->EvaluateGlobalTransform();
+	FbxAMatrix oParentGlobalTransform = pParentNode->EvaluateGlobalTransform();
+
+	// derive pure local matrix
+	FbxAMatrix oLocalTransform = oParentGlobalTransform.Inverse() * oGlobalTransform;
+
+	pParentNode->AddChild(pChildNode);
+
+	pChildNode->LclTranslation.Set(oLocalTransform.GetT());
+	pChildNode->LclRotation.Set(oLocalTransform.GetR());
+	pChildNode->LclScaling.Set(oLocalTransform.GetS());
+
+	return true;
+}
+
 bool FbxTools::ParentInPlace(FbxNode* pParentNode, FbxNode* pChildNode)
 {
 	if (!pParentNode || !pChildNode) return false;
@@ -4676,4 +4738,23 @@ bool FbxTools::ParentInPlace(FbxNode* pParentNode, FbxNode* pChildNode)
 	return true;
 }
 
+double FbxTools::FindGroundLevel(QList<FbxNode*> aMeshNodes)
+{
+	double fGroundLevel = 0.0;
 
+	FbxAMatrix oWsTransform;
+	foreach(FbxNode * pNode, aMeshNodes)
+	{
+		FbxGeometry* pMesh = pNode->GetMesh();
+		oWsTransform = pNode->EvaluateGlobalTransform();
+		FbxVector4 *pVertexBuffer = pMesh->GetControlPoints();
+		for (int i = 0; i < pMesh->GetControlPointsCount(); i++)
+		{
+			FbxVector4 v = pVertexBuffer[i];
+			FbxVector4 oWsPos = oWsTransform.MultT(v);
+			fGroundLevel = std::min(fGroundLevel, oWsPos[1]);
+		}
+	}
+
+	return fGroundLevel;
+}

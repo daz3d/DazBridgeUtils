@@ -9866,7 +9866,7 @@ bool DzBridgeAction::postProcessRigConversion(QString sExportRigMode, QString fb
 //		sTargetPoseFilename = dzApp->getTempPath() + "/unreal_apose_noroot.fbx";
 		sTargetPoseFilename = dzApp->getTempPath() + "/g9_unreal_apose_fixed.fbx";
 		if (bIsG2) {
-			sTargetPoseFilename = dzApp->getTempPath() + "/g1_unreal_apose_fixed.fbx";
+			//sTargetPoseFilename = dzApp->getTempPath() + "/g1_unreal_apose_fixed.fbx";
 			//pCustomJointFixer = &oUnrealFixer2_G1;
 		}
 //		sFinalRigTemplateFbxFilename = dzApp->getTempPath() + "/unreal_rig_template.fbx";
@@ -9956,8 +9956,8 @@ bool DzBridgeAction::postProcessRigConversion
 	
 	if (RootBone)
 	{
-		QList<FbxNode*> nodeList;
-		FbxTools::GetAllMeshes(RootNode, nodeList);
+		QList<FbxNode*> aMeshNodeList;
+		FbxTools::GetAllMeshes(RootNode, aMeshNodeList);
 		
 		QString sFigureNodeName = m_pSelectedNode->getName() + ".Shape";
 		FbxNode* pFigureNode = pScene->FindNodeByName(sFigureNodeName.toLocal8Bit().constData());
@@ -9989,7 +9989,7 @@ bool DzBridgeAction::postProcessRigConversion
 					pScene->Destroy();
 					return false;
 				}
-				foreach(FbxNode* pNode, nodeList) {
+				foreach(FbxNode* pNode, aMeshNodeList) {
 					FbxTools::BakePoseToBindMatrix(pNode->GetMesh(), nullptr);
 				}
 //				printf("DEBUG: OVERRIDE PATHWAY COMPLETE USING: %s\n", sOverrideRigFilename.toLocal8Bit().constData());
@@ -10051,7 +10051,7 @@ bool DzBridgeAction::postProcessRigConversion
 				}
 #endif
 
-				foreach(FbxNode * pNode, nodeList) {
+				foreach(FbxNode * pNode, aMeshNodeList) {
 					QString debugName(pNode->GetName());
 					FbxMesh* pMesh = pNode->GetMesh();
 					FbxAMatrix matrix = pNode->EvaluateGlobalTransform();
@@ -10082,7 +10082,7 @@ bool DzBridgeAction::postProcessRigConversion
 						}
 					}
 				}
-				foreach(FbxNode* pNode, nodeList) {
+				foreach(FbxNode* pNode, aMeshNodeList) {
 					FbxMesh* pMesh = pNode->GetMesh();
 					FbxTools::BakePoseToBindMatrix(pMesh, nullptr);
 				}				
@@ -10104,7 +10104,7 @@ bool DzBridgeAction::postProcessRigConversion
 					}
 					if (sMeshRoot != "") {
 						FbxNode* pMeshesFolder = pScene->FindNodeByName(sMeshRoot.toLocal8Bit().constData());
-						foreach(FbxNode* pNode, nodeList) {
+						foreach(FbxNode* pNode, aMeshNodeList) {
 							pMeshesFolder->AddChild(pNode);
 						}
 					}
@@ -10116,7 +10116,7 @@ bool DzBridgeAction::postProcessRigConversion
 				}
 
 //				// REBAKE MESHES FOR CONTAINER
-//				foreach(FbxNode * pNode, nodeList) {
+//				foreach(FbxNode * pNode, aMeshNodeList) {
 //					QString debugName(pNode->GetName());
 //					FbxMesh* pMesh = pNode->GetMesh();
 //					FbxAMatrix matrix = pNode->EvaluateGlobalTransform();
@@ -10128,6 +10128,7 @@ bool DzBridgeAction::postProcessRigConversion
 			}
 			else if (m_sExportRigMode == "unreal")
 			{
+				double fGroundLevel = FbxTools::FindGroundLevel(aMeshNodeList);
 
 				FbxSkeleton* pNewRootAttr = FbxSkeleton::Create(pScene, "root");
 				pNewRootAttr->SetSkeletonType(FbxSkeleton::eRoot);
@@ -10137,46 +10138,106 @@ bool DzBridgeAction::postProcessRigConversion
 				pScene->GetRootNode()->AddChild(pNewRootBone);
 				pNewRootBone->SetNodeAttribute(pNewRootAttr);
 				pNewRootBone->LclRotation.Set(FbxDouble3(-90.0, 0.0, 0.0));
+				pNewRootBone->LclTranslation.Set(FbxDouble3(0, 0, 0));
+
+#if 0
+				RootBone = RootBone->FindChild("pelvis");
+				QString sTargetNode("thigh_l");
+				const char* psTargetNodeName = sTargetNode.toLocal8Bit().constData();
+				assert(RootBone->FindChild(psTargetNodeName) && pScene->FindNodeByName(psTargetNodeName));
+				assert(RootBone->FindChild(psTargetNodeName) == pScene->FindNodeByName(psTargetNodeName));
+
+				assert(RootBone->FindChild(psTargetNodeName));
+				//FbxNode* pTargetNode = pScene->FindNodeByName(psTargetNodeName);
+				FbxNode* pTargetNode = RootBone->GetChild(0);
+				FbxAMatrix oPreChangeMatrix = pTargetNode->EvaluateGlobalTransform();
+				FbxVector4 preT = oPreChangeMatrix.GetT();
+				RootBone->LclTranslation.Set(FbxDouble3(0, -fGroundLevel, 0));
+				RootBone->EvaluateGlobalTransform();
+				FbxAMatrix oPostChangeMatrix = pTargetNode->EvaluateGlobalTransform();
+				FbxVector4 postT = oPostChangeMatrix.GetT();
+				dzApp->log(QString("DEBUG: PreChange= {%1, %2, %3}, PostChange= {%4, %5, %6}").arg(preT[0]).arg(preT[1]).arg(preT[2]).arg(postT[0]).arg(postT[1]).arg(postT[2]));
+
+				QList<FbxNode*> aBoneList;
+				FbxTools::GetBoneList(RootNode, aBoneList);
+				foreach(FbxNode* pBone, aBoneList) {
+					assert(pBone->LclTranslation.HasMaxLimit() == false && pBone->LclTranslation.HasMinLimit() == false);
+				}
+#endif
+
+				// reparent children from old rootbone
 				for (int i = 0; i < RootBone->GetChildCount(); i++) {
 					FbxNode* pChild = RootBone->GetChild(i);
-					FbxTools::ParentInPlace(pNewRootBone, pChild);
+					FbxTools::ParentInPlace0(pNewRootBone, pChild);
 				}
 				pScene->RemoveNode(RootBone);
-				RootBone = pNewRootBone;
+				RootBone->Destroy();
+				//foreach(FbxNode* pMeshNode, aMeshNodeList) {
+				//	const char* psNodeName = pMeshNode->GetName();
+				//	pNewRootBone->AddChild(pMeshNode);
+				//}
+				//for (int i = 0; i < RootNode->GetChildCount(); i++) {
+				//	FbxNode* pChild = RootNode->GetChild(i);
+				//	if (pChild == pNewRootBone) continue;
+				//	const char* psNodeName = pChild->GetName();
+				//	pNewRootBone->AddChild(pChild);
+				//}
+				//RootBone = nullptr;
 
 				//FbxTools::AddIkNodes(pScene, RootBone, "foot_l", "foot_r", "hand_l", "hand_r", pFigureMesh);
-				FbxTools::AddIkNodes(pScene, RootBone, "foot_l", "foot_r", "hand_l", "hand_r", nullptr);
+
+//				pNewRootBone->LclTranslation.Set(FbxVector4(0,0,0));
 
 #if 0
-				//RootBone->SetRotationActive(true);
-				//RootBone->SetPreRotation(FbxNode::eSourcePivot, FbxVector4(-90, 0, 0));
-				//RootBone->SetPostRotation(FbxNode::eSourcePivot, FbxVector4(-90, 0,0));
-				RootBone->LclTranslation.Set(FbxDouble3(0,0,0));
-				RootBone->LclRotation.Set(FbxDouble3(-90.0, 0.0, 0.0));
-#endif
-
-
-#if 0
-				FbxNull* pNullAttr = FbxNull::Create(pScene, "");
-				FbxPropertyT<FbxEnum> oLookProperty = pNullAttr->Look;
-				oLookProperty.Set(0);
-
-				FbxNode* pNullNode = FbxNode::Create(pScene, m_sAssetName.toLocal8Bit().constData());
-				pNullNode->SetNodeAttribute(pNullAttr);
-
-				// Optionally set transform defaults
-				pNullNode->SetPreRotation(fbxsdk::FbxNode::eSourcePivot, FbxVector4(90, 0, 0));
-				pNullNode->LclTranslation.Set(FbxDouble3(0.0, 0.0, 0.0));
-				pNullNode->LclRotation.Set(FbxDouble3(-90.0, 0.0, 0.0));
-				pNullNode->LclScaling.Set(FbxDouble3(1.0, 1.0, 1.0));
-
-				// Add to the scene root
-				pScene->GetRootNode()->AddChild(pNullNode);
-				FbxTools::ParentInPlace(pNullNode, RootBone);
-				foreach(FbxNode* pMeshNode, nodeList) {
-					FbxTools::ParentInPlace(pNullNode, pMeshNode);
+				QString sTempFbx = QString(fbxFilePath).replace(".fbx", "_postProcessed.fbx", Qt::CaseInsensitive);
+				if (FbxTools::ExSaveScene(pScene, sTempFbx) == false) {
+					pScene->Destroy();
+					return false;
 				}
+				aMeshNodeList.clear();
+				pScene->Destroy();
+				pScene = openFBX->CreateScene("reload");
+				if (FbxTools::ExLoadScene(pScene, sTempFbx) == false) {
+					pScene->Destroy();
+					return false;
+				}
+				FbxTools::GetAllMeshes(pScene->GetRootNode(), aMeshNodeList);
 #endif
+				QList<FbxNode*> todoList;
+				pNewRootBone->LclTranslation.Set(FbxVector4(0,0,0));
+				todoList << pNewRootBone->FindChild("pelvis");
+				while (todoList.isEmpty() == false)
+				{
+					FbxNode* pNode = todoList.first(); todoList.pop_front();
+					if (pNode) {
+						FbxAMatrix oWsTransform = pNode->EvaluateGlobalTransform();
+						FbxVector4 oOriginalPos = oWsTransform.GetT();
+						oWsTransform.SetT( oWsTransform.GetT() + FbxVector4(0, -fGroundLevel, 0));
+						FbxAMatrix oParentWsTransform = pNode->GetParent()->EvaluateGlobalTransform();
+						FbxAMatrix oLocalPos = oParentWsTransform.Inverse() * oWsTransform;
+						pNode->LclTranslation.Set(oLocalPos.GetT());
+						FbxAMatrix oNewWsPos = pNode->EvaluateGlobalTransform();
+						FbxVector4 oNewPos = oWsTransform.GetT();
+						for (int i = 0; i < pNode->GetChildCount(); i++) {
+							todoList << pNode->GetChild(i);
+						}
+					}
+				}
+				FbxAMatrix Identity; Identity.SetIdentity();
+				foreach(FbxNode* pNode, aMeshNodeList) {
+					FbxTools::BakePoseToVertexBuffer(pNode->GetMesh()->GetControlPoints(), &Identity, nullptr, pNode->GetMesh());
+					FbxTools::BakePoseToBindMatrix(pNode->GetMesh(), nullptr);
+				}
+
+				FbxTools::AddIkNodes(pScene, pNewRootBone, "foot_l", "foot_r", "hand_l", "hand_r", nullptr);
+
+				FbxTools::RemoveBindPoses(pScene);
+				FbxTools::RemoveAllPoses(pScene);
+				FbxPose* pNewBindPose = FbxPose::Create(pScene->GetFbxManager(), "New Bind Pose");
+				pNewBindPose = FbxTools::SaveCurrentPose(pScene, pScene->GetRootNode(), pNewBindPose);
+				bool bResult = pScene->AddPose(pNewBindPose);
+				assert(bResult == true);
+				pNewBindPose->SetIsBindPose(true);
 
 			}
 		}
