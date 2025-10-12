@@ -9864,7 +9864,8 @@ bool DzBridgeAction::postProcessRigConversion(QString sExportRigMode, QString fb
 //		RootBone->SetRotationOrder(FbxNode::eDestinationPivot, FbxEuler::eOrderXYZ);
 		pCustomJointFixer = &oUnrealFixer2;
 //		sTargetPoseFilename = dzApp->getTempPath() + "/unreal_apose_noroot.fbx";
-		sTargetPoseFilename = dzApp->getTempPath() + "/g9_unreal_apose_fixed.fbx";
+		//sTargetPoseFilename = dzApp->getTempPath() + "/g9_unreal_apose_fixed.fbx";
+		sTargetPoseFilename = dzApp->getTempPath() + "/ue5_apose.fbx";
 		if (bIsG2) {
 			//sTargetPoseFilename = dzApp->getTempPath() + "/g1_unreal_apose_fixed.fbx";
 			//pCustomJointFixer = &oUnrealFixer2_G1;
@@ -9940,8 +9941,8 @@ bool DzBridgeAction::postProcessRigConversion
 				RootBone = ChildNode;
 				RootBoneName = RootBone->GetName();
 				if (m_sExportRigMode == "unreal") {
-					RootBone->SetName("old_root");
-					pSkeletonAttr->SetName("Root");
+					RootBone->SetName("root");
+					pSkeletonAttr->SetName("root");
 					pSkeletonAttr->Reset();
 					pSkeletonAttr->SetSkeletonType(FbxSkeleton::EType::eRoot);
 				}

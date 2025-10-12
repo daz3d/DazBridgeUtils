@@ -2117,7 +2117,7 @@ void FbxTools::UnrealJointFixCallback::performTask(FbxAMatrix &Matrix, FbxCluste
 }
 
 #include <QMessageBox>
-bool FbxTools::ExSaveScene(FbxScene* pScene, QString sFilename, bool bShowGuiError, QString sErrorMessageTemplate)
+bool FbxTools::ExSaveScene(FbxScene* pScene, QString sFilename, bool bAsciiMode, bool bEmbedTextures, bool bShowGuiError, QString sErrorMessageTemplate)
 {
 	if (pScene == nullptr) return false;
 
@@ -2132,8 +2132,9 @@ Error Message: \"%3\"\n\n"
 	}
 
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
-
-	if (openFBX->SaveScene(pScene, sFilename, 1) == false)
+	int nFileMode = -1; /* default */
+	if (bAsciiMode) nFileMode = 1;
+	if (openFBX->SaveScene(pScene, sFilename, nFileMode, bEmbedTextures) == false)
 	{
 		QString sFbxErrorMessage = QString(sErrorMessageTemplate).arg(sFilename).arg(openFBX->GetErrorCode()).arg(openFBX->GetErrorString());
 

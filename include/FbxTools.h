@@ -180,7 +180,7 @@ public:
 
 	static bool ParentInPlace0(FbxNode* pParentNode, FbxNode* pChildNode);
 
-	static bool ExSaveScene(FbxScene* pScene, QString sFilename, bool bShowGuiError = false, QString sErrorMessageTemplate = "");
+	static bool ExSaveScene(FbxScene* pScene, QString sFilename, bool bAsciiMode=false, bool bEmbedTextures=false, bool bShowGuiError = false, QString sErrorMessageTemplate = "");
 
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING
