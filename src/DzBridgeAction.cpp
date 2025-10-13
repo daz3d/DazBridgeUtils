@@ -9855,7 +9855,6 @@ bool DzBridgeAction::postProcessRigConversion(QString sExportRigMode, QString fb
 	QString sGarmentRoot = "";
 
 	FbxTools::UnrealJointFixCallback2 oUnrealFixer2;
-	FbxTools::UnrealJointFixCallback2_G1 oUnrealFixer2_G1;
 	if (sExportRigMode == "unreal" || sExportRigMode == "metahuman") {
 		if (m_pSelectedNode->getName() == "Genesis9") {
 //			sMvcTemplateFilename = dzApp->getTempPath() + "/g9_to_unreal_mvc_template.fbx";
@@ -9863,12 +9862,18 @@ bool DzBridgeAction::postProcessRigConversion(QString sExportRigMode, QString fb
 		}
 //		RootBone->SetRotationOrder(FbxNode::eDestinationPivot, FbxEuler::eOrderXYZ);
 		pCustomJointFixer = &oUnrealFixer2;
-//		sTargetPoseFilename = dzApp->getTempPath() + "/unreal_apose_noroot.fbx";
-		//sTargetPoseFilename = dzApp->getTempPath() + "/g9_unreal_apose_fixed.fbx";
-		sTargetPoseFilename = dzApp->getTempPath() + "/ue5_apose.fbx";
+		sTargetPoseFilename = dzApp->getTempPath() + "/g9_ue5_apose.fbx";
+		if (bIsG8or81) {
+			sTargetPoseFilename = dzApp->getTempPath() + "/g8_ue5_apose.fbx";
+		}
+		if (bIsG3) {
+			sTargetPoseFilename = dzApp->getTempPath() + "/g3_ue5_apose.fbx";
+		}
 		if (bIsG2) {
-			//sTargetPoseFilename = dzApp->getTempPath() + "/g1_unreal_apose_fixed.fbx";
-			//pCustomJointFixer = &oUnrealFixer2_G1;
+			sTargetPoseFilename = dzApp->getTempPath() + "/g2_ue5_apose.fbx";
+		}
+		if (bIsG1) {
+			sTargetPoseFilename = dzApp->getTempPath() + "/g1_ue5_apose.fbx";
 		}
 //		sFinalRigTemplateFbxFilename = dzApp->getTempPath() + "/unreal_rig_template.fbx";
 //		sRigRoot = "SKM_Genesis";
