@@ -4235,12 +4235,30 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 
 	// initialize Fbx Scene Bone Mapping
 	QMap<QString, FbxNode*> oBoneMap;
+	QMap<QString, QList<FbxNode*>> oDuplicateBoneTable;
 	for (int i=0; i < pScene->GetNodeCount(); i++) {
 		FbxNode* pNode = pScene->GetNode(i);
 		FbxNodeAttribute* pAttr = pNode->GetNodeAttribute();
 		if (pAttr && pAttr->GetAttributeType() == FbxNodeAttribute::eSkeleton) {
 			QString sNodeName(pNode->GetName());
-			oBoneMap.insert(sNodeName, pNode);
+			// sanity check
+			if (oBoneMap.contains(sNodeName)) {
+				debug_printf("WARNING! multiple bones detected with same name: %s\n", sNodeName.toLocal8Bit().constData());
+				if (oDuplicateBoneTable.contains(sNodeName)) {
+					oDuplicateBoneTable[sNodeName].append(pNode);
+				}
+				else {
+					QList<FbxNode*> oNewList;
+					oNewList.append(oBoneMap[sNodeName]);
+					oNewList.append(pNode);
+					oDuplicateBoneTable.insert(sNodeName, oNewList);
+				}
+			}
+			else
+			{
+				// only insert first bone found, don't overwrite main lookup table
+				oBoneMap.insert(sNodeName, pNode);
+			}
 		}
 	}
 	
@@ -4284,6 +4302,8 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 	}
 	if (aBindPoses.length() != 1) {
 		debug_printf("WARNING: BindPoses != 1 (%i)\n", aBindPoses.length());
+		// DB 2025-10-15, bake to single bind pose before proceeding
+		BakeMeshesToSingleBindPose(pScene);
 	}
 
 	// ADD BONES
@@ -4309,9 +4329,17 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 		QList<FbxNode*> aAdditionalChildBones;
 		foreach(QString sBoneName, aChildBoneNames) {
 			if (oBoneMap.contains(sBoneName)) { aChildBones.append(oBoneMap.value(sBoneName)); }
+			if (oDuplicateBoneTable.contains(sBoneName)) {
+				foreach(FbxNode * pDuplicateBone, oDuplicateBoneTable[sBoneName]) {
+					if (!aChildBones.contains(pDuplicateBone)) { aChildBones.append(pDuplicateBone); }
+				}
+			}
 		}
 		foreach(QString sBoneName, aAdditionalChildBoneNames) {
 			if (oBoneMap.contains(sBoneName)) { aAdditionalChildBones.append(oBoneMap.value(sBoneName)); }
+			foreach(FbxNode * pDuplicateBone, oDuplicateBoneTable[sBoneName]) {
+				if (!aAdditionalChildBones.contains(pDuplicateBone)) { aAdditionalChildBones.append(pDuplicateBone); }
+			}
 		}
 		if (pParentBone) {
 			// create new bone
@@ -4390,6 +4418,17 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 			}
 			debug_printf("ProxyMeshBoneRenamer: Renaming %s to %s\n", pFbxNode->GetName(), sValue.toLocal8Bit().constData());
 			pFbxNode->SetName(sValue.toLocal8Bit().constData());
+			if (oDuplicateBoneTable.contains(sKey)) {
+				foreach(FbxNode * pDuplicateNode, oDuplicateBoneTable[sKey]) {
+					if (pDuplicateNode == pFbxNode) continue;
+					if (QString(pDuplicateNode->GetName()) == sValue) {
+						debug_printf("WARNING: Duplicate detected, but already renamed: %s...\n", sValue.toLocal8Bit().constData());
+						continue;
+					}
+					debug_printf("WARNING! ProxyMeshBoneRenamer: Renaming duplicate %s to %s\n", pDuplicateNode->GetName(), sValue.toLocal8Bit().constData());
+					pDuplicateNode->SetName(sValue.toLocal8Bit().constData());
+				}
+			}
 		}
 		else if (oValue.type() == QVariant::Type::Int) {
 			if (oValue.toInt() == -1) {
