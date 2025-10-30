@@ -94,26 +94,26 @@ namespace DzBridgeNameSpace
 	/// </summary>
 	class CPP_Export DzBridgeAction : public DzAction {
 		Q_OBJECT
-		Q_PROPERTY(int nNonInteractiveMode READ getNonInteractiveMode WRITE setNonInteractiveMode)
-		Q_PROPERTY(QString sAssetType READ getAssetType WRITE setAssetType)
-		Q_PROPERTY(QString sExportFilename READ getExportFilename WRITE setExportFilename)
-		Q_PROPERTY(QString sExportFolder READ getExportFolder WRITE setExportFolder)
-		Q_PROPERTY(QString sRootFolder READ getRootFolder WRITE setRootFolder)
-		Q_PROPERTY(QString sProductName READ getProductName WRITE setProductName)
-		Q_PROPERTY(QString sProductComponentName READ getProductComponentName WRITE setProductComponentName)
-		Q_PROPERTY(QStringList aMorphList READ getMorphList WRITE setMorphList)
-		Q_PROPERTY(bool bUseRelativePaths READ getUseRelativePaths WRITE setUseRelativePaths)
-		Q_PROPERTY(bool bGenerateNormalMaps READ getGenerateNormalMaps WRITE setGenerateNormalMaps)
-		Q_PROPERTY(bool bUndoNormalMaps READ getUndoNormalMaps WRITE setUndoNormalMaps)
-		Q_PROPERTY(QString sExportFbx READ getExportFbx WRITE setExportFbx)
-		Q_PROPERTY(DzBasicDialog* wBridgeDialog READ getBridgeDialog WRITE setBridgeDialog)
-		Q_PROPERTY(DzBasicDialog* wSubdivisionDialog READ getSubdivisionDialog WRITE setSubdivisionDialog)
-		Q_PROPERTY(DzBasicDialog* wMorphSelectionDialog READ getMorphSelectionDialog WRITE setMorphSelectionDialog)
-		Q_PROPERTY(DzBasicDialog* wLodSettingsDialog READ getLodSettingsDialog WRITE setLodSettingsDialog)
-		Q_PROPERTY(bool bEnableLodGeneration READ getEnableLodGeneration WRITE setEnableLodGeneration)
-		Q_PROPERTY(int nLodMethodIndex READ getLodMethodIndex WRITE setLodMethod)
-		Q_PROPERTY(QString sLodMethod READ getLodMethodString WRITE setLodMethod)
-		Q_PROPERTY(int nNumberOfLods READ getNumberOfLods WRITE setNumberOfLods)
+			Q_PROPERTY(int nNonInteractiveMode READ getNonInteractiveMode WRITE setNonInteractiveMode)
+			Q_PROPERTY(QString sAssetType READ getAssetType WRITE setAssetType)
+			Q_PROPERTY(QString sExportFilename READ getExportFilename WRITE setExportFilename)
+			Q_PROPERTY(QString sExportFolder READ getExportFolder WRITE setExportFolder)
+			Q_PROPERTY(QString sRootFolder READ getRootFolder WRITE setRootFolder)
+			Q_PROPERTY(QString sProductName READ getProductName WRITE setProductName)
+			Q_PROPERTY(QString sProductComponentName READ getProductComponentName WRITE setProductComponentName)
+			Q_PROPERTY(QStringList aMorphList READ getMorphList WRITE setMorphList)
+			Q_PROPERTY(bool bUseRelativePaths READ getUseRelativePaths WRITE setUseRelativePaths)
+			Q_PROPERTY(bool bGenerateNormalMaps READ getGenerateNormalMaps WRITE setGenerateNormalMaps)
+			Q_PROPERTY(bool bUndoNormalMaps READ getUndoNormalMaps WRITE setUndoNormalMaps)
+			Q_PROPERTY(QString sExportFbx READ getExportFbx WRITE setExportFbx)
+			Q_PROPERTY(DzBasicDialog* wBridgeDialog READ getBridgeDialog WRITE setBridgeDialog)
+			Q_PROPERTY(DzBasicDialog* wSubdivisionDialog READ getSubdivisionDialog WRITE setSubdivisionDialog)
+			Q_PROPERTY(DzBasicDialog* wMorphSelectionDialog READ getMorphSelectionDialog WRITE setMorphSelectionDialog)
+			Q_PROPERTY(DzBasicDialog* wLodSettingsDialog READ getLodSettingsDialog WRITE setLodSettingsDialog)
+			Q_PROPERTY(bool bEnableLodGeneration READ getEnableLodGeneration WRITE setEnableLodGeneration)
+			Q_PROPERTY(int nLodMethodIndex READ getLodMethodIndex WRITE setLodMethod)
+			Q_PROPERTY(QString sLodMethod READ getLodMethodString WRITE setLodMethod)
+			Q_PROPERTY(int nNumberOfLods READ getNumberOfLods WRITE setNumberOfLods)
 
 	public:
 
@@ -152,11 +152,11 @@ namespace DzBridgeNameSpace
 		// perform post-processing of Fbx after export
 		Q_INVOKABLE virtual bool postProcessFbx(QString fbxFilePath);
 
-		Q_INVOKABLE DzBasicDialog* getLodSettingsDialog() { return (DzBasicDialog*) m_wLodSettingsDialog; }
-		Q_INVOKABLE virtual void setLodSettingsDialog(DzBasicDialog* arg) { m_wLodSettingsDialog = (DzBridgeLodSettingsDialog*) arg; }
+		Q_INVOKABLE DzBasicDialog* getLodSettingsDialog() { return (DzBasicDialog*)m_wLodSettingsDialog; }
+		Q_INVOKABLE virtual void setLodSettingsDialog(DzBasicDialog* arg) { m_wLodSettingsDialog = (DzBridgeLodSettingsDialog*)arg; }
 		Q_INVOKABLE virtual bool getEnableLodGeneration() { return m_bEnableLodGeneration; }
 		Q_INVOKABLE virtual void setEnableLodGeneration(bool arg) { m_bEnableLodGeneration = arg; }
-		Q_INVOKABLE virtual int getLodMethodIndex() { return (int) m_eLodMethod; }
+		Q_INVOKABLE virtual int getLodMethodIndex() { return (int)m_eLodMethod; }
 		Q_INVOKABLE virtual void setLodMethod(int arg);
 		Q_INVOKABLE virtual QString getLodMethodString();
 		Q_INVOKABLE virtual void setLodMethod(QString arg);
@@ -165,7 +165,7 @@ namespace DzBridgeNameSpace
 
 		Q_INVOKABLE virtual DzNode* getSelectedNode() { return m_pSelectedNode; }
 		Q_INVOKABLE virtual unsigned int calcCRC32(QString sFilename);
-		Q_INVOKABLE virtual int getCalcCRC32ResultCode() { return (int) m_nCalcCRC32ResultCode; }
+		Q_INVOKABLE virtual int getCalcCRC32ResultCode() { return (int)m_nCalcCRC32ResultCode; }
 		enum CalcCRC32ResultCodes
 		{
 			SUCCESS = 0,
@@ -208,13 +208,13 @@ namespace DzBridgeNameSpace
 
 		// Bridge API: Static Functions
 		// Scene Smart Selection API
-		Q_INVOKABLE static DzNodeList BuildRootNodeList(bool bUnhideNodes=false);
+		Q_INVOKABLE static DzNodeList BuildRootNodeList(bool bUnhideNodes = false);
 		Q_INVOKABLE static DzNodeList FindRootNodes(DzNode* pNode);
 		Q_INVOKABLE static void ReparentFigure(DzNode* figure);
 		Q_INVOKABLE static DzNode* ChooseBestSelectedNode(const DzNodeList aNodeList);
 		Q_INVOKABLE static DzNode* FindNodeByName(DzNode* pRootNode, QString sNodeName);
 		Q_INVOKABLE static DzSkeleton* GetNonFollowerParent(DzSkeleton* pSkeleton);
-		Q_INVOKABLE static EAssetType SelectBestRootNodeForTransfer(bool bAvoidFollowers=true);
+		Q_INVOKABLE static EAssetType SelectBestRootNodeForTransfer(bool bAvoidFollowers = true);
 		// Direct Bake API: Instance, Rigid-Follow-Node, Pivot Point
 		Q_INVOKABLE static bool DetectInstancesInScene();
 		Q_INVOKABLE static bool DetectCustomPivotsInScene();
@@ -225,58 +225,58 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual bool bakeInstances(); // script friendly convenience function
 		Q_INVOKABLE virtual bool bakeRigidFollowNodes(); // script friendly convenience function
 
-		Q_INVOKABLE virtual int getBakeInstancesMode() { return (int) m_eBakeInstancesMode; }
-		Q_INVOKABLE virtual void setBakeInstancesMode(int arg) { m_eBakeInstancesMode = (EBakeMode) arg; }
-		Q_INVOKABLE virtual int getBakePivotPointsMode() { return (int) m_eBakePivotPointsMode; }
-		Q_INVOKABLE virtual void setBakePivotPointsMode(int arg) { m_eBakePivotPointsMode = (EBakeMode) arg; }
-		Q_INVOKABLE virtual int getBakeRigidFollowNodesMode() { return (int) m_eBakeRigidFollowNodesMode; }
-		Q_INVOKABLE virtual void setBakeRigidFollowNodesMode(int arg) { m_eBakeRigidFollowNodesMode = (EBakeMode) arg; }
+		Q_INVOKABLE virtual int getBakeInstancesMode() { return (int)m_eBakeInstancesMode; }
+		Q_INVOKABLE virtual void setBakeInstancesMode(int arg) { m_eBakeInstancesMode = (EBakeMode)arg; }
+		Q_INVOKABLE virtual int getBakePivotPointsMode() { return (int)m_eBakePivotPointsMode; }
+		Q_INVOKABLE virtual void setBakePivotPointsMode(int arg) { m_eBakePivotPointsMode = (EBakeMode)arg; }
+		Q_INVOKABLE virtual int getBakeRigidFollowNodesMode() { return (int)m_eBakeRigidFollowNodesMode; }
+		Q_INVOKABLE virtual void setBakeRigidFollowNodesMode(int arg) { m_eBakeRigidFollowNodesMode = (EBakeMode)arg; }
 
 		Q_INVOKABLE virtual bool getEmbedTexturesInOutputFile() { return m_bEmbedTexturesInOutputFile; }
 		Q_INVOKABLE virtual void setEmbedTexturesInOutputFile(bool arg) { m_bEmbedTexturesInOutputFile = arg; }
 
 		Q_INVOKABLE virtual bool getAllowMorphDoubleDipping() { return m_bAllowMorphDoubleDipping; }
 		Q_INVOKABLE virtual void setAllowMorphDoubleDipping(bool arg) { m_bAllowMorphDoubleDipping = arg; }
-		
+
 		Q_INVOKABLE virtual bool getBakeMeshesToSingleBindPose() { return m_bBakeMeshesToSingleBindPose; }
 		Q_INVOKABLE virtual void setBakeMeshesToSingleBindPose(bool arg) { m_bBakeMeshesToSingleBindPose = arg; }
 
 		// BASE TEMP FILE SYSTEM -- temp basefilename that is shared across multiple files within a single export/conversion operation.  see m_sTempBaseFilename in private section
 		Q_INVOKABLE virtual bool refreshTempBasefilename();
 		Q_INVOKABLE virtual QString getTempBasefilename();
-		
+
 		// PROXY GENERATION
 		Q_INVOKABLE virtual bool generateProxyMesh(DzNode* pNode, QString sFbxFilePath, bool bExportFacsBlendshapes);
 		Q_INVOKABLE virtual QStringList findEyelashEyebrowsHair(DzNode* pParentNode);
-		Q_INVOKABLE virtual bool hideFollowerMeshes(DzNode* pNode, QStringList aSafeNamesList, QMap<DzNode*, DzNode*> &oUndoTable);
+		Q_INVOKABLE virtual bool hideFollowerMeshes(DzNode* pNode, QStringList aSafeNamesList, QMap<DzNode*, DzNode*>& oUndoTable);
 		Q_INVOKABLE virtual int getNumVisibleFacesFromNode(DzNode* pNode);
-		Q_INVOKABLE virtual bool unfitAllFollowerMeshes(QMap<DzNode*, DzNode*> &oUndoTable);
+		Q_INVOKABLE virtual bool unfitAllFollowerMeshes(QMap<DzNode*, DzNode*>& oUndoTable);
 		Q_INVOKABLE virtual DzNode* applyGeograft(DzNode* pBaseNode, QString geograftFilename, QString geograftNodeName);
-		Q_INVOKABLE virtual bool undoHideFollowerMeshes(QMap<DzNode*, DzNode*> &oUndoTable, bool bUndoUnfitting=false);
+		Q_INVOKABLE virtual bool undoHideFollowerMeshes(QMap<DzNode*, DzNode*>& oUndoTable, bool bUndoUnfitting = false);
 		Q_INVOKABLE virtual bool copyMaterialsToGeograft(DzNode* pGeograftNode, DzNode* pBaseNode);
-		Q_INVOKABLE virtual bool generateMorphProxyRigs(DzNode* pNode, QString sFbxBaseFilePath, QList<QString> aMorphNames, QList<QString> &aOutputFileList);
+		Q_INVOKABLE virtual bool generateMorphProxyRigs(DzNode* pNode, QString sFbxBaseFilePath, QList<QString> aMorphNames, QList<QString>& aOutputFileList);
 
 		// MORPH PROXY TOOLS
 		QString m_sMorphProxyFilePath = "";
 		QString m_sFacsJawOpen = "";
 		QString m_sFacsJawOpenMouthClose = "";
 		Q_INVOKABLE virtual bool loadMorphSelectionOverride(QString sMorphExportFilename);
-		Q_INVOKABLE virtual bool generateBakedJawOpenMouthClose(DzNode* pParentNode, bool bUseArKitFacs=true);
-		Q_INVOKABLE virtual bool generateBakedJawOpen(DzNode* pParentNode, bool bUseArKitFacs=true);
+		Q_INVOKABLE virtual bool generateBakedJawOpenMouthClose(DzNode* pParentNode, bool bUseArKitFacs = true);
+		Q_INVOKABLE virtual bool generateBakedJawOpen(DzNode* pParentNode, bool bUseArKitFacs = true);
 		Q_INVOKABLE virtual bool calculateMouthCloseVertexDeltas(FbxVector4* pVertexDeltaBuffer, int numVertexDeltaBufferIndexes);
 		QString m_sMvcProxyMeshFilePath = "";
 		Q_INVOKABLE virtual bool retargetBlendshapesToBaseRig(QList<QString> aProxyRigList, QString sFileBasePath, QString sBaseFigureName);
 		QList<QString> m_aMorphProxyRigList;
-		
+
 		// STRAND-BASED-HAIR TOOLS
 		Q_INVOKABLE virtual bool isStrandBasedHair(DzNode* pNode);
 		Q_INVOKABLE virtual bool hideAllStrandBasedHair();
 		Q_INVOKABLE virtual bool undoHideAllStrandBasedHair();
-		Q_INVOKABLE virtual bool hideStrandBasedHair(DzNode* pNode, QMap<DzNode*, DzNode*> &oUndoTable);
-		Q_INVOKABLE virtual int getNumPolylines(DzFacetMesh *pFacetMesh);
-		Q_INVOKABLE virtual int getNumPolylineSegments(DzFacetMesh *pFacetMesh);
-		Q_INVOKABLE virtual int getNumPolylineVertexDataIndices(DzFacetMesh *pFacetMesh);
-		Q_INVOKABLE virtual bool getPolylineVertexIndices(DzFacetMesh *pFacetMesh, int nIndex, QVariantList& aReturnValues);
+		Q_INVOKABLE virtual bool hideStrandBasedHair(DzNode* pNode, QMap<DzNode*, DzNode*>& oUndoTable);
+		Q_INVOKABLE virtual int getNumPolylines(DzFacetMesh* pFacetMesh);
+		Q_INVOKABLE virtual int getNumPolylineSegments(DzFacetMesh* pFacetMesh);
+		Q_INVOKABLE virtual int getNumPolylineVertexDataIndices(DzFacetMesh* pFacetMesh);
+		Q_INVOKABLE virtual bool getPolylineVertexIndices(DzFacetMesh* pFacetMesh, int nIndex, QVariantList& aReturnValues);
 
 		// RIG and JOINT CONVERSION API
 		Q_INVOKABLE virtual bool getConvertRigEnabled() { return m_bConvertRigEnabled; };
@@ -287,19 +287,19 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE virtual void setExportRigMode(QString arg) { m_sExportRigMode = arg; };
 
 		Q_INVOKABLE virtual bool exSetArkitCorrectives(double fNewValue, DzNode* pParentNode);
-		Q_INVOKABLE virtual bool exGetArkitCorrectives(double &fReturnVariable, DzNode* pParentNode);
+		Q_INVOKABLE virtual bool exGetArkitCorrectives(double& fReturnVariable, DzNode* pParentNode);
 
 		static void logFunc(QString sMesg) { dzApp->log(sMesg); };
-		Q_INVOKABLE virtual bool exLoadFbxScene(FbxScene* pScene, QString sFilename, int bShowGuiError=-1, QString sErrorMessageTemplate="");
+		Q_INVOKABLE virtual bool exLoadFbxScene(FbxScene* pScene, QString sFilename, int bShowGuiError = -1, QString sErrorMessageTemplate = "");
 
 		bool retargetFigureToNewRig(DzNode* pDazFigureNode, FbxScene* pScene, FbxNode* RootBone, QString sMvcTemplateFilename, QString sMvcProxyMeshFilePath, QString sOverrideRigFilename);
 		bool applyMvcAndRebindRig(FbxScene* pScene, FbxMesh* pTargetMesh, FbxVector4* pTempBuffer, FbxNode* RootBone, MvcFbxBoneRetargeter* pMvcBoneRetargeter);
 		bool prepareMvcBoneRetargeter(QString sMvcTemplateFilename, MvcFbxBoneRetargeter* pMvcBoneRetargeter);
 
-		Q_INVOKABLE virtual QList<DzNode*> findAllStrandBasedHair(DzNode* pParentNode=nullptr);
-		Q_INVOKABLE virtual bool writeHair(QString sFilePath, QList<DzNode*> aHairNodesList, QString sCompatibilityMode="");
+		Q_INVOKABLE virtual QList<DzNode*> findAllStrandBasedHair(DzNode* pParentNode = nullptr);
+		Q_INVOKABLE virtual bool writeHair(QString sFilePath, QList<DzNode*> aHairNodesList, QString sCompatibilityMode = "");
 		virtual bool writeAbcMesh(DzNode* pNode, Alembic::Abc::OArchive& AbcArchive, Alembic::Abc::TimeSamplingPtr& TimeSampling);
-		virtual bool writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArchive& AbcArchive, Alembic::Abc::TimeSamplingPtr& TimeSampling, int *pGroupId, QString sCompatibilityMode="");
+		virtual bool writeAbcCurve(QList<DzNode*> aNodeList, Alembic::Abc::OArchive& AbcArchive, Alembic::Abc::TimeSamplingPtr& TimeSampling, int* pGroupId, QString sCompatibilityMode = "");
 
 		Q_INVOKABLE virtual bool getDetachGeometryEnabled() { return m_bDetachGeometry; };
 		Q_INVOKABLE virtual void setDetachGeometryEnabled(bool arg) { m_bDetachGeometry = arg; };
@@ -352,6 +352,10 @@ namespace DzBridgeNameSpace
 		Q_INVOKABLE void setExportFolder(QString arg_Folder) { this->m_sExportSubfolder = arg_Folder; };
 		Q_INVOKABLE QString getRootFolder() { return this->m_sRootFolder; };
 		Q_INVOKABLE void setRootFolder(QString arg_Root) { this->m_sRootFolder = arg_Root; };
+
+		// DB 2025-10-30, allow asset name override by script
+		Q_INVOKABLE QString getAssetName() { return this->m_sAssetName; };
+		Q_INVOKABLE void setAssetName(QString arg_AssetName) { this->m_sAssetName = arg_AssetName; };
 
 		Q_INVOKABLE QString getProductName() { return this->m_sProductName; };
 		Q_INVOKABLE void setProductName(QString arg_ProductName) { this->m_sProductName = arg_ProductName; };

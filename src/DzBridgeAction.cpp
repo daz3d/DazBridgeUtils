@@ -1649,8 +1649,13 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 		setExportOptions(ExportOptions);
 
 		// wait for scene ready to export
+		// DB 2025-10-30, timeout bypass
+		float fTimeoutBypass = 60.0 * 1000; // 60 seconds
+		QTime oStartTime = QTime::currentTime();
 		while (DzBackgroundProgress::isActive() == true) {
 			QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+			int nElapsedMilliSeconds = oStartTime.msecsTo(QTime::currentTime());
+			if (nElapsedMilliSeconds > fTimeoutBypass) break;
 		}
 
 		// DB 2024-08-24: Fix selected node before exporting to Fbx
