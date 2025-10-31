@@ -251,6 +251,8 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 		// bone conversion incompatibility fix (see line 226 below)
 		if (node->inherits("DzBone")) continue;
 
+		unParentHiddenNodes(node);
+
 		DzObject* object = node->getObject();
 		DzShape* shape = object ? object->getCurrentShape() : NULL;
 
@@ -975,6 +977,11 @@ bool DzBridgeAction::undoPreProcessScene()
 	}
 
 	if (undoDuplicateNodeRename() == false)
+	{
+		bResult = false;
+	}
+
+	if(undoUnParentHiddenNodes() == false)
 	{
 		bResult = false;
 	}
@@ -10450,8 +10457,37 @@ bool DzBridgeAction::retargetBlendshapesToBaseRig(QList<QString> aProxyRigList, 
 	return true;
 }
 
+bool DzBridgeAction::unParentHiddenNodes(DzNode* pNode)
+{
+	if (pNode->isVisible() == false) {
+		DzNode *parent = pNode->getNodeParent();
+		if (parent) {
+			parent->removeNodeChild(pNode);
+			// create Undo
+			m_oUndoUnparentHiddenNodes.insert(pNode, parent);
+			return true;
+		}
+	}
 
+	return false;
+}
 
+bool DzBridgeAction::undoUnParentHiddenNodes()
+{
+	foreach(DzNode * pNode, m_oUndoUnparentHiddenNodes.keys())
+	{
+		DzNode* pParent = m_oUndoUnparentHiddenNodes[pNode];
+		if (pParent) {
+			pParent->addNodeChild(pNode);
+		}
+		else {
+			dzApp->warning(QString("DzBridgeAction::undoUnParentHiddenNodes(): pNode has null parent: %1").arg(pNode->getName()));
+		}
+	}
+
+	m_oUndoUnparentHiddenNodes.clear();
+	return true;
+}
 
 
 

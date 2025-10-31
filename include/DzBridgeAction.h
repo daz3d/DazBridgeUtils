@@ -459,6 +459,10 @@ namespace DzBridgeNameSpace
 		);
 		bool getPolylineMembers(DzMaterialFaceGroup* pMaterialGroup, DzIndexList* &aReturnValues);
 
+		QMap <DzNode*, DzNode*> m_oUndoUnparentHiddenNodes;
+		bool unParentHiddenNodes(DzNode* pNode);
+		bool undoUnParentHiddenNodes();
+
 	protected:
 		// Struct to remember attachment info
 		struct AttachmentInfo
