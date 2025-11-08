@@ -2837,6 +2837,8 @@ QString DzBridgeAction::generateExportAssetFilename(QString sFilename, QString s
 
 	QString exportPath = this->m_sRootFolder.replace("\\", "/") + "/" + this->m_sExportSubfolder.replace("\\", "/");
 	QString fileStem = QFileInfo(sFilename).fileName();
+
+#if 0
 	// DB 2023-Oct-20: add partial path for short filenames
 	QString sNameTest = QFileInfo(sFilename).baseName().remove(QRegExp("[^A-Za-z]")).remove("base").remove("color").remove("normal").remove("roughness").remove("metallic").remove("height").remove("opengl");
 	if (isTemporaryFile(sFilename) == false &&
@@ -2851,6 +2853,12 @@ QString DzBridgeAction::generateExportAssetFilename(QString sFilename, QString s
 			fileStem = filePathArray[len - i] + "_" + fileStem;
 		}
 	}
+#endif
+	// DB 2025-Nov-08: Always use MD5 hash for entire path (sFilename) to minimize chance of incorrect collisions
+	QString sFileStemBase = fileStem;
+	QString sFileExtension = QFileInfo(fileStem).suffix();
+	sFileStemBase.chop(QFileInfo(fileStem).completeSuffix().length() + 1);
+	fileStem = sFileStemBase + "_" + getMD5String(sFilename, "base32") + "." + sFileExtension;
 
 	exportPath += "/ExportTextures/";
 	QDir().mkpath(exportPath);
@@ -5118,7 +5126,52 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 
 }
 
-QString DzBridgeAction::getMD5(const QString& path)
+QString DzBridgeAction::toBase32(const QByteArray& aData)
+{
+	static const char sAlphabet[] = "abcdefghijklmnopqrstuvwxyz234567";
+	QString sResult;
+	int buffer = 0;
+	int bitsLeft = 0;
+
+	for (int i = 0; i < aData.size(); ++i)
+	{
+		buffer = (buffer << 8) | (aData[i] & 0xFF);
+		bitsLeft += 8;
+		while (bitsLeft >= 5)
+		{
+			int index = (buffer >> (bitsLeft - 5)) & 0x1F;
+			bitsLeft -= 5;
+			sResult.append(sAlphabet[index]);
+		}
+	}
+
+	if (bitsLeft > 0)
+	{
+		int index = (buffer << (5 - bitsLeft)) & 0x1F;
+		sResult.append(sAlphabet[index]);
+	}
+
+	return sResult;
+}
+
+QString DzBridgeAction::getMD5String(const QString& sInput, const QString sOptions)
+{
+	QByteArray aInputByteArray = sInput.toUtf8();
+	QCryptographicHash hash(QCryptographicHash::Md5);
+	hash.addData(aInputByteArray);
+
+	QString sResult = "";
+	if (sOptions == "" || sOptions == "hex" || sOptions == "base16") {
+		sResult = QString(hash.result().toHex());
+	}
+	else if (sOptions == "base32") {
+		sResult = toBase32(hash.result());
+	}
+	return sResult;
+}
+
+
+QString DzBridgeAction::getMD5FileContents(const QString& path)
 {
 	auto algo = QCryptographicHash::Md5;
 	QFile sourceFile(path);
@@ -5156,8 +5209,8 @@ bool DzBridgeAction::copyFile(QFile* file, QString* dst, bool replace, bool comp
 	{
 		if (compareFiles && dstExists)
 		{
-			QString srcFileMD5 = getMD5(file->fileName());
-			QString dstFileMD5 = getMD5(*dst);
+			QString srcFileMD5 = getMD5FileContents(file->fileName());
+			QString dstFileMD5 = getMD5FileContents(*dst);
 
 			if (srcFileMD5.length() > 0 && dstFileMD5.length() > 0 && srcFileMD5.compare(dstFileMD5) == 0)
 			{
@@ -7725,7 +7778,7 @@ QString DzBridgeAction::scaleAndReEncodeMaterialProperties(DzNode* Node, DzMater
 
 			if (m_bForceReEncoding) bSkip = false;
 			if (fileTypeExtension == "jpeg") fileTypeExtension = "jpg";
-			if (fileTypeExtension == "jpg") customEncodingQuality = 95;
+			if (fileTypeExtension == "jpg") customEncodingQuality = 88;
 			if (fileTypeExtension == "png") customEncodingQuality = 75;
 
 			// adjust on target quality/compression level if needed

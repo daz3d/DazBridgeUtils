@@ -146,8 +146,10 @@ namespace DzBridgeNameSpace
 		virtual bool undoRenameDuplicateClothing();
 
 		Q_INVOKABLE static bool copyFile(QFile* file, QString* dst, bool replace = true, bool compareFiles = true);
-		Q_INVOKABLE static QString getMD5(const QString& path);
+		Q_INVOKABLE static QString getMD5FileContents(const QString& path);
 		Q_INVOKABLE static bool isGeograft(const DzNode* pNode);
+		Q_INVOKABLE static QString getMD5String(const QString& sInput, const QString sOptions = "");
+		Q_INVOKABLE static QString toBase32(const QByteArray& aData);
 
 		// perform post-processing of Fbx after export
 		Q_INVOKABLE virtual bool postProcessFbx(QString fbxFilePath);

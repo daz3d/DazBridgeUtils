@@ -109,7 +109,7 @@ bool UnitTest_DzBridgeAction::runUnitTests()
 	RUNTEST(writeWeightMaps);
 	RUNTEST(metaInvokeMethod);
 	RUNTEST(copyFile);
-	RUNTEST(getMD5);
+	RUNTEST(getMD5FileContents);
 
 
 	return true;
@@ -833,10 +833,10 @@ bool UnitTest_DzBridgeAction::copyFile(UnitTest::TestResult* testResult)
 	return bResult;
 }
 
-bool UnitTest_DzBridgeAction::getMD5(UnitTest::TestResult* testResult)
+bool UnitTest_DzBridgeAction::getMD5FileContents(UnitTest::TestResult* testResult)
 {
 	bool bResult = true;
-	TRY_METHODCALL(qobject_cast<DzBridgeNameSpace::DzBridgeAction*>(m_testObject)->getMD5(""));
+	TRY_METHODCALL(qobject_cast<DzBridgeNameSpace::DzBridgeAction*>(m_testObject)->getMD5FileContents(""));
 
 	return bResult;
 }

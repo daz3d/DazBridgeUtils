@@ -94,7 +94,7 @@ private:
 	bool writeWeightMaps(UnitTest::TestResult* testResult);
 	bool metaInvokeMethod(UnitTest::TestResult* testResult);
 	bool copyFile(UnitTest::TestResult* testResult);
-	bool getMD5(UnitTest::TestResult* testResult);
+	bool getMD5FileContents(UnitTest::TestResult* testResult);
 
 };
 
