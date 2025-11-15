@@ -118,7 +118,7 @@ QString ImageTools::colorToHexString(const QColor& color)
 	int blue = color.blue();
 
 	// Convert RGB to hexadecimal and concatenate
-	QString hexColor = QString("#%1%2%3")
+	QString hexColor = QString("H%1%2%3")
 		.arg(QString::number(red, 16).rightJustified(2, '0'))
 		.arg(QString::number(green, 16).rightJustified(2, '0'))
 		.arg(QString::number(blue, 16).rightJustified(2, '0'));
