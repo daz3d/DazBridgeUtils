@@ -1,3 +1,4 @@
+#define USE_NATIVE_POSE_RIG_CONVERSION 0
 #define USE_SCRIPT_MEMORY_DUMP 0
 
 #include <dzapp.h>
@@ -10098,6 +10099,11 @@ bool DzBridgeAction::postProcessRigConversion
 			// APPLY TARGET POSE
 			if (sTargetPoseFilename.isEmpty() == false || sTargetPoseFilename != "")
 			{
+#if USE_NATIVE_POSE_RIG_CONVERSION
+				//
+				// Native Daz Studio Pose should be applied prior to Fbx Export
+				//
+#else
 				// load target pose fbx
 				FbxTools::RemoveBindPoses(pScene);
 				if (FbxTools::LoadAndPose(sTargetPoseFilename, pScene, /* DzProgress */NULL, /* bConvertToZup */ false, /* bRotationOnly */ true) == false) {
@@ -10105,6 +10111,7 @@ bool DzBridgeAction::postProcessRigConversion
 					pScene->Destroy();
 					return false;
 				}
+#endif
 
 #if 1
 				QString sUnposedFbxFilename = QString(fbxFilePath).replace(".fbx", "_posed.fbx", Qt::CaseInsensitive);
