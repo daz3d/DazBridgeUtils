@@ -174,7 +174,7 @@ public:
 
 	static bool ParentInPlace(FbxNode* pParentNode, FbxNode* pChildNode);
 
-	static bool ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConversionJsonFilename, FbxTools::ModifyBindPoseCallback* pCustomJointFixer = nullptr);
+	static bool RigConversionBoneRenamer(QString sFbxFilename, QString sRigConversionJsonFilename, FbxTools::ModifyBindPoseCallback* pCustomJointFixer = nullptr);
 	static bool ParentInPlace_BindPose(FbxScene* pScene, FbxNode* pParentNode, FbxNode* pChildNode);
 	static double FindGroundLevel(QList<FbxNode*> aMeshNodes);
 

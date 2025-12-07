@@ -4237,12 +4237,12 @@ bool TransferWeights(FbxScene* pScene, FbxMesh* pMesh, FbxNode* pDestNode, FbxNo
 	return true;
 }
 
-bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConversionJsonFilename, FbxTools::ModifyBindPoseCallback* pCustomJointFixer)
+bool FbxTools::RigConversionBoneRenamer(QString sFbxFilename, QString sRigConversionJsonFilename, FbxTools::ModifyBindPoseCallback* pCustomJointFixer)
 {
 
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
 	FbxScene* pScene = openFBX->CreateScene("Scene");
-	bool bLoadResult = FbxTools::ExLoadScene(pScene, sProxyFbxFilename);
+	bool bLoadResult = FbxTools::ExLoadScene(pScene, sFbxFilename);
 	if (!bLoadResult) {
 		return false;
 	}
@@ -4431,7 +4431,7 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 					pOriginalBone->SetName(sNewName.toLocal8Bit().constData());
 				}
 			}
-			debug_printf("ProxyMeshBoneRenamer: Renaming %s to %s\n", pFbxNode->GetName(), sValue.toLocal8Bit().constData());
+			debug_printf("RigConversionBoneRenamer: Renaming %s to %s\n", pFbxNode->GetName(), sValue.toLocal8Bit().constData());
 			pFbxNode->SetName(sValue.toLocal8Bit().constData());
 			if (oDuplicateBoneTable.contains(sKey)) {
 				foreach(FbxNode * pDuplicateNode, oDuplicateBoneTable[sKey]) {
@@ -4440,14 +4440,14 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 						debug_printf("WARNING: Duplicate detected, but already renamed: %s...\n", sValue.toLocal8Bit().constData());
 						continue;
 					}
-					debug_printf("WARNING! ProxyMeshBoneRenamer: Renaming duplicate %s to %s\n", pDuplicateNode->GetName(), sValue.toLocal8Bit().constData());
+					debug_printf("WARNING! RigConversionBoneRenamer: Renaming duplicate %s to %s\n", pDuplicateNode->GetName(), sValue.toLocal8Bit().constData());
 					pDuplicateNode->SetName(sValue.toLocal8Bit().constData());
 				}
 			}
 		}
 		else if (oValue.type() == QVariant::Type::Int) {
 			if (oValue.toInt() == -1) {
-				debug_printf("ProxyMeshBoneRenamer: marking for deletion: %s\n", pFbxNode->GetName());
+				debug_printf("RigConversionBoneRenamer: marking for deletion: %s\n", pFbxNode->GetName());
 				aBonesToDelete.append(pFbxNode);				
 			}
 		}
@@ -4465,7 +4465,15 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 
 		auto aChildBones = oPostModifyAddChildren[pNewBone];
 		foreach(FbxNode * pChild, aChildBones) {
-			ParentInPlace_RotationOffset(pNewBone, pChild);
+			// 2025-12-17, DB: work-around for stealing bones from other skeletons
+			// check if child is currently sibling node
+			if (pChild->GetParent() == pNewBone->GetParent()) {
+				ParentInPlace_RotationOffset(pNewBone, pChild);
+			}
+			else {
+				const char* lpcsChildName = pChild->GetName();
+				printf("WARNING!!! Imposter Detected: %s\n", lpcsChildName);
+			}
 		}
 	}
 #endif
@@ -4485,17 +4493,17 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 			for (int i=numChildren; i >= 0 ; i--) {
 				FbxNode* pChild = pBoneToDelete->GetChild(i);
 				if (pChild == nullptr) continue;
-				debug_printf("ProxyMeshBoneRenamer: reparenting child: %s\n", pChild->GetName());
+				debug_printf("RigConversionBoneRenamer: reparenting child: %s\n", pChild->GetName());
 				ParentInPlace_RotationOffset(pParent, pChild);
 			}
 		}
 		// remove bone
-		debug_printf("ProxyMeshBoneRenamer: deleting %s\n", pBoneToDelete->GetName());
+		debug_printf("RigConversionBoneRenamer: deleting %s\n", pBoneToDelete->GetName());
 		pScene->RemoveNode(pBoneToDelete);
 	}
 	
 	bool bAsciiMode = true;
-	bool bSaveResult = openFBX->SaveScene(pScene, sProxyFbxFilename, bAsciiMode);
+	bool bSaveResult = openFBX->SaveScene(pScene, sFbxFilename, bAsciiMode);
 
 	pScene->Destroy();
 	
