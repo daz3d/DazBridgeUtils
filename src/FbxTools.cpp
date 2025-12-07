@@ -4806,3 +4806,175 @@ double FbxTools::FindGroundLevel(QList<FbxNode*> aMeshNodes)
 
 	return fGroundLevel;
 }
+
+
+//// BROKEN?
+void FbxTools::RemapFollowerSkinToMainSkeleton(FbxMesh* pFollowerMesh, QMap<QString, FbxNode*> oMainBoneMap, FbxScene* pScene)
+{
+	if (!pFollowerMesh)
+	{
+		return;
+	}
+
+	int nSkinCount = pFollowerMesh->GetDeformerCount(FbxDeformer::eSkin);
+	for (int nSkinIndex = 0; nSkinIndex < nSkinCount; ++nSkinIndex)
+	{
+		FbxSkin* pSkin = static_cast<FbxSkin*>(pFollowerMesh->GetDeformer(nSkinIndex, FbxDeformer::eSkin));
+		if (!pSkin)
+		{
+			continue;
+		}
+
+		int nClusterCount = pSkin->GetClusterCount();
+		for (int nClusterIndex = 0; nClusterIndex < nClusterCount; ++nClusterIndex)
+		{
+			FbxCluster* pCluster = pSkin->GetCluster(nClusterIndex);
+			if (!pCluster)
+			{
+				continue;
+			}
+
+			FbxNode* pOldBone = pCluster->GetLink();
+			if (!pOldBone)
+			{
+				continue;
+			}
+
+			QString sBoneName(pOldBone->GetName());
+			if (oMainBoneMap.contains(sBoneName) == false)
+			{
+				// No matching bone in main skeleton; you may log or handle as needed.
+				continue;
+			}
+
+			FbxNode* pNewBone = oMainBoneMap.value(sBoneName);
+			if (!pNewBone) {
+				continue;
+			}
+
+			// Reassign link to the main skeleton bone
+			pCluster->SetLink(pNewBone);
+
+#if 0
+			// Optional but recommended: recompute bind pose matrices
+			// Get bind-pose transforms in global space.
+			FbxAMatrix oMeshBindMatrix;
+			FbxAMatrix oBoneBindMatrix;
+
+			FbxNode* pMeshNode = pFollowerMesh->GetNode();
+			if (pMeshNode)
+			{
+				oMeshBindMatrix = pMeshNode->EvaluateGlobalTransform(FbxTime(0));
+			}
+			oBoneBindMatrix = pNewBone->EvaluateGlobalTransform(FbxTime(0));
+
+			pCluster->SetTransformMatrix(oMeshBindMatrix);
+			pCluster->SetTransformLinkMatrix(oBoneBindMatrix);
+#endif
+
+		}
+	}
+}
+
+//// BROKEN
+bool FbxTools::MergeFollowerSkeletons(QString sFbxFilename)
+{
+	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
+	FbxScene* pScene = openFBX->CreateScene("Base Mesh Scene");
+	FbxTools::ExLoadScene(pScene, sFbxFilename);
+
+	FbxNode* pRootNode = pScene->GetRootNode();
+	FbxNode* pMainRootBone = FbxTools::FindRootBone(pRootNode, pScene);
+
+	if (!pMainRootBone) return false;
+
+	QList<FbxNode*> aMeshNodeList;
+	FbxTools::GetAllMeshes(pRootNode, aMeshNodeList);
+
+	QList<FbxNode*> aRootBones;
+	// Find and unparent all follower rigs
+	foreach(FbxNode * pFollower, aMeshNodeList)
+	{
+		QString sFollowerRootBoneName = QString(pFollower->GetName()).replace(".Shape", "");
+		FbxNode* pFollowerRootBone = pScene->FindNodeByName(sFollowerRootBoneName.toLocal8Bit().constData());
+		if (pFollowerRootBone)
+		{
+			if (pFollowerRootBone == pMainRootBone) continue;
+			FbxNodeAttribute* pAttr = pFollowerRootBone->GetNodeAttribute();
+			if (pAttr && pAttr->GetAttributeType() == FbxNodeAttribute::eSkeleton)
+			{
+				aRootBones.append(pFollowerRootBone);
+				pFollowerRootBone->GetParent()->RemoveChild(pFollowerRootBone);
+				pRootNode->AddChild(pFollowerRootBone);
+			}
+		}
+	}
+
+	FbxTools::BakeMeshesToSingleBindPose(pScene);
+
+	QMap<QString, FbxNode*> oMainBoneMap;
+	QMap<QString, QList<FbxNode*>> oDuplicateBoneTable;
+	for (int i = 0; i < pScene->GetNodeCount(); i++) {
+		FbxNode* pNode = pScene->GetNode(i);
+		QString sNodeName(pNode->GetName());
+		FbxNodeAttribute* pAttr = pNode->GetNodeAttribute();
+		if (pAttr && pAttr->GetAttributeType() == FbxNodeAttribute::eSkeleton) {
+			// sanity check
+			if (FbxTools::HasNodeAncestor(pNode, pMainRootBone) == false)
+			{
+				printf("WARNING! multiple bones detected with same name: %s\n", sNodeName.toLocal8Bit().constData());
+				if (oDuplicateBoneTable.contains(sNodeName)) {
+					oDuplicateBoneTable[sNodeName].append(pNode);
+				}
+				else {
+					QList<FbxNode*> oNewList;
+					oNewList.append(oMainBoneMap[sNodeName]);
+					oNewList.append(pNode);
+					oDuplicateBoneTable.insert(sNodeName, oNewList);
+				}
+			}
+			else
+			{
+				// only insert first bone found, don't overwrite main lookup table
+				oMainBoneMap.insert(sNodeName, pNode);
+			}
+		}
+	}
+
+	foreach(FbxNode * pFollower, aMeshNodeList)
+	{
+		if (pFollower->GetParent() == pMainRootBone) continue;
+		pFollower->GetParent()->RemoveChild(pFollower);
+		pMainRootBone->AddChild(pFollower);
+		RemapFollowerSkinToMainSkeleton(pFollower->GetMesh(), oMainBoneMap, pScene);
+	}
+	foreach(FbxNode * pFollowerRootBone, aRootBones)
+	{
+		// remove children first
+		QList<FbxNode*> aDeleteList;
+		for (int i = 0; i < pFollowerRootBone->GetChildCount(); i++)
+		{
+			FbxNode* pChild = pFollowerRootBone->GetChild(i);
+			if (pChild->GetMesh()) {
+				printf("WARNING! orphaned mesh detected: %s\n", pChild->GetName());
+				continue;
+			}
+			aDeleteList.append(pChild);
+		}
+		foreach(FbxNode * pDeleteMe, aDeleteList)
+		{
+			pDeleteMe->GetParent()->RemoveChild(pDeleteMe);
+			pScene->RemoveNode(pDeleteMe);
+			pDeleteMe->Destroy();
+		}
+		pScene->RemoveNode(pFollowerRootBone);
+		pFollowerRootBone->Destroy();
+	}
+
+	FbxTools::BakeMeshesToSingleBindPose(pScene);
+
+	FbxTools::ExSaveScene(pScene, sFbxFilename);
+
+	return true;
+}
+
