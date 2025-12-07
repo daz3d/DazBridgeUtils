@@ -438,7 +438,7 @@ namespace DzBridgeNameSpace
 		virtual bool preProcessRigConversion(DzNode *parentNode);
 
 		bool postProcessRigConversion(QString sExportRigMode, QString fbxFilePath);
-		bool postProcessRigConversion(QString fbxFilePath,
+		bool postProcessRigConversion_Stage2(QString fbxFilePath,
 			QString sMvcTemplateFilename, QString sMvcProxyMeshFilename,
 			QString sOverrideRigFilename, FbxTools::ModifyBindPoseCallback *pCustomJointFixer,
 			QString sTargetPoseFilename, QString sFinalRigTemplateFbxFilename,

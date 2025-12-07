@@ -9954,7 +9954,7 @@ bool DzBridgeAction::postProcessRigConversion(QString sExportRigMode, QString fb
 		// use values passed as arguments
 	}
 
-	bool bResult = postProcessRigConversion(fbxFilePath,
+	bool bResult = postProcessRigConversion_Stage2(fbxFilePath,
 				sMvcTemplateFilename, m_sMvcProxyMeshFilePath,
 				sOverrideRigFilename, pCustomJointFixer,
 				sTargetPoseFilename, sFinalRigTemplateFbxFilename,
@@ -9967,7 +9967,7 @@ bool DzBridgeAction::postProcessRigConversion(QString sExportRigMode, QString fb
 	return bResult;
 }
 
-bool DzBridgeAction::postProcessRigConversion
+bool DzBridgeAction::postProcessRigConversion_Stage2
 (
 	QString fbxFilePath, 
 	QString sMvcTemplateFilename,

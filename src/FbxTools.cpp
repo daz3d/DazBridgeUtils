@@ -771,6 +771,11 @@ bool FbxTools::BakePoseToVertexBuffer_DualQuaternionPathway(FbxVector4* pVertexB
 bool FbxTools::BakePoseToVertexBuffer(FbxVector4* pVertexBuffer, FbxAMatrix* pGlobalOffsetMatrix, FbxPose* pPose, const FbxMesh* pMesh, FbxTime pTime)
 {
 	bool bResult = false;
+
+#if 1
+	const char* lpMeshName = pMesh->GetName();
+#endif
+
 	// get skin deformer for mesh
 	FbxSkin* pSkinDeformer = (FbxSkin*)pMesh->GetDeformer(0, FbxDeformer::eSkin);
 	if (!pSkinDeformer)
@@ -1644,8 +1649,8 @@ bool FbxTools::GetAllMeshes(FbxNode* pNode, QList<FbxNode*>& aFbxNodeList)
 	return true;
 }
 
-bool FbxTools::HasNodeAncestor(FbxNode* pNode, const QString sAncestorName, Qt::CaseSensitivity cs) {
-
+bool FbxTools::HasNodeAncestor(FbxNode* pNode, const QString sAncestorName, Qt::CaseSensitivity cs)
+{
 	FbxNode* pParentNode = pNode->GetParent();
 	if (pParentNode == NULL) return false;
 
@@ -1655,6 +1660,18 @@ bool FbxTools::HasNodeAncestor(FbxNode* pNode, const QString sAncestorName, Qt::
 	}
 	return HasNodeAncestor(pParentNode, sAncestorName, cs);
 }
+
+bool FbxTools::HasNodeAncestor(FbxNode* pNode, FbxNode* pAncestorNode)
+{
+	FbxNode* pParentNode = pNode->GetParent();
+	if (pParentNode == NULL) return false;
+
+	if (pParentNode == pAncestorNode) {
+		return true;
+	}
+	return HasNodeAncestor(pParentNode, pAncestorNode);
+}
+
 
 ///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 // DEV TESTING
@@ -4238,9 +4255,9 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 	QMap<QString, QList<FbxNode*>> oDuplicateBoneTable;
 	for (int i=0; i < pScene->GetNodeCount(); i++) {
 		FbxNode* pNode = pScene->GetNode(i);
+		QString sNodeName(pNode->GetName());
 		FbxNodeAttribute* pAttr = pNode->GetNodeAttribute();
 		if (pAttr && pAttr->GetAttributeType() == FbxNodeAttribute::eSkeleton) {
-			QString sNodeName(pNode->GetName());
 			// sanity check
 			if (oBoneMap.contains(sNodeName)) {
 				debug_printf("WARNING! multiple bones detected with same name: %s\n", sNodeName.toLocal8Bit().constData());
@@ -4378,9 +4395,7 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 			pNewBone->SetPreRotation(FbxNode::eSourcePivot, oNewBoneRotationVector);
 			pNewBone->SetPostRotation(FbxNode::eSourcePivot, oNewBoneRotationVector);
 
-			//pNewBone->LclTranslation.Set(oAverageWsPosition);
 			pNewBone->SetRotationOffset(FbxNode::eSourcePivot, oAverageWsPosition);
-			//pNewBone->LclRotation.Set(oNewBoneRotationVector);
 
 			// add for later
 			oPostModifyAddParent.insert(pNewBone, pParentBone);
@@ -4438,12 +4453,6 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 		}
 	}
 
-	//FbxNode* pRootBone = GetRootBone(pScene);
-	//FbxTools::ModifyBindPose(pScene, pRootBone, pCustomJointFixer);
-	//FbxTools::RemoveBindPoses(pScene);
-	//FbxPose* pTempBindPose = FbxTools::SaveBindMatrixToPose(pScene, "TempBindPose", nullptr, true);
-	//FbxTools::ApplyBindPose(pScene, pTempBindPose);
-
 	// POST MODIFY ADD RELATIONS
 #if 1
 	foreach(FbxNode* pNewBone, oPostModifyAddParent.keys())
@@ -4477,7 +4486,6 @@ bool FbxTools::ProxyMeshBoneRenamer(QString sProxyFbxFilename, QString sRigConve
 				FbxNode* pChild = pBoneToDelete->GetChild(i);
 				if (pChild == nullptr) continue;
 				debug_printf("ProxyMeshBoneRenamer: reparenting child: %s\n", pChild->GetName());
-				//pParent->AddChild(pChild);
 				ParentInPlace_RotationOffset(pParent, pChild);
 			}
 		}
