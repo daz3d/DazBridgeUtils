@@ -1,4 +1,3 @@
-#define USE_NATIVE_POSE_RIG_CONVERSION 0
 #define USE_SCRIPT_MEMORY_DUMP 0
 
 #include <dzapp.h>
@@ -125,12 +124,11 @@ DzBridgeAction::DzBridgeAction(const QString& text, const QString& desc) :
 			 m_aKnownIntermediateFileExtensionsList += QString(acharExtensionList[i]);
 		 }
 		 catch (...) {
-//			 dzApp->log("DEBUG: StringListMaker: end of char array");
 			 break;
 		 }
-//		 dzApp->log("DEBUG: StringListMaker: added string: " + m_aKnownIntermediateFileExtensionsList[i]);
 	 }
 
+	 m_bUseNativeRigPoseConversion = false;
 }
 
 DzBridgeAction::~DzBridgeAction()
@@ -252,7 +250,8 @@ bool DzBridgeAction::preProcessScene(DzNode* parentNode)
 		// bone conversion incompatibility fix (see line 226 below)
 		if (node->inherits("DzBone")) continue;
 
-		unParentHiddenNodes(node);
+//		unParentHiddenNodes(node);
+		markHiddenNodesToRemoveInPost(node);
 
 		DzObject* object = node->getObject();
 		DzShape* shape = object ? object->getCurrentShape() : NULL;
@@ -982,10 +981,10 @@ bool DzBridgeAction::undoPreProcessScene()
 		bResult = false;
 	}
 
-	if(undoUnParentHiddenNodes() == false)
-	{
-		bResult = false;
-	}
+	//if(undoUnParentHiddenNodes() == false)
+	//{
+	//	bResult = false;
+	//}
 
 	// Clear Override Tables
 //	m_overrideTable_MaterialImageMaps.clear();
@@ -5008,6 +5007,32 @@ bool DzBridgeAction::postProcessFbx(QString fbxFilePath)
 			tr("An error occurred while processing the Fbx file:\n\n") + sFbxErrorMessage, QMessageBox::Ok);
 		pScene->Destroy();
 		return false;
+	}
+
+	// Remove Nodes Marked For Removal
+	if (m_oNodesToRemoveInPost.isEmpty() == false)
+	{
+		foreach(DzNode* pNode, m_oNodesToRemoveInPost)
+		{
+			QString searchString = pNode->getName();
+			auto geo = openFBX->FindGeometry(pScene, searchString + ".Shape");
+			if (geo)
+			{
+				auto node = geo->GetNode();
+				node->RemoveAllMaterials();
+				pScene->RemoveGeometry(geo);
+				pScene->RemoveNode(node);
+				geo->Destroy();
+				node->Destroy();
+			}
+			auto node = openFBX->FindNode(pScene, searchString);
+			if (node)
+			{
+				pScene->RemoveNode(node);
+				node->Destroy();
+			}
+		}
+		m_oNodesToRemoveInPost.clear();
 	}
 
 	// Unparent mesh from rig node tree
@@ -10099,19 +10124,16 @@ bool DzBridgeAction::postProcessRigConversion_Stage2
 			// APPLY TARGET POSE
 			if (sTargetPoseFilename.isEmpty() == false || sTargetPoseFilename != "")
 			{
-#if USE_NATIVE_POSE_RIG_CONVERSION
-				//
-				// Native Daz Studio Pose should be applied prior to Fbx Export
-				//
-#else
-				// load target pose fbx
-				FbxTools::RemoveBindPoses(pScene);
-				if (FbxTools::LoadAndPose(sTargetPoseFilename, pScene, /* DzProgress */NULL, /* bConvertToZup */ false, /* bRotationOnly */ true) == false) {
-					printf("ERROR: LoadAndPose(%s)\n", sTargetPoseFilename.toLocal8Bit().constData());
-					pScene->Destroy();
-					return false;
+				if (m_bUseNativeRigPoseConversion == false)
+				{
+					// load target pose fbx
+					FbxTools::RemoveBindPoses(pScene);
+					if (FbxTools::LoadAndPose(sTargetPoseFilename, pScene, /* DzProgress */NULL, /* bConvertToZup */ false, /* bRotationOnly */ true) == false) {
+						printf("ERROR: LoadAndPose(%s)\n", sTargetPoseFilename.toLocal8Bit().constData());
+						pScene->Destroy();
+						return false;
+					}
 				}
-#endif
 
 #if 1
 				QString sUnposedFbxFilename = QString(fbxFilePath).replace(".fbx", "_posed.fbx", Qt::CaseInsensitive);
@@ -10547,6 +10569,16 @@ bool DzBridgeAction::undoUnParentHiddenNodes()
 
 	m_oUndoUnparentHiddenNodes.clear();
 	return true;
+}
+
+bool DzBridgeAction::markHiddenNodesToRemoveInPost(DzNode* pNode)
+{
+	if (pNode->isVisible() == false) {
+		m_oNodesToRemoveInPost.append(pNode);
+		return true;
+	}
+
+	return false;
 }
 
 

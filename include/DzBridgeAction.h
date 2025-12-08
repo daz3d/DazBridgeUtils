@@ -464,6 +464,13 @@ namespace DzBridgeNameSpace
 		QMap <DzNode*, DzNode*> m_oUndoUnparentHiddenNodes;
 		bool unParentHiddenNodes(DzNode* pNode);
 		bool undoUnParentHiddenNodes();
+		bool markHiddenNodesToRemoveInPost(DzNode* pNode);
+		QList <DzNode*> m_oNodesToRemoveInPost;
+
+		// 2025-12-07, DB - Native Rig Pose
+		bool m_bUseNativeRigPoseConversion = false;
+		Q_INVOKABLE void setUseNativeRigPoseConversion(bool arg) { m_bUseNativeRigPoseConversion = arg; };
+		Q_INVOKABLE bool getUseNativeRigPoseConversion() { return m_bUseNativeRigPoseConversion; };
 
 	protected:
 		// Struct to remember attachment info
