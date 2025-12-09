@@ -4986,3 +4986,68 @@ bool FbxTools::MergeFollowerSkeletons(QString sFbxFilename)
 	return true;
 }
 
+
+FbxNode* FbxTools::ImportNode(QString sSourceNodeName, QString sDestinationParentName, FbxScene* pSourceScene, FbxScene* pDestinationScene, FbxNode* pDestinationRootBone)
+{
+	if (!pSourceScene || !pDestinationScene || !pDestinationRootBone) {
+		return nullptr;
+	}
+
+	FbxNode* pSourceNode = pSourceScene->GetRootNode()->FindChild(sSourceNodeName.toLocal8Bit().constData());
+	if (pSourceNode == nullptr) {
+		dzApp->warning("FbxTools::ImportNode(): unable to find source node: " + sSourceNodeName);
+		return nullptr;
+	}
+
+	FbxNode* pDestinationParent = pDestinationRootBone->FindChild(sDestinationParentName.toLocal8Bit().constData());
+	if (pDestinationParent == nullptr) {
+		dzApp->warning("FbxTools::ImportNode(): unable to find destination parent: " + sDestinationParentName);
+		return nullptr;
+	}
+
+	// Deep clone source node and dependencies into destination scene.
+	FbxNode* pClonedNode = (FbxNode*)FbxCloneManager::Clone(pSourceNode, pDestinationScene);
+	if (!pClonedNode) {
+		dzApp->warning("FbxTools::ImportNode(): unable to clone node: " + sSourceNodeName);
+		return nullptr;
+	}
+
+	pDestinationParent->AddChild(pClonedNode);
+
+	return pClonedNode;
+}
+
+bool FbxTools::AddMetahumanCorrectiveBones(FbxScene* pScene, FbxNode* pRootBone, QString sFbxCorrectiveFile)
+{
+	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
+	FbxScene* pImportScene = openFBX->CreateScene("CorrectImportScene");
+	if (FbxTools::ExLoadScene(pImportScene, sFbxCorrectiveFile) == false) {
+		dzApp->warning("FbxTools::AddMetahumanCorrectiveBones(): unable to import fbx corrective file: " + sFbxCorrectiveFile);
+		return false;
+	}
+
+	FbxNode* pThighCorrrctiveL = ImportNode("thigh_correctiveRoot_l", "thigh_l", pImportScene, pScene, pRootBone);
+	FbxNode* pThighCorrrctiveR = ImportNode("thigh_correctiveRoot_r", "thigh_r", pImportScene, pScene, pRootBone);
+
+	FbxNode* pCalfCorrectiveL = ImportNode("calf_correctiveRoot_l", "calf_l", pImportScene, pScene, pRootBone);
+	FbxNode* pCalfCorrectiveR = ImportNode("calf_correctiveRoot_r", "calf_r", pImportScene, pScene, pRootBone);
+
+	FbxNode* pUpperArmCorrectiveL = ImportNode("upperarm_correctiveRoot_l", "upperarm_l", pImportScene, pScene, pRootBone);
+	FbxNode* pUpperArmCorrectiveR = ImportNode("upperarm_correctiveRoot_r", "upperarm_r", pImportScene, pScene, pRootBone);
+
+	FbxNode* pLowerArmCorrectiveL = ImportNode("lowerarm_correctiveRoot_l", "lowerarm_l", pImportScene, pScene, pRootBone);
+	FbxNode* pLowerArmCorrectiveR = ImportNode("lowerarm_correctiveRoot_r", "lowerarm_r", pImportScene, pScene, pRootBone);
+
+	if (!pThighCorrrctiveL || !pThighCorrrctiveR || !pCalfCorrectiveL || !pCalfCorrectiveR || !pLowerArmCorrectiveL || !pLowerArmCorrectiveR) {
+		return false;
+	}
+
+	//////////////////////////////////
+	// TRANSFER WEIGHTS TO CORRECTIVES
+	//////////////////////////////////
+
+
+	pImportScene->Destroy();
+
+	return true;
+}

@@ -184,6 +184,10 @@ public:
 
 	static bool HasNodeAncestor(FbxNode* pNode, FbxNode* pAncestorNode);
 
+	static bool AddMetahumanCorrectiveBones(FbxScene* pScene, FbxNode* pRootBone, QString sFbxCorrectiveFile);
+	static FbxNode* ImportNode(QString sSourceNodeName, QString sDestinationParentName, FbxScene* pSourceScene, FbxScene* pDestinationScene, FbxNode* pDestinationRootBone);
+
+
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 	// DEV TESTING
 	///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
