@@ -4987,21 +4987,15 @@ bool FbxTools::MergeFollowerSkeletons(QString sFbxFilename)
 }
 
 
-FbxNode* FbxTools::ImportNode(QString sSourceNodeName, QString sDestinationParentName, FbxScene* pSourceScene, FbxScene* pDestinationScene, FbxNode* pDestinationRootBone)
+FbxNode* FbxTools::ImportNode(QString sSourceNodeName, FbxNode* pDestinationParent, FbxScene* pSourceScene, FbxScene* pDestinationScene, FbxNode* pDestinationRootBone)
 {
-	if (!pSourceScene || !pDestinationScene || !pDestinationRootBone) {
+	if (!pDestinationParent || !pSourceScene || !pDestinationScene || !pDestinationRootBone) {
 		return nullptr;
 	}
 
 	FbxNode* pSourceNode = pSourceScene->GetRootNode()->FindChild(sSourceNodeName.toLocal8Bit().constData());
 	if (pSourceNode == nullptr) {
 		dzApp->warning("FbxTools::ImportNode(): unable to find source node: " + sSourceNodeName);
-		return nullptr;
-	}
-
-	FbxNode* pDestinationParent = pDestinationRootBone->FindChild(sDestinationParentName.toLocal8Bit().constData());
-	if (pDestinationParent == nullptr) {
-		dzApp->warning("FbxTools::ImportNode(): unable to find destination parent: " + sDestinationParentName);
 		return nullptr;
 	}
 
@@ -5017,6 +5011,102 @@ FbxNode* FbxTools::ImportNode(QString sSourceNodeName, QString sDestinationParen
 	return pClonedNode;
 }
 
+bool ProjectWeights(FbxScene* pScene, FbxMesh* pMesh, FbxNode* pDestNode, FbxNode* pSourceNode, double fTransferWeight, double fAttenuationConstant)
+{
+	if (!pScene || !pMesh || !pDestNode || !pSourceNode) return false;
+
+	FbxNode* pMeshNode = pMesh->GetNode();
+	if (!pMeshNode) return false;
+
+	FbxSkin* pSkin = nullptr;
+	const int nDef = pMesh->GetDeformerCount(FbxDeformer::eSkin);
+	for (int i = 0; i < nDef; ++i) {
+		FbxDeformer* pDef = pMesh->GetDeformer(i, FbxDeformer::eSkin);
+		if (pDef) { pSkin = FbxCast<FbxSkin>(pDef); break; }
+	}
+	if (!pSkin) { pSkin = FbxSkin::Create(pScene, "Skin"); pMesh->AddDeformer(pSkin); }
+
+	FbxCluster* pDestCluster = nullptr;
+	for (int i = 0; i < pSkin->GetClusterCount(); ++i) {
+		FbxCluster* pC = pSkin->GetCluster(i);
+		if (pC && pC->GetLink() == pDestNode) {
+			pDestCluster = pC;
+			break;
+		}
+	}
+	if (!pDestCluster) {
+		pDestCluster = FbxCluster::Create(pScene, (std::string("Cluster_") + pDestNode->GetName()).c_str());
+		pDestCluster->SetLink(pDestNode);
+		pDestCluster->SetLinkMode(FbxCluster::eNormalize); // normalize to 1.0
+		pSkin->AddCluster(pDestCluster);
+	}
+
+	int numSourceClusters = -1;
+	QList<FbxCluster*> aSourceClusters;
+	for (int i = 0; i < pSkin->GetClusterCount(); ++i) {
+		FbxCluster* pC = pSkin->GetCluster(i);
+		if (pC && pC->GetLink() == pSourceNode) {
+			aSourceClusters.append(pC);
+		}
+	}
+	numSourceClusters = aSourceClusters.length();
+
+	FbxAMatrix oMeshWsTransform = pMeshNode->EvaluateGlobalTransform();
+	FbxAMatrix oDestWsTransform = pDestNode->EvaluateGlobalTransform();
+	pDestCluster->SetTransformMatrix(oMeshWsTransform);
+	pDestCluster->SetTransformLinkMatrix(oDestWsTransform); // required for correct skinning
+
+	QMap<int, double> oDestWeightMap;
+	int numDestWeights = pDestCluster->GetControlPointIndicesCount();
+	const int* pDestVertexIndexBuffer = pDestCluster->GetControlPointIndices();
+	const double* pDestWeights = pDestCluster->GetControlPointWeights();
+
+	for (int i = 0; i < numDestWeights; i++)
+	{
+		int nActualVertexIndex = pDestVertexIndexBuffer[i];
+		double fDestWeight = pDestWeights[i];
+		oDestWeightMap.insert(nActualVertexIndex, fDestWeight);
+	}
+
+	FbxVector4 oDestinationCoord = oDestWsTransform.GetT();
+	FbxVector4* pVertexBuffer = pMesh->GetControlPoints();
+	foreach(FbxCluster * pSourceCluster, aSourceClusters)
+	{
+		const int numSourceVertices = pSourceCluster->GetControlPointIndicesCount();
+		int* pSourceVertexIndexBuffer = pSourceCluster->GetControlPointIndices();
+		double* pSourceWeights = pSourceCluster->GetControlPointWeights();
+		for (int i = 0; i < numSourceVertices; ++i)
+		{
+			int nActualVertexIndex = pSourceVertexIndexBuffer[i];
+			// get vertex coordinate
+			FbxVector4 oVertexCoord = pVertexBuffer[nActualVertexIndex];
+			// calc distance
+			double fDistance = oDestinationCoord.Distance(oVertexCoord);
+			// calc attenuation factor
+			double fAttenuation = 1 / (1 + 0.22 * fDistance + fAttenuationConstant * fDistance * fDistance);
+			double fAttenuatedWeight = fAttenuation * fTransferWeight;
+			double fWeightToTransfer = std::min(pSourceWeights[i], fAttenuatedWeight);
+			if (fTransferWeight == -1) {
+				fWeightToTransfer = pSourceWeights[i];
+			}
+			pSourceWeights[i] = std::max(0.0, pSourceWeights[i] - fWeightToTransfer);
+			oDestWeightMap[nActualVertexIndex] += fWeightToTransfer;
+
+		}
+	}
+
+	pDestCluster->SetControlPointIWCount(0);
+
+	foreach(int nActualVertexIndex, oDestWeightMap.keys())
+	{
+		double fDestWeight = oDestWeightMap[nActualVertexIndex];
+		pDestCluster->AddControlPointIndex(nActualVertexIndex, fDestWeight);
+	}
+
+	return true;
+}
+
+
 bool FbxTools::AddMetahumanCorrectiveBones(FbxScene* pScene, FbxNode* pRootBone, QString sFbxCorrectiveFile)
 {
 	OpenFBXInterface* openFBX = OpenFBXInterface::GetInterface();
@@ -5026,19 +5116,28 @@ bool FbxTools::AddMetahumanCorrectiveBones(FbxScene* pScene, FbxNode* pRootBone,
 		return false;
 	}
 
-	FbxNode* pThighCorrrctiveL = ImportNode("thigh_correctiveRoot_l", "thigh_l", pImportScene, pScene, pRootBone);
-	FbxNode* pThighCorrrctiveR = ImportNode("thigh_correctiveRoot_r", "thigh_r", pImportScene, pScene, pRootBone);
+	FbxNode* pThighL = pRootBone->FindChild("thigh_l");
+	FbxNode* pThighR = pRootBone->FindChild("thigh_r");
+	FbxNode* pCalfL = pRootBone->FindChild("calf_l");
+	FbxNode* pCalfR = pRootBone->FindChild("calf_r");
+	FbxNode* pUpperArmL = pRootBone->FindChild("upperarm_l");
+	FbxNode* pUpperArmR = pRootBone->FindChild("upperarm_r");
+	FbxNode* pLowerArmL = pRootBone->FindChild("lowerarm_l");
+	FbxNode* pLowerArmR = pRootBone->FindChild("lowerarm_r");
 
-	FbxNode* pCalfCorrectiveL = ImportNode("calf_correctiveRoot_l", "calf_l", pImportScene, pScene, pRootBone);
-	FbxNode* pCalfCorrectiveR = ImportNode("calf_correctiveRoot_r", "calf_r", pImportScene, pScene, pRootBone);
+	FbxNode* pThighCorrectiveL = ImportNode("thigh_correctiveRoot_l", pThighL, pImportScene, pScene, pRootBone);
+	FbxNode* pThighCorrectiveR = ImportNode("thigh_correctiveRoot_r", pThighR, pImportScene, pScene, pRootBone);
 
-	FbxNode* pUpperArmCorrectiveL = ImportNode("upperarm_correctiveRoot_l", "upperarm_l", pImportScene, pScene, pRootBone);
-	FbxNode* pUpperArmCorrectiveR = ImportNode("upperarm_correctiveRoot_r", "upperarm_r", pImportScene, pScene, pRootBone);
+	FbxNode* pCalfCorrectiveL = ImportNode("calf_correctiveRoot_l", pCalfL, pImportScene, pScene, pRootBone);
+	FbxNode* pCalfCorrectiveR = ImportNode("calf_correctiveRoot_r", pCalfR, pImportScene, pScene, pRootBone);
 
-	FbxNode* pLowerArmCorrectiveL = ImportNode("lowerarm_correctiveRoot_l", "lowerarm_l", pImportScene, pScene, pRootBone);
-	FbxNode* pLowerArmCorrectiveR = ImportNode("lowerarm_correctiveRoot_r", "lowerarm_r", pImportScene, pScene, pRootBone);
+	FbxNode* pUpperArmCorrectiveL = ImportNode("upperarm_correctiveRoot_l", pUpperArmL, pImportScene, pScene, pRootBone);
+	FbxNode* pUpperArmCorrectiveR = ImportNode("upperarm_correctiveRoot_r", pUpperArmL, pImportScene, pScene, pRootBone);
 
-	if (!pThighCorrrctiveL || !pThighCorrrctiveR || !pCalfCorrectiveL || !pCalfCorrectiveR || !pLowerArmCorrectiveL || !pLowerArmCorrectiveR) {
+	FbxNode* pLowerArmCorrectiveL = ImportNode("lowerarm_correctiveRoot_l", pLowerArmL, pImportScene, pScene, pRootBone);
+	FbxNode* pLowerArmCorrectiveR = ImportNode("lowerarm_correctiveRoot_r", pLowerArmR, pImportScene, pScene, pRootBone);
+
+	if (!pThighCorrectiveL || !pThighCorrectiveR || !pCalfCorrectiveL || !pCalfCorrectiveR || !pLowerArmCorrectiveL || !pLowerArmCorrectiveR) {
 		return false;
 	}
 
@@ -5046,6 +5145,35 @@ bool FbxTools::AddMetahumanCorrectiveBones(FbxScene* pScene, FbxNode* pRootBone,
 	// TRANSFER WEIGHTS TO CORRECTIVES
 	//////////////////////////////////
 
+	QList<FbxNode*> aMeshList;
+	GetAllMeshes(pScene->GetRootNode(), aMeshList);
+	foreach(FbxNode* pNode, aMeshList)
+	{
+		FbxMesh* pMesh = pNode->GetMesh();
+
+		FbxNode* pPelvis = pRootBone->FindChild("pelvis");
+		if (pPelvis) {
+			int nNumCorrectiveBones = pThighCorrectiveL->GetChildCount();
+			double fWeights = 0.75 / nNumCorrectiveBones;
+			for (int i = 0; i < nNumCorrectiveBones; i++)
+			{
+				FbxNode* pCorrective = pThighCorrectiveL->GetChild(i);
+				//ProjectWeights(pScene, pMesh, pCorrective, pPelvis, 0.4, 0.05);
+			}
+		}
+
+		FbxNode* pThighTwist01L = pRootBone->FindChild("thigh_twist_01_l");
+		if (pThighTwist01L) {
+			int nNumCorrectiveBones = pThighCorrectiveL->GetChildCount();
+			double fWeights = 0.75 / nNumCorrectiveBones;
+			for (int i = 0; i < nNumCorrectiveBones; i++)
+			{
+				FbxNode* pCorrective = pThighCorrectiveL->GetChild(i);
+				//ProjectWeights(pScene, pMesh, pCorrective, pThighTwist01L, 0.8, 0.04);
+			}
+		}
+
+	}
 
 	pImportScene->Destroy();
 
