@@ -1662,7 +1662,10 @@ bool DzBridgeAction::exportNode(DzNode* Node)
 		while (DzBackgroundProgress::isActive() == true) {
 			QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 			int nElapsedMilliSeconds = oStartTime.msecsTo(QTime::currentTime());
-			if (nElapsedMilliSeconds > fTimeoutBypass) break;
+			if (nElapsedMilliSeconds > fTimeoutBypass) {
+				dzApp->warning("DzBridge::ExportNode(): BackgroundProcess TIMED OUT! Check for poke-through: " + m_sDestinationFBX);
+				break;
+			}
 		}
 
 		// DB 2024-08-24: Fix selected node before exporting to Fbx
