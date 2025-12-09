@@ -22,5 +22,7 @@ public:
 	static void SetFbxExportOptionsMvcProxyMesh(DzFileIOSettings &ExportOptions);
 	
 	static bool ExpandClothingFit(DzNode* pNode);
+	static bool BakeClothingFits(DzNode* pNode);
+
 };
 

@@ -343,9 +343,13 @@ bool BridgeTools::ExpandClothingFit(DzNode* pNode)
 			}
 		}
 		DzIntProperty* pSmoothingProp = (DzIntProperty*)pModifier->findProperty("Smoothing Iterations");
-		pSmoothingProp->setValue(10);
+		double fCurrentSmoothingValue = pSmoothingProp->getRawValue();
+		if (fCurrentSmoothingValue < 5)
+			pSmoothingProp->setValue(5);
 		DzIntProperty* pCollisionProp = (DzIntProperty*)pModifier->findProperty("Collision Iterations");
-		pCollisionProp->setValue(50);
+		double fCurrentCollisionValue = pCollisionProp->getRawValue();
+		if (fCurrentCollisionValue < 10)
+			pCollisionProp->setValue(10);
 		auto prop = (DzBoolProperty*)pModifier->findProperty("Enable Smoothing");
 		if (prop) prop->setBoolValue(1);
 		// Must Re-Fit Clothing
@@ -355,19 +359,29 @@ bool BridgeTools::ExpandClothingFit(DzNode* pNode)
 		QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 	}
 
+	float fTimeoutBypass;
+	QTime oStartTime;
+
+	// TEMPORARY BODY EXPANSION TO BAKE CLOTHING WITH MORE LOOSE FIT
 	DzObject* pObject = pNode->getObject();
 	DzGeometry* pMesh = (DzGeometry*) pObject->getCachedGeom();
 	addPushModifier(pNode);
 	DzModifier* pPushMod = pObject->findModifier("PushModifier");
 	if (pPushMod) {
 		DzFloatProperty* pPushValue = (DzFloatProperty*)pPushMod->findProperty("Value");
-		pPushValue->setValue(0.5);
+		pPushValue->setValue(0.1);
 		QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 	}
 
-	// wait for background
-	while (DzBackgroundProgress::isActive()) {
+	fTimeoutBypass = 60.0 * 1000; // 60 seconds
+	oStartTime = QTime::currentTime();
+	while (DzBackgroundProgress::isActive() == true) {
 		QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+		int nElapsedMilliSeconds = oStartTime.msecsTo(QTime::currentTime());
+		if (nElapsedMilliSeconds > fTimeoutBypass) {
+			dzApp->warning("DzBridge::ExpandClothingFit(): BackgroundProcess TIMED OUT! Check for poke-through in node: " + pNode->getName());
+			break;
+		}
 	}
 
 	QMap<DzFigure*, DzVertexMesh*> bakedMeshLookup;
@@ -396,9 +410,15 @@ bool BridgeTools::ExpandClothingFit(DzNode* pNode)
 		QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
 	}
 
-	// wait for background
-	while (DzBackgroundProgress::isActive()) {
+	fTimeoutBypass = 60.0 * 1000; // 60 seconds
+	oStartTime = QTime::currentTime();
+	while (DzBackgroundProgress::isActive() == true) {
 		QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+		int nElapsedMilliSeconds = oStartTime.msecsTo(QTime::currentTime());
+		if (nElapsedMilliSeconds > fTimeoutBypass) {
+			dzApp->warning("DzBridge::ExpandClothingFit(): BackgroundProcess TIMED OUT! Check for poke-through in node: " + pNode->getName());
+			break;
+		}
 	}
 
 	foreach(DzFigure* pClothing, aClothingFollowers)
@@ -417,3 +437,123 @@ bool BridgeTools::ExpandClothingFit(DzNode* pNode)
 
 	return true;
 }
+
+bool BridgeTools::BakeClothingFits(DzNode* pNode)
+{
+	if (!pNode) return false;
+
+	QList<DzFigure*>aClothingFollowers;
+	auto aAllChildren = pNode->getNodeChildren(/*scanHierarchy*/ true);
+	foreach(QObject * pQObject, aAllChildren)
+	{
+		DzFigure* pChildFigure = qobject_cast<DzFigure*>(pQObject);
+		if (!pChildFigure) continue;
+		if (pChildFigure->getSkeleton()->getFollowTarget() == pNode->getSkeleton())
+		{
+			if (pChildFigure->getName().contains("eye", Qt::CaseInsensitive) ||
+				pChildFigure->getName().contains("mouth", Qt::CaseInsensitive) ||
+				pChildFigure->getName().contains("brow", Qt::CaseInsensitive) ||
+				pChildFigure->getName().contains("lash", Qt::CaseInsensitive) ||
+				pChildFigure->getName().contains("tear", Qt::CaseInsensitive) ||
+				pChildFigure->getName().contains("hair", Qt::CaseInsensitive) ||
+				pChildFigure->getName().contains("tail", Qt::CaseInsensitive) ||
+				pChildFigure->getName().contains("legs", Qt::CaseInsensitive))
+			{
+				continue;
+			}
+			if (DzBridgeAction::isGeograft(pChildFigure)) {
+				continue;
+			}
+			QString sContentType = dzApp->getAssetMgr()->getTypeForNode(pChildFigure);
+			if (sContentType.contains("Follower/Attachment/Head")) {
+				continue;
+			}
+			aClothingFollowers.append(pChildFigure);
+		}
+	}
+
+	if (aClothingFollowers.isEmpty()) return false;
+
+	foreach(DzFigure * pClothing, aClothingFollowers)
+	{
+		// adjust mesh smoothing
+		DzModifier* pMeshSmoothingModifier = pClothing->getObject()->findModifier("DzMeshSmoothModifier");
+		if (!pMeshSmoothingModifier) {
+			continue;
+		}
+
+		DzBoolProperty* pEnableSmoothingProp = (DzBoolProperty*) pMeshSmoothingModifier->findProperty("Enable Smoothing");
+		if (!pEnableSmoothingProp || !pEnableSmoothingProp->getBoolValue()) {
+			continue;
+		}
+
+		DzBoolProperty* pInteractiveSmoothingProp = (DzBoolProperty*)pMeshSmoothingModifier->findProperty("Interactive Update");
+		if (!pInteractiveSmoothingProp) {
+			continue;
+		}
+		pInteractiveSmoothingProp->setBoolValue(true);
+
+		pClothing->update();
+		pClothing->finalize();
+
+		float fTimeoutBypass;
+		QTime oStartTime;
+		fTimeoutBypass = 60.0 * 1000; // 60 seconds
+		oStartTime = QTime::currentTime();
+		while (DzBackgroundProgress::isActive() == true) {
+			QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+			int nElapsedMilliSeconds = oStartTime.msecsTo(QTime::currentTime());
+			if (nElapsedMilliSeconds > fTimeoutBypass) {
+				dzApp->warning("DzBridge::ExpandClothingFit(): BackgroundProcess TIMED OUT! Check for poke-through in node: " + pNode->getName());
+				break;
+			}
+		}
+
+		DzVertexMesh* pMesh = pClothing->getObject()->getCachedGeom();
+		DzFacetMesh* pCachedMesh = new DzFacetMesh();
+		pCachedMesh->copyFrom(pMesh, false, false);
+
+		// disable smoothing
+		pEnableSmoothingProp->setBoolValue(false);
+
+		// remove all unknown modifiers
+		int nNumModifiers = pClothing->getObject()->getNumModifiers();
+		for (int i = nNumModifiers-1; i >= 0; i--)
+		{
+			DzModifier* pModifier = pClothing->getObject()->getModifier(i);
+			if (!pModifier || pModifier->inherits("DzMorph") || pModifier->inherits("DzSkinBinding") || pModifier->inherits("DzBoneBinding")) {
+				continue;
+			}
+			dzApp->log("BridgeTools::BakeClothingFit(): Removing modifier: " + pModifier->className());
+			pClothing->getObject()->removeModifier(pModifier);
+		}
+
+		pClothing->update();
+		pClothing->finalize();
+
+		fTimeoutBypass = 60.0 * 1000; // 60 seconds
+		oStartTime = QTime::currentTime();
+		while (DzBackgroundProgress::isActive() == true) {
+			QCoreApplication::processEvents(QEventLoop::AllEvents, 100);
+			int nElapsedMilliSeconds = oStartTime.msecsTo(QTime::currentTime());
+			if (nElapsedMilliSeconds > fTimeoutBypass) {
+				dzApp->warning("DzBridge::ExpandClothingFit(): BackgroundProcess TIMED OUT! Check for poke-through in node: " + pNode->getName());
+				break;
+			}
+		}
+
+		MorphTools::createMorph("better_fit", pCachedMesh, pClothing);
+		DzFloatProperty* prop = (DzFloatProperty*)MorphTools::BruteForceFindMorph(pClothing, "better_fit");
+		if (!prop) continue;
+		prop->setValue(1.0);
+
+//		pCachedMesh->deleteLater();
+
+	}
+
+	dzScene->setPrimarySelection(pNode);
+
+	return true;
+}
+
+
