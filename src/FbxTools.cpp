@@ -5316,14 +5316,14 @@ bool FbxTools::AddMetahumanCorrectiveBones(FbxScene* pScene, FbxNode* pRootBone,
 			if (pCorrective) ProjectWeights(pScene, pMesh, pCorrective, pSourceBone, 0.3, 24, 3, "#right_only");
 
 			pCorrective = pRootBone->FindChild("thigh_bck_lwr_l");
-			if (pCorrective) ProjectWeights(pScene, pMesh, pCorrective, pSourceBone, 0.7, 35, 2, "#left_only");
+			if (pCorrective) ProjectWeights(pScene, pMesh, pCorrective, pSourceBone, 0.6, 35, 2.5, "#left_only");
 			pCorrective = pRootBone->FindChild("thigh_bck_lwr_r");
-			if (pCorrective) ProjectWeights(pScene, pMesh, pCorrective, pSourceBone, 0.7, 35, 2, "#right_only");
+			if (pCorrective) ProjectWeights(pScene, pMesh, pCorrective, pSourceBone, 0.6, 35, 2.5, "#right_only");
 
 			pCorrective = pRootBone->FindChild("thigh_bck_l");
-			if (pCorrective) ProjectWeights(pScene, pMesh, pCorrective, pSourceBone, 0.5, 25, 2, "#left_only");
+			if (pCorrective) ProjectWeights(pScene, pMesh, pCorrective, pSourceBone, 0.3, 25, 3, "");
 			pCorrective = pRootBone->FindChild("thigh_bck_r");
-			if (pCorrective) ProjectWeights(pScene, pMesh, pCorrective, pSourceBone, 0.5, 25, 2, "#right_only");
+			if (pCorrective) ProjectWeights(pScene, pMesh, pCorrective, pSourceBone, 0.3, 25, 3, "");
 
 			pCorrective = pRootBone->FindChild("thigh_out_l");
 			if (pCorrective) ProjectWeights(pScene, pMesh, pCorrective, pSourceBone, 0.5, 24, 2, "#left_only");
