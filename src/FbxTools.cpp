@@ -5271,7 +5271,7 @@ bool FbxTools::AddMetahumanCorrectiveBones(FbxScene* pScene, FbxNode* pRootBone,
 	FbxNode* pCalfCorrectiveR = ImportNode("calf_correctiveRoot_r", pCalfR, pImportScene, pScene, pRootBone);
 
 	FbxNode* pUpperArmCorrectiveL = ImportNode("upperarm_correctiveRoot_l", pUpperArmL, pImportScene, pScene, pRootBone);
-	FbxNode* pUpperArmCorrectiveR = ImportNode("upperarm_correctiveRoot_r", pUpperArmL, pImportScene, pScene, pRootBone);
+	FbxNode* pUpperArmCorrectiveR = ImportNode("upperarm_correctiveRoot_r", pUpperArmR, pImportScene, pScene, pRootBone);
 
 	FbxNode* pLowerArmCorrectiveL = ImportNode("lowerarm_correctiveRoot_l", pLowerArmL, pImportScene, pScene, pRootBone);
 	FbxNode* pLowerArmCorrectiveR = ImportNode("lowerarm_correctiveRoot_r", pLowerArmR, pImportScene, pScene, pRootBone);
