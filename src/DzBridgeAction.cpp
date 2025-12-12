@@ -7868,12 +7868,15 @@ QString DzBridgeAction::scaleAndReEncodeMaterialProperties(DzNode* Node, DzMater
 				// finally, save out file with final resized image, quality level and encoding format
 				if (m_bExportAllTextures) {
 					sReEncodedFilename = generateExportAssetFilename(TextureName, Node->getLabel() + "_" + Material->getName());
+					sReEncodedFilename = sReEncodedFilename.replace(".", "_");
 					sReEncodedFilename += "." + fileTypeExtension;
 					bUseReEncodedFilename = true;
 				}
 				else
 				{
-					sReEncodedFilename = cleanedTempPath + "/" + filestem + "." + fileTypeExtension;
+					sReEncodedFilename = cleanedTempPath + "/" + filestem;
+					sReEncodedFilename = sReEncodedFilename.replace(".", "_");
+					sReEncodedFilename += "." + fileTypeExtension;
 				}
 				if (m_bDeferProcessingImageToolsJobs) {
 					// create unique only if using deferred image jobs, copy original to use as reference placeholder
@@ -10106,7 +10109,7 @@ bool DzBridgeAction::postProcessRigConversion_Stage2
 			FbxPose* pTempBindPose = FbxTools::SaveBindMatrixToPose(pScene, "TempBindPose", nullptr, true);
 			FbxTools::ApplyBindPose(pScene, pTempBindPose);
 
-#if 1
+#if 0
 			QString sUnposedFbxFilename = QString(fbxFilePath).replace(".fbx", "_unposed.fbx", Qt::CaseInsensitive);
 			if (openFBX->SaveScene(pScene, sUnposedFbxFilename, 1, false) == false)
 			{
@@ -10138,7 +10141,7 @@ bool DzBridgeAction::postProcessRigConversion_Stage2
 					}
 				}
 
-#if 1
+#if 0
 				QString sUnposedFbxFilename = QString(fbxFilePath).replace(".fbx", "_posed.fbx", Qt::CaseInsensitive);
 				if (openFBX->SaveScene(pScene, sUnposedFbxFilename, 1, false) == false)
 				{
