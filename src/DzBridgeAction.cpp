@@ -2866,9 +2866,11 @@ QString DzBridgeAction::generateExportAssetFilename(QString sFilename, QString s
 	exportPath += "/ExportTextures/";
 	QDir().mkpath(exportPath);
 	//	QString exportFilename = exportPath + cleanedAssetMaterialName + "_" + fileStem;
-	QString exportFilename = exportPath + fileStem;
+	QString sCleanedFileStem = QString(fileStem).replace(" ", "_");
+	QString sExportFileFullPath = exportPath + "/" + sCleanedFileStem;
+	sExportFileFullPath = sExportFileFullPath.replace("\\", "/").replace("//","/");
 
-	return exportFilename;
+	return sExportFileFullPath;
 }
 
 QString DzBridgeAction::exportAssetWithDtu(QString sFilename, QString sAssetMaterialName)
@@ -10579,7 +10581,7 @@ bool DzBridgeAction::undoUnParentHiddenNodes()
 
 bool DzBridgeAction::markHiddenNodesToRemoveInPost(DzNode* pNode)
 {
-	if (pNode->isVisible() == false) {
+	if (pNode->isVisible() == false || pNode->isVisibileInRender() == false) {
 		m_oNodesToRemoveInPost.append(pNode);
 		return true;
 	}
